@@ -1,0 +1,12 @@
+components:
+  schemas:
+    Config:
+      type: object
+      properties:
+        a:
+          type: string
+        b:
+          type: number
+        c:
+          type: integer
+        

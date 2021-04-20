@@ -1,0 +1,7 @@
+include LICENSE
+include README.md
+include setup.py
+include VERSION
+recursive-include openapiart *.yaml *.py
+global-exclude __pycache__
+global-exclude *.pyc

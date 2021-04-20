@@ -1,0 +1,17 @@
+openapi: 3.0.3
+
+info:
+  title: Bundler Test API
+  description: |-
+    The bundler test API
+  version: 0.0.1
+  contact:
+    url: https://github.com/open-traffic-generator/bundler
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers: 
+  - url: /
+
+paths: {}

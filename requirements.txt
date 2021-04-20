@@ -1,0 +1,8 @@
+pytest
+pyyaml
+jsonpath-ng
+openapi-spec-validator
+requests
+setuptools
+wheel
+twine

@@ -1,0 +1,12 @@
+components:
+  schemas:
+    Name:
+      type: string
+      format: global-unique
+  responses:
+    Success:
+      '200':
+        description: 'Success with payload'
+    SuccessNoPayload:
+      '204':
+        description: 'Success with no payload'

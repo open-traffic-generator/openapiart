@@ -1,0 +1,8 @@
+.mypy_cache
+.pytest_cache
+__pycache__
+.pyc
+.output
+/*.egg-info
+/build
+/dist

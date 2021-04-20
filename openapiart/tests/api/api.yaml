@@ -1,0 +1,16 @@
+paths: 
+  /config:
+    post:
+      tags: ['Bundler']
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../config/config.yaml#/components/schemas/Config'
+      responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Success'
