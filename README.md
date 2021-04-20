@@ -1,0 +1,2 @@
+# openapiart
+OpenAPI artifact generator
