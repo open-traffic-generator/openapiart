@@ -12,17 +12,17 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-def api(location, verify=False, logger=None):
+def api(location=None, verify=False, logger=None, ext=None):
     if ext is None:
         # dynamically load the generated Api class
         # the generated Api class has an abstract _send_recv method
         # that should be monkey patched
-        return Api(host=host)
+        return Api(location=location)
     try:
         lib = importlib.import_module('{}_{}'.format(__module__, ext))
-        return lib.Api(host=host)
+        return lib.Api(location=location)
     except ImportError as err:
-        msg = "Snappi extension %s is not installed or invalid: %s"
+        msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
 
 class Transport(object):
@@ -71,8 +71,8 @@ class Transport(object):
             raise Exception(response.status_code, yaml.safe_load(response.text))
 
 
-class SnappiBase(object):
-    """Base class for all Snappi classes
+class OpenApiBase(object):
+    """Base class for all generated classes
     """
     JSON = 'json'
     YAML = 'yaml'
@@ -84,7 +84,7 @@ class SnappiBase(object):
         pass
 
     def serialize(self, encoding=JSON):
-        """Serialize the current snappi object according to a specified encoding.
+        """Serialize the current object according to a specified encoding.
 
         Args
         ----
@@ -98,11 +98,11 @@ class SnappiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
-        if encoding == SnappiBase.JSON:
+        if encoding == OpenApiBase.JSON:
             return json.dumps(self._encode(), indent=2)
-        elif encoding == SnappiBase.YAML:
+        elif encoding == OpenApiBase.YAML:
             return yaml.safe_dump(self._encode())
-        elif encoding == SnappiBase.DICT:
+        elif encoding == OpenApiBase.DICT:
             return self._encode()
         else:
             raise NotImplementedError('Encoding %s not supported' % encoding)
@@ -111,7 +111,7 @@ class SnappiBase(object):
         raise NotImplementedError()
 
     def deserialize(self, serialized_object):
-        """Deserialize a python object into the current snappi object.
+        """Deserialize a python object into the current object.
 
         If the input `serialized_object` does not match the current
         snappi object an exception will be raised.
@@ -124,7 +124,7 @@ class SnappiBase(object):
 
         Returns
         -------
-        - obj(snappicommon.SnappiObject): This snappi object with all the
+        - obj(OpenApiObject): This object with all the
             serialized_object deserialized within.
         """
         if isinstance(serialized_object, (str, unicode)):
@@ -136,10 +136,10 @@ class SnappiBase(object):
         raise NotImplementedError()
 
 
-class SnappiObject(SnappiBase):
+class OpenApiObject(OpenApiBase):
     """Base class for any /components/schemas object
 
-    Every SnappiObject is reuseable within the schema so it can
+    Every OpenApiObject is reuseable within the schema so it can
     exist in multiple locations within the hierarchy.
     That means it can exist in multiple locations as a
     leaf, parent/choice or parent.
@@ -147,7 +147,7 @@ class SnappiObject(SnappiBase):
     __slots__ = ('_properties', '_parent', '_choice')
 
     def __init__(self, parent=None, choice=None):
-        super(SnappiObject, self).__init__()
+        super(OpenApiObject, self).__init__()
         self._parent = parent
         self._choice = choice
         self._properties = {}
@@ -181,7 +181,7 @@ class SnappiObject(SnappiBase):
         """
         output = {}
         for key, value in self._properties.items():
-            if isinstance(value, (SnappiObject, SnappiIter)):
+            if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             else:
                 output[key] = value
@@ -242,8 +242,8 @@ class SnappiObject(SnappiBase):
         return self.__deepcopy__(None)
 
 
-class SnappiIter(SnappiBase):
-    """Container class for SnappiObject
+class OpenApiIter(OpenApiBase):
+    """Container class for OpenApiObject
 
     Inheriting classes contain 0..n instances of an OpenAPI components/schemas
     object.
@@ -261,7 +261,7 @@ class SnappiIter(SnappiBase):
     __slots__ = ('_index', '_items')
 
     def __init__(self):
-        super(SnappiIter, self).__init__()
+        super(OpenApiIter, self).__init__()
         self._index = -1
         self._items = []
 
@@ -305,10 +305,13 @@ class SnappiIter(SnappiBase):
         self._index = len(self._items) - 1
 
     def append(self, item):
-        """Append an item to the end of the SnappiIter
+        """Append an item to the end of OpenApiIter
         TBD: type check, raise error on mismatch
         """
+        if isinstance(item, OpenApiObject) is False:
+            raise Exception('Item is not an instance of OpenApiObject')
         self._add(item)
+        return self
 
     def clear(self):
         del self._items[:]
@@ -317,21 +320,21 @@ class SnappiIter(SnappiBase):
     def _encode(self):
         return [item._encode() for item in self._items]
 
-    def _decode(self, encoded_snappi_list):
+    def _decode(self, encoded_list):
         item_class_name = self.__class__.__name__.replace('Iter', '')
         module = importlib.import_module(self.__module__)
         object_class = getattr(module, item_class_name)
         self.clear()
-        for item in encoded_snappi_list:
+        for item in encoded_list:
             self._add(object_class()._decode(item))
 
     def __copy__(self):
         raise NotImplementedError(
-            'Shallow copy of SnappiIter objects is not supported')
+            'Shallow copy of OpenApiIter objects is not supported')
 
     def __deepcopy__(self, memo):
         raise NotImplementedError(
-            'Deep copy of SnappiIter objects is not supported')
+            'Deep copy of OpenApiIter objects is not supported')
 
     def __str__(self):
         return yaml.safe_dump(self._encode())

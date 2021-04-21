@@ -98,7 +98,7 @@ class Generator(object):
         self._write_api_class(methods, factories)
         self._write_http_api_class(methods)
         self._write_http_server(methods)
-        self._write_api_factory()
+        # self._write_api_factory()
         self._write_init()
         return self
 
@@ -219,12 +219,12 @@ class Generator(object):
             self._write()
             self._write()
             self._write(0, 'class HttpApi(Api):')
-            self._write(1, '"""%s' % 'Snappi HTTP API')
+            self._write(1, '"""%s' % 'OpenAPI HTTP Api')
             self._write(1, '"""')
-            self._write(1, 'def __init__(self, host=None):')
-            self._write(2, 'super(HttpApi, self).__init__(host=host)')
+            self._write(1, 'def __init__(self, location=None):')
+            self._write(2, 'super(HttpApi, self).__init__(location=location)')
             self._write(
-                2, 'self._transport = SnappiHttpTransport(host=self.host)'
+                2, 'self._transport = HttpTransport(loation=self.location)'
             )
 
             for method in methods:
@@ -270,11 +270,11 @@ class Generator(object):
             self._write()
             self._write()
             self._write(0, 'class Api(object):')
-            self._write(1, '"""%s' % 'Snappi Abstract API')
+            self._write(1, '"""%s' % 'OpenApi Abstract API')
             self._write(1, '"""')
             self._write()
-            self._write(1, 'def __init__(self, host=None):')
-            self._write(2, 'self.host = host if host else "https://localhost"')
+            self._write(1, 'def __init__(self, location=None):')
+            self._write(2, 'self.location = location if location else "https://localhost"')
 
             for method in methods:
                 print('generating method %s' % method['name'])
@@ -363,7 +363,7 @@ class Generator(object):
         with open(self._api_filename, 'a') as self._fid:
             self._write()
             self._write()
-            self._write(0, 'class %s(SnappiObject):' % class_name)
+            self._write(0, 'class %s(OpenApiObject):' % class_name)
             slots = ''
             # if choice_method_name is not None:
             slots = "'_parent', '_choice'"
@@ -506,7 +506,7 @@ class Generator(object):
         with open(self._api_filename, 'a') as self._fid:
             self._write()
             self._write()
-            self._write(0, 'class %s(SnappiIter):' % class_name)
+            self._write(0, 'class %s(OpenApiIter):' % class_name)
             self._write(1, "__slots__ = ('_parent', '_choice')")
             self._write()
             self._write(1, 'def __init__(self, parent=None, choice=None):')
