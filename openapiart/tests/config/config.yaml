@@ -9,4 +9,9 @@ components:
           type: number
         c:
           type: integer
+        d:
+          type: array
+          items:
+            type: string
+            enum: [a, b, c]
         

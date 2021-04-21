@@ -37,6 +37,7 @@ class Generator(object):
         self.__python_dir = os.path.dirname(self.__python)
         self._src_dir = output_dir
         self._output_dir = self._src_dir
+        self._package_name = package_name
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, '..', 'docs')
         self._clean()
@@ -49,7 +50,12 @@ class Generator(object):
         - Leave infrastructure files that are prefixed with the word snappi
         """
         process_args = [
-            self.__python, '-m', 'pip', 'uninstall', '--yes', 'snappi'
+            self.__python, 
+            '-m', 
+            'pip', 
+            'uninstall', 
+            '--yes', 
+            self._package_name
         ]
         subprocess.Popen(process_args, shell=False).wait()
         import fnmatch
@@ -470,7 +476,7 @@ class Generator(object):
                 if len(ref) > 0:
                     restriction = self._get_type_restriction(property)
                     choice_name = property_name if property_name in excluded_property_names else None
-                    refs.append((ref[0].value, restriction.startswith('list['), property_name, choice_name))
+                    refs.append((ref[0].value, restriction.startswith('List['), property_name, choice_name))
         return refs
 
     def _write_snappi_list(self, ref, property_name):
@@ -646,7 +652,7 @@ class Generator(object):
         if len(ref) > 0:
             object_name = ref[0].value.split('/')[-1]
             class_name = object_name.replace('.', '')
-            if restriction.startswith('list['):
+            if restriction.startswith('List['):
                 type_name = '%sIter' % class_name
             else:
                 type_name = class_name
@@ -678,7 +684,7 @@ class Generator(object):
             else:
                 self._write(2, "self._set_property('%s', value)" % (name))
         elif len(ref) > 0:
-            if restriction.startswith('list['):
+            if restriction.startswith('List['):
                 self._write(2, "return self._get_property('%s', %sIter, self._parent, self._choice)" % (name, class_name))
             else:
                 self._write(2, "return self._get_property('%s', %s)" % (name, class_name))
@@ -687,8 +693,8 @@ class Generator(object):
         if 'description' not in yobject:
             yobject['description'] = 'TBD'
         # remove tabs, multiple spaces
-        description = re.sub('\n', '. ', yobject['description'])
-        description = re.sub('\s+', ' ', description)
+        description = re.sub(r'\n', '. ', yobject['description'])
+        description = re.sub(r'\s+', ' ', description)
         return description
         # doc_string = []
         # for line in re.split('\. ', description):
@@ -844,7 +850,7 @@ class Generator(object):
                 else:
                     return 'str'
             elif property['type'] == 'array':
-                return 'list[%s]' % self._get_type_restriction(property['items'])
+                return 'List[%s]' % self._get_type_restriction(property['items'])
             elif property['type'] == 'boolean':
                 return 'bool'
         except Exception as e:
@@ -876,73 +882,3 @@ class Generator(object):
     def _write(self, indent=0, line=''):
         self._fid.write('    ' * indent + line + '\n')
     
-    def _bundle(self, base_dir, api_filename, output_filename):
-        print('bundling started')
-        self._read_file(base_dir, api_filename)
-        with open(self._output_filename, 'w') as fid:
-            yaml.dump(self._content, fid, indent=2, sort_keys=False)
-        print('bundling complete')
-
-    def _read_file(self, base_dir, filename):
-        filename = os.path.join(base_dir, filename)
-        filename = os.path.abspath(os.path.normpath(filename))
-        base_dir = os.path.dirname(filename)
-        with open(filename) as fid:
-            yobject = yaml.safe_load(fid)
-        self._process_yaml_object(base_dir, yobject)
-
-    def _process_yaml_object(self, base_dir, yobject):
-        for key, value in yobject.items():
-            if key in ['openapi', 'info', 'servers'
-                       ] and key not in self._content.keys():
-                self._content[key] = value
-            elif key in ['paths']:
-                if key not in self._content.keys():
-                    self._content[key] = {}
-                for sub_key in value.keys():
-                    self._content[key][sub_key] = value[sub_key]
-            elif key == 'components':
-                if key not in self._content.keys():
-                    self._content[key] = {'schemas': {}}
-                if 'schemas' in value:
-                    schemas = value['schemas']
-                    for schema_key in schemas.keys():
-                        self._content['components']['schemas'][
-                            schema_key] = schemas[schema_key]
-        self._resolve_refs(base_dir, yobject)
-
-    def _resolve_refs(self, base_dir, yobject):
-        """Resolving references is relative to the current file location
-        """
-        if isinstance(yobject, dict):
-            for key, value in yobject.items():
-                if key == '$ref' and value.startswith('#') is False:
-                    refs = value.split('#')
-                    print('resolving %s' % value)
-                    self._read_file(base_dir, refs[0])
-                    yobject[key] = '#%s' % refs[1]
-                elif isinstance(value, str) and 'x-inline' in value:
-                    refs = value.split('#')
-                    print('inlining %s' % value)
-                    inline = self._get_inline_ref(base_dir, refs[0], refs[1])
-                    yobject[key] = inline
-                else:
-                    self._resolve_refs(base_dir, value)
-        elif isinstance(yobject, list):
-            for item in yobject:
-                self._resolve_refs(base_dir, item)
-
-    def _get_inline_ref(self, base_dir, filename, inline_key):
-        filename = os.path.join(base_dir, filename)
-        filename = os.path.abspath(os.path.normpath(filename))
-        with open(filename) as fid:
-            yobject = yaml.safe_load(fid)
-        return parse('$%s' %
-                     inline_key.replace('/', '.'), ).find(yobject)[0].value
-
-
-if __name__ == '__main__':
-    openapi_filename = None
-    output_dir = None
-    openapi_filename = os.path.normpath('../../models/openapi.yaml')
-    SnappiGenerator(dependencies=False, openapi_filename=openapi_filename, output_dir=output_dir)
