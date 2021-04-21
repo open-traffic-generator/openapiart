@@ -21,7 +21,7 @@ import openapiart
 # openapi.json
 # openapi.html
 # test.py
-openapiart.OpenApiArt(api_files=['./tests/api/api.yaml'], python_package_name='test')
+openapiart.OpenApiArt(api_files=['./tests/api/api.yaml'], python_module_name='sample')
 ```
 
 ## Specifications
