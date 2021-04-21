@@ -13,6 +13,8 @@ The `OpenAPIArt` (OpenAPI Artifact Generator) python package does the following:
 - validates the bundled openapi.yaml file
 - creates an enhanced ux python file containing all the classes generated from 
   the bundled openapi.yaml file
+> This python package DOES NOT create a python package for the generated artifacts.
+
 
 ## Getting started
 Install the package
