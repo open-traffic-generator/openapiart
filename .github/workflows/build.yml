@@ -1,4 +1,4 @@
-name: Package Build CI/CD
+name: CICD
 
 on:
   push:
