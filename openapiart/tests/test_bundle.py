@@ -6,7 +6,7 @@ def test_config(api):
     config.a = 'asdf'
     config.b = 1.1
     config.c = 1
-    config.d = ['a', 'b']
+    config.d = [config.A, config.B, config.C]
     print(config)
     
 
