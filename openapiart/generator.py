@@ -1,15 +1,9 @@
-"""Snappi Generator
+"""Generator
 
-Generates a python package based on the
-Open Traffic Generator openapi.yaml file.
-
-Generation rules for this file are in GENERATORRULES.md
+Generates python classes based on an openapi.yaml file produced by the 
+bunder.py infrastructure.
 
 TBD: 
-- response class generation - DONE
-- Api return response instance - DONE
-- constants - DONE
-- parent, choice in child choice classes
 - packet slicing using constants
 - docstrings
 - type checking
@@ -26,7 +20,8 @@ MODELS_RELEASE = 'v0.3.3'
 
 
 class Generator(object):
-    """Builds a python package based on a version of a bundled openapi.yaml file.
+    """Generates python classes based on an openapi.yaml file produced by the 
+    bunder.py infrastructure.
     """
     def __init__(self, openapi_filename, package_name, output_dir=None):
         self._generated_methods = []
