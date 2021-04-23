@@ -1,7 +1,7 @@
 import sys
 import os
 import importlib
-
+import shutil
 
 class OpenApiArt(object):
     """Bundle and generate artifacts from OpenAPI files.
@@ -18,13 +18,14 @@ class OpenApiArt(object):
       - openapi.yaml
       - openapi.json
       - static openapi.html documentation (if redoc-cli has been installed)
-      - python file
+      - python package
     """
     def __init__(self, api_files, python_module_name='sample', output_dir=None):
         self._python_module_name = python_module_name
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), '.output')
         self._output_dir = os.path.abspath(output_dir)
+        shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         module = importlib.import_module('openapiart.bundler')
         bundler = getattr(module, 'Bundler')(api_files=api_files,

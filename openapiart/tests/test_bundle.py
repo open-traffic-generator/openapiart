@@ -14,6 +14,7 @@ def test_config(api):
     config.f.f_a = 'a'
     djson = json.loads(config.serialize(config.JSON))
     assert(jp.parse('$.a').find(djson)[0].value == config.a)
+    assert(jp.parse('$.f.f_a').find(djson)[0].value == config.f.f_a)
     print(config)
     
 
