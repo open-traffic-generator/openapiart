@@ -31,7 +31,9 @@ class Generator(object):
         self.__python = os.path.normpath(sys.executable)
         self.__python_dir = os.path.dirname(self.__python)
         self._src_dir = output_dir
-        self._output_dir = self._src_dir
+        self._output_dir = os.path.join(output_dir, package_name)
+        if os.path.exists(self._output_dir) is False:
+            os.mkdir(self._output_dir)
         self._package_name = package_name
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, '..', 'docs')
@@ -40,7 +42,7 @@ class Generator(object):
 
     def _clean(self):
         """Clean the environment prior to file generation
-        - Remove any locally installed version of snappi
+        - Remove any locally installed version of 
         - Remove generated files
         - Leave infrastructure files that are prefixed with the word snappi
         """
@@ -52,17 +54,18 @@ class Generator(object):
             '--yes', 
             self._package_name
         ]
-        subprocess.Popen(process_args, shell=False).wait()
-        import fnmatch
-        for rootDir, subdirs, filenames in os.walk(self._src_dir):
-            if rootDir.endswith('tests'):
-                continue
-            for filename in fnmatch.filter(filenames, '*.py'):
-                try:
-                    if filename.startswith('snappi') is False:
-                        os.remove(os.path.join(rootDir, filename))
-                except OSError:
-                    print('Error deleting file %s' % filename)
+        # subprocess.Popen(process_args, shell=False).wait()
+        # os.rmdir(self._output_dir)
+        # import fnmatch
+        # for rootDir, subdirs, filenames in os.walk(self._src_dir):
+        #     if rootDir.endswith('tests'):
+        #         continue
+        #     for filename in fnmatch.filter(filenames, '*.py'):
+        #         try:
+        #             if filename.startswith('snappi') is False:
+        #                 os.remove(os.path.join(rootDir, filename))
+        #         except OSError:
+        #             print('Error deleting file %s' % filename)
 
     def _get_openapi_file(self):
         if self._openapi_filename is None:

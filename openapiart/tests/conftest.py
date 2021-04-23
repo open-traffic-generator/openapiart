@@ -20,5 +20,5 @@ def generator():
 def api(generator):
     sys.path.append(generator.output_dir)
     module = importlib.import_module(generator.python_module_name)
-    api = getattr(module, 'api')()
-    return api
+    pkg = getattr(module, generator.python_module_name)
+    return pkg.api()
