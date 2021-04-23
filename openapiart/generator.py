@@ -441,7 +441,7 @@ class Generator(object):
     def _get_choice_names(self, schema_object):
         choice_names = []
         if 'choice' in schema_object['properties']:
-            choice_names = schema_object['properties']['choice']['enum']
+            choice_names = schema_object['properties']['choice']['enum'].copy()
             choice_names.append('choice')
         return choice_names
 

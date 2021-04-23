@@ -14,4 +14,35 @@ components:
           items:
             type: string
             enum: [a, b, c]
-        
+        e:
+          $ref: '#/components/schemas/Ref'
+        f:
+          $ref: '#/components/schemas/Ref.Choice'
+
+    Ref:
+      type: object
+      required: [e_a, e_b]
+      properties:
+        e_a:
+          type: number
+          format: float
+          default: 1.0
+        e_b:
+          type: number
+          format: double
+          default: 2.0
+
+    Ref.Choice:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          enum: [f_a, f_b]
+        f_a:
+          type: string
+          default: 'f_a'
+        f_b:
+          type: number
+          format: double
+          default: 3.0
