@@ -45,6 +45,6 @@ openapiart.OpenApiArt(
 > This repository is based on the [OpenAPI specification](
 https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md) which is a standard, language-agnostic interface to RESTful APIs. 
 
-> Modeling guide specific to this package
+> [Modeling guide specific to this package](../blob/main/MODELGUIDE.md)
 
 
