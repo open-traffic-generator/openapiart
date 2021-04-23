@@ -1,4 +1,6 @@
 import pytest
+import jsonpath_ng as jp
+import json
 
 
 def test_config(api):
@@ -10,6 +12,8 @@ def test_config(api):
     config.e.e_a = 1.1
     config.e.e_b = 1.2
     config.f.f_a = 'a'
+    djson = json.loads(config.serialize(config.JSON))
+    assert(jp.parse('$.a').find(djson)[0].value == config.a)
     print(config)
     
 
