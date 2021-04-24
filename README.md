@@ -27,12 +27,12 @@ Generate artifacts from OpenAPI files
 import openapiart
 
 """ 
-the following command produces these artifacts
-    - openapi.yaml
-    - openapi.json
-    - openapi.html
-    - sample.py
-and writes them to the output_dir
+The following command produces these artifacts:
+    - artifacts/openapi.yaml
+    - artifacts/openapi.json
+    - artifacts/openapi.html
+    - artifacts/sample/__init__.py
+    - artifacts/sample/sample.py
 """
 openapiart.OpenApiArt(
     api_files=['./tests/api/api.yaml'], 
