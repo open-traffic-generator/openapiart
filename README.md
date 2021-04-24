@@ -28,22 +28,23 @@ import openapiart
 
 """ 
 The following command produces these artifacts:
-    - artifacts/openapi.yaml
-    - artifacts/openapi.json
-    - artifacts/openapi.html
-    - artifacts/sample/__init__.py
-    - artifacts/sample/sample.py
+    - ./artifacts/openapi.yaml
+    - ./artifacts/openapi.json
+    - ./artifacts/openapi.html
+    - ./artifacts/sample/__init__.py
+    - ./artifacts/sample/sample.py
 """
 openapiart.OpenApiArt(
     api_files=['./tests/api/api.yaml'], 
     python_module_name='sample', 
-    output_dir='../../artifacts'
+    output_dir='./artifacts'
 )
 ```
 
 ## Specifications
 > This repository is based on the [OpenAPI specification](
-https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md) which is a standard, language-agnostic interface to RESTful APIs. 
+https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md) 
+which is a standard, language-agnostic interface to RESTful APIs. 
 
 > [Modeling guide specific to this package](../main/MODELGUIDE.md)
 
