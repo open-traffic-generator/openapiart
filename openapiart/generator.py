@@ -1,7 +1,7 @@
 """Generator
 
-Generates python classes based on an openapi.yaml file produced by the 
-bunder.py infrastructure.
+Given an openapi.yaml file that has been produced by the Bundler class in the
+bundler.py file the Generator class will produce an enhanced python ux file.
 
 TBD: 
 - packet slicing using constants
@@ -18,10 +18,10 @@ from jsonpath_ng import parse
 
 MODELS_RELEASE = 'v0.3.3'
 
-
+ 
 class Generator(object):
     """Generates python classes based on an openapi.yaml file produced by the 
-    bunder.py infrastructure.
+    bundler.py infrastructure.
     """
     def __init__(self, openapi_filename, package_name, output_dir=None):
         self._generated_methods = []
@@ -745,14 +745,7 @@ class Generator(object):
         return paths
 
     def _write_data_properties(self, schema, classname, choice_tuples):
-        import_lines = []
         if len(choice_tuples) > 0:
-            for choice_tuple in choice_tuples:
-                if choice_tuple[2] is not None:
-                    import_line = self._get_import_from_ref(choice_tuple[2])
-                    if import_line not in import_lines:
-                        self._write(2, import_line)
-                        import_lines.append(import_line)
             choices = []
             for choice_tuple in choice_tuples:
                 choices.append(choice_tuple[0])
@@ -772,12 +765,6 @@ class Generator(object):
                 % classname)
 
         if 'properties' in schema:
-            for name, property in schema['properties'].items():
-                if '$ref' in property:
-                    import_line = self._get_import_from_ref(property['$ref'])
-                    if import_line not in import_lines:
-                        self._write(2, import_line)
-                        import_lines.append(import_line)
             for name, property in schema['properties'].items():
                 if len([item for item in choice_tuples if item[1] == name
                         ]) == 0 and name != 'choice':
@@ -860,15 +847,6 @@ class Generator(object):
         for attr in ref.split('/')[1:]:
             leaf = leaf[attr]
         return leaf
-
-    def _get_import_from_ref(self, ref):
-        filename = '_'.join(
-            ref.lower().split('#/components/schemas/')[-1].split('.')[0:-1])
-        classname = self._get_classname_from_ref(ref)
-        if len(filename) == 0:
-            filename = classname.lower()
-        return 'from abstract_open_traffic_generator.%s import %s' % (
-            filename, classname)
 
     def _get_classname_from_ref(self, ref):
         final_piece = ref.split('/')[-1]
