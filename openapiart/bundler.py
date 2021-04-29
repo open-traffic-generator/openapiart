@@ -339,7 +339,8 @@ class Bundler(object):
             if len(pieces) > 2:
                 for piece in pieces[0:-1]:
                     item_to_delete = item_to_delete[piece]
-                del item_to_delete[pieces[-1]]
+                if pieces[-1] in item_to_delete:
+                    del item_to_delete[pieces[-1]]
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content

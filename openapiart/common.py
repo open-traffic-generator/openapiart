@@ -17,7 +17,7 @@ def api(location=None, verify=False, logger=None, ext=None):
         # dynamically load the generated Api class
         # the generated Api class has an abstract _send_recv method
         # that should be monkey patched
-        return Api(location=location)
+        return HttpApi(location=location)
     try:
         lib = importlib.import_module('{}_{}'.format(__module__, ext))
         return lib.Api(location=location)
