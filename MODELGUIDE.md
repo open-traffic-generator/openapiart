@@ -12,8 +12,8 @@ This document includes additional details on the following topics that are speci
   - x-include
   - x-constraint
   - x-field-pattern
-- [OpenAPI string format extensions](#Keyword-String-Format)
-  - string format
+- OpenAPI supported datatype formats
+  - [string formats](#Datatype-String-Formats)
 
 # Best Practices
 - `naming`
@@ -72,11 +72,14 @@ The build script will enforce the following keyword conventions.
 - `nullable`
   - MUST NOT be used
 
-# Keyword String Format
-- global-unique
-  - dictates that the string value should be globally unique in the payload
-- list-unique
-  - dictates that the string value should be unique in the list of objects
+# Datatype String Formats
+- supported formats
+    - format: binary
+        - the string value MUST be a binary value
+    - format: global-unique
+        - the string value MUST be globally unique in the payload
+    - format: list-unique
+        - the string value MUST be unique in the list of objects
   
 # Keyword Extensions
 - `x-status`: current | under-review | deprecated | obsolete
