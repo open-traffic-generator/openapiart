@@ -1,7 +1,8 @@
 components:
   schemas:
     Config:
-      type: object
+      x-include:
+      - '../common/common.yaml#/components/schemas/GlobalObject'
       properties:
         a:
           type: string
@@ -18,9 +19,14 @@ components:
           $ref: '#/components/schemas/Ref'
         f:
           $ref: '#/components/schemas/Ref.Choice'
+        g:
+          type: array
+          items:
+            $ref: '../common/common.yaml#/components/schemas/ListObject'
 
     Ref:
-      type: object
+      x-include:
+      - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [e_a, e_b]
       properties:
         e_a:
@@ -33,7 +39,8 @@ components:
           default: 2.0
 
     Ref.Choice:
-      type: object
+      x-include:
+      - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [choice]
       properties:
         choice:

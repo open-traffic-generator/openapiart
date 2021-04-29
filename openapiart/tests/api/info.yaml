@@ -1,12 +1,12 @@
 openapi: 3.0.3
 
 info:
-  title: Bundler Test API
+  title: OpenAPIArt Test API
   description: |-
-    The bundler test API
+    The OpenAPIArt API
   version: 0.0.1
   contact:
-    url: https://github.com/open-traffic-generator/bundler
+    url: https://github.com/open-traffic-generator/openapiart
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT

@@ -1,12 +1,18 @@
 components:
   schemas:
-    Name:
-      type: string
-      format: global-unique
+    GlobalObject:
+      type: object 
+      properties:
+        name:
+          type: string
+          format: global-unique
+    ListObject:
+      type: object
+      properties:
+        name:
+          type: string
+          format: list-unique
   responses:
     Success:
       '200':
         description: 'Success with payload'
-    SuccessNoPayload:
-      '204':
-        description: 'Success with no payload'

@@ -322,15 +322,24 @@ class Bundler(object):
     def _resolve_x_include(self):
         """Find all instances of x-include in the openapi content
         and merge the x-include content into the parent object
+        Remove the x-include and the included content
         """
-        import jsonpath_ng
+        include_schemas = []
         for xincludes in jsonpath_ng.parse('$..x-include').find(self._content):
             print('resolving %s...' % (str(xincludes.full_path)))
+            include_schemas.append(xincludes.full_path)
             parent_schema_object = jsonpath_ng.Parent().find(xincludes)[0].value
             for xinclude in xincludes.value:
                 include_schema_object = self._includes[xinclude]
                 self._merge(copy.deepcopy(include_schema_object), parent_schema_object)
             del parent_schema_object['x-include']
+        for item in set(self._includes):
+            item_to_delete = self._content
+            pieces = item.split('#/')[1].split('/')
+            if len(pieces) > 2:
+                for piece in pieces[0:-1]:
+                    item_to_delete = item_to_delete[piece]
+                del item_to_delete[pieces[-1]]
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content
