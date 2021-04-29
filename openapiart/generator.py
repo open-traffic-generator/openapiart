@@ -246,7 +246,7 @@ class Generator(object):
             self._write(1, 'def __init__(self, location=None):')
             self._write(2, 'super(HttpApi, self).__init__(location=location)')
             self._write(
-                2, 'self._transport = HttpTransport(loation=self.location)'
+                2, 'self._transport = HttpTransport(location=self.location)'
             )
 
             for method in methods:
