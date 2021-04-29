@@ -25,7 +25,7 @@ def api(location=None, verify=False, logger=None, ext=None):
         msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
 
-class Transport(object):
+class HttpTransport(object):
     def __init__(self, location=None, verify=False, logger=None):
         self.location = location if location else 'https://localhost'
         self.verify = verify

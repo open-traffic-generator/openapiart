@@ -14,7 +14,10 @@ import os
 import subprocess
 import re
 import requests
+import pkgutil
+import importlib
 from jsonpath_ng import parse
+from .openapiartplugin import OpenApiArtPlugin
 
 MODELS_RELEASE = 'v0.3.3'
 
@@ -39,6 +42,23 @@ class Generator(object):
         self._docs_dir = os.path.join(self._src_dir, '..', 'docs')
         self._clean()
         self._get_openapi_file()
+        # self._plugins = self._load_plugins()
+
+    def _load_plugins(self):
+        plugins = []
+        pkg_dir = os.path.dirname(__file__)
+        for (module_loader, name, ispkg) in pkgutil.iter_modules([pkg_dir]):
+            module_name = 'openapiart.' + name
+            importlib.import_module(module_name)
+            obj = sys.modules[module_name]
+            for dir_name in dir(obj):
+                if dir_name.startswith('_'):
+                    continue
+                dir_obj = getattr(obj, dir_name)
+                print(dir_obj)
+                if issubclass(dir_obj.__class__, OpenApiArtPlugin):
+                    plugins.append(dir_obj)
+        return plugins
 
     def _clean(self):
         """Clean the environment prior to file generation
@@ -101,7 +121,6 @@ class Generator(object):
         methods, factories = self._get_methods_and_factories()
         self._write_api_class(methods, factories)
         self._write_http_api_class(methods)
-        self._write_http_server(methods)
         self._write_init()
         return self
 
@@ -263,9 +282,6 @@ class Generator(object):
                     )
                 )
                 self._write(2, ')')
-
-    def _write_http_server(self, methods):
-        pass
 
     def _write_api_class(self, methods, factories):
         self._generated_classes.append('Api')
