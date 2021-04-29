@@ -12,6 +12,8 @@ This document includes additional details on the following topics that are speci
   - x-include
   - x-constraint
   - x-field-pattern
+- [OpenAPI string format extensions](#Keyword-String-Format)
+  - string format
 
 # Best Practices
 - `naming`
@@ -70,6 +72,12 @@ The build script will enforce the following keyword conventions.
 - `nullable`
   - MUST NOT be used
 
+# Keyword String Format
+- global-unique
+  - dictates that the string value should be globally unique in the payload
+- list-unique
+  - dictates that the string value should be unique in the list of objects
+  
 # Keyword Extensions
 - `x-status`: current | under-review | deprecated | obsolete
   - If no status is specified, the default is "current".
