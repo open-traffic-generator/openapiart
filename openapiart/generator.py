@@ -18,7 +18,7 @@ from jsonpath_ng import parse
 
 MODELS_RELEASE = 'v0.3.3'
 
- 
+
 class Generator(object):
     """Generates python classes based on an openapi.yaml file produced by the 
     bundler.py infrastructure.
@@ -102,7 +102,6 @@ class Generator(object):
         self._write_api_class(methods, factories)
         self._write_http_api_class(methods)
         self._write_http_server(methods)
-        # self._write_api_factory()
         self._write_init()
         return self
 

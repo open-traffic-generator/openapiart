@@ -3,6 +3,7 @@ pyyaml
 jsonpath-ng
 openapi-spec-validator
 requests
+typing
 setuptools
 wheel
 twine

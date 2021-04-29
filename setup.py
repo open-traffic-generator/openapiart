@@ -37,6 +37,7 @@ setuptools.setup(
     install_requires=[
         'requests',
         'pyyaml',
+        'openapi-spec-validator',
         'jsonpath-ng',
         'typing'
     ],
