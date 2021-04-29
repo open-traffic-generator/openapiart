@@ -38,7 +38,7 @@ class HttpTransport(object):
         self._session = requests.Session()
 
     def send_recv(self, method, relative_url, payload=None, return_object=None):
-        url = '%s%s' % (self.host, relative_url)
+        url = '%s%s' % (self.location, relative_url)
         data = None
         if payload is not None:
             if isinstance(payload, (str, unicode)):
