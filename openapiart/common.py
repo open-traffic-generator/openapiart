@@ -6,35 +6,71 @@ import requests
 import urllib3
 import io
 import sys
+import time
 from typing import Union, Dict, Literal, List
 
 if sys.version_info[0] == 3:
     unicode = str
 
 
-def api(location=None, verify=False, logger=None, ext=None):
+def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None):
+    """Create an instance of an Api class
+
+    generator.Generator outputs a base Api class with the following:
+    - an abstract method for each OpenAPI path item object
+    - a concrete properties for each unique OpenAPI path item parameter.
+    
+    generator.Generator also outputs an HttpApi class that inherits the base  
+    Api class, implements the abstract methods and uses the common HttpTransport
+    class send_recv method to communicate with a REST based server.
+
+    Args
+    ----
+    - location (str): The location of an Open Traffic Generator server. 
+    - verify (bool): Verify the server's TLS certificate, or a string, in which 
+      case it must be a path to a CA bundle to use. Defaults to `True`. 
+      When set to `False`, requests will accept any TLS certificate presented by  
+      the server, and will ignore hostname mismatches and/or expired  
+      certificates, which will make your application vulnerable to  
+      man-in-the-middle (MitM) attacks. Setting verify to `False`   
+      may be useful during local development or testing.
+    - logger (logging.Logger): A user defined logging.logger, if none is provided
+      then a default logger with a stdout handler will be provided
+    - loglevel (logging.loglevel): The logging package log level.
+      The default loglevel is logging.INFO
+    - ext (str): Name of an extension package
+    """
+    params = locals()
     if ext is None:
-        # dynamically load the generated Api class
-        # the generated Api class has an abstract _send_recv method
-        # that should be monkey patched
-        return HttpApi(location=location)
+        return HttpApi(**params)
     try:
         lib = importlib.import_module('{}_{}'.format(__module__, ext))
-        return lib.Api(location=location)
+        return lib.Api(**params)
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
 
+
 class HttpTransport(object):
-    def __init__(self, location=None, verify=False, logger=None):
-        self.location = location if location else 'https://localhost'
-        self.verify = verify
-        self.logger = logger
+    def __init__(self, **kwargs):
+        """Use args from api() method to instantiate an HTTP transport
+        """
+        self.location = kwargs['location'] if 'location' in kwargs else 'https://localhost'
+        self.verify = kwargs['verify'] if 'verify' in kwargs else False
+        self.logger = kwargs['logger'] if 'logger' in kwargs else None
+        self.loglevel = kwargs['loglevel'] if 'loglevel' in kwargs else logging.DEBUG
         if self.logger is None:
-            self._logger = logging.Logger(self.__module__, level=logging.INFO)
+            stdout_handler = logging.StreamHandler(sys.stdout)
+            formatter = logging.Formatter(fmt='%(asctime)s [%(name)s] [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+            formatter.converter = time.gmtime
+            stdout_handler.setFormatter(formatter)
+            self.logger = logging.Logger(self.__module__, level=self.loglevel)
+            self.logger.addHandler(stdout_handler)
+        self.logger.debug('HttpTransport args: {}'.format(
+            ', '.join(['{}={!r}'.format(k, v) for k, v in kwargs.items()])))
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self._logger.warning('Certificate verification is disabled')
+            self.logger.warning('Certificate verification is disabled')
         self._session = requests.Session()
 
     def send_recv(self, method, relative_url, payload=None, return_object=None):

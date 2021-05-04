@@ -243,10 +243,10 @@ class Generator(object):
             self._write(0, 'class HttpApi(Api):')
             self._write(1, '"""%s' % 'OpenAPI HTTP Api')
             self._write(1, '"""')
-            self._write(1, 'def __init__(self, location=None):')
-            self._write(2, 'super(HttpApi, self).__init__(location=location)')
+            self._write(1, 'def __init__(self, **kwargs):')
+            self._write(2, 'super(HttpApi, self).__init__(**kwargs)')
             self._write(
-                2, 'self._transport = HttpTransport(location=self.location)'
+                2, 'self._transport = HttpTransport(**kwargs)'
             )
 
             for method in methods:
@@ -292,8 +292,8 @@ class Generator(object):
             self._write(1, '"""%s' % 'OpenApi Abstract API')
             self._write(1, '"""')
             self._write()
-            self._write(1, 'def __init__(self, location=None):')
-            self._write(2, 'self.location = location if location else "https://localhost"')
+            self._write(1, 'def __init__(self, **kwargs):')
+            self._write(2, 'pass')
 
             for method in methods:
                 print('generating method %s' % method['name'])
@@ -330,29 +330,6 @@ class Generator(object):
                 self._write(2, 'Return: %s' % factory['class_name'])
                 self._write(2, '"""')
                 self._write(2, "return %s()" % factory['class_name'])
-
-    def _write_api_factory(self):
-        self._generated_top_level_factories.append('api')
-        with open(self._api_filename, 'a') as self._fid:
-            self._write()
-            self._write()
-            self._write(0, 'def api(host=None, ext=None):')
-            self._write(1, 'if ext is None:')
-            self._write(2, 'return HttpApi(host=host)')
-            self._write(0)
-            self._write(1, 'try:')
-            self._write(
-                2, 'lib = importlib.import_module("snappi_%s" % ext)'
-            )
-            self._write(
-                2, 'return lib.Api(host=host)'
-            )
-            self._write(1, 'except ImportError as err:')
-            self._write(
-                2,
-                'msg = "Snappi extension %s is not installed or invalid: %s"'
-            )
-            self._write(2, 'raise Exception(msg % (ext, err))')
 
     def _get_object_property_class_names(self, ref):
         object_name = None
@@ -603,7 +580,7 @@ class Generator(object):
             if contained_class_name is not None:
                 return_class_name = '{}Iter'.format(contained_class_name)
             self._write(2, "# type: (%s) -> %s" % (type_string, return_class_name))
-            self._write(2, '"""Factory method that creates an instance of %s class' % (class_name))
+            self._write(2, '"""Factory method that creates an instance of the %s class' % (class_name))
             self._write()
             self._write(2, '%s' % self._get_description(yobject))
             self._write()
@@ -634,6 +611,34 @@ class Generator(object):
             self._write(2, 'Returns: %s' % (class_name))
             self._write(2, '"""')
             self._write(2, "return self._get_property('%s', %s, self, '%s')" % (method_name, class_name, method_name))
+
+    def _write_append_method(self, param_string):
+            self._imports.append('from .%s import %s' % (class_name.lower(), class_name))
+            self._write(1, 'def append(self, cls=None%s):' % (param_string))
+            return_class_name = class_name
+            if contained_class_name is not None:
+                return_class_name = '{}Iter'.format(contained_class_name)
+            self._write(2, "# type: (%s) -> %s" % (type_string, return_class_name))
+            self._write(2, '"""Factory method that creates an instance of the %s class' % (class_name))
+            self._write()
+            self._write(2, '%s' % self._get_description(yobject))
+            self._write()
+            self._write(2, 'Returns: %s' % (return_class_name))
+            self._write(2, '"""')
+            if choice_method is True:
+                self._write(2, 'item = %s()' % (contained_class_name))
+                self._write(2, "item.%s" % (method_name))
+                self._write(2, "item.choice = '%s'" % (method_name))
+            else:
+                params = [
+                    'parent=self._parent',
+                    'choice=self._choice'
+                ]
+                for property in properties:
+                    params.append('%s=%s' % (property, property))
+                self._write(2, 'item = %s(%s)' % (class_name, ', '.join(params)))
+            self._write(2, 'self._add(item)')
+            self._write(2, 'return self')
 
     def _get_property_param_string(self, yobject):
         property_param_string = ''

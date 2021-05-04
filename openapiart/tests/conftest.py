@@ -2,6 +2,7 @@ import pytest
 import sys
 import os
 import importlib
+import logging
 
 
 @pytest.fixture(scope='session')
@@ -28,4 +29,4 @@ def api(openapiart):
     sys.path.append(openapiart.output_dir)
     module = importlib.import_module(openapiart.python_module_name)
     package = getattr(module, openapiart.python_module_name)
-    return package.api()
+    return package.api(location=None, verify=False, logger=None, loglevel=logging.DEBUG)
