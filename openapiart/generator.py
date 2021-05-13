@@ -27,6 +27,7 @@ class Generator(object):
     bundler.py infrastructure.
     """
     def __init__(self, openapi_filename, package_name, output_dir=None):
+        self._parsers = {}
         self._generated_methods = []
         self._generated_classes = []
         self._generated_top_level_factories = []
@@ -44,6 +45,14 @@ class Generator(object):
         self._get_openapi_file()
         # self._plugins = self._load_plugins()
 
+    def _get_parser(self, pattern):
+        if pattern not in self._parsers:
+            parser = parse(pattern)
+            self._parsers[pattern] = parser
+        else:
+            parser = self._parsers[pattern]
+        return parser
+            
     def _load_plugins(self):
         plugins = []
         pkg_dir = os.path.dirname(__file__)
@@ -133,10 +142,10 @@ class Generator(object):
                 self._write(0, 'from .%s import %s' % (self._output_file, factory_name))
 
     def _find(self, path, schema_object):
-        finds = parse(path).find(schema_object)
+        finds = self._get_parser(path).find(schema_object)
         for find in finds:
             yield find.value
-            parse(path).find(find.value)
+            self._get_parser(path).find(find.value)
 
     def _get_methods_and_factories(self):
         """
@@ -157,24 +166,24 @@ class Generator(object):
             self._generated_methods.append(method_name)
             print('found method %s' % method_name)
 
-            request = parse('$..requestBody..schema').find(operation)
+            request = self._get_parser('$..requestBody..schema').find(operation)
             for req in request:
                 _, _, _, ref = self._get_object_property_class_names(req.value)
                 if ref:
                     refs.append(ref)
 
-            response = parse('$..responses..schema').find(operation)
+            response = self._get_parser('$..responses..schema').find(operation)
             response_type = None
             if len(response) == 0:
                 # since some responses currently directly $ref to a schema
                 # stored someplace else, we need to go one level deeper to
                 # get actual response type (currently extracting only for 200)
-                response = parse('$..responses.."200"').find(operation)
+                response = self._get_parser('$..responses.."200"').find(operation)
                 response_name, _, _, _ = self._get_object_property_class_names(
                     response[0].value
                 )
                 if response_name is not None:
-                    response = parse('$.."$ref"').find(
+                    response = self._get_parser('$.."$ref"').find(
                         self._openapi['components']['responses'][response_name]
                     )
                     if len(response) > 0:
@@ -385,7 +394,7 @@ class Generator(object):
             # write constants
             # search for all simple properties with enum or 
             # x-constant and add them here
-            for enum in parse('$..enum | x-constants').find(schema_object):
+            for enum in self._get_parser('$..enum | x-constants').find(schema_object):
                 for name in enum.value:
                     value = name
                     if isinstance(enum.value, dict):
@@ -407,7 +416,7 @@ class Generator(object):
             self._write(2, 'self._choice = choice')
             for init_param in self._get_simple_type_names(schema_object):
                 self._write(2, "self._set_property('%s', %s)" % (init_param, init_param))
-            # if len(parse('$..choice').find(schema_object)) > 0:
+            # if len(self._get_parser('$..choice').find(schema_object)) > 0:
             #     self._write(2, 'self.choice = None')
 
             # process properties - TBD use this one level up to process 
@@ -427,7 +436,7 @@ class Generator(object):
             for name in schema_object['properties']:
                 if name in choice_names:
                     continue
-                ref = parse("$..'$ref'").find(
+                ref = self._get_parser("$..'$ref'").find(
                     schema_object['properties'][name])
                 if len(ref) == 0:
                     simple_type_names.append(name)
@@ -462,7 +471,7 @@ class Generator(object):
                 write_set_choice = property_name in choice_names and property_name != 'choice'
                 self._write_snappi_property(schema_object, property_name, property, write_set_choice)
             for property_name, property in schema_object['properties'].items():
-                ref = parse("$..'$ref'").find(property)
+                ref = self._get_parser("$..'$ref'").find(property)
                 if len(ref) > 0:
                     restriction = self._get_type_restriction(property)
                     choice_name = property_name if property_name in excluded_property_names else None
@@ -665,7 +674,7 @@ class Generator(object):
         return (property_param_string, properties, types)
 
     def _write_snappi_property(self, schema_object, name, property, write_set_choice=False):
-        ref = parse("$..'$ref'").find(property)
+        ref = self._get_parser("$..'$ref'").find(property)
         restriction = self._get_type_restriction(property)
         if len(ref) > 0:
             object_name = ref[0].value.split('/')[-1]
@@ -686,7 +695,7 @@ class Generator(object):
         self._write()
         self._write(2, 'Returns: %s' % type_name)
         self._write(2, '"""')
-        if len(parse("$..'type'").find(property)) > 0 and len(ref) == 0:
+        if len(self._get_parser("$..'type'").find(property)) > 0 and len(ref) == 0:
             self._write(2, "return self._get_property('%s')" % (name))
             self._write()
             self._write(1, '@%s.setter' % name)
@@ -726,7 +735,7 @@ class Generator(object):
         if 'properties' in yobject:
             for name in yobject['properties']:
                 yproperty = yobject['properties'][name]
-                ref = parse("$..'$ref'").find(yproperty)
+                ref = self._get_parser("$..'$ref'").find(yproperty)
                 if len(ref) > 0:
                     object_name = ref[0].value.split('/')[-1]
                     class_name = object_name.replace('.', '')

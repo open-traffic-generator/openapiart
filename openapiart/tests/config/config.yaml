@@ -5,25 +5,46 @@ components:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       properties:
         a:
+          description: |-
+            Small single line description
           type: string
+          default: asdf
         b:
+          description: |-
+            Longer multi-line description
+            Second line is here
+            Third line
           type: number
+          default: 65.0
         c:
           type: integer
-        d:
+          default: 33
+        d_values:
+          description: A list of enum values
           type: array
           items:
             type: string
             enum: [a, b, c]
+            default: b
         e:
+          description: A child object
           $ref: '#/components/schemas/Ref'
         f:
+          description: An object with a choice
           $ref: '#/components/schemas/Ref.Choice'
         g:
+          description: A list of objects
           type: array
           items:
             $ref: '../common/common.yaml#/components/schemas/ListObject'
-
+        h:
+          description: A boolean value
+          type: boolean
+        i:
+          description: A byte string
+          type: string
+          format: binary
+          
     Ref:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'

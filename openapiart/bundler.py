@@ -32,15 +32,24 @@ class Bundler(object):
         return dumper.represent_scalar(u'tag:yaml.org,2002:str', data, style='|')
 
     def __init__(self, api_files, output_dir='./'):
+        self._parsers = {}
         self._api_files = api_files
         self._output_dir = os.path.abspath(output_dir)
         if os.path.exists(self._output_dir) is False:
-            os.mkdir(self._output_dir)
+            os.makedirs(self._output_dir)
         self.__python = os.path.normpath(sys.executable)
         self._content = {}
         self._includes = {}
         self._resolved = []
         self._install_dependencies()
+
+    def _get_parser(self, pattern):
+        if pattern not in self._parsers:
+            parser = jsonpath_ng.parse(pattern)
+            self._parsers[pattern] = parser
+        else:
+            parser = self._parsers[pattern]
+        return parser
 
     def _install_dependencies(self):
         yaml.add_representer(Bundler.description, Bundler.description_representer)
@@ -166,7 +175,7 @@ class Bundler(object):
         Replace the x-field-pattern schema with a $ref to the generated schema.
         """
         import jsonpath_ng
-        for xpattern_path in jsonpath_ng.parse('$..{}'.format(pattern_extension)).find(self._content):
+        for xpattern_path in self._get_parser('$..{}'.format(pattern_extension)).find(self._content):
             print('generating %s...' % (str(xpattern_path.full_path)))
             object_name = xpattern_path.full_path.left.left.left.right.fields[0]
             property_name = xpattern_path.full_path.left.right.fields[0]
@@ -325,7 +334,7 @@ class Bundler(object):
         Remove the x-include and the included content
         """
         include_schemas = []
-        for xincludes in jsonpath_ng.parse('$..x-include').find(self._content):
+        for xincludes in self._get_parser('$..x-include').find(self._content):
             print('resolving %s...' % (str(xincludes.full_path)))
             include_schemas.append(xincludes.full_path)
             parent_schema_object = jsonpath_ng.Parent().find(xincludes)[0].value
@@ -334,20 +343,21 @@ class Bundler(object):
                 self._merge(copy.deepcopy(include_schema_object), parent_schema_object)
             del parent_schema_object['x-include']
         for item in set(self._includes):
-            item_to_delete = self._content
+            content = self._content
             pieces = item.split('#/')[1].split('/')
-            if len(pieces) > 2:
+            refs = self._get_parser("$..['#/{}']".format('/'.join(pieces))).find(content)
+            if len(pieces) > 2 and len(refs) == 0:
                 for piece in pieces[0:-1]:
-                    item_to_delete = item_to_delete[piece]
-                if pieces[-1] in item_to_delete:
-                    del item_to_delete[pieces[-1]]
+                    content = content[piece]
+                if pieces[-1] in content:
+                    del content[pieces[-1]]
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content
         and merge the x-constraint content into the parent object description
         """
         import jsonpath_ng
-        for xconstraint in jsonpath_ng.parse('$..x-constraint').find(self._content):
+        for xconstraint in self._get_parser('$..x-constraint').find(self._content):
             print('resolving %s...' % (str(xconstraint.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xconstraint)[0].value
             if 'description' not in parent_schema_object:
@@ -377,7 +387,7 @@ class Bundler(object):
     def _get_schema_object(self, base_dir, schema_path):
         import jsonpath_ng
         json_path = "$..'%s'" % schema_path.split('/')[-1]
-        schema_object = jsonpath_ng.parse(json_path).find(self._content)
+        schema_object = self._get_parser(json_path).find(self._content)
         if len(schema_object) == 0:
             schema_object = self._get_schema_object_from_file(base_dir, schema_path)
         else:
@@ -393,7 +403,7 @@ class Bundler(object):
         with open(filename) as fid:
             schema_file = yaml.safe_load(fid)
         json_path = "$..'%s'" % schema_path.split('/')[-1]
-        schema_object = jsonpath_ng.parse(json_path).find(schema_file)[0].value
+        schema_object = self._get_parser(json_path).find(schema_file)[0].value
         return schema_object
 
     def _resolve_strings(self, content):
