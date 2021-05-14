@@ -74,6 +74,7 @@ class Bundler(object):
         self._resolve_x_pattern('x-field-pattern')
         self._resolve_x_pattern('x-device-pattern')
         self._resolve_x_constraint()
+        self._remove_x_include()
         self._resolve_strings(self._content)
         with open(self._output_filename, 'w') as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break='\n', sort_keys=False)
@@ -342,11 +343,19 @@ class Bundler(object):
                 include_schema_object = self._includes[xinclude]
                 self._merge(copy.deepcopy(include_schema_object), parent_schema_object)
             del parent_schema_object['x-include']
+
+    def _remove_x_include(self):
+        refs = self._get_parser('$.."$ref"').find(self._content)
         for item in set(self._includes):
-            content = self._content
             pieces = item.split('#/')[1].split('/')
-            refs = self._get_parser("$..['#/{}']".format('/'.join(pieces))).find(content)
-            if len(pieces) > 2 and len(refs) == 0:
+            value = '#/{}'.format('/'.join(pieces))
+            match = False
+            for ref in refs:
+                if ref.value == value: 
+                    match = True
+                    break
+            if match is False:
+                content = self._content
                 for piece in pieces[0:-1]:
                     content = content[piece]
                 if pieces[-1] in content:
