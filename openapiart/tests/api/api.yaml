@@ -14,3 +14,5 @@ paths:
       responses:
         x-include:
         - '../common/common.yaml#/components/responses/Success'
+        - '../common/common.yaml#/components/responses/Error400'
+        - '../common/common.yaml#/components/responses/Error500'

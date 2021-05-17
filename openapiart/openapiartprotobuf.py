@@ -16,12 +16,75 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def generate(self, openapi):
         self._openapi = openapi
+        self._operations = {}
         self._write_header(self._openapi['info'])
         for name, schema_object in self._openapi['components']['schemas'].items():
             self._write_msg(name, schema_object)
-        for name, schema_object in self._openapi['components']['responses'].items():
-            self._write_msg(name, schema_object)
+        for url, path_object in self._openapi['paths'].items():
+            self._write_request_msg(path_object)
+            self._write_response_msg(path_object)
         self._write_service()
+
+    def _get_operation(self, path_item_object):
+        operation_id = path_item_object['operationId']
+        if operation_id not in self._operations:
+            operation = lambda x: None
+            operation.rpc = self._get_camel_case(operation_id)
+            operation.request = 'google.protobuf.Empty'
+            operation.response = '{}Response'.format(operation.rpc)
+            operation.stream = len(self._get_parser('$.."application/octet-stream"').find(path_item_object)) > 0
+            self._operations[operation_id] = operation
+        return self._operations[operation_id]
+
+    def _write_request_msg(self, path_object):
+        for method, path_item_object in path_object.items():
+            operation = self._get_operation(path_item_object)
+            if len(self._get_parser('$..requestBody').find(path_item_object)) > 0:
+                operation.request = '{}Request'.format(operation.rpc)
+                self._write()
+                self._write('message {} {{'.format(operation.request))
+                for ref in self._get_parser('$..requestBody.."$ref"').find(path_item_object):
+                    message = self._get_message_name(ref.value)
+                    self._write('{} {} = 1;'.format(message, message.lower()), indent=1)
+                self._write('}')
+
+    def _write_response_msg(self, path_object):
+        """
+        application/octet-stream -> response (stream <operationId>Response)
+        application/json -> response (<operationId>Response)
+        """
+        for method, path_item_object in path_object.items():
+            operation = self._get_operation(path_item_object)
+            self._write()
+            self._write('message {} {{'.format(operation.response))
+            for ref in self._get_parser('$..responses').find(path_item_object):
+                detail_messages = []
+                for code, response in ref.value.items():
+                    detail_message = 'StatusCode{}'.format(code)
+                    detail_messages.append(detail_message)
+                    self._write('message {} {{'.format(detail_message), indent=1)
+                    schema = self._get_parser('$..schema').find(response)
+                    if len(schema) != 0:
+                        schema = schema[0].value
+                    if '$ref' in schema:
+                        message = self._get_message_name(schema['$ref'])
+                        self._write('{} {} = 1;'.format(message, message.lower()), indent=2)
+                    elif 'type' in schema:
+                        message = self._get_message_name(schema['type'])
+                        if 'format' in schema and schema['format'] == 'binary':
+                            message = 'bytes'
+                        self._write('{} {} = 1;'.format(message, message.lower()), indent=2)                        
+                    self._write('}', indent=1)
+            self._write('oneof statuscode {', indent=1)
+            id = 1
+            for detail_message in detail_messages:
+                self._write('{} {} = {};'.format(detail_message, detail_message.lower(), id), indent=2)
+                id += 1
+            self._write('}', indent=1)
+            self._write('}')
+
+    def _get_message_name(self, ref):
+        return ref.split('/')[-1]
 
     def _next_custom_id(self):
         self._custom_id += 1
@@ -44,27 +107,16 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('string description = 10;', indent=1)
         self._write('}')
         self._write('extend google.protobuf.MessageOptions {')
-        self._write('optional OpenApiMsgOpt msg_meta = 50000;', indent=1)
+        self._write('optional OpenApiMsgOpt msg_meta = {};'.format(self._next_custom_id()), indent=1)
         self._write('}')
         self._write()
         self._write('message OpenApiFldOpt {')
-        self._write('oneof type {', indent=1)
-        self._write('bool object = 1;', indent=2)
-        self._write('bool string = 2;', indent=2)
-        self._write('bool bool = 3;', indent=2)
-        self._write('bool enum = 4;', indent=2)
-        self._write('bool float = 5;', indent=2)
-        self._write('bool double = 6;', indent=2)
-        self._write('bool int32 = 7;', indent=2)
-        self._write('bool bytes = 18;', indent=2)
-        self._write('bool none = 19;', indent=2)
-        self._write('}', indent=1)
-        self._write('string default = 20;', indent=1)
-        self._write('bool required = 30;', indent=1)
-        self._write('string description = 40;', indent=1)
+        self._write('string default = 10;', indent=1)
+        self._write('bool required = 20;', indent=1)
+        self._write('string description = 30;', indent=1)
         self._write('}')
         self._write('extend google.protobuf.FieldOptions {')
-        self._write('optional OpenApiFldOpt fld_meta = 50001;', indent=1)
+        self._write('optional OpenApiFldOpt fld_meta = {};'.format(self._next_custom_id()), indent=1)
         self._write('}')
 
     def _get_field_type(self, property_name, openapi_object):
@@ -102,15 +154,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _camelcase(self, value):
         return '{}{}'.format(value[0].upper(), value[1:])
 
-    def _write_description(self, openapi_object, indent=0):
-        if 'description' in openapi_object:
-            description = []
-            for line in openapi_object['description'].split('\n'):
-                line = '// {}'.format(line.strip(' '))
-                self._write(line, indent=indent)
-        else:
-            self._write('// Description missing in models', indent=indent)
-
     def _get_description(self, openapi_object):
         if 'description' in openapi_object:
             return openapi_object['description'].replace('\n', '\\n')
@@ -132,7 +175,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         msg_name = name.replace('.', '')
         print('writing msg {}'.format(msg_name))
         self._write()
-        self._write_description(schema_object, indent=0)
         self._write('message {} {{'.format(msg_name), indent=0)
         self._write('option (msg_meta).description = "{}";'.format(self._get_description(schema_object)), indent=1)
         self._write_msg_fields(name, schema_object)
@@ -144,24 +186,18 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         id = 0
         for property_name, property_object in schema_object['properties'].items():
             id += 1
-            if id > 1: self._write()
+            self._write()
             property_type = self._get_field_type(property_name, property_object)
-            default = ''
+            default = None
             if 'default' in property_object:
                 default = property_object['default']
-            type = property_type.split(' ')[-1]
-            if hasattr(self, '_refparse') is False:
-                self._refparse = jsonpath_ng.parse("$..'$ref'")
-            if len(self._refparse.find(property_object)) > 0:
-                type = 'object'
-                default = property_type.split(' ')[-1]
-            elif property_type.endswith('.Enum'):
+            if property_type.endswith('.Enum') and default is not None:
                 type = 'enum'
-                default = '{}.{}'.format(property_type, default)
+                default = '{}.{}'.format(property_type.split(' ')[-1], default)
             required = ('required' in schema_object and property_name in schema_object['required'])
             self._write('{} {} = {} ['.format(property_type, property_name.lower(), id), indent=1)
-            self._write('(fld_meta).{} = true,'.format(type), indent=2)
-            self._write('(fld_meta).default = "{}",'.format(default), indent=2)
+            if default is not None:
+                self._write('(fld_meta).default = "{}",'.format(default), indent=2)
             self._write('(fld_meta).required = {},'.format(str(required).lower()), indent=2)
             self._write('(fld_meta).description = "{}"'.format(self._get_description(property_object)), indent=2)
             self._write('];', indent=1)
@@ -176,26 +212,16 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('}')
 
     def _write_rpc(self, url, method, path_item_object):
-        self._write_description(path_item_object, indent=1)
-        operationId = ''
-        for piece in path_item_object['operationId'].split('_'):
-            operationId += piece[0].upper()
-            if len(piece) > 1: operationId += piece[1:]
-        params = []
-        for response in path_item_object['responses']:
-            # write a components/schemas/SetConfigResponse
-            # contains choice enum[status_200, status_400, status_500]
-            # status_220 has a reference to payload
-            # httptransport.send_recv should return status_2xx or 
-            # throw an error on status_4xx or status_5xx
-            pass
-        if len(params) == 0:
-            params.append('google.protobuf.Empty')
-        returns = None
-        if returns is None:
-            returns = 'google.protobuf.Empty'
-        print('writing rpc {}'.format(operationId))
-        self._write('rpc {}({}) returns({}) {{'.format(operationId, ', '.join(params), returns), indent=1)
+        """
+        """
+        operation = self._get_operation(path_item_object)
+        print('writing rpc {}'.format(operation.rpc))
+        line = 'rpc {}({}) returns ({}{}) {{'.format(
+            operation.rpc,
+            operation.request,
+            "stream " if operation.stream else '',
+            operation.response)
+        self._write(line, indent=1)
         self._write('}', indent=1)
 
 

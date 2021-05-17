@@ -81,17 +81,6 @@ class Bundler(object):
         self._validate_file()
         with open(self._json_filename, 'w') as fp:
             fp.write(json.dumps(self._content, indent=4))   
-        try:
-            process_args = [
-                'redoc-cli', 'bundle', 
-                self._output_filename, 
-                '--output', 
-                os.path.join(self._output_dir, 'openapi.html')
-            ]
-            process = subprocess.Popen(process_args, shell=True)
-            process.wait()
-        except Exception as e:
-            print('Bypassed creation of static documentation [missing redoc-cli]: {}'.format(e))
 
     def _validate_file(self):
         import yaml
@@ -311,18 +300,30 @@ class Bundler(object):
                     'type': 'integer',
                     'default': 1
                 }
-            self._apply_common_x_field_pattern_properties(counter_schema['properties']['start'], xpattern, format)
-            self._apply_common_x_field_pattern_properties(counter_schema['properties']['step'], xpattern, format)
+            self._apply_common_x_field_pattern_properties(counter_schema['properties']['start'], xpattern, format, type='start')
+            self._apply_common_x_field_pattern_properties(counter_schema['properties']['step'], xpattern, format, type='step')
             if xconstants is not None:
                 counter_schema['x-constants'] = copy.deepcopy(xconstants)
             self._content['components']['schemas'][counter_pattern_name] = counter_schema
-        self._apply_common_x_field_pattern_properties(schema['properties']['value'], xpattern, format)
-        self._apply_common_x_field_pattern_properties(schema['properties']['values']['items'], xpattern, format)
+        self._apply_common_x_field_pattern_properties(schema['properties']['value'], xpattern, format, type='value')
+        self._apply_common_x_field_pattern_properties(schema['properties']['values']['items'], xpattern, format, type='values')
         self._content['components']['schemas'][schema_name] = schema
 
-    def _apply_common_x_field_pattern_properties(self, schema, xpattern, format):
+    def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, type):
+        step_defaults = {
+            'mac': '00:00:00:00:00:01',
+            'ipv4': '0.0.0.1',
+            'ipv6': '::1'
+        }
         if 'default' in xpattern:
             schema['default'] = xpattern['default']
+            if type == 'step':
+                if format in step_defaults:
+                    schema['default'] = step_defaults[format]
+                else:
+                    schema['default'] = 1
+            elif type == 'values':
+                schema['default'] = [schema['default']]        
         if format is not None:
             schema['format'] = format
         if 'length' in xpattern:

@@ -15,6 +15,7 @@ components:
             Second line is here
             Third line
           type: number
+          format: float
           default: 65.0
         c:
           type: integer
@@ -25,7 +26,6 @@ components:
           items:
             type: string
             enum: [a, b, c]
-            default: b
         e:
           description: A child object
           $ref: '#/components/schemas/Ref'
@@ -40,6 +40,7 @@ components:
         h:
           description: A boolean value
           type: boolean
+          default: true
         i:
           description: A byte string
           type: string
@@ -67,9 +68,10 @@ components:
         choice:
           type: string
           enum: [f_a, f_b]
+          default: 'f_a'
         f_a:
           type: string
-          default: 'f_a'
+          default: 'some string'
         f_b:
           type: number
           format: double

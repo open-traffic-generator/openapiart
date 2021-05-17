@@ -3,6 +3,7 @@ import os
 import importlib
 import shutil
 import yaml
+import subprocess
 
 
 class OpenApiArt(object):
@@ -19,8 +20,10 @@ class OpenApiArt(object):
       The artifacts that will be generated are:
       - openapi.yaml
       - openapi.json
-      - static openapi.html documentation (if redoc-cli has been installed)
+      - openapi.html (static documentation, if redoc-cli has been installed)
       - python package
+      - protobuf file
+      - python grpc 
     """
     def __init__(self, api_files, python_module_name=None, protobuf_file_name=None, output_dir=None):
         self._python_module_name = python_module_name
@@ -30,22 +33,43 @@ class OpenApiArt(object):
         self._output_dir = os.path.abspath(output_dir)
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
+        self._bundle()
+        self._document()
+        self._generate()
 
+    def _bundle(self):
         # bundle the yaml files
         module = importlib.import_module('openapiart.bundler')
-        bundler = getattr(module, 'Bundler')(api_files=api_files,
-                                             output_dir=self._output_dir)
-        bundler.bundle()
-
+        bundler_class = getattr(module, 'Bundler')
+        self._bundler = bundler_class(
+            api_files=self._api_files,
+            output_dir=self._output_dir)
+        self._bundler.bundle()
         # read the entire openapi file
-        with open(bundler.openapi_filepath) as fp:
+        with open(self._bundler.openapi_filepath) as fp:
             self._openapi = yaml.safe_load(fp.read())
 
+    def _document(self):
+        """Try documenting the openapi using redoc-cli
+        """
+        try:
+            process_args = [
+                'redoc-cli', 'bundle', 
+                self._bundler.openapi_filepath, 
+                '--output', 
+                os.path.join(self._output_dir, 'openapi.html')
+            ]
+            process = subprocess.Popen(process_args, shell=True)
+            process.wait()
+        except Exception as e:
+            print('Bypassed creation of static documentation [missing redoc-cli]: {}'.format(e))
+
+    def _generate(self):
         # this writes python ux module
         if self._python_module_name is not None:
             module = importlib.import_module('openapiart.generator')
             python = getattr(module, 'Generator')(
-                bundler.openapi_filepath,
+                self._bundler.openapi_filepath,
                 self._python_module_name,
                 output_dir=self._output_dir
                 )

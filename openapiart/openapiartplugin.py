@@ -1,5 +1,6 @@
 """Abstract plugin class
 """
+import jsonpath_ng
 
 
 class OpenApiArtPlugin(object):
@@ -11,7 +12,8 @@ class OpenApiArtPlugin(object):
         self._python_module_name = kwargs['python_module_name']
         self._protobuf_file_name = kwargs['protobuf_file_name']
         self.default_indent = '    '
-
+        self._parsers = {}
+        
     def _init_fp(self, filename):
         self._filename = filename
         self._fp = open(self._filename, 'wb')
@@ -23,23 +25,18 @@ class OpenApiArtPlugin(object):
             '\n' if newline else '')
         self._fp.write(line.encode())
 
-    def pre_process(self):
-        pass
+    def _get_parser(self, pattern):
+        if pattern not in self._parsers:
+            parser = jsonpath_ng.parse(pattern)
+            self._parsers[pattern] = parser
+        else:
+            parser = self._parsers[pattern]
+        return parser
 
-    def post_process(self):
-        if self._fp is not None:
-            close(self._fp)
-
-    def info(self, info_object):
-        pass
-
-    def path(self, path_object):
-        pass
-
-    def component_schema(self, schema_object):
-        pass
-
-    def component_response(self, response_object):
-        pass
-
-
+    def _get_camel_case(self, value):
+        camel_case = ''
+        for piece in value.split('_'):
+            camel_case += piece[0].upper()
+            if len(piece) > 1: 
+                camel_case += piece[1:]
+        return camel_case
