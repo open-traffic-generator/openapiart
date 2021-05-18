@@ -18,6 +18,9 @@ class OpenApiArtPlugin(object):
         self._filename = filename
         self._fp = open(self._filename, 'wb')
 
+    def _close_fp(self):
+        self._fp.close()
+
     def _write(self, line='', indent=0, newline=True):
         line = '{}{}{}'.format(
             self.default_indent * indent, 

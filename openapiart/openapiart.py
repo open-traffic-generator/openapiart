@@ -30,6 +30,7 @@ class OpenApiArt(object):
         self._protobuf_file_name = protobuf_file_name
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), '.output')
+        self._relative_output_dir = output_dir
         self._output_dir = os.path.abspath(output_dir)
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
@@ -86,6 +87,20 @@ class OpenApiArt(object):
                     }
                 )
             protobuf.generate(self._openapi)
+        try:
+            grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
+            proto_path = os.path.normpath(os.path.join('./'))
+            process_args = [
+                sys.executable, '-m', 'grpc_tools.protoc',
+                '--python_out={}'.format(grpc_dir),
+                '--grpc_python_out={}'.format(grpc_dir),
+                '--proto_path={}'.format(self._output_dir),
+                '{}.proto'.format(self._python_module_name)  
+            ]
+            process = subprocess.Popen(process_args, shell=False)
+            process.wait()
+        except Exception as e:
+            print('Bypassed creation of python grpc files: {}'.format(e))
 
     @property
     def output_dir(self):

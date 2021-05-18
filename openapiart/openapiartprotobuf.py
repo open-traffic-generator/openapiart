@@ -24,6 +24,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write_request_msg(path_object)
             self._write_response_msg(path_object)
         self._write_service()
+        self._close_fp()
 
     def _get_operation(self, path_item_object):
         operation_id = path_item_object['operationId']
