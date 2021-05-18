@@ -39,7 +39,7 @@ jobs:
         # repo settings which is defaulted to 90 days
         uses: actions/upload-artifact@v2
         with:
-          path: openapiart/.output/openapiart/**/*
+          path: .output/openapiart/**/*
 
       - name: Get all changes
         id: file_changes
