@@ -97,7 +97,7 @@ class OpenApiArt(object):
                 '--proto_path={}'.format(self._output_dir),
                 '{}.proto'.format(self._python_module_name)  
             ]
-            process = subprocess.Popen(process_args, shell=False)
+            process = subprocess.Popen(process_args, shell=True)
             process.wait()
         except Exception as e:
             print('Bypassed creation of python grpc files: {}'.format(e))

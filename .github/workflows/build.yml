@@ -31,6 +31,16 @@ jobs:
         run: |
           python setup.py sdist --formats=gztar bdist_wheel --universal
 
+      - name: Upload artifacts
+        # upload all files in the artifacts directory
+        # the artifact zip is available using the following github API 
+        # curl https://api.github.com/repos/open-traffic-generator/models/actions/artifacts
+        # the artifact is only available for the amount of time dictated by the 
+        # repo settings which is defaulted to 90 days
+        uses: actions/upload-artifact@v2
+        with:
+          path: openapiart/tests/.output
+
       - name: Get all changes
         id: file_changes
         uses: trilom/file-changes-action@v1.2.4
