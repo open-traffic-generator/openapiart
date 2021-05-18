@@ -119,6 +119,20 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('extend google.protobuf.FieldOptions {')
         self._write('optional OpenApiFldOpt fld_meta = {};'.format(self._next_custom_id()), indent=1)
         self._write('}')
+        self._write()
+        self._write('message OpenApiSvcOpt {')
+        self._write('string description = 10;', indent=1)
+        self._write('}')
+        self._write('extend google.protobuf.ServiceOptions {')
+        self._write('optional OpenApiSvcOpt svc_meta = {};'.format(self._next_custom_id()), indent=1)
+        self._write('}')
+        self._write()
+        self._write('message OpenApiRpcOpt {')
+        self._write('string description = 10;', indent=1)
+        self._write('}')
+        self._write('extend google.protobuf.MethodOptions {')
+        self._write('optional OpenApiRpcOpt rpc_meta = {};'.format(self._next_custom_id()), indent=1)
+        self._write('}')
 
     def _get_field_type(self, property_name, openapi_object):
         """Convert openapi type -> protobuf type
@@ -206,6 +220,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _write_service(self):
         self._write()
         self._write('service Openapi {')
+        paths_object = self._openapi['paths']
+        self._write('option (svc_meta).description = "{}";'.format(self._get_description(paths_object)), indent=1)
+        self._write()
         for url, path_object in self._openapi['paths'].items():
             for method, path_item_object in path_object.items():
                 if method in ['get', 'patch', 'post', 'delete']:
@@ -223,6 +240,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             "stream " if operation.stream else '',
             operation.response)
         self._write(line, indent=1)
+        self._write('option (rpc_meta).description = "{}";'.format(self._get_description(path_item_object)), indent=2)
         self._write('}', indent=1)
 
 

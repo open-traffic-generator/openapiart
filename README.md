@@ -12,11 +12,12 @@ The `OpenAPIArt` (OpenAPI Artifact Generator) python package does the following:
 - using the path keyword bundles all dependency OpenAPI yaml files into a single openapi.yaml file
 - post-processes any [MODELGUIDE](../main/MODELGUIDE.md) extensions
 - validates the bundled openapi.yaml file
-- generates enhanced ux python classes from the bundled openapi.yaml file
-- creates a single combined python file for all generated and common classes
 
-> This python package DOES NOT create a python package for the generated artifacts.
-
+Using the validated openapi.yaml file it then:
+- generates a static redocly documentation file 
+- generates a `protobuf` file
+- generates protobuf based python files
+- generates an enhanced ux python module
 
 ## Getting started
 Install the package
