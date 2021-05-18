@@ -8,6 +8,7 @@ import copy
 import json
 import yaml
 import jsonpath_ng
+from typing import Dict, Union, Literal
 
 
 class Bundler(object):
@@ -300,16 +301,20 @@ class Bundler(object):
                     'type': 'integer',
                     'default': 1
                 }
-            self._apply_common_x_field_pattern_properties(counter_schema['properties']['start'], xpattern, format, type='start')
-            self._apply_common_x_field_pattern_properties(counter_schema['properties']['step'], xpattern, format, type='step')
+            self._apply_common_x_field_pattern_properties(counter_schema['properties']['start'], xpattern, format, property_name='start')
+            self._apply_common_x_field_pattern_properties(counter_schema['properties']['step'], xpattern, format, property_name='step')
             if xconstants is not None:
                 counter_schema['x-constants'] = copy.deepcopy(xconstants)
             self._content['components']['schemas'][counter_pattern_name] = counter_schema
-        self._apply_common_x_field_pattern_properties(schema['properties']['value'], xpattern, format, type='value')
-        self._apply_common_x_field_pattern_properties(schema['properties']['values']['items'], xpattern, format, type='values')
+        self._apply_common_x_field_pattern_properties(schema['properties']['value'], xpattern, format, property_name='value')
+        self._apply_common_x_field_pattern_properties(schema['properties']['values']['items'], xpattern, format, property_name='values')
         self._content['components']['schemas'][schema_name] = schema
 
-    def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, type):
+    def _apply_common_x_field_pattern_properties(self, 
+        schema: Dict, 
+        xpattern: Dict, 
+        format: str, 
+        property_name: Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]]):
         step_defaults = {
             'mac': '00:00:00:00:00:01',
             'ipv4': '0.0.0.1',
@@ -317,12 +322,12 @@ class Bundler(object):
         }
         if 'default' in xpattern:
             schema['default'] = xpattern['default']
-            if type == 'step':
+            if property_name == 'step':
                 if format in step_defaults:
                     schema['default'] = step_defaults[format]
                 else:
                     schema['default'] = 1
-            elif type == 'values':
+            elif property_name == 'values':
                 schema['default'] = [schema['default']]        
         if format is not None:
             schema['format'] = format
