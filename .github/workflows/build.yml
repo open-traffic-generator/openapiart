@@ -14,10 +14,19 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '15.x'
+      
+      - name: Install redoc-cli
+        run: |
+          npm install -g redoc-cli
 
       - name: Install dependencies
         run: |
