@@ -60,7 +60,7 @@ class OpenApiArt(object):
                 '--output', 
                 os.path.join(self._output_dir, 'openapi.html')
             ]
-            process = subprocess.Popen(process_args, shell=True)
+            process = subprocess.Popen(process_args, shell=False)
             process.wait()
         except Exception as e:
             print('Bypassed creation of static documentation [missing redoc-cli]: {}'.format(e))
