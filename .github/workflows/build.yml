@@ -37,6 +37,10 @@ jobs:
         run: |
           sudo ${{ env.pythonLocation }}/python -m pytest -v -s
 
+      - name: Build static documentation
+        run: |
+          redoc-cli bundle .output/openapiart/openapi.yaml --output .output/openapiart/openapi.html
+
       - name: Generate python sdist and wheel distributions
         run: |
           python setup.py sdist --formats=gztar bdist_wheel --universal
