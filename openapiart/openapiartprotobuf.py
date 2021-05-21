@@ -181,7 +181,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('enum Enum {', indent=2)
         id = 0
         for enum in enums:
-            self._write('{} = {};'.format(enum, id), indent=3)
+            self._write('{} = {};'.format(enum.upper(), id), indent=3)
             id += 1
         self._write('}', indent=2)
         self._write('}', indent=1)
@@ -208,7 +208,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 default = property_object['default']
             if property_type.endswith('.Enum') and default is not None:
                 type = 'enum'
-                default = '{}.{}'.format(property_type.split(' ')[-1], default)
+                default = '{}.{}'.format(property_type.split(' ')[-1], default.upper())
             required = ('required' in schema_object and property_name in schema_object['required'])
             self._write('{} {} = {} ['.format(property_type, property_name.lower(), id), indent=1)
             if default is not None:
