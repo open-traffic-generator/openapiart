@@ -12,6 +12,7 @@ def test_config(api):
     config.e.e_a = 1.1
     config.e.e_b = 1.2
     config.f.f_a = 'a'
+    g1 = config.g.append(name='unique list name', g_a='dkdkd', g_b=3, g_c=22.2)
     djson = json.loads(config.serialize(config.JSON))
     assert(jp.parse('$.a').find(djson)[0].value == config.a)
     assert(jp.parse('$.f.f_a').find(djson)[0].value == config.f.f_a)

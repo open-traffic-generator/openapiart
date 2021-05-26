@@ -7,6 +7,7 @@ import re
 import copy
 import json
 import yaml
+import openapi_spec_validator
 import jsonpath_ng
 from typing import Dict, Union, Literal
 
@@ -60,7 +61,6 @@ class Bundler(object):
         return self._output_filename
 
     def bundle(self):
-        import yaml
         self._output_filename = os.path.join(self._output_dir, 'openapi.yaml')
         self._json_filename = os.path.join(self._output_dir, 'openapi.json')
         self._content = {}
@@ -73,7 +73,6 @@ class Bundler(object):
             self._read_file(self._base_dir, self._api_filename)
         self._resolve_x_include()
         self._resolve_x_pattern('x-field-pattern')
-        self._resolve_x_pattern('x-device-pattern')
         self._resolve_x_constraint()
         self._remove_x_include()
         self._resolve_strings(self._content)
@@ -84,8 +83,6 @@ class Bundler(object):
             fp.write(json.dumps(self._content, indent=4))   
 
     def _validate_file(self):
-        import yaml
-        import openapi_spec_validator
         print('validating {}...'.format(self._output_filename))
         with open(self._output_filename) as fid:
             yobject = yaml.safe_load(fid)
@@ -93,7 +90,6 @@ class Bundler(object):
         print('validating complete')
 
     def _read_file(self, base_dir, filename):
-        import yaml
         filename = os.path.join(base_dir, filename)
         filename = os.path.abspath(os.path.normpath(filename))
         base_dir = os.path.dirname(filename)
@@ -342,10 +338,10 @@ class Bundler(object):
         """
         include_schemas = []
         for xincludes in self._get_parser('$..x-include').find(self._content):
-            print('resolving %s...' % (str(xincludes.full_path)))
-            include_schemas.append(xincludes.full_path)
             parent_schema_object = jsonpath_ng.Parent().find(xincludes)[0].value
             for xinclude in xincludes.value:
+                print('resolving %s...' % (str(xinclude)))
+                include_schemas.append(xinclude)
                 include_schema_object = self._includes[xinclude]
                 self._merge(copy.deepcopy(include_schema_object), parent_schema_object)
             del parent_schema_object['x-include']

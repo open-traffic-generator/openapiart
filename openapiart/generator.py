@@ -623,6 +623,8 @@ class Generator(object):
                 self._write(2, 'item = %s(%s)' % (class_name, ', '.join(params)))
             self._write(2, 'self._add(item)')
             self._write(2, 'return self')
+            self._write()
+            self._write_append_method(yobject, choice_method, class_name, contained_class_name, return_class_name)
         else:
             self._write(1, '@property')
             self._write(1, 'def %s(self):' % (method_name))
@@ -635,33 +637,31 @@ class Generator(object):
             self._write(2, '"""')
             self._write(2, "return self._get_property('%s', %s, self, '%s')" % (method_name, class_name, method_name))
 
-    def _write_append_method(self, param_string):
-            self._imports.append('from .%s import %s' % (class_name.lower(), class_name))
-            self._write(1, 'def append(self, cls=None%s):' % (param_string))
-            return_class_name = class_name
-            if contained_class_name is not None:
-                return_class_name = '{}Iter'.format(contained_class_name)
-            self._write(2, "# type: (%s) -> %s" % (type_string, return_class_name))
-            self._write(2, '"""Factory method that creates an instance of the %s class' % (class_name))
-            self._write()
-            self._write(2, '%s' % self._get_description(yobject))
-            self._write()
-            self._write(2, 'Returns: %s' % (return_class_name))
-            self._write(2, '"""')
-            if choice_method is True:
-                self._write(2, 'item = %s()' % (contained_class_name))
-                self._write(2, "item.%s" % (method_name))
-                self._write(2, "item.choice = '%s'" % (method_name))
-            else:
-                params = [
-                    'parent=self._parent',
-                    'choice=self._choice'
-                ]
-                for property in properties:
-                    params.append('%s=%s' % (property, property))
-                self._write(2, 'item = %s(%s)' % (class_name, ', '.join(params)))
-            self._write(2, 'self._add(item)')
-            self._write(2, 'return self')
+    def _write_append_method(self, yobject, choice_method, class_name, contained_class_name, return_class_name):
+        param_string, properties, type_string = self._get_property_param_string(yobject)
+        self._imports.append('from .%s import %s' % (contained_class_name.lower(), contained_class_name))
+        self._write(1, 'def append(self%s):' % (param_string))
+        self._write(2, "# type: (%s) -> %s" % (type_string, contained_class_name))
+        self._write(2, '"""Factory method that creates and returns an instance of the %s class' % (contained_class_name))
+        self._write()
+        self._write(2, '%s' % self._get_description(yobject))
+        self._write()
+        self._write(2, 'Returns: %s' % (contained_class_name))
+        self._write(2, '"""')
+        if choice_method is True:
+            self._write(2, 'item = %s()' % (contained_class_name))
+            self._write(2, "item.%s" % (method_name))
+            self._write(2, "item.choice = '%s'" % (method_name))
+        else:
+            params = [
+                'parent=self._parent',
+                'choice=self._choice'
+            ]
+            for property in properties:
+                params.append('%s=%s' % (property, property))
+            self._write(2, 'item = %s(%s)' % (class_name, ', '.join(params)))
+        self._write(2, 'self._add(item)')
+        self._write(2, 'return item')
 
     def _get_property_param_string(self, yobject):
         property_param_string = ''
@@ -678,7 +678,7 @@ class Generator(object):
                     properties.append(name)
                     if 'default' in property:
                         default = property['default']
-                    if 'enum' in property or 'format' in property:
+                    if property['type'] == 'string' or 'enum' in property or 'format' in property:
                         val = "=%s" % default if default == 'None' else "='%s'" % default
                         property_param_string += val
                     else:

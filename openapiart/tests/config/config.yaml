@@ -28,15 +28,15 @@ components:
             enum: [a, b, c]
         e:
           description: A child object
-          $ref: '#/components/schemas/Ref'
+          $ref: '#/components/schemas/EObject'
         f:
           description: An object with a choice
-          $ref: '#/components/schemas/Ref.Choice'
+          $ref: '#/components/schemas/FObject'
         g:
           description: A list of objects
           type: array
           items:
-            $ref: '../common/common.yaml#/components/schemas/ListObject'
+            $ref: '#/components/schemas/GObject'
         h:
           description: A boolean value
           type: boolean
@@ -45,8 +45,22 @@ components:
           description: A byte string
           type: string
           format: binary
-          
-    Ref:
+    
+    GObject:
+      x-include:
+      - '../common/common.yaml#/components/schemas/ListObject'
+      properties:
+        g_a:
+          type: string
+          default: asdf
+        g_b:
+          type: integer
+          default: 6
+        g_c:
+          type: number
+          default: 77.7
+
+    EObject:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [e_a, e_b]
@@ -60,10 +74,9 @@ components:
           format: double
           default: 2.0
 
-    Ref.Choice:
+    FObject:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [choice]
       properties:
         choice:
           type: string
