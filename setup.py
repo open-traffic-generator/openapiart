@@ -35,8 +35,11 @@ setuptools.setup(
     packages=[pkg_name],
     python_requires='>=2.7, <4',
     install_requires=[
+        'grpcio',
+        'grpcio-tools',
         'requests',
         'pyyaml',
+        'pytest',
         'openapi-spec-validator',
         'jsonpath-ng',
         'typing'
