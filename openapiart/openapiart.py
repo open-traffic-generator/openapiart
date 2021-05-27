@@ -76,8 +76,8 @@ class OpenApiArt(object):
                 )
             python.generate()
 
-        # this writes protobuf definitions
-        if self._protobuf_file_name is not None:
+        # this generates protobuf definitions
+        try:
             module = importlib.import_module('openapiart.openapiartprotobuf')
             protobuf = getattr(module, 'OpenApiArtProtobuf')(
                 **{
@@ -87,6 +87,9 @@ class OpenApiArt(object):
                     }
                 )
             protobuf.generate(self._openapi)
+        except Exception as e:
+            print('Bypassed creation of protobuf file: {}'.format(e))
+        
         try:
             grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
             proto_path = os.path.normpath(os.path.join('./'))
