@@ -9,7 +9,7 @@ info:
     url: https://github.com/open-traffic-generator/openapiart
   license:
     name: MIT
-    url: https://opensource.org/licenses/MIT
+    url: https://raw.githubusercontent.com/open-traffic-generator/openapiart/main/LICENSE
 
 servers: 
   - url: /

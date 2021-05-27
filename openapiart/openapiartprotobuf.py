@@ -92,10 +92,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
-        license_path = os.path.join(os.path.dirname(__file__), '..', 'LICENSE')
-        with open(license_path) as fp:
-            for line in fp.readlines():
-                self._write('// {}'.format(line), newline=False)
+        for line in self._license.split('\n'):
+            self._write('// {}'.format(line))
         self._write()
         self._write('syntax = "proto3";')
         self._write()
