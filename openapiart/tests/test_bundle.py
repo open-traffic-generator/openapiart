@@ -4,7 +4,7 @@ import json
 
 
 def test_config(api):
-    config  = api.config()
+    config  = api.prefix_config()
     config.a = 'asdf'
     config.b = 1.1
     config.c = 1

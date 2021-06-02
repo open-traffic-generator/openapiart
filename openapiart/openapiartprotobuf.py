@@ -46,7 +46,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 self._write('message {} {{'.format(operation.request))
                 for ref in self._get_parser('$..requestBody.."$ref"').find(path_item_object):
                     message = self._get_message_name(ref.value)
-                    self._write('{} {} = 1;'.format(message, message.lower()), indent=1)
+                    field_type = message.replace('.', '')
+                    field_name = field_type.lower()
+                    self._write('{} {} = 1;'.format(field_type, field_name), indent=1)
                 self._write('}')
 
     def _write_response_msg(self, path_object):
@@ -79,7 +81,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write('oneof statuscode {', indent=1)
             id = 1
             for detail_message in detail_messages:
-                field_name = detail_message.lower().replace('-').replace('_')
+                field_type = detail_message.replace('.', '')
+                field_name = detail_message.lower().replace('-', '').replace('_', '')
                 self._write('{} {} = {};'.format(detail_message, field_name, id), indent=2)
                 id += 1
             self._write('}', indent=1)

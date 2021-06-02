@@ -25,7 +25,6 @@ def openapiart():
         python_module_name='sanity',
         protobuf_file_name='sanity',
         protobuf_package_name='test.sanity')
-
     return openapiart
 
 

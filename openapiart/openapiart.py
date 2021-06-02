@@ -97,6 +97,7 @@ class OpenApiArt(object):
                     'license': self._license,
                     'python_module_name': self._python_module_name,
                     'protobuf_file_name': self._protobuf_file_name,
+                    'protobuf_package_name': self._protobuf_package_name,
                     'output_dir': self._output_dir
                     }
                 )

@@ -1,6 +1,6 @@
 components:
   schemas:
-    Config:
+    Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       properties:

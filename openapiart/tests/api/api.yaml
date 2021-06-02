@@ -10,7 +10,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../config/config.yaml#/components/schemas/Config'
+              $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
       responses:
         x-include:
         - '../common/common.yaml#/components/responses/Success'
