@@ -30,7 +30,7 @@ class Bundler(object):
     class description(str):
         pass
 
-    def description_representer(dumper, data):
+    def literal_representer(dumper, data):
         return dumper.represent_scalar(u'tag:yaml.org,2002:str', data, style='|')
 
     def __init__(self, api_files, output_dir='./'):
@@ -43,7 +43,7 @@ class Bundler(object):
         self._content = {}
         self._includes = {}
         self._resolved = []
-        self._install_dependencies()
+        yaml.add_representer(Bundler.description, Bundler.literal_representer)
 
     def _get_parser(self, pattern):
         if pattern not in self._parsers:
@@ -52,9 +52,6 @@ class Bundler(object):
         else:
             parser = self._parsers[pattern]
         return parser
-
-    def _install_dependencies(self):
-        yaml.add_representer(Bundler.description, Bundler.description_representer)
 
     @property
     def openapi_filepath(self):

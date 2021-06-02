@@ -23,7 +23,8 @@ def openapiart():
     openapiart = openapiart_class(api_files=api_files, 
         output_dir='./.output/openapiart', 
         python_module_name='sanity',
-        protobuf_file_name='sanity')
+        protobuf_file_name='sanity',
+        protobuf_package_name='test.sanity')
 
     return openapiart
 

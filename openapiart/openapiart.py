@@ -26,9 +26,10 @@ class OpenApiArt(object):
       - protobuf file
       - python grpc 
     """
-    def __init__(self, api_files, python_module_name=None, protobuf_file_name=None, output_dir=None):
+    def __init__(self, api_files, python_module_name=None, protobuf_package_name=None, protobuf_file_name=None, output_dir=None):
         self._python_module_name = python_module_name
         self._protobuf_file_name = protobuf_file_name
+        self._protobuf_package_name = protobuf_package_name
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), '.output')
         self._relative_output_dir = output_dir

@@ -79,7 +79,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write('oneof statuscode {', indent=1)
             id = 1
             for detail_message in detail_messages:
-                self._write('{} {} = {};'.format(detail_message, detail_message.lower(), id), indent=2)
+                field_name = detail_message.lower().replace('-').replace('_')
+                self._write('{} {} = {};'.format(detail_message, field_name, id), indent=2)
                 id += 1
             self._write('}', indent=1)
             self._write('}')
@@ -97,7 +98,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write('syntax = "proto3";')
         self._write()
-        self._write('package {};'.format(self._protobuf_file_name))
+        self._write('package {};'.format(self._protobuf_package_name))
         self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
@@ -169,7 +170,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _get_description(self, openapi_object):
         if 'description' in openapi_object:
-            return openapi_object['description'].replace('\n', '\\n')
+            return (
+                openapi_object['description']
+                    .replace('\n', '\\n')
+                    .replace('"', '')
+            )
         else:
             return 'Description missing in models'
 
