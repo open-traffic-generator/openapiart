@@ -30,16 +30,25 @@ Generate artifacts from OpenAPI files
 import openapiart
 
 """ 
-The following command produces these artifacts:
+The following command will produce these artifacts:
     - ./artifacts/openapi.yaml
     - ./artifacts/openapi.json
     - ./artifacts/openapi.html
+    - ./artifacts/sample.proto
     - ./artifacts/sample/__init__.py
     - ./artifacts/sample/sample.py
+    - ./artifacts/sample/sample_pb2.py
+    - ./artifacts/sample/sample_pb2_grpc.py
 """
 openapiart.OpenApiArt(
-    api_files=['./tests/api/api.yaml'], 
+    api_files=[
+        './tests/api/api.yaml'
+        './tests/api/info.yaml'
+        './tests/common/common.yaml'
+        ], 
     python_module_name='sample', 
+    protobuf_file_name='sample',
+    protobuf_package_name='sample',
     output_dir='./artifacts'
 )
 ```
