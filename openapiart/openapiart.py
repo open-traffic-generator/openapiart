@@ -113,7 +113,7 @@ class OpenApiArt(object):
                 '--python_out={}'.format(grpc_dir),
                 '--grpc_python_out={}'.format(grpc_dir),
                 '--proto_path={}'.format(self._output_dir),
-                '{}.proto'.format(self._python_module_name)  
+                '{}.proto'.format(self._protobuf_file_name)  
             ]
             print('grpc_tools.protoc args: {}'.format(' '.join(process_args)))
             process = subprocess.Popen(process_args, shell=False)

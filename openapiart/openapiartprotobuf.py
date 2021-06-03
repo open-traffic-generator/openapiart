@@ -70,20 +70,20 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     if len(schema) != 0:
                         schema = schema[0].value
                     if '$ref' in schema:
-                        message = self._get_message_name(schema['$ref'])
-                        self._write('{} {} = 1;'.format(message, message.lower()), indent=2)
+                        field_type = self._get_message_name(schema['$ref']).replace('.', '')
+                        self._write('{} {} = 1;'.format(field_type, field_type.lower()), indent=2)
                     elif 'type' in schema:
-                        message = self._get_message_name(schema['type'])
+                        field_type = self._get_message_name(schema['type']).replace('.', '')
                         if 'format' in schema and schema['format'] == 'binary':
-                            message = 'bytes'
-                        self._write('{} {} = 1;'.format(message, message.lower()), indent=2)                        
+                            field_type = 'bytes'
+                        self._write('{} {} = 1;'.format(field_type, field_type.lower()), indent=2)                        
                     self._write('}', indent=1)
             self._write('oneof statuscode {', indent=1)
             id = 1
             for detail_message in detail_messages:
                 field_type = detail_message.replace('.', '')
-                field_name = detail_message.lower().replace('-', '').replace('_', '')
-                self._write('{} {} = {};'.format(detail_message, field_name, id), indent=2)
+                field_name = field_type.lower().replace('-', '').replace('_', '')
+                self._write('{} {} = {};'.format(field_type, field_name, id), indent=2)
                 id += 1
             self._write('}', indent=1)
             self._write('}')

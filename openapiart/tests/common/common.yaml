@@ -19,6 +19,13 @@ components:
           type: array
           items:
             type: string
+    Error.Details:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
 
   responses:
     Success:
@@ -29,13 +36,13 @@ components:
             schema:
               type: string
               format: binary
-    Error400:
+    Error.400:
       '400':
         description: 'error 4xx'
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              $ref: '#/components/schemas/Error.Details'
     Error500:
       '500':
         description: 'error 5xx'
