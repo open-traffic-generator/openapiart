@@ -39,6 +39,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _write_request_msg(self, path_object):
         for method, path_item_object in path_object.items():
+            if isinstance(path_item_object, str):
+                continue
             operation = self._get_operation(path_item_object)
             if len(self._get_parser('$..requestBody').find(path_item_object)) > 0:
                 operation.request = '{}Request'.format(operation.rpc)
@@ -57,6 +59,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         application/json -> response (<operationId>Response)
         """
         for method, path_item_object in path_object.items():
+            if isinstance(path_item_object, str):
+                continue
             operation = self._get_operation(path_item_object)
             self._write()
             self._write('message {} {{'.format(operation.response))
