@@ -125,6 +125,8 @@ class Generator(object):
         self._api_filename = os.path.join(self._output_dir, self._output_file + '.py')
         with open(os.path.join(os.path.dirname(__file__), 'common.py'), 'r') as fp:
             common_content = fp.read()
+            if re.search(r'def[\s+]api\(', common_content) is not None:
+                self._generated_top_level_factories.append('api')
         with open(self._api_filename, 'w') as self._fid:
             self._fid.write(common_content)
         methods, factories = self._get_methods_and_factories()
