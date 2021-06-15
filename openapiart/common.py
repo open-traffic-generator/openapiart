@@ -7,7 +7,11 @@ import urllib3
 import io
 import sys
 import time
-from typing import Union, Dict, Literal, List, Any
+
+try:
+    from typing import Union, Dict, List, Any, Literal
+except ImportError:
+    from typing_extensions import Literal
 
 if sys.version_info[0] == 3:
     unicode = str
