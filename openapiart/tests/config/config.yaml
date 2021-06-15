@@ -30,10 +30,10 @@ components:
           description: A child object
           $ref: '#/components/schemas/EObject'
         f:
-          description: An object with a choice
+          description: An object with only choice(s)
           $ref: '#/components/schemas/FObject'
         g:
-          description: A list of objects
+          description: A list of objects with choice and properties
           type: array
           items:
             $ref: '#/components/schemas/GObject'
@@ -45,7 +45,12 @@ components:
           description: A byte string
           type: string
           format: binary
-    
+        j:
+          description: A list of objects with only choice
+          type: array
+          items:
+            $ref: '#/components/schemas/JObject'
+
     GObject:
       x-include:
       - '../common/common.yaml#/components/schemas/ListObject'
@@ -59,6 +64,17 @@ components:
         g_c:
           type: number
           default: 77.7
+        choice:
+          type: string
+          enum: [g_d, g_e]
+          default: 'g_d'
+        g_d:
+          type: string
+          default: 'some string'
+        g_e:
+          type: number
+          format: double
+          default: 3.0
 
     EObject:
       x-include:
@@ -75,8 +91,7 @@ components:
           default: 2.0
 
     FObject:
-      x-include:
-      - '../common/common.yaml#/components/schemas/GlobalObject'
+      type: object
       properties:
         choice:
           type: string
@@ -89,3 +104,15 @@ components:
           type: number
           format: double
           default: 3.0
+
+    JObject:
+      type: object
+      properties:
+        choice:
+          type: string
+          enum: [j_a, j_b]
+          default: j_a
+        j_a:
+          $ref: '#/components/schemas/EObject'
+        j_b:
+          $ref: '#/components/schemas/FObject'
