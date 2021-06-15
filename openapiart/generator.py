@@ -287,6 +287,7 @@ class Generator(object):
                 self._write(2, "return %s()" % factory["class_name"])
 
     def _get_object_property_class_names(self, ref):
+        """Returns: `Tuple(object_name, property_name, class_name, ref_name)`"""
         object_name = None
         property_name = None
         class_name = None
@@ -438,8 +439,9 @@ class Generator(object):
         return refs
 
     def _write_snappi_list(self, ref, property_name):
-        """This is class writer for schema object properties that have the
-        following definition:
+        """This is the class writer for schema object properties that are of
+        type array with a ref to an object.  The class should provide a factory
+        method for the encapsulated ref.
         ```
         properties:
           ports:
@@ -453,7 +455,7 @@ class Generator(object):
         methods for objects for each of the choice $refs (if any).
 
         if choice exists:
-            for each choice enum:
+            for each choice enum that is a $ref:
                 generate a factory method named after the choice
                 in the method set the choice property
         """
@@ -475,7 +477,8 @@ class Generator(object):
             self._write()
 
             # if all choice(s) are $ref, the getitem should return the actual choice object
-            # also no append method should be written, just the choice factory methods
+            # the _GETITEM_RETURNS_CHOICE_OBJECT class static allows the OpenApiIter to 
+            # correctly return the selected choice if any
             get_item_returns_choice = True
             if "properties" in yobject and "choice" in yobject["properties"]:
                 for property, item in yobject["properties"].items():
@@ -495,30 +498,23 @@ class Generator(object):
             self._write(2, "self._parent = parent")
             self._write(2, "self._choice = choice")
 
-            # TBD: pass in information to properly construct the __getitem__
-            # hint. type: () -> Union[FlowHeader, FlowEthernet, FlowVlan...]
-            # might need to be moved the end of this method
+            # write container emulation methods __getitem__, __iter__, __next__
             self._write_snappilist_special_methods(contained_class_name, yobject)
 
-            write_factory_choice_methods = True
-            if "properties" in yobject and "choice" in yobject["properties"]:
-                for property in yobject["properties"]:
-                    if property != "choice" and property not in yobject["properties"]["choice"]["enum"]:
-                        write_factory_choice_methods = False
-                        break
-            else:
-                write_factory_choice_methods = False
-            # write factory method for the schema object in the list
+            # write a factory method for the schema object in the list that returns the container
             self._write_factory_method(contained_class_name, ref_name.lower().split(".")[-1], ref, True, False)
+
+            # write an append method for the schema object in the list that returns the new object
+            _, _, class_name, _ = self._get_object_property_class_names(ref_name.lower())
+            self._write_append_method(yobject, False, class_name, contained_class_name, class_name)
+
             # write choice factory methods if the only properties are choice properties
-            if write_factory_choice_methods is True:
-                for property in yobject["properties"]:
-                    if property not in yobject["properties"]["choice"]["enum"]:
+            if get_item_returns_choice is True:
+                for property, item in yobject["properties"].items():
+                    if property == "choice":
                         continue
-                    if "$ref" not in yobject["properties"][property]:
-                        continue
-                    ref = yobject["properties"][property]["$ref"]
-                    self._write_factory_method(contained_class_name, property, ref, True, True)
+                    self._write_factory_method(contained_class_name, property, item["$ref"], True, True)
+
         return class_name
 
     def _write_snappilist_special_methods(self, contained_class_name, schema_object):
@@ -579,8 +575,6 @@ class Generator(object):
             self._write(2, "self._add(item)")
             self._write(2, "return self")
             self._write()
-            if choice_method is False:
-                self._write_append_method(yobject, choice_method, class_name, contained_class_name, return_class_name)
         else:
             self._write(1, "@property")
             self._write(1, "def %s(self):" % (method_name))
@@ -598,7 +592,7 @@ class Generator(object):
         self._imports.append("from .%s import %s" % (contained_class_name.lower(), contained_class_name))
         self._write(1, "def append(self%s):" % (param_string))
         self._write(2, "# type: (%s) -> %s" % (type_string, contained_class_name))
-        self._write(2, '"""Factory method that creates and returns an instance of the %s class' % (contained_class_name))
+        self._write(2, '"""Append method that creates and returns an instance of the %s class' % (contained_class_name))
         self._write()
         self._write(2, "%s" % self._get_description(yobject))
         self._write()
@@ -612,7 +606,7 @@ class Generator(object):
             params = ["parent=self._parent", "choice=self._choice"]
             for property in properties:
                 params.append("%s=%s" % (property, property))
-            self._write(2, "item = %s(%s)" % (class_name, ", ".join(params)))
+            self._write(2, "item = %s(%s)" % (contained_class_name, ", ".join(params)))
         self._write(2, "self._add(item)")
         self._write(2, "return item")
 
