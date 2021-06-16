@@ -41,18 +41,18 @@ jobs:
         with:
           path: .output/openapiart/**/*
 
-#      - name: Get all changes
-#        id: file_changes
-#        uses: trilom/file-changes-action@v1.2.4
-#
-#      - name: Output changed files
-#        id: changed_files
-#        run: echo ${{steps.file_changes.outputs.files_modified}}
-#
-#      - name: Upload Assets to Pypi
-#        if: true == contains(steps.file_changes.outputs.files_modified, 'VERSION')
-#        env:
-#          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-#          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-#        run: |
-#          twine upload dist/*
+      - name: Get all changes
+        id: file_changes
+        uses: trilom/file-changes-action@v1.2.4
+
+      - name: Output changed files
+        id: changed_files
+        run: echo ${{steps.file_changes.outputs.files_modified}}
+
+      - name: Upload Assets to Pypi
+        if: true == contains(steps.file_changes.outputs.files_modified, 'VERSION')
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          twine upload dist/*

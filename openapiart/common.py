@@ -7,7 +7,11 @@ import urllib3
 import io
 import sys
 import time
-from typing import Union, Dict, Literal, List
+
+try:
+    from typing import Union, Dict, List, Any, Literal
+except ImportError:
+    from typing_extensions import Literal
 
 if sys.version_info[0] == 3:
     unicode = str
@@ -19,20 +23,20 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
     generator.Generator outputs a base Api class with the following:
     - an abstract method for each OpenAPI path item object
     - a concrete properties for each unique OpenAPI path item parameter.
-    
-    generator.Generator also outputs an HttpApi class that inherits the base  
+
+    generator.Generator also outputs an HttpApi class that inherits the base
     Api class, implements the abstract methods and uses the common HttpTransport
     class send_recv method to communicate with a REST based server.
 
     Args
     ----
-    - location (str): The location of an Open Traffic Generator server. 
-    - verify (bool): Verify the server's TLS certificate, or a string, in which 
-      case it must be a path to a CA bundle to use. Defaults to `True`. 
-      When set to `False`, requests will accept any TLS certificate presented by  
-      the server, and will ignore hostname mismatches and/or expired  
-      certificates, which will make your application vulnerable to  
-      man-in-the-middle (MitM) attacks. Setting verify to `False`   
+    - location (str): The location of an Open Traffic Generator server.
+    - verify (bool): Verify the server's TLS certificate, or a string, in which
+      case it must be a path to a CA bundle to use. Defaults to `True`.
+      When set to `False`, requests will accept any TLS certificate presented by
+      the server, and will ignore hostname mismatches and/or expired
+      certificates, which will make your application vulnerable to
+      man-in-the-middle (MitM) attacks. Setting verify to `False`
       may be useful during local development or testing.
     - logger (logging.Logger): A user defined logging.logger, if none is provided
       then a default logger with a stdout handler will be provided
@@ -44,7 +48,7 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
     if ext is None:
         return HttpApi(**params)
     try:
-        lib = importlib.import_module('{}_{}'.format(__module__, ext))
+        lib = importlib.import_module("{}_{}".format(__module__, ext))
         return lib.Api(**params)
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"
@@ -53,28 +57,26 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
 
 class HttpTransport(object):
     def __init__(self, **kwargs):
-        """Use args from api() method to instantiate an HTTP transport
-        """
-        self.location = kwargs['location'] if 'location' in kwargs else 'https://localhost'
-        self.verify = kwargs['verify'] if 'verify' in kwargs else False
-        self.logger = kwargs['logger'] if 'logger' in kwargs else None
-        self.loglevel = kwargs['loglevel'] if 'loglevel' in kwargs else logging.DEBUG
+        """Use args from api() method to instantiate an HTTP transport"""
+        self.location = kwargs["location"] if "location" in kwargs else "https://localhost"
+        self.verify = kwargs["verify"] if "verify" in kwargs else False
+        self.logger = kwargs["logger"] if "logger" in kwargs else None
+        self.loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
         if self.logger is None:
             stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt='%(asctime)s [%(name)s] [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
             formatter.converter = time.gmtime
             stdout_handler.setFormatter(formatter)
             self.logger = logging.Logger(self.__module__, level=self.loglevel)
             self.logger.addHandler(stdout_handler)
-        self.logger.debug('HttpTransport args: {}'.format(
-            ', '.join(['{}={!r}'.format(k, v) for k, v in kwargs.items()])))
+        self.logger.debug("HttpTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.logger.warning('Certificate verification is disabled')
+            self.logger.warning("Certificate verification is disabled")
         self._session = requests.Session()
 
     def send_recv(self, method, relative_url, payload=None, return_object=None):
-        url = '%s%s' % (self.location, relative_url)
+        url = "%s%s" % (self.location, relative_url)
         data = None
         if payload is not None:
             if isinstance(payload, (str, unicode)):
@@ -82,7 +84,7 @@ class HttpTransport(object):
             elif isinstance(payload, OpenApiBase):
                 data = payload.serialize()
             else:
-                raise Exception('Type of payload provided is unknown')
+                raise Exception("Type of payload provided is unknown")
         response = self._session.request(
             method=method,
             url=url,
@@ -90,9 +92,10 @@ class HttpTransport(object):
             verify=False,
             allow_redirects=True,
             # TODO: add a timeout here
-            headers={'Content-Type': 'application/json'})
+            headers={"Content-Type": "application/json"},
+        )
         if response.ok:
-            if 'application/json' in response.headers['content-type']:
+            if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
                 # accordingly, but current impl works for now
                 response_dict = yaml.safe_load(response.text)
@@ -102,7 +105,7 @@ class HttpTransport(object):
                     return response_dict
                 else:
                     return return_object.deserialize(response_dict)
-            elif 'application/octet-stream' in response.headers['content-type']:
+            elif "application/octet-stream" in response.headers["content-type"]:
                 return io.BytesIO(response.content)
             else:
                 # TODO: for now, return bare response object for unknown
@@ -113,11 +116,11 @@ class HttpTransport(object):
 
 
 class OpenApiBase(object):
-    """Base class for all generated classes
-    """
-    JSON = 'json'
-    YAML = 'yaml'
-    DICT = 'dict'
+    """Base class for all generated classes"""
+
+    JSON = "json"
+    YAML = "yaml"
+    DICT = "dict"
 
     __slots__ = ()
 
@@ -146,7 +149,7 @@ class OpenApiBase(object):
         elif encoding == OpenApiBase.DICT:
             return self._encode()
         else:
-            raise NotImplementedError('Encoding %s not supported' % encoding)
+            raise NotImplementedError("Encoding %s not supported" % encoding)
 
     def _encode(self):
         raise NotImplementedError()
@@ -185,7 +188,8 @@ class OpenApiObject(OpenApiBase):
     That means it can exist in multiple locations as a
     leaf, parent/choice or parent.
     """
-    __slots__ = ('_properties', '_parent', '_choice')
+
+    __slots__ = ("_properties", "_parent", "_choice")
 
     def __init__(self, parent=None, choice=None):
         super(OpenApiObject, self).__init__()
@@ -201,17 +205,16 @@ class OpenApiObject(OpenApiBase):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
-            if 'choice' in dir(self):
-                self._properties['choice'] = name
+            if "choice" in dir(self):
+                self._properties["choice"] = name
             self._properties[name] = default_value(parent=parent, choice=choice)
 
-            if '_DEFAULTS' in dir(self._properties[name]) and\
-                'choice' in self._properties[name]._DEFAULTS:
-                getattr(self._properties[name], self._properties[name]._DEFAULTS['choice'])
+            if "_DEFAULTS" in dir(self._properties[name]) and "choice" in self._properties[name]._DEFAULTS:
+                getattr(self._properties[name], self._properties[name]._DEFAULTS["choice"])
         else:
             if default_value is None and name in self._DEFAULTS:
-                if 'choice' in dir(self):
-                    self._properties['choice'] = name
+                if "choice" in dir(self):
+                    self._properties["choice"] = name
                 self._properties[name] = self._DEFAULTS[name]
             else:
                 self._properties[name] = default_value
@@ -223,13 +226,12 @@ class OpenApiObject(OpenApiBase):
         else:
             self._properties[name] = value
         if choice is not None:
-            self._properties['choice'] = choice
+            self._properties["choice"] = choice
         elif self._parent is not None and self._choice is not None and value is not None:
-            self._parent._set_property('choice', self._choice)
+            self._parent._set_property("choice", self._choice)
 
     def _encode(self):
-        """Helper method for serialization
-        """
+        """Helper method for serialization"""
         output = {}
         for key, value in self._properties.items():
             if isinstance(value, (OpenApiObject, OpenApiIter)):
@@ -244,14 +246,11 @@ class OpenApiObject(OpenApiBase):
             if property_name in snappi_names:
                 if isinstance(property_value, dict):
                     child = self._get_child_class(property_name)
-                    if '_choice' in dir(child[1]) and '_parent' in dir(
-                            child[1]):
-                        property_value = child[1](
-                            self, property_name)._decode(property_value)
+                    if "_choice" in dir(child[1]) and "_parent" in dir(child[1]):
+                        property_value = child[1](self, property_name)._decode(property_value)
                     else:
                         property_value = child[1]()._decode(property_value)
-                elif isinstance(property_value,
-                                list) and property_name in self._TYPES:
+                elif isinstance(property_value, list) and property_name in self._TYPES:
                     child = self._get_child_class(property_name, True)
                     snappi_list = child[0]()
                     for item in property_value:
@@ -275,21 +274,18 @@ class OpenApiObject(OpenApiBase):
         return self.serialize(encoding=self.YAML)
 
     def __deepcopy__(self, memo):
-        """Creates a deep copy of the current object
-        """
+        """Creates a deep copy of the current object"""
         return self.__class__().deserialize(self.serialize())
 
     def __copy__(self):
-        """Creates a deep copy of the current object
-        """
+        """Creates a deep copy of the current object"""
         return self.__deepcopy__(None)
 
     def __eq__(self, other):
         return self.__str__() == other.__str__()
 
     def clone(self):
-        """Creates a deep copy of the current object
-        """
+        """Creates a deep copy of the current object"""
         return self.__deepcopy__(None)
 
 
@@ -309,7 +305,8 @@ class OpenApiIter(OpenApiBase):
     The __iter__ method allows for iterating across the encapsulated contents
     - for flow in config.flows:
     """
-    __slots__ = ('_index', '_items')
+
+    __slots__ = ("_index", "_items")
 
     def __init__(self):
         super(OpenApiIter, self).__init__()
@@ -335,9 +332,8 @@ class OpenApiIter(OpenApiBase):
                     found = item
         if found is None:
             raise IndexError()
-        if 'choice' in found._properties and found._properties.get(
-                "choice") is not None:
-            return found._properties[found._properties['choice']]
+        if self._GETITEM_RETURNS_CHOICE_OBJECT is True and found._properties.get("choice") is not None:
+            return found._properties[found._properties["choice"]]
         return found
 
     def _iter(self):
@@ -349,7 +345,7 @@ class OpenApiIter(OpenApiBase):
             raise StopIteration
         else:
             self._index += 1
-        return self._getitem(self._index)
+        return self.__getitem__(self._index)
 
     def _add(self, item):
         self._items.append(item)
@@ -360,7 +356,7 @@ class OpenApiIter(OpenApiBase):
         TBD: type check, raise error on mismatch
         """
         if isinstance(item, OpenApiObject) is False:
-            raise Exception('Item is not an instance of OpenApiObject')
+            raise Exception("Item is not an instance of OpenApiObject")
         self._add(item)
         return self
 
@@ -372,7 +368,7 @@ class OpenApiIter(OpenApiBase):
         return [item._encode() for item in self._items]
 
     def _decode(self, encoded_list):
-        item_class_name = self.__class__.__name__.replace('Iter', '')
+        item_class_name = self.__class__.__name__.replace("Iter", "")
         module = importlib.import_module(self.__module__)
         object_class = getattr(module, item_class_name)
         self.clear()
@@ -380,12 +376,10 @@ class OpenApiIter(OpenApiBase):
             self._add(object_class()._decode(item))
 
     def __copy__(self):
-        raise NotImplementedError(
-            'Shallow copy of OpenApiIter objects is not supported')
+        raise NotImplementedError("Shallow copy of OpenApiIter objects is not supported")
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError(
-            'Deep copy of OpenApiIter objects is not supported')
+        raise NotImplementedError("Deep copy of OpenApiIter objects is not supported")
 
     def __str__(self):
         return yaml.safe_dump(self._encode())

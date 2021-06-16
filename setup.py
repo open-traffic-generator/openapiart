@@ -21,7 +21,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/open-traffic-generator/openapiart",
     author="https://github.com/open-traffic-generator/openapiart",
-    author_email="https://github.com/open-traffic-generator/openapiart/issues",
+    author_email="andy.balogh@keysight.com",
     license="MIT",
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -35,7 +35,16 @@ setuptools.setup(
     include_package_data=True,
     packages=[pkg_name],
     python_requires=">=2.7, <4",
-    install_requires=["grpcio", "grpcio-tools", "requests", "pyyaml", "pytest", "openapi-spec-validator", "jsonpath-ng", "typing"],
+    install_requires=[
+        "grpcio",
+        "grpcio-tools",
+        "requests",
+        "pyyaml",
+        "pytest",
+        "openapi-spec-validator",
+        "jsonpath-ng",
+        "typing",
+    ],
     tests_require=["pytest"],
     test_suite="tests",
 )
