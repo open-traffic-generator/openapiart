@@ -35,6 +35,7 @@ class Bundler(object):
     class description(str):
         pass
 
+    @staticmethod
     def literal_representer(dumper, data):
         return dumper.represent_scalar(u"tag:yaml.org,2002:str", data, style="|")
 
@@ -259,9 +260,8 @@ class Bundler(object):
         self._apply_common_x_field_pattern_properties(schema["properties"]["values"]["items"], xpattern, format, property_name="values")
         self._content["components"]["schemas"][schema_name] = schema
 
-    def _apply_common_x_field_pattern_properties(
-        self, schema: Dict, xpattern: Dict, format: str, property_name: Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]]
-    ):
+    def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, property_name):
+        # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
         step_defaults = {"mac": "00:00:00:00:00:01", "ipv4": "0.0.0.1", "ipv6": "::1"}
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
