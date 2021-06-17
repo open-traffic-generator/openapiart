@@ -115,7 +115,11 @@ class Generator(object):
             common_content = fp.read()
             if re.search(r'def[\s+]api\(', common_content) is not None:
                 self._generated_top_level_factories.append('api')
-            common_content = common_content.replace('__REPLACE_EXTENSION_PREFIX',
+            if self._extension_prefix is None:
+                common_content = common_content.replace("\"__REPLACE_EXTENSION_PREFIX\"",
+                                                        "__name__")
+            else:
+                common_content = common_content.replace('__REPLACE_EXTENSION_PREFIX',
                                                     self._extension_prefix)
         with open(self._api_filename, "w") as self._fid:
             self._fid.write(common_content)
