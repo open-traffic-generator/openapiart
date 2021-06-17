@@ -24,7 +24,8 @@ def openapiart():
         output_dir='./.output/openapiart', 
         python_module_name='sanity',
         protobuf_file_name='sanity',
-        protobuf_package_name='test.sanity')
+        protobuf_package_name='test.sanity',
+        extension_prefix='snappi')
     return openapiart
 
 

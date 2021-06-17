@@ -48,7 +48,7 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
     if ext is None:
         return HttpApi(**params)
     try:
-        lib = importlib.import_module("{}_{}".format(__module__, ext))
+        lib = importlib.import_module("__REPLACE_EXTENSION_PREFIX_{}".format(ext))
         return lib.Api(**params)
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"

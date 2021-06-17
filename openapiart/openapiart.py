@@ -34,10 +34,12 @@ class OpenApiArt(object):
         protobuf_package_name=None,
         protobuf_file_name=None,
         output_dir=None,
+        extension_prefix = None
     ):
         self._python_module_name = python_module_name
         self._protobuf_file_name = protobuf_file_name
         self._protobuf_package_name = protobuf_package_name
+        self._extension_prefix = extension_prefix
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), ".output")
         self._relative_output_dir = output_dir
@@ -92,6 +94,7 @@ class OpenApiArt(object):
                 self._bundler.openapi_filepath,
                 self._python_module_name,
                 output_dir=self._output_dir,
+                extension_prefix = self._extension_prefix
             )
             python.generate()
 
