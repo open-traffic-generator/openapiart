@@ -27,12 +27,13 @@ class Generator(object):
     bundler.py infrastructure.
     """
 
-    def __init__(self, openapi_filename, package_name, output_dir=None):
+    def __init__(self, openapi_filename, package_name, output_dir=None, extension_prefix = None):
         self._parsers = {}
         self._generated_methods = []
         self._generated_classes = []
         self._generated_top_level_factories = []
         self._openapi_filename = openapi_filename
+        self._extension_prefix = extension_prefix
         self.__python = os.path.normpath(sys.executable)
         self.__python_dir = os.path.dirname(self.__python)
         self._src_dir = output_dir
@@ -114,6 +115,9 @@ class Generator(object):
             common_content = fp.read()
             if re.search(r'def[\s+]api\(', common_content) is not None:
                 self._generated_top_level_factories.append('api')
+            if self._extension_prefix is not None:
+                common_content = common_content.replace(r'"{}_{}".format(__name__, ext)',
+                    r'"' + self._extension_prefix + r'_{}.' + self._package_name + r'".format(ext)')
         with open(self._api_filename, "w") as self._fid:
             self._fid.write(common_content)
         methods, factories = self._get_methods_and_factories()

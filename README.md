@@ -49,7 +49,8 @@ openapiart.OpenApiArt(
     python_module_name='sample', 
     protobuf_file_name='sample',
     protobuf_package_name='sample',
-    output_dir='./artifacts'
+    output_dir='./artifacts',
+    extension_prefix='sample'
 )
 ```
 
