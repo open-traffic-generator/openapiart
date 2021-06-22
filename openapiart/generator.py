@@ -117,7 +117,7 @@ class Generator(object):
                 self._generated_top_level_factories.append('api')
             if self._extension_prefix is not None:
                 common_content = common_content.replace(r'"{}_{}".format(__name__, ext)',
-                    r'"' + self._extension_prefix + r'_{}.' + self._package_name + r'api".format(ext)')
+                    r'"' + self._extension_prefix + r'_{}.' + self._package_name + r'_api".format(ext)')
         with open(self._api_filename, "w") as self._fid:
             self._fid.write(common_content)
         methods, factories = self._get_methods_and_factories()
