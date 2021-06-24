@@ -3,6 +3,7 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
+      required: [a, b, c]
       properties:
         a:
           description: |-
