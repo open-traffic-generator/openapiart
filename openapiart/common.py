@@ -283,6 +283,17 @@ class OpenApiValidator(object):
         # TODO pending item validation
         return isinstance(value, list)
     
+    def validate_binary(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        return all([
+            all([
+                True if int(b) == 0 or int(b) == 1 else False
+                for b in binary
+            ])
+            for binary in value
+        ])
+    
     def types_validation(self, value, type_, err_msg):
         type_map = {
             int: "integer", str: "string",

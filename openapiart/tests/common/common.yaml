@@ -5,13 +5,13 @@ components:
       properties:
         name:
           type: string
-          format: global-unique
+          format: string
     ListObject:
       type: object
       properties:
         name:
           type: string
-          format: list-unique
+          format: string
     Error:
       type: object
       properties:

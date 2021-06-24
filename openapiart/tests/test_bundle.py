@@ -15,7 +15,7 @@ def test_config(api):
     g1 = config.g.append(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
     g1.g_d = "gdgdgd"
     config.h = False
-    config.i = "byte string"
+    config.i = "11011011"
     j = config.j.append()
     j.j_b.f_a = "a"
     djson = json.loads(config.serialize(config.JSON))
