@@ -118,8 +118,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("message OpenApiFldOpt {")
         self._write("string default = 10;", indent=1)
-        self._write("bool required = 20;", indent=1)
-        self._write("string description = 30;", indent=1)
+        self._write("string description = 20;", indent=1)
         self._write("}")
         self._write("extend google.protobuf.FieldOptions {")
         self._write("optional OpenApiFldOpt fld_meta = {};".format(self._next_custom_id()), indent=1)
@@ -217,11 +216,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if property_type.endswith(".Enum") and default is not None:
                 type = "enum"
                 default = "{}.{}".format(property_type.split(" ")[-1], default.upper())
-            required = "required" in schema_object and property_name in schema_object["required"]
-            self._write("{} {} = {} [".format(property_type, property_name.lower(), id), indent=1)
+            if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
+                optional = ""
+            else:
+                optional = "optional "
+            self._write("{}{} {} = {} [".format(optional, property_type, property_name.lower(), id), indent=1)
             if default is not None:
                 self._write('(fld_meta).default = "{}",'.format(default), indent=2)
-            self._write("(fld_meta).required = {},".format(str(required).lower()), indent=2)
             self._write('(fld_meta).description = "{}"'.format(self._get_description(property_object)), indent=2)
             self._write("];", indent=1)
 
