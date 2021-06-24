@@ -180,7 +180,126 @@ class OpenApiBase(object):
         raise NotImplementedError()
 
 
-class OpenApiObject(OpenApiBase):
+class OpenApiValidator(object):
+
+    _MAC_REGEX = re.compile(
+        r"^([\da-fA-F]{2}[:]){5}[\da-fA-F]{2}$")
+    _IPV6_REP1 = re.compile(r"^:[\da-fA-F].+")
+    _IPV6_REP2 = re.compile(r".+[\da-fA-F]:$")
+    _IPV6_REP3 = re.compile(
+        r"^[\da-fA-F]{1,4}:" *7 + r"[\da-fA-F]{1,4}$")
+    _HEX_REGEX = re.compile(r"^0?x?[\da-fA-F]+$")
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        pass
+
+    def validate_mac(self, mac):
+        if mac is None:
+            return False
+        if isinstance(mac, list):
+            return all([
+                True if self._MAC_REGEX.match(m) else False
+                for m in mac
+            ])
+        if self._MAC_REGEX.match(mac):
+            return True
+        return False
+
+    def validate_ipv4(self, ip):
+        if ip is None:
+            return False
+        try:
+            if isinstance(ip, list):
+                return all([
+                    all([0 <= int(oct) <= 255 for oct in i.split(".", 3)])
+                    for i in ip
+                ])
+            else:
+                return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
+        except Exception:
+            return False
+
+    def _validate_ipv6(self, ip):
+        if ip is None:
+            return False
+        if self._IPV6_REP1.match(ip) or self._IPV6_REP2.match(ip):
+            return False
+        if ip.count("::") == 0:
+            if self._IPV6_REP3.match(ip):
+                return True
+            else:
+                return False
+        if ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
+            return False
+        return True
+
+    def validate_ipv6(self, ip):
+        if isinstance(ip, list):
+            return all([
+                self._validate_ipv6(i) for i in ip
+            ])
+        return self._validate_ipv6(ip)
+
+    def validate_hex(self, hex):
+        if isinstance(hex, list):
+            return all([
+                self._HEX_REGEX(h)
+                for h in hex
+            ])
+        if self._HEX_REGEX.match(hex):
+            return True
+        return False
+
+    def validate_integer(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        return all([isinstance(i, int) for i in value])
+
+    def validate_float(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        return all([
+            isinstance(i, (float, int)) for i in value
+        ])
+
+    def validate_string(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        return all([
+            isinstance(i, str) for i in value
+        ])
+    
+    def validate_bool(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        return all([
+            isinstance(i, bool) for i in value
+        ])
+
+    def validate_list(self, value):
+        # TODO pending item validation
+        return isinstance(value, list)
+    
+    def types_validation(self, value, type_, err_msg):
+        type_map = {
+            int: "integer", str: "string",
+            float: "float", bool: "bool",
+            list: "list", "int64": "integer",
+            "int32": "integer", "double": "float"
+        }
+        if type_ in type_map:
+            type_ = type_map[type_]
+        v_obj = getattr(self, "validate_{}".format(type_))
+        if v_obj is None:
+            msg = "{} is not a valid or unsupported format".format(type_)
+            raise TypeError(msg)
+        if v_obj(value) is False:
+            raise TypeError(err_msg)
+
+
+class OpenApiObject(OpenApiBase, OpenApiValidator):
     """Base class for any /components/schemas object
 
     Every OpenApiObject is reuseable within the schema so it can
@@ -201,20 +320,27 @@ class OpenApiObject(OpenApiBase):
     def parent(self):
         return self._parent
 
+    def _set_choice(self, name):
+        if "choice" in dir(self) and "_TYPES" in dir(self) \
+            and "choice" in self._TYPES and name in self._TYPES["choice"]["enum"]:
+            for enum in self._TYPES["choice"]["enum"]:
+                if enum in self._properties and name != enum:
+                    self._properties.pop(enum)
+            self._properties["choice"] = name
+        
     def _get_property(self, name, default_value=None, parent=None, choice=None):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
-            if "choice" in dir(self):
-                self._properties["choice"] = name
+            self._set_choice(name)
             self._properties[name] = default_value(parent=parent, choice=choice)
 
-            if "_DEFAULTS" in dir(self._properties[name]) and "choice" in self._properties[name]._DEFAULTS:
+            if "_DEFAULTS" in dir(self._properties[name]) and\
+                "choice" in self._properties[name]._DEFAULTS:
                 getattr(self._properties[name], self._properties[name]._DEFAULTS["choice"])
         else:
             if default_value is None and name in self._DEFAULTS:
-                if "choice" in dir(self):
-                    self._properties["choice"] = name
+                self._set_choice(name)
                 self._properties[name] = self._DEFAULTS[name]
             else:
                 self._properties[name] = default_value
@@ -233,15 +359,18 @@ class OpenApiObject(OpenApiBase):
     def _encode(self):
         """Helper method for serialization"""
         output = {}
+        self._validate_required()
         for key, value in self._properties.items():
+            self._validate_types(key, value)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
-            else:
+            elif value is not None:
                 output[key] = value
         return output
 
     def _decode(self, obj):
         snappi_names = dir(self)
+        dtypes = [list, str, int, float, bool]
         for property_name, property_value in obj.items():
             if property_name in snappi_names:
                 if isinstance(property_value, dict):
@@ -250,19 +379,26 @@ class OpenApiObject(OpenApiBase):
                         property_value = child[1](self, property_name)._decode(property_value)
                     else:
                         property_value = child[1]()._decode(property_value)
-                elif isinstance(property_value, list) and property_name in self._TYPES:
+                elif isinstance(property_value, list) and \
+                    property_name in self._TYPES and \
+                        self._TYPES[property_name]["type"] not in dtypes:
                     child = self._get_child_class(property_name, True)
                     snappi_list = child[0]()
                     for item in property_value:
                         item = child[1]()._decode(item)
                         snappi_list._items.append(item)
                     property_value = snappi_list
+                elif property_name in self._DEFAULTS and property_value is None:
+                    if isinstance(self._DEFAULTS[property_name], tuple(dtypes)):
+                        property_value = self._DEFAULTS[property_name]
                 self._properties[property_name] = property_value
+            self._validate_types(property_name, property_value)
+        self._validate_required()
         return self
 
     def _get_child_class(self, property_name, is_property_list=False):
         list_class = None
-        class_name = self._TYPES[property_name]
+        class_name = self._TYPES[property_name]["type"]
         module = importlib.import_module(self.__module__)
         object_class = getattr(module, class_name)
         if is_property_list is True:
@@ -287,6 +423,83 @@ class OpenApiObject(OpenApiBase):
     def clone(self):
         """Creates a deep copy of the current object"""
         return self.__deepcopy__(None)
+    
+    def _validate_required(self):
+        """Validates the required properties are set
+        """
+        if getattr(self, "_REQUIRED", None) is None:
+            return
+        for p in self._REQUIRED:
+            if p in self._properties and self._properties[p] is not None:
+                continue
+            msg = "{} is a mandatory property of {}"\
+                " and should not be set to None".format(
+                p, self.__class__
+            )
+            raise ValueError(msg)
+
+    def _validate_types(self, property_name, property_value):
+        common_data_types = [list, str, int, float, bool]
+        if property_name not in self._TYPES:
+            raise ValueError("Invalid Property {}".format(property_name))
+        details = self._TYPES[property_name]
+        if property_value is None and property_name not in self._DEFAULTS and \
+            property_name not in self._REQUIRED:
+            return
+        if "enum" in details and property_value not in details["enum"]:
+            msg = "property {} shall be one of these" \
+                " {} enum, but got {} at {}"
+            raise TypeError(msg.format(
+                property_name, details["enum"], property_value, self.__class__
+            ))
+        if details["type"] in common_data_types and \
+                "format" not in details:
+            msg = "property {} shall be of type {}, but got {} at {}".format(
+                    property_name, details["type"], type(property_value), self.__class__
+                )
+            self.types_validation(property_value, details["type"], msg)
+
+        if details["type"] not in common_data_types:
+            class_name = details["type"]
+            # TODO Need to revisit importlib
+            module = importlib.import_module(self.__module__)
+            object_class = getattr(module, class_name)
+            if not isinstance(property_value, object_class):
+                msg = "property {} shall be of type {}," \
+                    " but got {} at {}"
+                raise TypeError(msg.format(
+                    property_name, class_name, type(property_value),
+                    self.__class__
+                ))
+        if "format" in details:
+            msg = "Invalid {} format, expected {} at {}".format(
+                property_value, details["format"], self.__class__
+            )
+            self.types_validation(property_value, details["format"], msg)
+
+    def validate(self):
+        self._validate_required()
+        for key, value in self._properties.items():
+            self._validate_types(key, value)
+    
+    def getproperty(self, name, get_default=False):
+        """ 
+        getattr for snappi object
+        """
+        if self._properties.get(name) is not None:
+            return self._properties[name]
+        elif get_default:
+            # TODO need to find a way to avoid getattr
+            choice = self._properties.get("choice")\
+                    if "choice" in dir(self) else None
+            getattr(self, name)
+            if "choice" in dir(self):
+                if choice is None and "choice" in self._properties:
+                    self._properties.pop("choice")
+                else:
+                    self._properties["choice"] = choice
+            return self._properties.pop(name)
+        return None
 
 
 class OpenApiIter(OpenApiBase):
@@ -294,7 +507,7 @@ class OpenApiIter(OpenApiBase):
 
     Inheriting classes contain 0..n instances of an OpenAPI components/schemas
     object.
-    - config.flows.flow(name='1').flow(name='2').flow(name='3')
+    - config.flows.flow(name="1").flow(name="2").flow(name="3")
 
     The __getitem__ method allows getting an instance using ordinal.
     - config.flows[0]

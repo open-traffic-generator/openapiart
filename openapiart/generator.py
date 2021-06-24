@@ -345,17 +345,24 @@ class Generator(object):
                 self._write()
             required, defaults = self._get_required_and_defaults(schema_object)
 
+            if len(required) > 0:
+                self._write(1, "_REQUIRED = {} # type: tuple(str)".format(required))
+                self._write()
+            else:
+                self._write(1, "_REQUIRED= () # type: tuple(str)")
+                self._write()
+
             if len(defaults) > 0:
                 self._write(1, "_DEFAULTS = {")
                 for name, value in defaults:
-                    if isinstance(value, (bool, int, float)):
+                    if isinstance(value, (list, bool, int, float, tuple)):
                         self._write(2, "'%s': %s," % (name, value))
                     else:
                         self._write(2, "'%s': '%s'," % (name, value))
                 self._write(1, "} # type: Dict[str, Any]")
                 self._write()
             else:
-                self._write(1, "_DEFAULTS= {} # type: Dict[str, Any]")
+                self._write(1, "_DEFAULTS= {} # type: Dict[str, Union(type)]")
                 self._write()
 
             # write constants
@@ -364,9 +371,15 @@ class Generator(object):
             for enum in self._get_parser("$..enum | x-constants").find(schema_object):
                 for name in enum.value:
                     value = name
+                    value_type = "string"
                     if isinstance(enum.value, dict):
                         value = enum.value[name]
-                    self._write(1, "%s = '%s' # type: str" % (name.upper(), value))
+                        value_type = enum.context.value['type'] \
+                            if 'type' in enum.context.value else 'string'
+                    if value_type == 'string':
+                        self._write(1, "%s = '%s' # type: str" % (name.upper(), value))
+                    else:
+                        self._write(1, "%s = %s #" % (name.upper(), value))
                 if len(enum.value) > 0:
                     self._write()
 
@@ -696,31 +709,55 @@ class Generator(object):
         #     if len(line) > 0:
         #         doc_string.append('%s  ' % line)
         # return doc_string
+    def _get_data_types(self, yproperty):
+        data_type_map = {
+            "integer": "int", "string": "str",
+            "boolean": "bool", "array": "list",
+            "number": "float", "float": "float",
+            "double": "float"
+        }
+        if yproperty["type"]  in data_type_map:
+            return data_type_map[yproperty["type"]]
+        else:
+            return yproperty["type"]
 
     def _get_snappi_types(self, yobject):
         types = []
-        if "properties" in yobject:
-            for name in yobject["properties"]:
-                yproperty = yobject["properties"][name]
-                ref = self._get_parser("$..'$ref'").find(yproperty)
+        if 'properties' in yobject:
+            for name in yobject['properties']:
+                yproperty = yobject['properties'][name]
+                ref = parse("$..'$ref'").find(yproperty)
+                pt = {}
+                if 'type' in yproperty:
+                    pt.update({'type': self._get_data_types(yproperty)})
+                    pt.update({'enum': yproperty['enum']}) if 'enum' in yproperty else None
+                    pt.update({
+                        'format': "\'%s\'" % yproperty['format']
+                    }) if 'format' in yproperty else None
                 if len(ref) > 0:
-                    object_name = ref[0].value.split("/")[-1]
-                    class_name = object_name.replace(".", "")
-                    if "type" in yproperty and yproperty["type"] == "array":
-                        class_name += "Iter"
-                    types.append((name, class_name))
-        return types
+                    object_name = ref[0].value.split('/')[-1]
+                    class_name = object_name.replace('.', '')
+                    if 'type' in yproperty and yproperty['type'] == 'array':
+                        class_name += 'Iter'
+                    pt.update({'type': "\'%s\'" % class_name})
+                if len(pt) > 0:
+                    types.append((name, pt))
 
+        return types
+    
     def _get_required_and_defaults(self, yobject):
         required = []
         defaults = []
-        if "required" in yobject:
-            required = yobject["required"]
-        if "properties" in yobject:
-            for name in yobject["properties"]:
-                yproperty = yobject["properties"][name]
-                if "default" in yproperty:
-                    defaults.append((name, yproperty["default"]))
+        if 'required' in yobject:
+            required = yobject['required']
+        if 'properties' in yobject:
+            for name in yobject['properties']:
+                yproperty = yobject['properties'][name]
+                if 'default' in yproperty:
+                    default = yproperty['default']
+                    if 'type' in yproperty and yproperty['type'] == 'number':
+                        default = float(default)
+                    defaults.append((name, default))
         return (tuple(required), defaults)
 
     def _get_default_value(self, property):
