@@ -7,6 +7,7 @@ import urllib3
 import io
 import sys
 import time
+import re
 
 try:
     from typing import Union, Dict, List, Any, Literal
