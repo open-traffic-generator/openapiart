@@ -159,7 +159,7 @@ class OpenApiBase(object):
         """Deserialize a python object into the current object.
 
         If the input `serialized_object` does not match the current
-        snappi object an exception will be raised.
+        openapi object an exception will be raised.
 
         Args
         ----
@@ -496,7 +496,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     
     def get(self, name, with_default=False):
         """ 
-        getattr for snappi object
+        getattr for openapi object
         """
         if self._properties.get(name) is not None:
             return self._properties[name]

@@ -75,21 +75,9 @@ class Generator(object):
         """Clean the environment prior to file generation
         - Remove any locally installed version of
         - Remove generated files
-        - Leave infrastructure files that are prefixed with the word snappi
+        - Leave infrastructure files
         """
         process_args = [self.__python, "-m", "pip", "uninstall", "--yes", self._package_name]
-        # subprocess.Popen(process_args, shell=False).wait()
-        # os.rmdir(self._output_dir)
-        # import fnmatch
-        # for rootDir, subdirs, filenames in os.walk(self._src_dir):
-        #     if rootDir.endswith('tests'):
-        #         continue
-        #     for filename in fnmatch.filter(filenames, '*.py'):
-        #         try:
-        #             if filename.startswith('snappi') is False:
-        #                 os.remove(os.path.join(rootDir, filename))
-        #         except OSError:
-        #             print('Error deleting file %s' % filename)
 
     def _get_openapi_file(self):
         if self._openapi_filename is None:
@@ -222,9 +210,9 @@ class Generator(object):
 
         for ref, property_name in self._top_level_schema_refs:
             if property_name is None:
-                self._write_snappi_object(ref)
+                self._write_openapi_object(ref)
             else:
-                self._write_snappi_list(ref, property_name)
+                self._write_openapi_list(ref, property_name)
 
         return methods, factories
 
@@ -308,7 +296,7 @@ class Generator(object):
             class_name = object_name.replace(".", "")
         return (object_name, property_name, class_name, ref_name)
 
-    def _write_snappi_object(self, ref, choice_method_name=None):
+    def _write_openapi_object(self, ref, choice_method_name=None):
         schema_object = self._get_object_from_ref(ref)
         ref_name = ref.split("/")[-1]
         class_name = ref_name.replace(".", "")
@@ -331,10 +319,10 @@ class Generator(object):
             # write _TYPES definition
             # TODO: this func won't detect whether $ref for a given property is
             # a list because it relies on 'type' attribute to do so
-            snappi_types = self._get_openapi_types(schema_object)
-            if len(snappi_types) > 0:
+            openapi_types = self._get_openapi_types(schema_object)
+            if len(openapi_types) > 0:
                 self._write(1, '_TYPES = {')
-                for name, value in snappi_types:
+                for name, value in openapi_types:
                     if len(value) == 1:
                         self._write(2, "'%s': {'%s': %s}," % (
                             name, list(value.keys())[0], list(value.values())[0]
@@ -354,7 +342,7 @@ class Generator(object):
                 self._write()
             else:
                 # TODO: provide empty types as workaround because deserializer
-                # in snappicommon.py currently expects it
+                # in common.py currently expects it
                 self._write(1, '_TYPES = {} # type: Dict[str, str]')
                 self._write()
             
@@ -420,9 +408,9 @@ class Generator(object):
 
         # descend into child properties
         for ref in refs:
-            self._write_snappi_object(ref[0], ref[3])
+            self._write_openapi_object(ref[0], ref[3])
             if ref[1] is True:
-                self._write_snappi_list(ref[0], ref[2])
+                self._write_openapi_list(ref[0], ref[2])
 
     def _get_simple_type_names(self, schema_object):
         simple_type_names = []
@@ -463,7 +451,7 @@ class Generator(object):
                     continue
                 property = schema_object["properties"][property_name]
                 write_set_choice = property_name in choice_names and property_name != "choice"
-                self._write_snappi_property(schema_object, property_name, property, write_set_choice)
+                self._write_openapi_property(schema_object, property_name, property, write_set_choice)
             for property_name, property in schema_object["properties"].items():
                 ref = self._get_parser("$..'$ref'").find(property)
                 if len(ref) > 0:
@@ -472,7 +460,7 @@ class Generator(object):
                     refs.append((ref[0].value, restriction.startswith("List["), property_name, choice_name))
         return refs
 
-    def _write_snappi_list(self, ref, property_name):
+    def _write_openapi_list(self, ref, property_name):
         """This is the class writer for schema object properties that are of
         type array with a ref to an object.  The class should provide a factory
         method for the encapsulated ref.
@@ -533,7 +521,7 @@ class Generator(object):
             self._write(2, "self._choice = choice")
 
             # write container emulation methods __getitem__, __iter__, __next__
-            self._write_snappilist_special_methods(contained_class_name, yobject)
+            self._write_openapilist_special_methods(contained_class_name, yobject)
 
             # write a factory method for the schema object in the list that returns the container
             self._write_factory_method(contained_class_name, ref_name.lower().split(".")[-1], ref, True, False)
@@ -551,7 +539,7 @@ class Generator(object):
 
         return class_name
 
-    def _write_snappilist_special_methods(self, contained_class_name, schema_object):
+    def _write_openapilist_special_methods(self, contained_class_name, schema_object):
         get_item_class_names = [contained_class_name]
         if "properties" in schema_object and "choice" in schema_object["properties"]:
             for property in schema_object["properties"]:
@@ -579,12 +567,12 @@ class Generator(object):
         self._write(2, "# type: () -> %s" % contained_class_name)
         self._write(2, "return self._next()")
 
-    def _write_factory_method(self, contained_class_name, method_name, ref, snappi_list=False, choice_method=False):
+    def _write_factory_method(self, contained_class_name, method_name, ref, openapi_list=False, choice_method=False):
         yobject = self._get_object_from_ref(ref)
         object_name, property_name, class_name, _ = self._get_object_property_class_names(ref)
         param_string, properties, type_string = self._get_property_param_string(yobject)
         self._write()
-        if snappi_list is True:
+        if openapi_list is True:
             self._imports.append("from .%s import %s" % (class_name.lower(), class_name))
             self._write(1, "def %s(self%s):" % (method_name, param_string))
             return_class_name = class_name
@@ -668,7 +656,7 @@ class Generator(object):
         types = ",".join(property_type_string)
         return (property_param_string, properties, types)
 
-    def _write_snappi_property(self, schema_object, name, property, write_set_choice=False):
+    def _write_openapi_property(self, schema_object, name, property, write_set_choice=False):
         ref = self._get_parser("$..'$ref'").find(property)
         restriction = self._get_type_restriction(property)
         if len(ref) > 0:
@@ -858,7 +846,7 @@ class Generator(object):
                     description += property["description"]
                 property["description"] = description
                 class_name = property["$ref"].split("/")[-1].replace(".", "")
-                return "obj(snappi.%s)" % class_name
+                return "obj(%s)" % class_name
             elif "oneOf" in property:
                 return "Union[%s]" % ",".join([item["type"] for item in property["oneOf"]])
             elif property["type"] == "number":
