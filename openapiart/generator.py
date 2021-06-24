@@ -331,38 +331,53 @@ class Generator(object):
             # write _TYPES definition
             # TODO: this func won't detect whether $ref for a given property is
             # a list because it relies on 'type' attribute to do so
-            snappi_types = self._get_snappi_types(schema_object)
+            snappi_types = self._get_openapi_types(schema_object)
             if len(snappi_types) > 0:
-                self._write(1, "_TYPES = {")
+                self._write(1, '_TYPES = {')
                 for name, value in snappi_types:
-                    self._write(2, "'%s': '%s'," % (name, value))
-                self._write(1, "} # type: Dict[str, str]")
+                    if len(value) == 1:
+                        self._write(2, "'%s': {'%s': %s}," % (
+                            name, list(value.keys())[0], list(value.values())[0]
+                        ))
+                        continue
+                    self._write(2, "'%s': %s" % (name, '{'))
+                    for n, v in value.items():
+                        if isinstance(v, list):
+                            self._write(3, "'%s': [" % n)
+                            for i in v:
+                                self._write(4, "'%s'," % i)
+                            self._write(3, "],")
+                            continue
+                        self._write(3, "'%s': %s," % (n, v))
+                    self._write(2, "},")
+                self._write(1, '} # type: Dict[str, str]')
                 self._write()
             else:
                 # TODO: provide empty types as workaround because deserializer
                 # in snappicommon.py currently expects it
-                self._write(1, "_TYPES = {} # type: Dict[str, str]")
+                self._write(1, '_TYPES = {} # type: Dict[str, str]')
                 self._write()
+            
             required, defaults = self._get_required_and_defaults(schema_object)
 
             if len(required) > 0:
-                self._write(1, "_REQUIRED = {} # type: tuple(str)".format(required))
+                self._write(1, '_REQUIRED = {} # type: tuple(str)'.format(required))
                 self._write()
             else:
-                self._write(1, "_REQUIRED= () # type: tuple(str)")
+                self._write(1, '_REQUIRED= () # type: tuple(str)')
                 self._write()
 
             if len(defaults) > 0:
-                self._write(1, "_DEFAULTS = {")
+                self._write(1, '_DEFAULTS = {')
                 for name, value in defaults:
                     if isinstance(value, (list, bool, int, float, tuple)):
                         self._write(2, "'%s': %s," % (name, value))
                     else:
                         self._write(2, "'%s': '%s'," % (name, value))
-                self._write(1, "} # type: Dict[str, Any]")
+                self._write(1, '} # type: Dict[str, Union(type)]')
                 self._write()
             else:
-                self._write(1, "_DEFAULTS= {} # type: Dict[str, Union(type)]")
+                self._write(1, '_DEFAULTS= {} # type: Dict[str, Union(type)]')
                 self._write()
 
             # write constants
@@ -644,7 +659,7 @@ class Generator(object):
                     properties.append(name)
                     if "default" in property:
                         default = property["default"]
-                    if property["type"] in ["number", "integer"]:
+                    if property["type"] in ["number", "integer", "boolean"]:
                         val = "=%s" % default if default == "None" else "=%s" % default
                     else:
                         val = "=%s" % default if default == "None" else "='%s'" % default
@@ -721,7 +736,7 @@ class Generator(object):
         else:
             return yproperty["type"]
 
-    def _get_snappi_types(self, yobject):
+    def _get_openapi_types(self, yobject):
         types = []
         if 'properties' in yobject:
             for name in yobject['properties']:

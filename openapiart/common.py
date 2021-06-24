@@ -370,10 +370,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return output
 
     def _decode(self, obj):
-        snappi_names = dir(self)
+        openapi_names = dir(self)
         dtypes = [list, str, int, float, bool]
         for property_name, property_value in obj.items():
-            if property_name in snappi_names:
+            if property_name in openapi_names:
                 if isinstance(property_value, dict):
                     child = self._get_child_class(property_name)
                     if "_choice" in dir(child[1]) and "_parent" in dir(child[1]):
@@ -384,11 +384,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     property_name in self._TYPES and \
                         self._TYPES[property_name]["type"] not in dtypes:
                     child = self._get_child_class(property_name, True)
-                    snappi_list = child[0]()
+                    openapi_list = child[0]()
                     for item in property_value:
                         item = child[1]()._decode(item)
-                        snappi_list._items.append(item)
-                    property_value = snappi_list
+                        openapi_list._items.append(item)
+                    property_value = openapi_list
                 elif property_name in self._DEFAULTS and property_value is None:
                     if isinstance(self._DEFAULTS[property_name], tuple(dtypes)):
                         property_value = self._DEFAULTS[property_name]
@@ -483,13 +483,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         for key, value in self._properties.items():
             self._validate_types(key, value)
     
-    def getproperty(self, name, get_default=False):
+    def get(self, name, with_default=False):
         """ 
         getattr for snappi object
         """
         if self._properties.get(name) is not None:
             return self._properties[name]
-        elif get_default:
+        elif with_default:
             # TODO need to find a way to avoid getattr
             choice = self._properties.get("choice")\
                     if "choice" in dir(self) else None
