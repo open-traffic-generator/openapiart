@@ -360,12 +360,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def _set_property(self, name, value, choice=None):
         if name in self._DEFAULTS and value is None:
+            self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
         else:
+            self._set_choice(name)
             self._properties[name] = value
-        if choice is not None:
-            self._properties["choice"] = choice
-        elif self._parent is not None and self._choice is not None and value is not None:
+        if self._parent is not None and self._choice is not None and value is not None:
             self._parent._set_property("choice", self._choice)
 
     def _encode(self):
