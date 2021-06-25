@@ -211,7 +211,6 @@ class Bundler(object):
         schema = {
             "description": description,
             "type": "object",
-            "required": ["choice"],
             "properties": {
                 "choice": {"type": "string", "enum": ["value", "values"], "default": "value"},
                 "value": {"type": copy.deepcopy(type_name)},
