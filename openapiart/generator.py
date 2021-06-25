@@ -417,7 +417,7 @@ class Generator(object):
         if "properties" in schema_object:
             choice_names = self._get_choice_names(schema_object)
             for name in schema_object["properties"]:
-                if name == "choice":
+                if name in choice_names:
                     continue
                 ref = self._get_parser("$..'$ref'").find(schema_object["properties"][name])
                 if len(ref) == 0:
