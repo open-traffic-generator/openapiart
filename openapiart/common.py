@@ -269,7 +269,7 @@ class OpenApiValidator(object):
         if not isinstance(value, list):
             value = [value]
         return all([
-            isinstance(i, str) for i in value
+            isinstance(i, (str, unicode)) for i in value
         ])
     
     def validate_bool(self, value):
