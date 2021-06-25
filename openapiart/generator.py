@@ -75,21 +75,9 @@ class Generator(object):
         """Clean the environment prior to file generation
         - Remove any locally installed version of
         - Remove generated files
-        - Leave infrastructure files that are prefixed with the word snappi
+        - Leave infrastructure files
         """
         process_args = [self.__python, "-m", "pip", "uninstall", "--yes", self._package_name]
-        # subprocess.Popen(process_args, shell=False).wait()
-        # os.rmdir(self._output_dir)
-        # import fnmatch
-        # for rootDir, subdirs, filenames in os.walk(self._src_dir):
-        #     if rootDir.endswith('tests'):
-        #         continue
-        #     for filename in fnmatch.filter(filenames, '*.py'):
-        #         try:
-        #             if filename.startswith('snappi') is False:
-        #                 os.remove(os.path.join(rootDir, filename))
-        #         except OSError:
-        #             print('Error deleting file %s' % filename)
 
     def _get_openapi_file(self):
         if self._openapi_filename is None:
@@ -222,9 +210,9 @@ class Generator(object):
 
         for ref, property_name in self._top_level_schema_refs:
             if property_name is None:
-                self._write_snappi_object(ref)
+                self._write_openapi_object(ref)
             else:
-                self._write_snappi_list(ref, property_name)
+                self._write_openapi_list(ref, property_name)
 
         return methods, factories
 
@@ -308,7 +296,7 @@ class Generator(object):
             class_name = object_name.replace(".", "")
         return (object_name, property_name, class_name, ref_name)
 
-    def _write_snappi_object(self, ref, choice_method_name=None):
+    def _write_openapi_object(self, ref, choice_method_name=None):
         schema_object = self._get_object_from_ref(ref)
         ref_name = ref.split("/")[-1]
         class_name = ref_name.replace(".", "")
@@ -331,31 +319,53 @@ class Generator(object):
             # write _TYPES definition
             # TODO: this func won't detect whether $ref for a given property is
             # a list because it relies on 'type' attribute to do so
-            snappi_types = self._get_snappi_types(schema_object)
-            if len(snappi_types) > 0:
-                self._write(1, "_TYPES = {")
-                for name, value in snappi_types:
-                    self._write(2, "'%s': '%s'," % (name, value))
-                self._write(1, "} # type: Dict[str, str]")
+            openapi_types = self._get_openapi_types(schema_object)
+            if len(openapi_types) > 0:
+                self._write(1, '_TYPES = {')
+                for name, value in openapi_types:
+                    if len(value) == 1:
+                        self._write(2, "'%s': {'%s': %s}," % (
+                            name, list(value.keys())[0], list(value.values())[0]
+                        ))
+                        continue
+                    self._write(2, "'%s': %s" % (name, '{'))
+                    for n, v in value.items():
+                        if isinstance(v, list):
+                            self._write(3, "'%s': [" % n)
+                            for i in v:
+                                self._write(4, "'%s'," % i)
+                            self._write(3, "],")
+                            continue
+                        self._write(3, "'%s': %s," % (n, v))
+                    self._write(2, "},")
+                self._write(1, '} # type: Dict[str, str]')
                 self._write()
             else:
                 # TODO: provide empty types as workaround because deserializer
-                # in snappicommon.py currently expects it
-                self._write(1, "_TYPES = {} # type: Dict[str, str]")
+                # in common.py currently expects it
+                self._write(1, '_TYPES = {} # type: Dict[str, str]')
                 self._write()
+            
             required, defaults = self._get_required_and_defaults(schema_object)
 
+            if len(required) > 0:
+                self._write(1, '_REQUIRED = {} # type: tuple(str)'.format(required))
+                self._write()
+            else:
+                self._write(1, '_REQUIRED= () # type: tuple(str)')
+                self._write()
+
             if len(defaults) > 0:
-                self._write(1, "_DEFAULTS = {")
+                self._write(1, '_DEFAULTS = {')
                 for name, value in defaults:
-                    if isinstance(value, (bool, int, float)):
+                    if isinstance(value, (list, bool, int, float, tuple)):
                         self._write(2, "'%s': %s," % (name, value))
                     else:
                         self._write(2, "'%s': '%s'," % (name, value))
-                self._write(1, "} # type: Dict[str, Any]")
+                self._write(1, '} # type: Dict[str, Union(type)]')
                 self._write()
             else:
-                self._write(1, "_DEFAULTS= {} # type: Dict[str, Any]")
+                self._write(1, '_DEFAULTS= {} # type: Dict[str, Union(type)]')
                 self._write()
 
             # write constants
@@ -364,9 +374,15 @@ class Generator(object):
             for enum in self._get_parser("$..enum | x-constants").find(schema_object):
                 for name in enum.value:
                     value = name
+                    value_type = "string"
                     if isinstance(enum.value, dict):
                         value = enum.value[name]
-                    self._write(1, "%s = '%s' # type: str" % (name.upper(), value))
+                        value_type = enum.context.value['type'] \
+                            if 'type' in enum.context.value else 'string'
+                    if value_type == 'string':
+                        self._write(1, "%s = '%s' # type: str" % (name.upper(), value))
+                    else:
+                        self._write(1, "%s = %s #" % (name.upper(), value))
                 if len(enum.value) > 0:
                     self._write()
 
@@ -392,9 +408,9 @@ class Generator(object):
 
         # descend into child properties
         for ref in refs:
-            self._write_snappi_object(ref[0], ref[3])
+            self._write_openapi_object(ref[0], ref[3])
             if ref[1] is True:
-                self._write_snappi_list(ref[0], ref[2])
+                self._write_openapi_list(ref[0], ref[2])
 
     def _get_simple_type_names(self, schema_object):
         simple_type_names = []
@@ -435,7 +451,7 @@ class Generator(object):
                     continue
                 property = schema_object["properties"][property_name]
                 write_set_choice = property_name in choice_names and property_name != "choice"
-                self._write_snappi_property(schema_object, property_name, property, write_set_choice)
+                self._write_openapi_property(schema_object, property_name, property, write_set_choice)
             for property_name, property in schema_object["properties"].items():
                 ref = self._get_parser("$..'$ref'").find(property)
                 if len(ref) > 0:
@@ -444,7 +460,7 @@ class Generator(object):
                     refs.append((ref[0].value, restriction.startswith("List["), property_name, choice_name))
         return refs
 
-    def _write_snappi_list(self, ref, property_name):
+    def _write_openapi_list(self, ref, property_name):
         """This is the class writer for schema object properties that are of
         type array with a ref to an object.  The class should provide a factory
         method for the encapsulated ref.
@@ -505,7 +521,7 @@ class Generator(object):
             self._write(2, "self._choice = choice")
 
             # write container emulation methods __getitem__, __iter__, __next__
-            self._write_snappilist_special_methods(contained_class_name, yobject)
+            self._write_openapilist_special_methods(contained_class_name, yobject)
 
             # write a factory method for the schema object in the list that returns the container
             self._write_factory_method(contained_class_name, ref_name.lower().split(".")[-1], ref, True, False)
@@ -523,7 +539,7 @@ class Generator(object):
 
         return class_name
 
-    def _write_snappilist_special_methods(self, contained_class_name, schema_object):
+    def _write_openapilist_special_methods(self, contained_class_name, schema_object):
         get_item_class_names = [contained_class_name]
         if "properties" in schema_object and "choice" in schema_object["properties"]:
             for property in schema_object["properties"]:
@@ -551,12 +567,12 @@ class Generator(object):
         self._write(2, "# type: () -> %s" % contained_class_name)
         self._write(2, "return self._next()")
 
-    def _write_factory_method(self, contained_class_name, method_name, ref, snappi_list=False, choice_method=False):
+    def _write_factory_method(self, contained_class_name, method_name, ref, openapi_list=False, choice_method=False):
         yobject = self._get_object_from_ref(ref)
         object_name, property_name, class_name, _ = self._get_object_property_class_names(ref)
         param_string, properties, type_string = self._get_property_param_string(yobject)
         self._write()
-        if snappi_list is True:
+        if openapi_list is True:
             self._imports.append("from .%s import %s" % (class_name.lower(), class_name))
             self._write(1, "def %s(self%s):" % (method_name, param_string))
             return_class_name = class_name
@@ -631,7 +647,7 @@ class Generator(object):
                     properties.append(name)
                     if "default" in property:
                         default = property["default"]
-                    if property["type"] in ["number", "integer"]:
+                    if property["type"] in ["number", "integer", "boolean"]:
                         val = "=%s" % default if default == "None" else "=%s" % default
                     else:
                         val = "=%s" % default if default == "None" else "='%s'" % default
@@ -640,7 +656,7 @@ class Generator(object):
         types = ",".join(property_type_string)
         return (property_param_string, properties, types)
 
-    def _write_snappi_property(self, schema_object, name, property, write_set_choice=False):
+    def _write_openapi_property(self, schema_object, name, property, write_set_choice=False):
         ref = self._get_parser("$..'$ref'").find(property)
         restriction = self._get_type_restriction(property)
         if len(ref) > 0:
@@ -696,31 +712,55 @@ class Generator(object):
         #     if len(line) > 0:
         #         doc_string.append('%s  ' % line)
         # return doc_string
+    def _get_data_types(self, yproperty):
+        data_type_map = {
+            "integer": "int", "string": "str",
+            "boolean": "bool", "array": "list",
+            "number": "float", "float": "float",
+            "double": "float"
+        }
+        if yproperty["type"]  in data_type_map:
+            return data_type_map[yproperty["type"]]
+        else:
+            return yproperty["type"]
 
-    def _get_snappi_types(self, yobject):
+    def _get_openapi_types(self, yobject):
         types = []
-        if "properties" in yobject:
-            for name in yobject["properties"]:
-                yproperty = yobject["properties"][name]
-                ref = self._get_parser("$..'$ref'").find(yproperty)
+        if 'properties' in yobject:
+            for name in yobject['properties']:
+                yproperty = yobject['properties'][name]
+                ref = parse("$..'$ref'").find(yproperty)
+                pt = {}
+                if 'type' in yproperty:
+                    pt.update({'type': self._get_data_types(yproperty)})
+                    pt.update({'enum': yproperty['enum']}) if 'enum' in yproperty else None
+                    pt.update({
+                        'format': "\'%s\'" % yproperty['format']
+                    }) if 'format' in yproperty else None
                 if len(ref) > 0:
-                    object_name = ref[0].value.split("/")[-1]
-                    class_name = object_name.replace(".", "")
-                    if "type" in yproperty and yproperty["type"] == "array":
-                        class_name += "Iter"
-                    types.append((name, class_name))
-        return types
+                    object_name = ref[0].value.split('/')[-1]
+                    class_name = object_name.replace('.', '')
+                    if 'type' in yproperty and yproperty['type'] == 'array':
+                        class_name += 'Iter'
+                    pt.update({'type': "\'%s\'" % class_name})
+                if len(pt) > 0:
+                    types.append((name, pt))
 
+        return types
+    
     def _get_required_and_defaults(self, yobject):
         required = []
         defaults = []
-        if "required" in yobject:
-            required = yobject["required"]
-        if "properties" in yobject:
-            for name in yobject["properties"]:
-                yproperty = yobject["properties"][name]
-                if "default" in yproperty:
-                    defaults.append((name, yproperty["default"]))
+        if 'required' in yobject:
+            required = yobject['required']
+        if 'properties' in yobject:
+            for name in yobject['properties']:
+                yproperty = yobject['properties'][name]
+                if 'default' in yproperty:
+                    default = yproperty['default']
+                    if 'type' in yproperty and yproperty['type'] == 'number':
+                        default = float(default)
+                    defaults.append((name, default))
         return (tuple(required), defaults)
 
     def _get_default_value(self, property):
@@ -806,7 +846,7 @@ class Generator(object):
                     description += property["description"]
                 property["description"] = description
                 class_name = property["$ref"].split("/")[-1].replace(".", "")
-                return "obj(snappi.%s)" % class_name
+                return "obj(%s)" % class_name
             elif "oneOf" in property:
                 return "Union[%s]" % ",".join([item["type"] for item in property["oneOf"]])
             elif property["type"] == "number":
