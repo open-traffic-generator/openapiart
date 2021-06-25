@@ -193,7 +193,7 @@ class OpenApiValidator(object):
 
     __slots__ = ()
 
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
     def validate_mac(self, mac):
