@@ -528,6 +528,7 @@ class Generator(object):
 
             # write an append method for the schema object in the list that returns the new object
             _, _, class_name, _ = self._get_object_property_class_names(ref_name.lower())
+            # TODO commenting the append method as there is a behavior change, need to revisit
             # self._write_append_method(yobject, False, class_name, contained_class_name, class_name)
 
             # write choice factory methods if the only properties are choice properties
