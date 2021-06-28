@@ -187,8 +187,8 @@ class OpenApiValidator(object):
         r"^([\da-fA-F]{2}[:]){5}[\da-fA-F]{2}$")
     _IPV6_REP1 = re.compile(r"^:[\da-fA-F].+")
     _IPV6_REP2 = re.compile(r".+[\da-fA-F]:$")
-    _IPV6_REP3 = re.compile(
-        r"^[\da-fA-F]{1,4}:" *7 + r"[\da-fA-F]{1,4}$")
+    _IPV6_REP3 = re.compile(r"^" +
+        r"[\da-fA-F]{1,4}:" *7 + r"[\da-fA-F]{1,4}$")
     _HEX_REGEX = re.compile(r"^0?x?[\da-fA-F]+$")
 
     __slots__ = ()
