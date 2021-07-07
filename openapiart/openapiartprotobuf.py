@@ -17,7 +17,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write_header(self._openapi["info"])
         for name, schema_object in self._openapi["components"]["schemas"].items():
             self._write_msg(name, schema_object)
-        for url, path_object in self._openapi["paths"].items():
+        for _, path_object in self._openapi["paths"].items():
             self._write_request_msg(path_object)
             self._write_response_msg(path_object)
         self._write_service()
@@ -37,7 +37,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return None
 
     def _write_request_msg(self, path_object):
-        for method, path_item_object in path_object.items():
+        for _, path_item_object in path_object.items():
             operation = self._get_operation(path_item_object)
             if operation is None:
                 continue
@@ -57,7 +57,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         application/octet-stream -> response (stream <operationId>Response)
         application/json -> response (<operationId>Response)
         """
-        for method, path_item_object in path_object.items():
+        for _, path_item_object in path_object.items():
             operation = self._get_operation(path_item_object)
             if operation is None:
                 continue
@@ -160,7 +160,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     if openapi_object["format"] == "binary":
                         return "bytes"
                 elif "enum" in openapi_object:
-                    enum_msg = self._camelcase("{}.Enum".format(property_name))
+                    enum_msg = self._camelcase("{}Enum".format(property_name))
                     self._write_enum_msg(enum_msg, openapi_object["enum"])
                     return enum_msg
                 return "string"
@@ -174,7 +174,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
 
     def _camelcase(self, value):
-        return "{}{}".format(value[0].upper(), value[1:])
+        camel_case = ""
+        for piece in value.split("_"):
+            camel_case += "{}{}".format(piece[0].upper(), piece[1:])
+        return camel_case
 
     def _get_description(self, openapi_object):
         if "description" in openapi_object:
@@ -183,14 +186,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             return "Description missing in models"
 
     def _write_enum_msg(self, enum_msg_name, enums):
-        enum_msg = enum_msg_name.split(".")
-        self._write("message {} {{".format(enum_msg[0]), indent=1)
-        self._write("enum Enum {", indent=2)
+        """Follow google developers style guide for enums
+        - reference: https://developers.google.com/protocol-buffers/docs/style#enums
+        """
+        self._write("enum {} {{".format(enum_msg_name.replace(".", "")), indent=1)
+        enums.insert(0, "UNSPECIFIED")
         id = 0
         for enum in enums:
-            self._write("{} = {};".format(enum.upper(), id), indent=3)
+            self._write("{} = {};".format(enum.upper(), id), indent=2)
             id += 1
-        self._write("}", indent=2)
         self._write("}", indent=1)
 
     def _write_msg(self, name, schema_object):
@@ -213,8 +217,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             default = None
             if "default" in property_object:
                 default = property_object["default"]
-            if property_type.endswith(".Enum") and default is not None:
-                type = "enum"
+            if property_type.endswith("Enum") and default is not None:
                 default = "{}.{}".format(property_type.split(" ")[-1], default.upper())
             if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
                 optional = ""
