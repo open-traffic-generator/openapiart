@@ -192,8 +192,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write("enum {} {{".format(enum_msg_name.replace(".", "")), indent=1)
         enums.insert(0, "UNSPECIFIED")
         id = 0
+        prefix = enum_msg_name.split("Enum")[0].upper()
         for enum in enums:
-            self._write("{} = {};".format(enum.upper(), id), indent=2)
+            self._write("{}_{} = {};".format(prefix, enum.upper(), id), indent=2)
             id += 1
         self._write("}", indent=1)
 
@@ -218,7 +219,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if "default" in property_object:
                 default = property_object["default"]
             if property_type.endswith("Enum") and default is not None:
-                default = "{}.{}".format(property_type.split(" ")[-1], default.upper())
+                prefix = property_type.split("Enum")[0].upper()
+                default = "{}.{}_{}".format(property_type.split(" ")[-1], prefix, default.upper())
             if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
                 optional = ""
             else:

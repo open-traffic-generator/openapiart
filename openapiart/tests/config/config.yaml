@@ -76,6 +76,12 @@ components:
           type: number
           format: double
           default: 3.0
+        g_f:
+          description: |-
+            Another enum to test protbuf enum generation 
+          type: string
+          enum: [a, b, c]
+          default: a
 
     EObject:
       x-include:
