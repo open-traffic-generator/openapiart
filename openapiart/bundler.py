@@ -245,7 +245,6 @@ class Bundler(object):
             counter_schema = {
                 "description": "{} counter pattern".format(xpattern["format"]),
                 "type": "object",
-                "required": ["start", "step"],
                 "properties": {"start": {"type": type_name}, "step": {"type": type_name}},
             }
             if "features" in xpattern and "count" in xpattern["features"]:
