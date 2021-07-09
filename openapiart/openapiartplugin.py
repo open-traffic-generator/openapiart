@@ -9,6 +9,7 @@ class OpenApiArtPlugin(object):
     def __init__(self, **kwargs):
         self._fp = None
         self._license = kwargs['license']
+        self._info = kwargs['info']
         self._output_dir = kwargs['output_dir']
         self._python_module_name = kwargs['python_module_name']
         self._protobuf_file_name = kwargs['protobuf_file_name']
