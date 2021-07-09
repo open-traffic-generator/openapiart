@@ -99,6 +99,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
+        self._write("// {}".format(self._info))
         for line in self._license.split("\n"):
             self._write("// {}".format(line))
         self._write()
@@ -160,9 +161,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     if openapi_object["format"] == "binary":
                         return "bytes"
                 elif "enum" in openapi_object:
-                    enum_msg = self._camelcase("{}Enum".format(property_name))
+                    enum_msg = self._camelcase("{}".format(property_name))
                     self._write_enum_msg(enum_msg, openapi_object["enum"])
-                    return enum_msg
+                    # append "Enum" to differentiate type from other composite
+                    # type; this eventually will be stripped off
+                    return enum_msg + "Enum"
                 return "string"
             if type == "integer":
                 return "int32"
@@ -179,6 +182,23 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             camel_case += "{}{}".format(piece[0].upper(), piece[1:])
         return camel_case
 
+    def _uppercase(self, value):
+        upper_case = ""
+        insert_underscore = False
+        
+        for c in value:
+            if c.isupper():
+                if insert_underscore:
+                    upper_case += "_" + c
+                    insert_underscore = False
+                else:
+                    upper_case += c
+            else:
+                upper_case += c.upper()
+                insert_underscore = True
+
+        return upper_case
+
     def _get_description(self, openapi_object):
         if "description" in openapi_object:
             return openapi_object["description"].replace("\n", "\\n").replace('"', "")
@@ -192,7 +212,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write("enum {} {{".format(enum_msg_name.replace(".", "")), indent=1)
         enums.insert(0, "UNSPECIFIED")
         id = 0
-        prefix = enum_msg_name.split("Enum")[0].upper()
+        prefix = self._uppercase(enum_msg_name)
         for enum in enums:
             self._write("{}_{} = {};".format(prefix, enum.upper(), id), indent=2)
             id += 1
@@ -218,9 +238,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             default = None
             if "default" in property_object:
                 default = property_object["default"]
-            if property_type.endswith("Enum") and default is not None:
-                prefix = property_type.split("Enum")[0].upper()
-                default = "{}.{}_{}".format(property_type.split(" ")[-1], prefix, default.upper())
+            if property_type.endswith("Enum"):
+                property_type = property_type.split("Enum")[0]
+                if default is not None:
+                    prefix = self._uppercase(property_type)
+                    default = "{}.{}_{}".format(property_type.split(" ")[-1], prefix, default.upper())
             if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
                 optional = ""
             else:
