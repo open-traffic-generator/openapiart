@@ -48,11 +48,19 @@ class OpenApiArt(object):
         self._api_files = api_files
         self._bundle()
         self._get_license()
+        self._get_info()
         self._document()
         self._generate()
 
     def _get_license(self):
         try:
+            self._license = "License: {}".format(
+                self._bundler._content["info"]["license"]["url"]
+            )
+            return
+            # currently license URL returns an HTML and not solely license text
+            # hence skipping this part unless we come across a better way to
+            # parse licenses
             response = requests.request("GET", self._bundler._content["info"]["license"]["url"])
             if response.ok:
                 self._license = response.text
@@ -60,6 +68,15 @@ class OpenApiArt(object):
                 raise Exception(response.text)
         except Exception as e:
             self._license = "OpenAPI info.license.url error [{}]".format(e)
+
+    def _get_info(self):
+        try:
+            self._info = "{} {}".format(
+                self._bundler._content["info"]["title"],
+                self._bundler._content["info"]["version"]
+            )
+        except Exception as e:
+            self._info = "OpenAPI info error [{}]".format(e)
 
     def _bundle(self):
         # bundle the yaml files
@@ -103,6 +120,7 @@ class OpenApiArt(object):
             module = importlib.import_module("openapiart.openapiartprotobuf")
             protobuf = getattr(module, "OpenApiArtProtobuf")(
                 **{
+                    "info": self._info,
                     "license": self._license,
                     "python_module_name": self._python_module_name,
                     "protobuf_file_name": self._protobuf_file_name,
