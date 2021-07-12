@@ -255,7 +255,7 @@ class Bundler(object):
                 counter_schema["x-constants"] = copy.deepcopy(xconstants)
             self._content["components"]["schemas"][counter_pattern_name] = counter_schema
         self._apply_common_x_field_pattern_properties(schema["properties"]["value"], xpattern, format, property_name="value")
-        self._apply_common_x_field_pattern_properties(schema["properties"]["values"]["items"], xpattern, format, property_name="values")
+        self._apply_common_x_field_pattern_properties(schema["properties"]["values"], xpattern, format, property_name="values")
         self._content["components"]["schemas"][schema_name] = schema
 
     def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, property_name):
