@@ -76,11 +76,15 @@ class HttpTransport(object):
             self.logger.warning("Certificate verification is disabled")
         self._session = requests.Session()
 
-    def send_recv(self, method, relative_url, payload=None, return_object=None):
+    def send_recv(self, method, relative_url, payload=None, return_object=None, headers=None):
         url = "%s%s" % (self.location, relative_url)
         data = None
+        headers = headers or {"Content-Type": "application/json"}
         if payload is not None:
-            if isinstance(payload, (str, unicode)):
+            if isinstance(payload, bytes):
+                data = payload
+                headers["Content-Type"] = "application/octet-stream"
+            elif insinstance(payload, (str, unicode)):
                 data = payload
             elif isinstance(payload, OpenApiBase):
                 data = payload.serialize()
@@ -93,7 +97,7 @@ class HttpTransport(object):
             verify=False,
             allow_redirects=True,
             # TODO: add a timeout here
-            headers={"Content-Type": "application/json"},
+            headers=headers,
         )
         if response.ok:
             if "application/json" in response.headers["content-type"]:

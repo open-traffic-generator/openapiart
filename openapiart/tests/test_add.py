@@ -5,6 +5,8 @@ import json
 
 def test_add(api):
     config = api.prefix_config()
+    assert config.a == config._DEFAULTS["a"]
+    assert config.b == config._DEFAULTS["b"]
     g1 = config.g.add(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
     g1.g_d = "gdgdgd"
     j = config.j.add()
