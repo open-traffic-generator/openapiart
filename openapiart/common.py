@@ -84,7 +84,7 @@ class HttpTransport(object):
             if isinstance(payload, bytes):
                 data = payload
                 headers["Content-Type"] = "application/octet-stream"
-            elif insinstance(payload, (str, unicode)):
+            elif isinstance(payload, (str, unicode)):
                 data = payload
             elif isinstance(payload, OpenApiBase):
                 data = payload.serialize()
@@ -187,12 +187,10 @@ class OpenApiBase(object):
 
 class OpenApiValidator(object):
 
-    _MAC_REGEX = re.compile(
-        r"^([\da-fA-F]{2}[:]){5}[\da-fA-F]{2}$")
+    _MAC_REGEX = re.compile(r"^([\da-fA-F]{2}[:]){5}[\da-fA-F]{2}$")
     _IPV6_REP1 = re.compile(r"^:[\da-fA-F].+")
     _IPV6_REP2 = re.compile(r".+[\da-fA-F]:$")
-    _IPV6_REP3 = re.compile(r"^" +
-        r"[\da-fA-F]{1,4}:" *7 + r"[\da-fA-F]{1,4}$")
+    _IPV6_REP3 = re.compile(r"^" + r"[\da-fA-F]{1,4}:" * 7 + r"[\da-fA-F]{1,4}$")
     _HEX_REGEX = re.compile(r"^0?x?[\da-fA-F]+$")
 
     __slots__ = ()
@@ -204,10 +202,7 @@ class OpenApiValidator(object):
         if mac is None:
             return False
         if isinstance(mac, list):
-            return all([
-                True if self._MAC_REGEX.match(m) else False
-                for m in mac
-            ])
+            return all([True if self._MAC_REGEX.match(m) else False for m in mac])
         if self._MAC_REGEX.match(mac):
             return True
         return False
@@ -217,10 +212,7 @@ class OpenApiValidator(object):
             return False
         try:
             if isinstance(ip, list):
-                return all([
-                    all([0 <= int(oct) <= 255 for oct in i.split(".", 3)])
-                    for i in ip
-                ])
+                return all([all([0 <= int(oct) <= 255 for oct in i.split(".", 3)]) for i in ip])
             else:
                 return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
@@ -242,17 +234,12 @@ class OpenApiValidator(object):
 
     def validate_ipv6(self, ip):
         if isinstance(ip, list):
-            return all([
-                self._validate_ipv6(i) for i in ip
-            ])
+            return all([self._validate_ipv6(i) for i in ip])
         return self._validate_ipv6(ip)
 
     def validate_hex(self, hex):
         if isinstance(hex, list):
-            return all([
-                self._HEX_REGEX(h)
-                for h in hex
-            ])
+            return all([self._HEX_REGEX(h) for h in hex])
         if self._HEX_REGEX.match(hex):
             return True
         return False
@@ -265,46 +252,29 @@ class OpenApiValidator(object):
     def validate_float(self, value):
         if not isinstance(value, list):
             value = [value]
-        return all([
-            isinstance(i, (float, int)) for i in value
-        ])
+        return all([isinstance(i, (float, int)) for i in value])
 
     def validate_string(self, value):
         if not isinstance(value, list):
             value = [value]
-        return all([
-            isinstance(i, (str, unicode)) for i in value
-        ])
-    
+        return all([isinstance(i, (str, unicode)) for i in value])
+
     def validate_bool(self, value):
         if not isinstance(value, list):
             value = [value]
-        return all([
-            isinstance(i, bool) for i in value
-        ])
+        return all([isinstance(i, bool) for i in value])
 
     def validate_list(self, value):
         # TODO pending item validation
         return isinstance(value, list)
-    
+
     def validate_binary(self, value):
         if not isinstance(value, list):
             value = [value]
-        return all([
-            all([
-                True if int(b) == 0 or int(b) == 1 else False
-                for b in binary
-            ])
-            for binary in value
-        ])
-    
+        return all([all([True if int(b) == 0 or int(b) == 1 else False for b in binary]) for binary in value])
+
     def types_validation(self, value, type_, err_msg):
-        type_map = {
-            int: "integer", str: "string",
-            float: "float", bool: "bool",
-            list: "list", "int64": "integer",
-            "int32": "integer", "double": "float"
-        }
+        type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "integer", "int32": "integer", "double": "float"}
         if type_ in type_map:
             type_ = type_map[type_]
         v_obj = getattr(self, "validate_{}".format(type_))
@@ -337,13 +307,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._parent
 
     def _set_choice(self, name):
-        if "choice" in dir(self) and "_TYPES" in dir(self) \
-            and "choice" in self._TYPES and name in self._TYPES["choice"]["enum"]:
+        if "choice" in dir(self) and "_TYPES" in dir(self) and "choice" in self._TYPES and name in self._TYPES["choice"]["enum"]:
             for enum in self._TYPES["choice"]["enum"]:
                 if enum in self._properties and name != enum:
                     self._properties.pop(enum)
             self._properties["choice"] = name
-        
+
     def _get_property(self, name, default_value=None, parent=None, choice=None):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
@@ -351,8 +320,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._set_choice(name)
             self._properties[name] = default_value(parent=parent, choice=choice)
 
-            if "_DEFAULTS" in dir(self._properties[name]) and\
-                "choice" in self._properties[name]._DEFAULTS:
+            if "_DEFAULTS" in dir(self._properties[name]) and "choice" in self._properties[name]._DEFAULTS:
                 getattr(self._properties[name], self._properties[name]._DEFAULTS["choice"])
         else:
             if default_value is None and name in self._DEFAULTS:
@@ -395,9 +363,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         property_value = child[1](self, property_name)._decode(property_value)
                     else:
                         property_value = child[1]()._decode(property_value)
-                elif isinstance(property_value, list) and \
-                    property_name in self._TYPES and \
-                        self._TYPES[property_name]["type"] not in dtypes:
+                elif isinstance(property_value, list) and property_name in self._TYPES and self._TYPES[property_name]["type"] not in dtypes:
                     child = self._get_child_class(property_name, True)
                     openapi_list = child[0]()
                     for item in property_value:
@@ -439,19 +405,15 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def clone(self):
         """Creates a deep copy of the current object"""
         return self.__deepcopy__(None)
-    
+
     def _validate_required(self):
-        """Validates the required properties are set
-        """
+        """Validates the required properties are set"""
         if getattr(self, "_REQUIRED", None) is None:
             return
         for p in self._REQUIRED:
             if p in self._properties and self._properties[p] is not None:
                 continue
-            msg = "{} is a mandatory property of {}"\
-                " and should not be set to None".format(
-                p, self.__class__
-            )
+            msg = "{} is a mandatory property of {}" " and should not be set to None".format(p, self.__class__)
             raise ValueError(msg)
 
     def _validate_types(self, property_name, property_value):
@@ -459,20 +421,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if property_name not in self._TYPES:
             raise ValueError("Invalid Property {}".format(property_name))
         details = self._TYPES[property_name]
-        if property_value is None and property_name not in self._DEFAULTS and \
-            property_name not in self._REQUIRED:
+        if property_value is None and property_name not in self._DEFAULTS and property_name not in self._REQUIRED:
             return
         if "enum" in details and property_value not in details["enum"]:
-            msg = "property {} shall be one of these" \
-                " {} enum, but got {} at {}"
-            raise TypeError(msg.format(
-                property_name, details["enum"], property_value, self.__class__
-            ))
-        if details["type"] in common_data_types and \
-                "format" not in details:
-            msg = "property {} shall be of type {}, but got {} at {}".format(
-                    property_name, details["type"], type(property_value), self.__class__
-                )
+            msg = "property {} shall be one of these" " {} enum, but got {} at {}"
+            raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
+        if details["type"] in common_data_types and "format" not in details:
+            msg = "property {} shall be of type {}, but got {} at {}".format(property_name, details["type"], type(property_value), self.__class__)
             self.types_validation(property_value, details["type"], msg)
 
         if details["type"] not in common_data_types:
@@ -481,33 +436,26 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             module = importlib.import_module(self.__module__)
             object_class = getattr(module, class_name)
             if not isinstance(property_value, object_class):
-                msg = "property {} shall be of type {}," \
-                    " but got {} at {}"
-                raise TypeError(msg.format(
-                    property_name, class_name, type(property_value),
-                    self.__class__
-                ))
+                msg = "property {} shall be of type {}," " but got {} at {}"
+                raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
         if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(
-                property_value, details["format"], self.__class__
-            )
+            msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
             self.types_validation(property_value, details["format"], msg)
 
     def validate(self):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
-    
+
     def get(self, name, with_default=False):
-        """ 
+        """
         getattr for openapi object
         """
         if self._properties.get(name) is not None:
             return self._properties[name]
         elif with_default:
             # TODO need to find a way to avoid getattr
-            choice = self._properties.get("choice")\
-                    if "choice" in dir(self) else None
+            choice = self._properties.get("choice") if "choice" in dir(self) else None
             getattr(self, name)
             if "choice" in dir(self):
                 if choice is None and "choice" in self._properties:
