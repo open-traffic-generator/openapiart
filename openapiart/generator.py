@@ -43,7 +43,6 @@ class Generator(object):
         self._package_name = package_name
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, "..", "docs")
-        self._clean()
         self._get_openapi_file()
         # self._plugins = self._load_plugins()
 
@@ -58,7 +57,7 @@ class Generator(object):
     def _load_plugins(self):
         plugins = []
         pkg_dir = os.path.dirname(__file__)
-        for (module_loader, name, ispkg) in pkgutil.iter_modules([pkg_dir]):
+        for (_, name, _) in pkgutil.iter_modules([pkg_dir]):
             module_name = "openapiart." + name
             importlib.import_module(module_name)
             obj = sys.modules[module_name]
@@ -70,14 +69,6 @@ class Generator(object):
                 if issubclass(dir_obj.__class__, OpenApiArtPlugin):
                     plugins.append(dir_obj)
         return plugins
-
-    def _clean(self):
-        """Clean the environment prior to file generation
-        - Remove any locally installed version of
-        - Remove generated files
-        - Leave infrastructure files
-        """
-        process_args = [self.__python, "-m", "pip", "uninstall", "--yes", self._package_name]
 
     def _get_openapi_file(self):
         if self._openapi_filename is None:
@@ -636,7 +627,7 @@ class Generator(object):
                 if "obj" not in type_string:
                     if "default" in property:
                         default = property["default"]
-                    if name == 'choice':
+                    if name == "choice":
                         val = "None"
                     elif property["type"] in ["number", "integer", "boolean", "array"]:
                         val = "None" if default is None else default
