@@ -627,7 +627,6 @@ class Generator(object):
         property_param_string = []
         property_type_string = []
         properties = []
-        choice_names = self._get_choice_names(yobject)
         if "properties" in yobject:
             for name, property in yobject["properties"].items():
                 if name == "choice":
@@ -639,7 +638,7 @@ class Generator(object):
                         default = property["default"]
                     if name == 'choice':
                         val = "None"
-                    elif property["type"] in ["number", "integer", "boolean"]:
+                    elif property["type"] in ["number", "integer", "boolean", "array"]:
                         val = "None" if default is None else default
                     else:
                         val = "None" if default is None else "'{}'".format(default.strip())
