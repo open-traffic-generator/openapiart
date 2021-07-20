@@ -169,9 +169,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 elif "enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
                     self._write_enum_msg(enum_msg, openapi_object["enum"])
-                    # append "Enum" to differentiate type from other composite
-                    # type; this eventually will be stripped off
-                    return enum_msg + "Enum"
+                    return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
                 return "int32"
@@ -221,13 +219,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
-        self._write("enum {} {{".format(enum_msg_name.replace(".", "")), indent=1)
-        enums.insert(0, "UNSPECIFIED")
+        self._write("message {} {{".format(enum_msg_name.replace(".", "")), indent=1)
+        self._write("enum Enum {", indent=2)
+        enums.insert(0, "unspecified")
         id = 0
-        prefix = self._uppercase(enum_msg_name)
         for enum in enums:
-            self._write("{}_{} = {};".format(prefix, enum.upper(), id), indent=2)
+            self._write("{} = {};".format(enum.lower(), id), indent=3)
             id += 1
+        self._write("}", indent=2)
         self._write("}", indent=1)
 
     def _write_msg(self, name, schema_object):
@@ -263,11 +262,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             default = None
             if "default" in property_object:
                 default = property_object["default"]
-            if property_type.endswith("Enum"):
-                property_type = property_type.split("Enum")[0]
+            if property_type.endswith(".Enum"):
                 if default is not None:
-                    prefix = self._uppercase(property_type)
-                    default = "{}.{}_{}".format(property_type.split(" ")[-1], prefix, default.upper())
+                    default = "{}.{}".format(property_type.split(" ")[-1], default.lower())
             if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
                 optional = ""
             else:
