@@ -195,7 +195,7 @@ class Generator(object):
                 continue
             self._generated_methods.append(ref)
             ret = self._get_object_property_class_names(ref)
-            object_name, property_name, class_name, _ = ret
+            _, property_name, class_name, _ = ret
             schema_object = self._get_object_from_ref(ref)
             if "type" not in schema_object:
                 continue
@@ -717,7 +717,7 @@ class Generator(object):
         if "properties" in yobject:
             for name in yobject["properties"]:
                 yproperty = yobject["properties"][name]
-                ref = parse("$..'$ref'").find(yproperty)
+                ref = self._get_parser("$..'$ref'").find(yproperty)
                 pt = {}
                 if "type" in yproperty:
                     pt.update({"type": self._get_data_types(yproperty)})
