@@ -286,7 +286,13 @@ class OpenApiValidator(object):
             raise TypeError(msg)
         verdict = v_obj(value, itemtype) if type_ == 'list' else v_obj(value)
         if isinstance(verdict, list):
-            pass
+            if all(verdict) is True:
+                return
+            err_msg = "{} \n {} are not valid".format(
+                err_msg,
+                [value[index] for index, item in enumerate(verdict) if item is False]
+            )
+            verdict = False
         if verdict is False:
             raise TypeError(err_msg)
 
