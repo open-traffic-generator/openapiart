@@ -378,7 +378,8 @@ class Generator(object):
             # write def __init__(self)
             params = "self, parent=None, choice=None"
             init_params, properties, _ = self._get_property_param_string(schema_object)
-            self._write(1, "def __init__(%s):" % (", ".join([params, init_params])))
+            params = params if len(init_params) == 0 else ", ".join([params, init_params])
+            self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
             self._write(2, "self._choice = choice")
