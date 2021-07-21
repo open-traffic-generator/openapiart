@@ -728,11 +728,13 @@ class Generator(object):
                     pt.update({"enum": yproperty["enum"]}) if "enum" in yproperty else None
                     pt.update({"format": "'%s'" % yproperty["format"]}) if "format" in yproperty else None
                 if len(ref) > 0:
-                    object_name = ref[0].value.split("/")[-1]
-                    class_name = object_name.replace(".", "")
-                    if "type" in yproperty and yproperty["type"] == "array":
-                        class_name += "Iter"
-                    pt.update({"type": "'%s'" % class_name})
+                    object_name = ref[0].value.split('/')[-1]
+                    class_name = object_name.replace('.', '')
+                    if 'type' in yproperty and yproperty['type'] == 'array':
+                        class_name += 'Iter'
+                    pt.update({'type': "\'%s\'" % class_name})
+                if len(ref) == 0 and 'items' in yproperty and 'type' in yproperty['items']:
+                    pt.update({'itemtype': self._get_data_types(yproperty['items'])})
                 if len(pt) > 0:
                     types.append((name, pt))
 
