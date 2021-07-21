@@ -27,7 +27,7 @@ class Generator(object):
     bundler.py infrastructure.
     """
 
-    def __init__(self, openapi_filename, package_name, output_dir=None, extension_prefix = None):
+    def __init__(self, openapi_filename, package_name, output_dir=None, extension_prefix=None):
         self._parsers = {}
         self._generated_methods = []
         self._generated_classes = []
@@ -43,7 +43,6 @@ class Generator(object):
         self._package_name = package_name
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, "..", "docs")
-        self._clean()
         self._get_openapi_file()
         # self._plugins = self._load_plugins()
 
@@ -58,7 +57,7 @@ class Generator(object):
     def _load_plugins(self):
         plugins = []
         pkg_dir = os.path.dirname(__file__)
-        for (module_loader, name, ispkg) in pkgutil.iter_modules([pkg_dir]):
+        for (_, name, _) in pkgutil.iter_modules([pkg_dir]):
             module_name = "openapiart." + name
             importlib.import_module(module_name)
             obj = sys.modules[module_name]
@@ -70,14 +69,6 @@ class Generator(object):
                 if issubclass(dir_obj.__class__, OpenApiArtPlugin):
                     plugins.append(dir_obj)
         return plugins
-
-    def _clean(self):
-        """Clean the environment prior to file generation
-        - Remove any locally installed version of
-        - Remove generated files
-        - Leave infrastructure files
-        """
-        process_args = [self.__python, "-m", "pip", "uninstall", "--yes", self._package_name]
 
     def _get_openapi_file(self):
         if self._openapi_filename is None:
@@ -101,11 +92,12 @@ class Generator(object):
         self._api_filename = os.path.join(self._output_dir, self._output_file + ".py")
         with open(os.path.join(os.path.dirname(__file__), "common.py"), "r") as fp:
             common_content = fp.read()
-            if re.search(r'def[\s+]api\(', common_content) is not None:
-                self._generated_top_level_factories.append('api')
+            if re.search(r"def[\s+]api\(", common_content) is not None:
+                self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
-                common_content = common_content.replace(r'"{}_{}".format(__name__, ext)',
-                    r'"' + self._extension_prefix + r'_{}.' + self._package_name + r'_api".format(ext)')
+                common_content = common_content.replace(
+                    r'"{}_{}".format(__name__, ext)', r'"' + self._extension_prefix + r"_{}." + self._package_name + r'_api".format(ext)'
+                )
         with open(self._api_filename, "w") as self._fid:
             self._fid.write(common_content)
         methods, factories = self._get_methods_and_factories()
@@ -194,7 +186,7 @@ class Generator(object):
                 continue
             self._generated_methods.append(ref)
             ret = self._get_object_property_class_names(ref)
-            object_name, property_name, class_name, _ = ret
+            _, property_name, class_name, _ = ret
             schema_object = self._get_object_from_ref(ref)
             if "type" not in schema_object:
                 continue
@@ -321,14 +313,12 @@ class Generator(object):
             # a list because it relies on 'type' attribute to do so
             openapi_types = self._get_openapi_types(schema_object)
             if len(openapi_types) > 0:
-                self._write(1, '_TYPES = {')
+                self._write(1, "_TYPES = {")
                 for name, value in openapi_types:
                     if len(value) == 1:
-                        self._write(2, "'%s': {'%s': %s}," % (
-                            name, list(value.keys())[0], list(value.values())[0]
-                        ))
+                        self._write(2, "'%s': {'%s': %s}," % (name, list(value.keys())[0], list(value.values())[0]))
                         continue
-                    self._write(2, "'%s': %s" % (name, '{'))
+                    self._write(2, "'%s': %s" % (name, "{"))
                     for n, v in value.items():
                         if isinstance(v, list):
                             self._write(3, "'%s': [" % n)
@@ -338,34 +328,34 @@ class Generator(object):
                             continue
                         self._write(3, "'%s': %s," % (n, v))
                     self._write(2, "},")
-                self._write(1, '} # type: Dict[str, str]')
+                self._write(1, "} # type: Dict[str, str]")
                 self._write()
             else:
                 # TODO: provide empty types as workaround because deserializer
                 # in common.py currently expects it
-                self._write(1, '_TYPES = {} # type: Dict[str, str]')
+                self._write(1, "_TYPES = {} # type: Dict[str, str]")
                 self._write()
-            
+
             required, defaults = self._get_required_and_defaults(schema_object)
 
             if len(required) > 0:
-                self._write(1, '_REQUIRED = {} # type: tuple(str)'.format(required))
+                self._write(1, "_REQUIRED = {} # type: tuple(str)".format(required))
                 self._write()
             else:
-                self._write(1, '_REQUIRED= () # type: tuple(str)')
+                self._write(1, "_REQUIRED= () # type: tuple(str)")
                 self._write()
 
             if len(defaults) > 0:
-                self._write(1, '_DEFAULTS = {')
+                self._write(1, "_DEFAULTS = {")
                 for name, value in defaults:
                     if isinstance(value, (list, bool, int, float, tuple)):
                         self._write(2, "'%s': %s," % (name, value))
                     else:
                         self._write(2, "'%s': '%s'," % (name, value))
-                self._write(1, '} # type: Dict[str, Union(type)]')
+                self._write(1, "} # type: Dict[str, Union(type)]")
                 self._write()
             else:
-                self._write(1, '_DEFAULTS= {} # type: Dict[str, Union(type)]')
+                self._write(1, "_DEFAULTS= {} # type: Dict[str, Union(type)]")
                 self._write()
 
             # write constants
@@ -377,9 +367,8 @@ class Generator(object):
                     value_type = "string"
                     if isinstance(enum.value, dict):
                         value = enum.value[name]
-                        value_type = enum.context.value['type'] \
-                            if 'type' in enum.context.value else 'string'
-                    if value_type == 'string':
+                        value_type = enum.context.value["type"] if "type" in enum.context.value else "string"
+                    if value_type == "string":
                         self._write(1, "%s = '%s' # type: str" % (name.upper(), value))
                     else:
                         self._write(1, "%s = %s #" % (name.upper(), value))
@@ -387,20 +376,15 @@ class Generator(object):
                     self._write()
 
             # write def __init__(self)
-            init_param_string = ""
-            # if choice_method_name is not None:
-            init_param_string = ", parent=None, choice=None"  # everything will have a parent choice
-            for init_param in self._get_simple_type_names(schema_object):
-                init_param_string += ", %s=None" % (init_param)
-            self._write(1, "def __init__(self%s):" % init_param_string)
+            params = "self, parent=None, choice=None"
+            init_params, properties, _ = self._get_property_param_string(schema_object)
+            params = params if len(init_params) == 0 else ", ".join([params, init_params])
+            self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
-            # if choice_method_name is not None:
             self._write(2, "self._parent = parent")
             self._write(2, "self._choice = choice")
-            for init_param in self._get_simple_type_names(schema_object):
-                self._write(2, "self._set_property('%s', %s)" % (init_param, init_param))
-            # if len(self._get_parser('$..choice').find(schema_object)) > 0:
-            #     self._write(2, 'self.choice = None')
+            for property_name in properties:
+                self._write(2, "self._set_property('%s', %s)" % (property_name, property_name))
 
             # process properties - TBD use this one level up to process
             # schema, in requestBody, Response and also
@@ -499,7 +483,7 @@ class Generator(object):
             self._write()
 
             # if all choice(s) are $ref, the getitem should return the actual choice object
-            # the _GETITEM_RETURNS_CHOICE_OBJECT class static allows the OpenApiIter to 
+            # the _GETITEM_RETURNS_CHOICE_OBJECT class static allows the OpenApiIter to
             # correctly return the selected choice if any
             get_item_returns_choice = True
             if "properties" in yobject and "choice" in yobject["properties"]:
@@ -526,10 +510,8 @@ class Generator(object):
             # write a factory method for the schema object in the list that returns the container
             self._write_factory_method(contained_class_name, ref_name.lower().split(".")[-1], ref, True, False)
 
-            # write an append method for the schema object in the list that returns the new object
-            _, _, class_name, _ = self._get_object_property_class_names(ref_name.lower())
-            # TODO commenting the append method as there is a behavior change, need to revisit
-            # self._write_append_method(yobject, False, class_name, contained_class_name, class_name)
+            # write an add method for the schema object in the list that creates and returns the new object
+            self._write_add_method(yobject, ref, False, class_name, contained_class_name, class_name)
 
             # write choice factory methods if the only properties are choice properties
             if get_item_returns_choice is True:
@@ -570,12 +552,12 @@ class Generator(object):
 
     def _write_factory_method(self, contained_class_name, method_name, ref, openapi_list=False, choice_method=False):
         yobject = self._get_object_from_ref(ref)
-        object_name, property_name, class_name, _ = self._get_object_property_class_names(ref)
+        _, _, class_name, _ = self._get_object_property_class_names(ref)
         param_string, properties, type_string = self._get_property_param_string(yobject)
         self._write()
         if openapi_list is True:
             self._imports.append("from .%s import %s" % (class_name.lower(), class_name))
-            self._write(1, "def %s(self%s):" % (method_name, param_string))
+            self._write(1, "def %s(%s):" % (method_name, ", ".join(["self", param_string])))
             return_class_name = class_name
             if contained_class_name is not None:
                 return_class_name = "{}Iter".format(contained_class_name)
@@ -592,8 +574,7 @@ class Generator(object):
                 self._write(2, "item.choice = '%s'" % (method_name))
             else:
                 params = ["parent=self._parent", "choice=self._choice"]
-                for property in properties:
-                    params.append("%s=%s" % (property, property))
+                params.extend(["%s=%s" % (name, name) for name in properties])
                 self._write(2, "item = %s(%s)" % (class_name, ", ".join(params)))
             self._write(2, "self._add(item)")
             self._write(2, "return self")
@@ -610,52 +591,54 @@ class Generator(object):
             self._write(2, '"""')
             self._write(2, "return self._get_property('%s', %s, self, '%s')" % (method_name, class_name, method_name))
 
-    def _write_append_method(self, yobject, choice_method, class_name, contained_class_name, return_class_name):
+    def _write_add_method(self, yobject, ref, choice_method, class_name, contained_class_name, return_class_name):
+        """Writes an add method"""
+        method_name = ref.lower().split("/")[-1]
         param_string, properties, type_string = self._get_property_param_string(yobject)
         self._imports.append("from .%s import %s" % (contained_class_name.lower(), contained_class_name))
-        self._write(1, "def append(self%s):" % (param_string))
+        self._write(1, "def add(%s):" % (", ".join(["self", param_string])))
         self._write(2, "# type: (%s) -> %s" % (type_string, contained_class_name))
-        self._write(2, '"""Append method that creates and returns an instance of the %s class' % (contained_class_name))
+        self._write(2, '"""Add method that creates and returns an instance of the %s class' % (contained_class_name))
         self._write()
         self._write(2, "%s" % self._get_description(yobject))
         self._write()
         self._write(2, "Returns: %s" % (contained_class_name))
         self._write(2, '"""')
         if choice_method is True:
-            self._write(2, "item = %s()" % (contained_class_name))
-            self._write(2, "item.%s" % (method_name))
-            self._write(2, "item.choice = '%s'" % (method_name))
+            self._write(2, "item = self.%s()" % (method_name))
+            self._write(2, "item.%s" % (contained_class_name))
+            self._write(2, "item.choice = '%s'" % (contained_class_name))
         else:
             params = ["parent=self._parent", "choice=self._choice"]
-            for property in properties:
-                params.append("%s=%s" % (property, property))
+            params.extend(["%s=%s" % (name, name) for name in properties])
             self._write(2, "item = %s(%s)" % (contained_class_name, ", ".join(params)))
         self._write(2, "self._add(item)")
         self._write(2, "return item")
 
     def _get_property_param_string(self, yobject):
-        property_param_string = ""
+        property_param_string = []
         property_type_string = []
         properties = []
         if "properties" in yobject:
             for name, property in yobject["properties"].items():
                 if name == "choice":
                     continue
-                default = "None"
+                default = None
                 type_string = self._get_type_restriction(property)
                 if "obj" not in type_string:
-                    property_param_string += ", %s" % name
-                    properties.append(name)
                     if "default" in property:
                         default = property["default"]
-                    if property["type"] in ["number", "integer", "boolean"]:
-                        val = "=%s" % default if default == "None" else "=%s" % default
+                    if name == "choice":
+                        val = "None"
+                    elif property["type"] in ["number", "integer", "boolean", "array"]:
+                        val = "None" if default is None else default
                     else:
-                        val = "=%s" % default if default == "None" else "='%s'" % default
-                    property_param_string += val
+                        val = "None" if default is None else "'{}'".format(default.strip())
+                    properties.append(name)
+                    property_param_string.append("%s=%s" % (name, val))
                     property_type_string.append(type_string)
         types = ",".join(property_type_string)
-        return (property_param_string, properties, types)
+        return (", ".join(property_param_string), properties, types)
 
     def _write_openapi_property(self, schema_object, name, property, write_set_choice=False):
         ref = self._get_parser("$..'$ref'").find(property)
@@ -713,53 +696,47 @@ class Generator(object):
         #     if len(line) > 0:
         #         doc_string.append('%s  ' % line)
         # return doc_string
+
     def _get_data_types(self, yproperty):
-        data_type_map = {
-            "integer": "int", "string": "str",
-            "boolean": "bool", "array": "list",
-            "number": "float", "float": "float",
-            "double": "float"
-        }
-        if yproperty["type"]  in data_type_map:
+        data_type_map = {"integer": "int", "string": "str", "boolean": "bool", "array": "list", "number": "float", "float": "float", "double": "float"}
+        if yproperty["type"] in data_type_map:
             return data_type_map[yproperty["type"]]
         else:
             return yproperty["type"]
 
     def _get_openapi_types(self, yobject):
         types = []
-        if 'properties' in yobject:
-            for name in yobject['properties']:
-                yproperty = yobject['properties'][name]
-                ref = parse("$..'$ref'").find(yproperty)
+        if "properties" in yobject:
+            for name in yobject["properties"]:
+                yproperty = yobject["properties"][name]
+                ref = self._get_parser("$..'$ref'").find(yproperty)
                 pt = {}
-                if 'type' in yproperty:
-                    pt.update({'type': self._get_data_types(yproperty)})
-                    pt.update({'enum': yproperty['enum']}) if 'enum' in yproperty else None
-                    pt.update({
-                        'format': "\'%s\'" % yproperty['format']
-                    }) if 'format' in yproperty else None
+                if "type" in yproperty:
+                    pt.update({"type": self._get_data_types(yproperty)})
+                    pt.update({"enum": yproperty["enum"]}) if "enum" in yproperty else None
+                    pt.update({"format": "'%s'" % yproperty["format"]}) if "format" in yproperty else None
                 if len(ref) > 0:
-                    object_name = ref[0].value.split('/')[-1]
-                    class_name = object_name.replace('.', '')
-                    if 'type' in yproperty and yproperty['type'] == 'array':
-                        class_name += 'Iter'
-                    pt.update({'type': "\'%s\'" % class_name})
+                    object_name = ref[0].value.split("/")[-1]
+                    class_name = object_name.replace(".", "")
+                    if "type" in yproperty and yproperty["type"] == "array":
+                        class_name += "Iter"
+                    pt.update({"type": "'%s'" % class_name})
                 if len(pt) > 0:
                     types.append((name, pt))
 
         return types
-    
+
     def _get_required_and_defaults(self, yobject):
         required = []
         defaults = []
-        if 'required' in yobject:
-            required = yobject['required']
-        if 'properties' in yobject:
-            for name in yobject['properties']:
-                yproperty = yobject['properties'][name]
-                if 'default' in yproperty:
-                    default = yproperty['default']
-                    if 'type' in yproperty and yproperty['type'] == 'number':
+        if "required" in yobject:
+            required = yobject["required"]
+        if "properties" in yobject:
+            for name in yobject["properties"]:
+                yproperty = yobject["properties"][name]
+                if "default" in yproperty:
+                    default = yproperty["default"]
+                    if "type" in yproperty and yproperty["type"] == "number":
                         default = float(default)
                     defaults.append((name, default))
         return (tuple(required), defaults)
