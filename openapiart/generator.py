@@ -302,10 +302,10 @@ class Generator(object):
             self._write()
             self._write()
             self._write(0, "class %s(OpenApiObject):" % class_name)
-            slots = ""
-            # if choice_method_name is not None:
-            slots = "'_parent', '_choice'"
-            self._write(1, "__slots__ = (%s)" % slots)
+            slots = ["'_parent'"]
+            if "choice" in self._get_choice_names(schema_object):
+                slots.append("'_choice'")
+            self._write(1, "__slots__ = (%s)" % ",".join(slots))
             self._write()
 
             # write _TYPES definition
@@ -376,13 +376,19 @@ class Generator(object):
                     self._write()
 
             # write def __init__(self)
-            params = "self, parent=None, choice=None"
+            params = "self, parent=None"
+            if "choice" in self._get_choice_names(schema_object):
+                params += ", choice=None"
             init_params, properties, _ = self._get_property_param_string(schema_object)
             params = params if len(init_params) == 0 else ", ".join([params, init_params])
             self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
-            self._write(2, "self._choice = choice")
+            if "choice" in self._get_choice_names(schema_object):
+                self._write(2, "if 'choice' in self._DEFAULTS and choice is None:")
+                self._write(3, "getattr(self, self._DEFAULTS['choice'])")
+                self._write(2, "else:")
+                self._write(3, "self.choice = choice")
             for property_name in properties:
                 self._write(2, "self._set_property('%s', %s)" % (property_name, property_name))
 
@@ -410,7 +416,7 @@ class Generator(object):
 
     def _get_choice_names(self, schema_object):
         choice_names = []
-        if "choice" in schema_object["properties"]:
+        if "properties" in schema_object and "choice" in schema_object["properties"]:
             choice_names = schema_object["properties"]["choice"]["enum"][:]
             choice_names.append("choice")
         return choice_names
@@ -557,7 +563,8 @@ class Generator(object):
         self._write()
         if openapi_list is True:
             self._imports.append("from .%s import %s" % (class_name.lower(), class_name))
-            self._write(1, "def %s(%s):" % (method_name, ", ".join(["self", param_string])))
+            params = "self" if len(param_string) == 0 else ", ".join(["self", param_string])
+            self._write(1, "def %s(%s):" % (method_name, params))
             return_class_name = class_name
             if contained_class_name is not None:
                 return_class_name = "{}Iter".format(contained_class_name)
@@ -573,7 +580,9 @@ class Generator(object):
                 self._write(2, "item.%s" % (method_name))
                 self._write(2, "item.choice = '%s'" % (method_name))
             else:
-                params = ["parent=self._parent", "choice=self._choice"]
+                params = ["parent=self._parent"]
+                if "properties" in yobject and "choice" in yobject["properties"]:
+                    params.append("choice=self._choice")
                 params.extend(["%s=%s" % (name, name) for name in properties])
                 self._write(2, "item = %s(%s)" % (class_name, ", ".join(params)))
             self._write(2, "self._add(item)")
@@ -594,9 +603,10 @@ class Generator(object):
     def _write_add_method(self, yobject, ref, choice_method, class_name, contained_class_name, return_class_name):
         """Writes an add method"""
         method_name = ref.lower().split("/")[-1]
-        param_string, properties, type_string = self._get_property_param_string(yobject)
         self._imports.append("from .%s import %s" % (contained_class_name.lower(), contained_class_name))
-        self._write(1, "def add(%s):" % (", ".join(["self", param_string])))
+        param_string, properties, type_string = self._get_property_param_string(yobject)
+        params = "self" if len(param_string) == 0 else ", ".join(["self", param_string])
+        self._write(1, "def add(%s):" % (params))
         self._write(2, "# type: (%s) -> %s" % (type_string, contained_class_name))
         self._write(2, '"""Add method that creates and returns an instance of the %s class' % (contained_class_name))
         self._write()
@@ -609,7 +619,9 @@ class Generator(object):
             self._write(2, "item.%s" % (contained_class_name))
             self._write(2, "item.choice = '%s'" % (contained_class_name))
         else:
-            params = ["parent=self._parent", "choice=self._choice"]
+            params = ["parent=self._parent"]
+            if "properties" in yobject and "choice" in yobject["properties"]:
+                params.append("choice=self._choice")
             params.extend(["%s=%s" % (name, name) for name in properties])
             self._write(2, "item = %s(%s)" % (contained_class_name, ", ".join(params)))
         self._write(2, "self._add(item)")

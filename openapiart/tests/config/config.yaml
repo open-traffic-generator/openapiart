@@ -51,6 +51,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JObject'
+        k:
+          description: A nested object with only one property which is a choice object
+          $ref: '#/components/schemas/KObject'
 
     GObject:
       x-include:
@@ -122,4 +125,12 @@ components:
         j_a:
           $ref: '#/components/schemas/EObject'
         j_b:
+          $ref: '#/components/schemas/FObject'
+
+    KObject:
+      type: object
+      properties:
+        e_object:
+          $ref: '#/components/schemas/EObject'
+        f_object:
           $ref: '#/components/schemas/FObject'

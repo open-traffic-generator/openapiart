@@ -13,6 +13,8 @@ def test_add(api):
     j.j_b.f_a = "a"
     print(config)
     assert config.g[0].choice == "g_d"
+    yaml = config.serialize(encoding=config.YAML)
+    config.deserialize(yaml)
 
 
 if __name__ == "__main__":
