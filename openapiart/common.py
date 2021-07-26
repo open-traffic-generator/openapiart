@@ -295,6 +295,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = ("_properties", "_parent", "_choice")
+    _DEFAULTS = {}
+    _TYPES = {}
+    _REQUIRED = []
 
     def __init__(self, parent=None, choice=None):
         super(OpenApiObject, self).__init__()
@@ -307,19 +310,27 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._parent
 
     def _set_choice(self, name):
-        if "choice" in dir(self) and "_TYPES" in dir(self) and "choice" in self._TYPES and name in self._TYPES["choice"]["enum"]:
+        if self._has_choice(name):
             for enum in self._TYPES["choice"]["enum"]:
                 if enum in self._properties and name != enum:
                     self._properties.pop(enum)
             self._properties["choice"] = name
+
+    def _has_choice(self, name):
+        if "choice" in dir(self) and "_TYPES" in dir(self) and "choice" in self._TYPES and name in self._TYPES["choice"]["enum"]:
+            return True
+        else:
+            return False
 
     def _get_property(self, name, default_value=None, parent=None, choice=None):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
             self._set_choice(name)
-            self._properties[name] = default_value(parent=parent, choice=choice)
-
+            if "_choice" in default_value.__slots__:
+                self._properties[name] = default_value(parent=parent, choice=choice)
+            else:
+                self._properties[name] = default_value(parent=parent)
             if "_DEFAULTS" in dir(self._properties[name]) and "choice" in self._properties[name]._DEFAULTS:
                 getattr(self._properties[name], self._properties[name]._DEFAULTS["choice"])
         else:
@@ -353,13 +364,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return output
 
     def _decode(self, obj):
-        openapi_names = dir(self)
         dtypes = [list, str, int, float, bool]
         for property_name, property_value in obj.items():
-            if property_name in openapi_names:
+            if property_name in self._TYPES:
                 if isinstance(property_value, dict):
                     child = self._get_child_class(property_name)
-                    if "_choice" in dir(child[1]) and "_parent" in dir(child[1]):
+                    if "choice" in child[1]._TYPES and "_parent" in child[1].__slots__:
                         property_value = child[1](self, property_name)._decode(property_value)
                     else:
                         property_value = child[1]()._decode(property_value)
@@ -419,7 +429,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _validate_types(self, property_name, property_value):
         common_data_types = [list, str, int, float, bool]
         if property_name not in self._TYPES:
-            raise ValueError("Invalid Property {}".format(property_name))
+            # raise ValueError("Invalid Property {}".format(property_name))
+            return
         details = self._TYPES[property_name]
         if property_value is None and property_name not in self._DEFAULTS and property_name not in self._REQUIRED:
             return
@@ -484,6 +495,7 @@ class OpenApiIter(OpenApiBase):
     """
 
     __slots__ = ("_index", "_items")
+    _GETITEM_RETURNS_CHOICE_OBJECT = False
 
     def __init__(self):
         super(OpenApiIter, self).__init__()
@@ -523,6 +535,9 @@ class OpenApiIter(OpenApiBase):
         else:
             self._index += 1
         return self.__getitem__(self._index)
+
+    def __getitem__(self, key):
+        raise NotImplementedError("This should be overridden by the generator")
 
     def _add(self, item):
         self._items.append(item)
