@@ -1,21 +1,19 @@
-"""Build distributions
-
-To build `python setup.py sdist --formats=gztar bdist_wheel --universal`
+"""
+To build distribution: python setup.py sdist --formats=gztar bdist_wheel --universal
 """
 import os
 import setuptools
 
 pkg_name = "openapiart"
+version = "0.0.45"
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
-with open(os.path.join(base_dir, "VERSION")) as fid:
-    version_number = fid.read()
 
 setuptools.setup(
     name=pkg_name,
-    version=version_number,
+    version=version,
     description="The OpenAPI Artifact Generator Python Package",
     long_description=long_description,
     long_description_content_type="text/markdown",
