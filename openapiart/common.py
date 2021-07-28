@@ -543,6 +543,10 @@ class OpenApiIter(OpenApiBase):
         self._items.append(item)
         self._index = len(self._items) - 1
 
+    def remove(self, index):
+        del self._items[index]
+        self._index = len(self._items) - 1
+
     def append(self, item):
         """Append an item to the end of OpenApiIter
         TBD: type check, raise error on mismatch
