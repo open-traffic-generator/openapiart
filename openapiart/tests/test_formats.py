@@ -1,0 +1,110 @@
+import pytest
+import jsonpath_ng as jp
+import json
+
+
+def test_formats_sanity(config):
+    config.l.string = "asdf"
+    config.l.integer = 88
+    config.l.float = 22.3
+    config.l.double = 2342.222
+    config.l.mac = "00:00:fa:ce:fa:ce"
+    config.l.ipv4 = "1.1.1.1"
+    config.l.ipv6 = "::02"
+    config.l.hex = "0102030405060708090a0b0c0d0e0f"
+    yaml = config.serialize(encoding=config.YAML)
+    config.deserialize(yaml)
+    print(yaml)
+
+
+@pytest.mark.parametrize("value", [33.4, 100])
+def test_formats_bad_string(config, value):
+    config.l.string = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+@pytest.mark.parametrize("value", [33.4, "asdf"])
+def test_formats_bad_integer(config, value):
+    config.l.integer = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+@pytest.mark.parametrize("value", [6, 100, -20])
+def test_formats_integer_to_be_removed(config, value):
+    """These test cases are currently passing and should not
+    Once the base validation infrastructure is fixed these test cases should
+    be added to the test_formats_bad_integer
+    """
+    config.l.integer = value
+    config.deserialize(config.serialize(encoding=config.YAML))
+
+
+@pytest.mark.parametrize("value", ["1.1.1.1", "01.002.003.4"])
+def test_formats_good_ipv4(config, value):
+    config.l.ipv4 = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+    except TypeError:
+        pytest.fail(f"Value {value} was not valid")
+
+
+@pytest.mark.parametrize("value", [33.4, "asdf", 100, -20, "::01", "1.1.1.1.1"])
+def test_formats_bad_ipv4(config, value):
+    config.l.ipv4 = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+@pytest.mark.parametrize("value", ["1.1", "1.1.1"])
+def test_formats_ipv4_to_be_removed(config, value):
+    """These test cases are currently passing and should not
+    Once the base validation infrastructure is fixed these test cases should
+    be added to the test_formats_bad_ipv4
+    """
+    config.l.ipv4 = value
+    config.deserialize(config.serialize(encoding=config.YAML))
+
+
+@pytest.mark.parametrize("value", [33.4, "asdf", "1.1.1.1", 100, -20])
+def test_formats_bad_ipv6(config, value):
+    config.l.ipv6 = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:00", "00:00:00:00:gg:00", "00:00:fa:ce:fa:ce:01"])
+def test_formats_bad_mac(config, value):
+    config.l.mac = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:fa:ce:fa:ce:01"])
+def test_formats_bad_hex(config, value):
+    config.l.hex = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])

@@ -54,7 +54,9 @@ components:
         k:
           description: A nested object with only one property which is a choice object
           $ref: '#/components/schemas/KObject'
-
+        l:
+          $ref: '#/components/schemas/LObject'
+          
     GObject:
       x-include:
       - '../common/common.yaml#/components/schemas/ListObject'
@@ -134,3 +136,33 @@ components:
           $ref: '#/components/schemas/EObject'
         f_object:
           $ref: '#/components/schemas/FObject'
+
+    LObject:
+      description: |-
+        Format validation object
+      type: object
+      properties:
+        string:
+          type: string
+        integer:
+          type: integer
+          minimum: 10
+          maximum: 90
+        float:
+          type: number
+          format: float
+        double:
+          type: number
+          format: double
+        mac:
+          type: string
+          format: mac
+        ipv4:
+          type: string
+          format: ipv4
+        ipv6:
+          type: string
+          format: ipv6
+        hex:
+          type: string
+          format: hex
