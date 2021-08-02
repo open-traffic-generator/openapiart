@@ -72,8 +72,12 @@ def test_formats_ipv4_to_be_removed(config, value):
     Once the base validation infrastructure is fixed these test cases should
     be added to the test_formats_bad_ipv4
     """
-    config.l.ipv4 = value
-    config.deserialize(config.serialize(encoding=config.YAML))
+    try:
+        config.l.ipv4 = value
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
 
 
 @pytest.mark.parametrize("value", [33.4, "asdf", "1.1.1.1", 100, -20])

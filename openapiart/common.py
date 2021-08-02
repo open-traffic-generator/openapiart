@@ -207,6 +207,8 @@ class OpenApiValidator(object):
     def validate_ipv4(self, ip):
         if ip is None or not isinstance(ip, str):
             return False
+        if len(ip.split(".")) != 4:
+            return False
         try:
             return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
