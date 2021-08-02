@@ -227,10 +227,13 @@ class OpenApiValidator(object):
             ip = ip.replace("::", ":0")
         else:
             ip = ip.replace("::", ":0:")
-        return all([
-            True if (0 <= int(oct, 16) <= 65535) and (1 <= len(oct) <= 4) else False
-            for oct in ip.split(":")
-        ])
+        try:
+            return all([
+                True if (0 <= int(oct, 16) <= 65535) and (1 <= len(oct) <= 4) else False
+                for oct in ip.split(":")
+            ])
+        except Exception:
+            return False
 
     def validate_hex(self, hex):
         if hex is None or not isinstance(hex, str):
