@@ -384,13 +384,13 @@ class Generator(object):
             self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
+            for property_name in properties:
+                self._write(2, "self._set_property('%s', %s)" % (property_name, property_name))
             if "choice" in self._get_choice_names(schema_object):
                 self._write(2, "if 'choice' in self._DEFAULTS and choice is None:")
                 self._write(3, "getattr(self, self._DEFAULTS['choice'])")
                 self._write(2, "else:")
                 self._write(3, "self.choice = choice")
-            for property_name in properties:
-                self._write(2, "self._set_property('%s', %s)" % (property_name, property_name))
 
             # process properties - TBD use this one level up to process
             # schema, in requestBody, Response and also
@@ -735,6 +735,10 @@ class Generator(object):
                     pt.update({'type': "\'%s\'" % class_name})
                 if len(ref) == 0 and 'items' in yproperty and 'type' in yproperty['items']:
                     pt.update({'itemtype': self._get_data_types(yproperty['items'])})
+                if len(ref) == 0 and 'minimum' in yproperty:
+                    pt.update({"minimum": yproperty['minimum']})
+                if len(ref) == 0 and 'maximum' in yproperty:
+                    pt.update({"maximum": yproperty['maximum']})
                 if len(pt) > 0:
                     types.append((name, pt))
 

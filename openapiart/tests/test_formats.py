@@ -39,12 +39,12 @@ def test_formats_bad_integer(config, value):
 
 @pytest.mark.parametrize("value", [6, 100, -20])
 def test_formats_integer_to_be_removed(config, value):
-    """These test cases are currently passing and should not
-    Once the base validation infrastructure is fixed these test cases should
-    be added to the test_formats_bad_integer
-    """
-    config.l.integer = value
-    config.deserialize(config.serialize(encoding=config.YAML))
+    try:
+        config.l.integer = value
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
 
 
 @pytest.mark.parametrize("value", ["1.1.1.1", "01.002.003.4"])
@@ -68,10 +68,6 @@ def test_formats_bad_ipv4(config, value):
 
 @pytest.mark.parametrize("value", ["1.1", "1.1.1"])
 def test_formats_ipv4_to_be_removed(config, value):
-    """These test cases are currently passing and should not
-    Once the base validation infrastructure is fixed these test cases should
-    be added to the test_formats_bad_ipv4
-    """
     try:
         config.l.ipv4 = value
         config.deserialize(config.serialize(encoding=config.YAML))
