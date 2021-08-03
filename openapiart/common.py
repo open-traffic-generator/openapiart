@@ -193,7 +193,7 @@ class OpenApiValidator(object):
         pass
 
     def validate_mac(self, mac):
-        if mac is None or not isinstance(mac, str):
+        if mac is None or not isinstance(mac, str) or mac.count(" ") != 0:
             return False
         try:
             if len(mac) != 17:
@@ -205,7 +205,7 @@ class OpenApiValidator(object):
             return False
 
     def validate_ipv4(self, ip):
-        if ip is None or not isinstance(ip, str):
+        if ip is None or not isinstance(ip, str) or ip.count(" ") != 0:
             return False
         if len(ip.split(".")) != 4:
             return False
@@ -215,11 +215,14 @@ class OpenApiValidator(object):
             return False
 
     def validate_ipv6(self, ip):
-        if ip is None or not isinstance(ip, str):
+        if ip is None or not isinstance(ip, str) or ip.count(" ") > 0:
             return False
+        ip = ip.strip()
         if ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
             return False
         if (ip[0] == ":" and ip[:2] != "::") or (ip[-1] == ":" and ip[-2:] != "::"):
+            return False
+        if ip.count("::") == 0 and ip.count(":") != 7:
             return False
         if ip == "::":
             return True
