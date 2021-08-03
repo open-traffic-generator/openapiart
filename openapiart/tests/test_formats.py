@@ -47,7 +47,7 @@ def test_formats_integer_to_be_removed(config, value):
         pass
 
 
-@pytest.mark.parametrize("value", ["1.1.1.1", "01.002.003.4"])
+@pytest.mark.parametrize("value", ["1.1.1.1", "01.002.003.4", "0.0.0.0"])
 def test_formats_good_ipv4(config, value):
     config.l.ipv4 = value
     try:
@@ -56,7 +56,7 @@ def test_formats_good_ipv4(config, value):
         pytest.fail(f"Value {value} was not valid")
 
 
-@pytest.mark.parametrize("value", [33.4, "asdf", 100, -20, "::01", "1.1.1.1.1"])
+@pytest.mark.parametrize("value", [33.4, "asdf", 100, -20, "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"])
 def test_formats_bad_ipv4(config, value):
     config.l.ipv4 = value
     try:
@@ -76,7 +76,7 @@ def test_formats_ipv4_to_be_removed(config, value):
         pass
 
 
-@pytest.mark.parametrize("value", [33.4, "asdf", "1.1.1.1", 100, -20])
+@pytest.mark.parametrize("value", [33.4, "asdf", "1.1.1.1", 100, -20, "65535::65535"])
 def test_formats_bad_ipv6(config, value):
     config.l.ipv6 = value
     try:
@@ -86,7 +86,7 @@ def test_formats_bad_ipv6(config, value):
         pass
 
 
-@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:00", "00:00:00:00:gg:00", "00:00:fa:ce:fa:ce:01"])
+@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:00", "00:00:00:00:gg:00", "00:00:fa:ce:fa:ce:01", "255:255:255:255:255:255"])
 def test_formats_bad_mac(config, value):
     config.l.mac = value
     try:
