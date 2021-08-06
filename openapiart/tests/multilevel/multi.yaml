@@ -1,0 +1,33 @@
+components:
+  schemas:
+    Level.One:
+      description: |-
+        To Test Multi level non-primitive types
+      properties:
+        l1_p1:
+          description: Level one
+          $ref: '#/components/schemas/Level.Two'
+        l1_p2:
+          description: Level one to four
+          $ref: '#/components/schemas/Level.Four'
+
+    Level.Two:
+      description: Test Level 2
+      properties:
+        l2_p1:
+          description: Level Two
+          $ref: '#/components/schemas/Level.Three'
+    
+    Level.Three:
+      description: Test Level3
+      properties:
+        l3_p1:
+          description: Set value at Level 3
+          type: string
+    
+    Level.Four:
+      description: Test level4 redundant junk testing
+      properties:
+        l4_p1:
+          description: loop over level 1
+          $ref: '#/components/schemas/Level.One'

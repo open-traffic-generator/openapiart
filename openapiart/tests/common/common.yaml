@@ -12,6 +12,13 @@ components:
         name:
           type: string
           format: string
+    MultiParamObject:
+      type: object
+      properties:
+        m_param1:
+          type: string
+        m_param2:
+          type: string
     Error:
       type: object
       properties:

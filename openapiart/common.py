@@ -215,10 +215,10 @@ class OpenApiValidator(object):
             return False
 
     def validate_ipv6(self, ip):
-        if ip is None or not isinstance(ip, str) or ip.count(" ") > 0:
+        if ip is None or not isinstance(ip, str):
             return False
         ip = ip.strip()
-        if ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
+        if ip.count(" ") > 0 or ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
             return False
         if (ip[0] == ":" and ip[:2] != "::") or (ip[-1] == ":" and ip[-2:] != "::"):
             return False
@@ -250,13 +250,15 @@ class OpenApiValidator(object):
             return False
 
     def validate_integer(self, value, min, max):
+        if value is None or not isinstance(value, int):
+            return False
         if value < 0:
             return False
         if min is not None and value < min:
             return False
         if max is not None and value > max:
-            return False 
-        return isinstance(value, int)
+            return False
+        return True
 
     def validate_float(self, value):
         return isinstance(value, (int, float))
