@@ -14,6 +14,7 @@ class OpenApiArtPlugin(object):
         self._python_module_name = kwargs['python_module_name']
         self._protobuf_file_name = kwargs['protobuf_file_name']
         self._protobuf_package_name = kwargs['protobuf_package_name']
+        self._go_module_name = kwargs['go_module_name']
         self.default_indent = '    '
         self._parsers = {}
         

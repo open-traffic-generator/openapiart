@@ -33,12 +33,14 @@ class OpenApiArt(object):
         python_module_name=None,
         protobuf_package_name=None,
         protobuf_file_name=None,
+        go_module_name=None,
         output_dir=None,
-        extension_prefix = None
+        extension_prefix=None,
     ):
         self._python_module_name = python_module_name
         self._protobuf_file_name = protobuf_file_name
         self._protobuf_package_name = protobuf_package_name
+        self._go_module_name = go_module_name
         self._extension_prefix = extension_prefix
         if output_dir is None:
             output_dir = os.path.join(os.getcwd(), ".output")
@@ -54,9 +56,7 @@ class OpenApiArt(object):
 
     def _get_license(self):
         try:
-            self._license = "License: {}".format(
-                self._bundler._content["info"]["license"]["url"]
-            )
+            self._license = "License: {}".format(self._bundler._content["info"]["license"]["url"])
             return
             # currently license URL returns an HTML and not solely license text
             # hence skipping this part unless we come across a better way to
@@ -71,10 +71,7 @@ class OpenApiArt(object):
 
     def _get_info(self):
         try:
-            self._info = "{} {}".format(
-                self._bundler._content["info"]["title"],
-                self._bundler._content["info"]["version"]
-            )
+            self._info = "{} {}".format(self._bundler._content["info"]["title"], self._bundler._content["info"]["version"])
         except Exception as e:
             self._info = "OpenAPI info error [{}]".format(e)
 
@@ -104,16 +101,13 @@ class OpenApiArt(object):
             print("Bypassed creation of static documentation [missing redoc-cli]: {}".format(e))
 
     def _generate(self):
-        # this writes python ux module
+        # this generates the python ux module
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
-            python = getattr(module, "Generator")(
-                self._bundler.openapi_filepath,
-                self._python_module_name,
-                output_dir=self._output_dir,
-                extension_prefix = self._extension_prefix
+            python_ux = getattr(module, "Generator")(
+                self._bundler.openapi_filepath, self._python_module_name, output_dir=self._output_dir, extension_prefix=self._extension_prefix
             )
-            python.generate()
+            python_ux.generate()
 
         # this generates protobuf definitions
         try:
@@ -125,6 +119,7 @@ class OpenApiArt(object):
                     "python_module_name": self._python_module_name,
                     "protobuf_file_name": self._protobuf_file_name,
                     "protobuf_package_name": self._protobuf_package_name,
+                    "go_module_name": self._go_module_name,
                     "output_dir": self._output_dir,
                 }
             )
@@ -134,7 +129,6 @@ class OpenApiArt(object):
 
         try:
             grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
-            proto_path = os.path.normpath(os.path.join("./"))
             process_args = [
                 sys.executable,
                 "-m",
@@ -144,11 +138,45 @@ class OpenApiArt(object):
                 "--proto_path={}".format(self._output_dir),
                 "{}.proto".format(self._protobuf_file_name),
             ]
-            print("grpc_tools.protoc args: {}".format(" ".join(process_args)))
+            print("Generating python grpc stubs: {}".format(" ".join(process_args)))
             process = subprocess.Popen(process_args, shell=False)
             process.wait()
         except Exception as e:
-            print("Bypassed creation of python grpc files: {}".format(e))
+            print("Bypassed creation of python stubs: {}".format(e))
+
+        try:
+            grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
+            process_args = [
+                "protoc",
+                "--go_out={}".format(grpc_dir),
+                "--go-grpc_out={}".format(grpc_dir),
+                "--proto_path={}".format(self._output_dir),
+                "--experimental_allow_proto3_optional",
+                "{}.proto".format(self._protobuf_file_name),
+            ]
+            print("Generating go stubs: {}".format(" ".join(process_args)))
+            process = subprocess.Popen(process_args, shell=False)
+            process.wait()
+        except Exception as e:
+            print("Bypassed creation of go stubs: {}".format(e))
+
+        # this generates the go ux module
+        try:
+            module = importlib.import_module("openapiart.openapiartgo")
+            go_ux = getattr(module, "OpenApiArtGo")(
+                **{
+                    "info": self._info,
+                    "license": self._license,
+                    "python_module_name": self._python_module_name,
+                    "protobuf_file_name": self._protobuf_file_name,
+                    "protobuf_package_name": self._protobuf_package_name,
+                    "go_module_name": self._go_module_name,
+                    "output_dir": self._output_dir,
+                }
+            )
+            go_ux.generate(self._openapi)
+        except Exception as e:
+            print("Bypassed creation of go ux module: {}".format(e))
 
     @property
     def output_dir(self):
