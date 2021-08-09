@@ -56,6 +56,20 @@ components:
           $ref: '#/components/schemas/KObject'
         l:
           $ref: '#/components/schemas/LObject'
+        level:
+          $ref: '../multilevel/multi.yaml#/components/schemas/Level.One'
+        mandatory:
+          $ref: '#/components/schemas/Mandate'
+        ipv4_pattern:
+          $ref: '../pattern/pattern.yaml#/components/schemas/Ipv4Pattern'
+        ipv6_pattern:
+          $ref: '../pattern/pattern.yaml#/components/schemas/Ipv6Pattern'
+        mac_pattern:
+          $ref: '../pattern/pattern.yaml#/components/schemas/MacPattern'
+        integer_pattern:
+          $ref: '../pattern/pattern.yaml#/components/schemas/IntegerPattern'
+        checksum_pattern:
+          $ref: '../pattern/pattern.yaml#/components/schemas/ChecksumPattern'
           
     GObject:
       x-include:
@@ -63,7 +77,7 @@ components:
       properties:
         g_a:
           type: string
-          default: asdf
+          default: asdf 
         g_b:
           type: integer
           default: 6
@@ -91,6 +105,7 @@ components:
     EObject:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
+      - '../common/common.yaml#/components/schemas/MultiParamObject'
       required: [e_a, e_b]
       properties:
         e_a:
@@ -166,3 +181,11 @@ components:
         hex:
           type: string
           format: hex
+
+    Mandate:
+      description: "Object to Test required Parameter"
+      type: object
+      required: ['required_param']
+      properties:
+        required_param:
+          type: string

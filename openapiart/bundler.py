@@ -201,7 +201,7 @@ class Bundler(object):
             "properties": {
                 "choice": {"description": "The type of checksum", "type": "string", "enum": ["generated", "custom"], "default": "generated"},
                 "generated": {"description": "A system generated checksum value", "type": "string", "enum": ["good", "bad"], "default": "good"},
-                "custom": {"description": "A custom checksum value", "type": "integer", "minimum": 0, "maximum": 2 ** int(xpattern["length"]) - 1},
+                "custom": {"description": "A custom checksum value", "type": "integer", "minimum": 0, "maximum": 2 ** int(xpattern.get("length", 8)) - 1},
             },
         }
         self._content["components"]["schemas"][schema_name] = schema

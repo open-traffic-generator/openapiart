@@ -148,7 +148,7 @@ class OpenApiBase(object):
             the dict encoding will return a python dict object.
         """
         if encoding == OpenApiBase.JSON:
-            return json.dumps(self._encode(), indent=2)
+            return json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
             return yaml.safe_dump(self._encode())
         elif encoding == OpenApiBase.DICT:
@@ -187,101 +187,146 @@ class OpenApiBase(object):
 
 class OpenApiValidator(object):
 
-    _MAC_REGEX = re.compile(r"^([\da-fA-F]{2}[:]){5}[\da-fA-F]{2}$")
-    _IPV6_REP1 = re.compile(r"^:[\da-fA-F].+")
-    _IPV6_REP2 = re.compile(r".+[\da-fA-F]:$")
-    _IPV6_REP3 = re.compile(r"^" + r"[\da-fA-F]{1,4}:" * 7 + r"[\da-fA-F]{1,4}$")
-    _HEX_REGEX = re.compile(r"^0?x?[\da-fA-F]+$")
-
     __slots__ = ()
 
     def __init__(self):
         pass
 
     def validate_mac(self, mac):
-        if mac is None:
-            return False
-        if isinstance(mac, list):
-            return all([True if self._MAC_REGEX.match(m) else False for m in mac])
-        if self._MAC_REGEX.match(mac):
-            return True
-        return False
-
-    def validate_ipv4(self, ip):
-        if ip is None:
+        if mac is None or not isinstance(mac, str) or mac.count(" ") != 0:
             return False
         try:
-            if isinstance(ip, list):
-                return all([all([0 <= int(oct) <= 255 for oct in i.split(".", 3)]) for i in ip])
-            else:
-                return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
+            if len(mac) != 17:
+                return False
+            return all([
+                0 <= int(oct, 16) <= 255 for oct in mac.split(":")
+            ])
         except Exception:
             return False
 
-    def _validate_ipv6(self, ip):
-        if ip is None:
+    def validate_ipv4(self, ip):
+        if ip is None or not isinstance(ip, str) or ip.count(" ") != 0:
             return False
-        if self._IPV6_REP1.match(ip) or self._IPV6_REP2.match(ip):
+        if len(ip.split(".")) != 4:
             return False
-        if ip.count("::") == 0:
-            if self._IPV6_REP3.match(ip):
-                return True
-            else:
-                return False
-        if ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
+        try:
+            return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
+        except Exception:
+            return False
+
+    def validate_ipv6(self, ip):
+        if ip is None or not isinstance(ip, str):
+            return False
+        ip = ip.strip()
+        if ip.count(" ") > 0 or ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
+            return False
+        if (ip[0] == ":" and ip[:2] != "::") or (ip[-1] == ":" and ip[-2:] != "::"):
+            return False
+        if ip.count("::") == 0 and ip.count(":") != 7:
+            return False
+        if ip == "::":
+            return True
+        if ip[:2] == "::":
+            ip = ip.replace("::", "0:")
+        elif ip[-2:] == "::":
+            ip = ip.replace("::", ":0")
+        else:
+            ip = ip.replace("::", ":0:")
+        try:
+            return all([
+                True if (0 <= int(oct, 16) <= 65535) and (1 <= len(oct) <= 4) else False
+                for oct in ip.split(":")
+            ])
+        except Exception:
+            return False
+
+    def validate_hex(self, hex):
+        if hex is None or not isinstance(hex, str):
+            return False
+        try:
+            int(hex, 16)
+            return True
+        except Exception:
+            return False
+
+    def validate_integer(self, value, min, max):
+        if value is None or not isinstance(value, int):
+            return False
+        if value < 0:
+            return False
+        if min is not None and value < min:
+            return False
+        if max is not None and value > max:
             return False
         return True
 
-    def validate_ipv6(self, ip):
-        if isinstance(ip, list):
-            return all([self._validate_ipv6(i) for i in ip])
-        return self._validate_ipv6(ip)
-
-    def validate_hex(self, hex):
-        if isinstance(hex, list):
-            return all([self._HEX_REGEX(h) for h in hex])
-        if self._HEX_REGEX.match(hex):
-            return True
-        return False
-
-    def validate_integer(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        return all([isinstance(i, int) for i in value])
-
     def validate_float(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        return all([isinstance(i, (float, int)) for i in value])
+        return isinstance(value, (int, float))
 
     def validate_string(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        return all([isinstance(i, (str, unicode)) for i in value])
-
+        return isinstance(value, (str, unicode))
+    
     def validate_bool(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        return all([isinstance(i, bool) for i in value])
+        return isinstance(value, bool)
 
-    def validate_list(self, value):
-        # TODO pending item validation
-        return isinstance(value, list)
-
+    def validate_list(self, value, itemtype, min, max):
+        if value is None or not isinstance(value, list):
+            return False
+        v_obj = getattr(self, "validate_{}".format(itemtype), None)
+        if v_obj is None:
+            raise AttributeError("{} is not a valid attribute".format(itemtype))
+        return [
+            v_obj(item, min, max) if itemtype == 'integer' else v_obj(item)
+            for item in value
+        ]
+    
     def validate_binary(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        return all([all([True if int(b) == 0 or int(b) == 1 else False for b in binary]) for binary in value])
-
-    def types_validation(self, value, type_, err_msg):
-        type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "integer", "int32": "integer", "double": "float"}
+        if value is None or not isinstance(value, str):
+            return False
+        return all([
+            True if int(bin) == 0 or int(bin) == 1 else False
+            for bin in value
+        ])
+    
+    def types_validation(self, value, type_, err_msg, itemtype=None, min=None, max=None):
+        type_map = {
+            int: "integer", str: "string",
+            float: "float", bool: "bool",
+            list: "list", "int64": "integer",
+            "int32": "integer", "double": "float"
+        }
         if type_ in type_map:
             type_ = type_map[type_]
-        v_obj = getattr(self, "validate_{}".format(type_))
+        if itemtype is not None and itemtype in type_map:
+            itemtype = type_map[itemtype]
+        v_obj = getattr(self, "validate_{}".format(type_), None)
         if v_obj is None:
             msg = "{} is not a valid or unsupported format".format(type_)
             raise TypeError(msg)
-        if v_obj(value) is False:
+        if type_ == 'list':
+            verdict = v_obj(value, itemtype, min, max)
+            if all(verdict) is True:
+                return
+            err_msg = "{} \n {} are not valid".format(
+                err_msg,
+                [value[index] for index, item in enumerate(verdict) if item is False]
+            )
+            verdict = False
+        elif type_ == 'integer':
+            verdict = v_obj(value, min, max)
+            if verdict is True:
+                return
+            min_max = ""
+            if min is not None:
+                min_max = ", expected min {}".format(min)
+            if max is not None:
+                min_max = min_max + ", expected max {}".format(max)
+            err_msg = "{} \n got {} of type {} {}".format(
+                err_msg, value, type(value), min_max
+            )
+        else:
+            verdict = v_obj(value)
+        if verdict is False:
             raise TypeError(err_msg)
 
 
@@ -383,6 +428,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif property_name in self._DEFAULTS and property_value is None:
                     if isinstance(self._DEFAULTS[property_name], tuple(dtypes)):
                         property_value = self._DEFAULTS[property_name]
+                self._set_choice(property_name)
                 self._properties[property_name] = property_value
             self._validate_types(property_name, property_value)
         self._validate_required()
@@ -435,11 +481,20 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if property_value is None and property_name not in self._DEFAULTS and property_name not in self._REQUIRED:
             return
         if "enum" in details and property_value not in details["enum"]:
-            msg = "property {} shall be one of these" " {} enum, but got {} at {}"
-            raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
-        if details["type"] in common_data_types and "format" not in details:
-            msg = "property {} shall be of type {}, but got {} at {}".format(property_name, details["type"], type(property_value), self.__class__)
-            self.types_validation(property_value, details["type"], msg)
+            msg = "property {} shall be one of these" \
+                " {} enum, but got {} at {}"
+            raise TypeError(msg.format(
+                property_name, details["enum"], property_value, self.__class__
+            ))
+        if details["type"] in common_data_types and \
+                "format" not in details:
+            msg = "property {} shall be of type {} at {}".format(
+                    property_name, details["type"], self.__class__
+                )
+            self.types_validation(
+                property_value, details["type"], msg, details.get("itemtype"),
+                details.get("minimum"), details.get("maximum")
+            )
 
         if details["type"] not in common_data_types:
             class_name = details["type"]
@@ -450,8 +505,14 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 msg = "property {} shall be of type {}," " but got {} at {}"
                 raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
         if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
-            self.types_validation(property_value, details["format"], msg)
+            msg = "Invalid {} format, expected {} at {}".format(
+                property_value, details["format"], self.__class__
+            )
+            _type = details["type"] if details["type"] is list else details["format"]
+            self.types_validation(
+                property_value, _type, msg, details["format"],
+                details.get("minimum"), details.get("maximum")
+            )
 
     def validate(self):
         self._validate_required()

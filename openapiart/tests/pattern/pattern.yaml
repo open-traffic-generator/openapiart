@@ -1,0 +1,46 @@
+components:
+  schemas:
+    Ipv4Pattern:
+      description: Test ipv4 pattern
+      type: object
+      properties:
+        ipv4:
+          x-field-pattern:
+            format: ipv4
+            default: 0.0.0.0
+            features: [count]
+    Ipv6Pattern:
+      description: Test ipv6 pattern
+      type: object
+      properties:
+        ipv6:
+          x-field-pattern:
+            format: ipv6
+            default: "::"
+            features: [count]
+    MacPattern:
+      description: Test mac pattern
+      type: object
+      properties:
+        mac:
+          x-field-pattern:
+            format: mac
+            default: "00:00:00:00:00:00"
+            features: [count]
+    IntegerPattern:
+      description: Test integer pattern
+      type: object
+      properties:
+        integer:
+          x-field-pattern:
+            format: integer
+            default: 0
+            length: 8
+            features: [count]
+    ChecksumPattern:
+      description: Test checksum pattern
+      type: object
+      properties:
+        checksum:
+          x-field-pattern:
+            format: checksum
