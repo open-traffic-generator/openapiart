@@ -37,11 +37,10 @@ def lint():
 
 
 def test():
-    pkg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.output/openapiart/sanity')
     run(
         [
             py() + " -m pip install pytest-cov",
-            py() + " -m pytest -sv --cov=%s/ --cov-report term --cov-report html:cov_report" % pkg_path,
+            py() + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
     )
     import re
