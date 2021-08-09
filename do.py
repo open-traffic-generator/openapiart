@@ -37,10 +37,7 @@ def lint():
 
 
 def test():
-    pkg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.output/openapiart')
-    print("#######################")
-    print(pkg_path)
-    print("#######################")
+    pkg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.output/openapiart/sanity')
     run(
         [
             py() + " -m pip install pytest-cov",
