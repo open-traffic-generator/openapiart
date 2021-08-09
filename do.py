@@ -40,7 +40,7 @@ def test():
     run(
         [
             py() + " -m pip install pytest-cov",
-            py() + " -m pytest -sv --cov=.output/openapiart --cov-report term --cov-report html:cov_report",
+            py() + " -m pytest -sv --cov=tests/.output/openapiart --cov-report term --cov-report html:cov_report",
         ]
     )
     import re
