@@ -9,3 +9,4 @@ __pycache__
 /env
 /.vscode
 /scratch
+/cov_report
