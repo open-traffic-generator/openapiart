@@ -33,11 +33,21 @@ class FluentNew(object):
         self.schema_object = None
         self.interface_fields = []
 
+    def isOptional(self, property_name):
+        if self.schema_object is None:
+            return True
+        if "required" not in self.schema_object:
+            return True
+        if property_name not in self.schema_object["required"]:
+            return True
+        return False
+
 
 class FluentField(object):
     def __init__(self):
         self.name = None
         self.type = None
+        self.isPointer = True
         self.setter_method = None
         self.getter_method = None
         self.adder_method = None
@@ -99,10 +109,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
-            "stringmac": "StringMac",
-            "stringipv4": "StringIpv4",
-            "stringipv6": "StringIpv6",
-            "stringhex": "StringHex",
+            # "stringmac": "StringMac",
+            # "stringipv4": "StringIpv4",
+            # "stringipv6": "StringIpv6",
+            # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
 
@@ -131,6 +141,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_package_docstring(self._openapi["info"])
         self._write_package()
         self._write_common_code()
+        self._write_types()
         self._build_api_interface()
         self._build_request_interfaces()
         self._build_component_interfaces()
@@ -245,10 +256,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
         """
         )
-        self._write("type StringMac string")
-        self._write("type StringIpv4 string")
-        self._write("type StringIpv6 string")
-        self._write("type StringHex string")
 
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
@@ -266,6 +273,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             external_name += piece[0].upper()
             if len(external_name) > 0:
                 external_name += piece[1:]
+        if external_name in ["String"]:
+            external_name += "_"
         return external_name
 
     def _get_external_field_name(self, openapi_name):
@@ -378,12 +387,26 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_interface(self, new):
         self._write(
             f"""type {new.struct} struct {{
-                {self._protobuf_package_name}.{new.interface}
+                obj {self._protobuf_package_name}.{new.interface}
+            }}
+            
+            func (obj *{new.struct}) msg() *{self._protobuf_package_name}.{new.interface} {{
+                return &obj.obj
+            }}
+
+            func (obj *{new.struct}) Yaml() string {{
+                data, _ := yaml.Marshal(obj.msg())
+                return string(data)
+            }}
+
+            func (obj *{new.struct}) Json() string {{
+                data, _ := json.Marshal(obj.msg())
+                return string(data)
             }}
         """
         )
         self._build_setters_getters(new)
-        interfaces = []
+        interfaces = ["Yaml() string", "Json() string"]
         for field in new.interface_fields:
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
@@ -398,48 +421,72 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
         """
         )
-        self._write(
-            f"""func (obj *{new.struct}) msg() *{self._protobuf_package_name}.{new.interface} {{
-                return &obj.{new.interface}
-            }}
-        """
-        )
         for field in new.interface_fields:
-            self._write(
-                f"""func (obj *{new.struct}) {field.getter_method} {{
-                    return obj.{new.interface}.{field.name}
-                }}
-                """
-            )
-            if field.setter_method is not None:
-                self._write(
-                    f"""func (obj *{new.struct}) {field.setter_method} {{
-                        obj.{new.interface}.{field.name} = value
-                        return obj
-                    }}
-                    """
-                )
-            if field.adder_method is not None:
-                self._write(
-                    f"""func (obj *{new.struct}) {field.adder_method} {{
-                        if obj.{new.interface}.{field.name} == nil {{
-                            obj.{new.interface}.{field.name} = &{field.type}{{}}
-                        }}
-                        slice := append(*obj.{new.interface}.{field.name}, value)
-                        obj.{new.interface}.{field.name} = &slice
-                        return &slice[len(slice)-1]
-                    }}
-                    """
-                )
+            self._write_field_getter(new, field)
+            self._write_field_setter(new, field)
+            self._write_field_adder(new, field)
         new.generated = True
+
+    def _write_field_getter(self, new, field):
+        if field.getter_method is None:
+            return
+        if field.isPointer:
+            body = f"""return *obj.obj.{field.name}"""
+        else:
+            body = f"""return obj.obj.{field.name}"""
+        self._write(
+            f"""func (obj *{new.struct}) {field.getter_method} {{
+                {body}
+            }}
+            """
+        )
+
+    def _write_field_setter(self, new, field):
+        if field.setter_method is None:
+            return
+        if field.isPointer:
+            body = f"""obj.obj.{field.name} = &value"""
+        else:
+            body = f"""obj.obj.{field.name} = value"""
+        self._write(
+            f"""func (obj *{new.struct}) {field.setter_method} {{
+                {body}
+                return obj
+            }}
+            """
+        )
+
+    def _write_field_adder(self, new, field):
+        if field.adder_method is None:
+            return
+        self._write(
+            f"""func (obj *{new.struct}) {field.adder_method} {{
+                if obj.obj.{field.name} == nil {{
+                    obj.obj.{field.name} = &{field.type}{{}}
+                }}
+                slice := append(*obj.obj.{field.name}, value)
+                obj.obj.{field.name} = &slice
+                return &slice[len(slice)-1]
+            }}
+            """
+        )
 
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
+            if len(self._get_parser("$..enum").find(property_schema)) > 0:  # temporary
+                continue
             field = FluentField()
             field.name = self._get_external_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
+            if field.type.startswith("["):
+                # field pointer cannot be done on array(slice)
+                field.isPointer = False
+            else:
+                field.isPointer = fluent_new.isOptional(property_name)
             field.getter_method = f"{field.name}() {field.type}"
+            if field.type not in self._oapi_go_types.values():  # temporary
+                continue
             if field.type in self._oapi_go_types.values():
                 field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
             elif field.type.startswith("["):
@@ -459,17 +506,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
             leaf = leaf[attr]
         return leaf
 
-    def _get_struct_field_type(self, property_schema, required=False):
+    def _get_struct_field_type(self, property_schema, field=None):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
         if "type" in property_schema:
             oapi_type = property_schema["type"]
+            if oapi_type.lower() in self._oapi_go_types:
+                go_type = f"{self._oapi_go_types[oapi_type.lower()]}"
             if oapi_type == "array":
                 go_type += f"[]" + self._get_struct_field_type(property_schema["items"]).replace("*", "")
-            else:
-                if "format" in property_schema:
-                    oapi_type += property_schema["format"]
-                go_type = f"{self._oapi_go_types[oapi_type.lower()]}"
+            if "format" in property_schema:
+                format_type = (oapi_type + property_schema["format"]).lower()
+                if format_type.lower() in self._oapi_go_types:
+                    go_type = f"{self._oapi_go_types[format_type.lower()]}"
         elif "$ref" in property_schema:
             ref = property_schema["$ref"]
             schema_object_name = self._get_schema_object_name_from_ref(ref)

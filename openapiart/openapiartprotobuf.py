@@ -174,6 +174,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if type == "integer":
                 return "int32"
             if type == "number":
+                if "format" in openapi_object:
+                    if openapi_object["format"] == "double":
+                        return "double"
+                    elif openapi_object["format"] == "float":
+                        return "float"
                 return "float"
             if type == "array":
                 return "repeated " + self._get_field_type(property_name, openapi_object["items"])
