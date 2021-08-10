@@ -145,14 +145,16 @@ class OpenApiArt(object):
             print("Bypassed creation of python stubs: {}".format(e))
 
         try:
-            grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
+            protoc_out_dir = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name, self._protobuf_package_name))
+            os.makedirs(protoc_out_dir)
+            proto_path = os.path.normpath(os.path.join(self._output_dir, "go"))
             process_args = [
                 "protoc",
-                "--go_out={}".format(grpc_dir),
-                "--go-grpc_out={}".format(grpc_dir),
-                "--proto_path={}".format(self._output_dir),
+                "--go_out={}".format(protoc_out_dir),
+                "--go-grpc_out={}".format(protoc_out_dir),
+                "--proto_path={}".format(proto_path),
                 "--experimental_allow_proto3_optional",
-                "{}.proto".format(self._protobuf_file_name),
+                "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
             process = subprocess.Popen(process_args, shell=False)

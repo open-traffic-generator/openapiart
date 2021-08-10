@@ -120,7 +120,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def generate(self, openapi):
         self._openapi = openapi
-        os.mkdir(os.path.normpath(os.path.join(self._output_dir, self._go_module_name)))
+        self._ux_path = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name))
+        self._protoc_path = os.path.normpath(os.path.join(self._ux_path, self._protobuf_package_name))
         self._structs = {}
         self._write_mod_file()
         self._write_go_file()
@@ -128,7 +129,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._tidy_mod_file()
 
     def _write_mod_file(self):
-        self._filename = os.path.normpath(os.path.join(self._output_dir, self._go_module_name, "go.mod"))
+        self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
         self.default_indent = "    "
         self._init_fp(self._filename)
         self._write("module {}".format(self._go_module_name))
@@ -137,7 +138,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._close_fp()
 
     def _write_go_file(self):
-        self._filename = os.path.normpath(os.path.join(self._output_dir, self._go_module_name, "{}.go".format(self._go_module_name)))
+        self._filename = os.path.normpath(os.path.join(self._ux_path, "{}.go".format(self._go_module_name)))
         self.default_indent = "    "
         self._init_fp(self._filename)
         self._write_package_docstring(self._openapi["info"])
@@ -169,7 +170,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
         #     self._write(fp.read().strip().strip("\n"))
         # self._write()
-        self._write(f'''import {self._protobuf_package_name} "../{self._protobuf_package_name}"''')
+        self._write(f'''import {self._protobuf_package_name} "./{self._protobuf_package_name}"''')
         self._write('import "google.golang.org/grpc"')
         self._write(
             r"""
@@ -285,12 +286,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.interface = self._get_external_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
                     new.method = f"""New{new.interface}() {new.interface}"""
-                    self._api.external_new_methods.append(new)
+                    if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
+                        self._api.external_new_methods.append(new)
                     rpc = FluentRpc()
                     rpc.operation_name = self._get_external_name(path_item_object["operationId"])
                     rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
                     rpc.request = f"""{self._protobuf_package_name}.{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
-                    self._api.external_rpc_methods.append(rpc)
+                    if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
+                        self._api.external_rpc_methods.append(rpc)
 
         # write the go code
         self._write(
@@ -323,9 +326,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
         )
         methods = []
-        for new in set(self._api.external_new_methods):
+        for new in self._api.external_new_methods:
             methods.append(new.method)
-        for rpc in set(self._api.external_rpc_methods):
+        for rpc in self._api.external_rpc_methods:
             methods.append(rpc.method)
         method_signatures = "\n".join(methods)
         self._write(
@@ -571,10 +574,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "mod",
                 "tidy",
             ]
-            self._mod_dir = os.path.normpath(os.path.join(self._output_dir, self._go_module_name))
             os.environ["GO111MODULE"] = "on"
             print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._mod_dir, shell=True, env=os.environ)
+            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=True, env=os.environ)
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))

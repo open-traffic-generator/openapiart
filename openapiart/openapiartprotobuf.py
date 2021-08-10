@@ -6,7 +6,9 @@ from .openapiartplugin import OpenApiArtPlugin
 class OpenApiArtProtobuf(OpenApiArtPlugin):
     def __init__(self, **kwargs):
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
-        self._filename = os.path.normpath(os.path.join(self._output_dir, "{}.proto".format(self._protobuf_file_name)))
+        path = os.path.normpath(os.path.join(self._output_dir, "go"))
+        os.makedirs(path)
+        self._filename = os.path.normpath(os.path.join(path, "{}.proto".format(self._protobuf_file_name)))
         self.default_indent = "  "
         self._custom_id = 50000
         self._init_fp(self._filename)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	openapiart "./art/openapiart"
+	openapiart "./art/go/openapiart"
 
 	"github.com/stretchr/testify/assert"
 )
