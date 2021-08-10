@@ -161,22 +161,22 @@ class OpenApiArt(object):
             print("Bypassed creation of go stubs: {}".format(e))
 
         # this generates the go ux module
-        # try:
-        module = importlib.import_module("openapiart.openapiartgo")
-        go_ux = getattr(module, "OpenApiArtGo")(
-            **{
-                "info": self._info,
-                "license": self._license,
-                "python_module_name": self._python_module_name,
-                "protobuf_file_name": self._protobuf_file_name,
-                "protobuf_package_name": self._protobuf_package_name,
-                "go_module_name": self._go_module_name,
-                "output_dir": self._output_dir,
-            }
-        )
-        go_ux.generate(self._openapi)
-        # except Exception as e:
-        #     print("Bypassed creation of go ux module: {}".format(e))
+        try:
+            module = importlib.import_module("openapiart.openapiartgo")
+            go_ux = getattr(module, "OpenApiArtGo")(
+                **{
+                    "info": self._info,
+                    "license": self._license,
+                    "python_module_name": self._python_module_name,
+                    "protobuf_file_name": self._protobuf_file_name,
+                    "protobuf_package_name": self._protobuf_package_name,
+                    "go_module_name": self._go_module_name,
+                    "output_dir": self._output_dir,
+                }
+            )
+            go_ux.generate(self._openapi)
+        except Exception as e:
+            print("Bypassed creation of go ux module: {}".format(e))
 
     @property
     def output_dir(self):

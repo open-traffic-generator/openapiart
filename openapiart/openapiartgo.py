@@ -40,6 +40,7 @@ class FluentField(object):
         self.type = None
         self.setter_method = None
         self.getter_method = None
+        self.adder_method = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -107,6 +108,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def generate(self, openapi):
         self._openapi = openapi
+        os.mkdir(os.path.normpath(os.path.join(self._output_dir, self._go_module_name)))
         self._structs = {}
         self._write_mod_file()
         self._write_go_file()
@@ -114,7 +116,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._tidy_mod_file()
 
     def _write_mod_file(self):
-        self._filename = os.path.normpath(os.path.join(self._output_dir, self._python_module_name, "go.mod"))
+        self._filename = os.path.normpath(os.path.join(self._output_dir, self._go_module_name, "go.mod"))
         self.default_indent = "    "
         self._init_fp(self._filename)
         self._write("module {}".format(self._go_module_name))
@@ -123,7 +125,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._close_fp()
 
     def _write_go_file(self):
-        self._filename = os.path.normpath(os.path.join(self._output_dir, self._python_module_name, "{}.go".format(self._python_module_name)))
+        self._filename = os.path.normpath(os.path.join(self._output_dir, self._go_module_name, "{}.go".format(self._go_module_name)))
         self.default_indent = "    "
         self._init_fp(self._filename)
         self._write_package_docstring(self._openapi["info"])
@@ -154,7 +156,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
         #     self._write(fp.read().strip().strip("\n"))
         # self._write()
-        self._write(f'''import {self._protobuf_package_name} "."''')
+        self._write(f'''import {self._protobuf_package_name} "../{self._protobuf_package_name}"''')
         self._write('import "google.golang.org/grpc"')
         self._write(
             r"""
@@ -243,6 +245,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
         """
         )
+        self._write("type StringMac string")
+        self._write("type StringIpv4 string")
+        self._write("type StringIpv6 string")
+        self._write("type StringHex string")
 
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
@@ -282,7 +288,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc = FluentRpc()
                     rpc.operation_name = self._get_external_name(path_item_object["operationId"])
                     rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
-                    rpc.request = f"""{self._protobuf_package_name}.Set{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
+                    rpc.request = f"""{self._protobuf_package_name}.{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
                     self._api.external_rpc_methods.append(rpc)
 
         # write the go code
@@ -379,12 +385,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_setters_getters(new)
         interfaces = []
         for field in new.interface_fields:
-            interfaces.append(field.setter_method)
             interfaces.append(field.getter_method)
+            if field.setter_method is not None:
+                interfaces.append(field.setter_method)
+            if field.adder_method is not None:
+                interfaces.append(field.adder_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
             f"""type {new.interface} interface {{
-                msg() *{self._protobuf_package_name}.{new.struct}
+                msg() *{self._protobuf_package_name}.{new.interface}
                 {interface_signatures}
             }}
         """
@@ -397,28 +406,47 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         for field in new.interface_fields:
             self._write(
-                f"""func (obj *{new.struct}) {field.setter_method} {{
-                    obj.{new.interface}.{field.name} = value
-                    return obj
-                }}
-                """
-            )
-            self._write(
                 f"""func (obj *{new.struct}) {field.getter_method} {{
                     return obj.{new.interface}.{field.name}
                 }}
                 """
             )
+            if field.setter_method is not None:
+                self._write(
+                    f"""func (obj *{new.struct}) {field.setter_method} {{
+                        obj.{new.interface}.{field.name} = value
+                        return obj
+                    }}
+                    """
+                )
+            if field.adder_method is not None:
+                self._write(
+                    f"""func (obj *{new.struct}) {field.adder_method} {{
+                        if obj.{new.interface}.{field.name} == nil {{
+                            obj.{new.interface}.{field.name} = &{field.type}{{}}
+                        }}
+                        slice := append(*obj.{new.interface}.{field.name}, value)
+                        obj.{new.interface}.{field.name} = &slice
+                        return &slice[len(slice)-1]
+                    }}
+                    """
+                )
         new.generated = True
 
     def _build_setters_getters(self, fluent_new):
-        """Return"""
+        """Add new FluentField objects for each interface field"""
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
             field = FluentField()
             field.name = self._get_external_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
             field.getter_method = f"{field.name}() {field.type}"
-            field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
+            if field.type in self._oapi_go_types.values():
+                field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
+            elif field.type.startswith("["):
+                if field.type.split("]")[-1] in self._oapi_go_types.values():
+                    field.adder_method = f"Add{field.name}(value {field.type}) {fluent_new.interface}"
+                else:
+                    field.adder_method = f"Add{field.name}() {field.type[2:]}"
             fluent_new.interface_fields.append(field)
 
     def _get_schema_object_name_from_ref(self, ref):
@@ -430,64 +458,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for attr in ref.split("/")[1:]:
             leaf = leaf[attr]
         return leaf
-
-    def _write_struct(self, schema_name, schema_object):
-        """Write a public type <external structname> interface for the schema_object
-        and write a private type <structname> struct
-        Transform schema_name into the structname
-        The structname should be lower case, remove underscores, periods
-
-        All structs should be accessible via the parent
-        Need to identify the parent for any schema object in order to generate
-        func (parent *<parentstructname>) <Structname>() *structname {
-            return &<structname>{}
-        }
-        """
-        struct_name = self._get_internal_name(schema_name)
-        self._write("type %s struct {" % struct_name)
-        self._write_struct_fields(schema_object)
-        self._write("}")
-        self._write()
-        interface_name = self._get_external_name(schema_name)
-        self._write("type %s interface {" % interface_name)
-        self._write_interface_fields(interface_name, schema_object)
-        self._write("}")
-        self._write()
-        self._write_struct_field_getters(struct_name, schema_object)
-        self._write_struct_field_setters(struct_name, schema_object)
-        self._write_struct_field_adders(struct_name, schema_object)
-        self._structs[struct_name] = schema_name
-
-    def _write_struct_fields(self, schema_object):
-        """Write the fields for the <structname> struct
-        The fieldnames should be lower case
-        """
-        if "properties" not in schema_object:
-            return
-        for name, property in schema_object["properties"].items():
-            field_name = self._get_external_field_name(name)
-            required = False
-            if "required" in schema_object and name in schema_object["required"]:
-                required = True
-            field_type = self._get_struct_field_type(property, required)
-            line = f'{field_name} {field_type} `proto:"{name}" json:"{name}" yaml:"{name}"`'
-            self._write(line, 1)
-
-    def _write_interface_fields(self, interface_name, schema_object):
-        """Write the fields for the <structname> interface
-        Name() <fieldtype>
-        SetName(value <fieldtype>) <interfacename>
-        """
-        if "properties" not in schema_object:
-            return
-        for name, property in schema_object["properties"].items():
-            field_name = self._get_external_name(name)
-            required = False
-            if "required" in schema_object and name in schema_object["required"]:
-                required = True
-            field_type = self._get_struct_field_type(property, required)
-            self._write(f"{field_name}() {field_type}", 1)
-            self._write(f"Set{field_name}(value {field_type}) {interface_name}", 1)
 
     def _get_struct_field_type(self, property_schema, required=False):
         """Convert openapi type, format, items, $ref keywords to a go type"""
@@ -519,78 +489,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             raise Exception(f"No type or $ref keyword present in property schema: {property_schema}")
         return go_type
 
-    def _write_struct_field_getters(self, struct_name, schema_object):
-        """Write the getters for each <structname> field
-
-        Getter content should be of the form:
-
-        func (obj *<structname>) <Fieldname> <fieldtype> {
-            return obj.<fieldname>
-        }
-        """
-        if "properties" not in schema_object:
-            return
-        for name, property in schema_object["properties"].items():
-            required = "required" in schema_object and name in schema_object["required"]
-            field_type = self._get_struct_field_type(property, required)
-            field_name = self._get_external_field_name(name)
-            function_name = self._get_external_name(name)
-            self._write(self._get_description(function_name, property))
-            self._write(f"func (obj *{struct_name}) {function_name}() {field_type} {{")
-            self._write(f"return obj.{field_name}", 1)
-            self._write("}")
-
-    def _write_struct_field_setters(self, struct_name, schema_object):
-        """Write the setters/getters for each <structname> field
-        The fieldnames should start with an upper case
-        func (obj *<structname>) Set<fieldname>(value <fieldtype>) *<structname> {
-            obj.<fieldname> = value
-            return obj
-        }
-        """
-        if "properties" not in schema_object:
-            return
-        for name, property in schema_object["properties"].items():
-            field_type = self._get_struct_field_type(property, True)
-            if "[]" not in field_type:
-                address_of = "" if "required" in schema_object and name in schema_object["required"] else "&"
-                field_name = self._get_external_field_name(name)
-                function_name = f"Set{self._get_external_name(name)}"
-                self._write(self._get_description(function_name, property))
-                self._write(f"func (obj *{struct_name}) {function_name}(value {field_type}) *{struct_name} {{")
-                self._write(f"obj.{field_name} = {address_of}value", 1)
-                self._write(f"return obj", 1)
-                self._write("}")
-                self._write()
-
-    def _write_struct_field_adders(self, struct_name, schema_object):
-        """Given a struct as follows write an Add<Fieldname> function.
-        type error struct {
-            errors *[]string
-        }
-        api.NewError().Errors().Add("bad address")
-
-        type error1 struct {
-            a string
-            b string
-        }
-        api.NewError().Errors().Add("bad address")
-
-        // AddError TBD
-        func (obj *error) AddError(value string) *string {
-            if obj.errors == nil {
-                obj.errors = &[]string{}
-            }
-            slice := append(*obj.errors, value)
-            obj.errors = &slice
-            return &slice[len(slice)-1]
-        }
-        """
-        if "properties" not in schema_object:
-            return
-        for name, property in schema_object["properties"].items():
-            pass
-
     def _get_description(self, function_name, openapi_object):
         description = f"// {function_name} TBD"
         if "description" in openapi_object:
@@ -620,7 +518,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "mod",
                 "tidy",
             ]
-            self._mod_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
+            self._mod_dir = os.path.normpath(os.path.join(self._output_dir, self._go_module_name))
             os.environ["GO111MODULE"] = "on"
             print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
             process = subprocess.Popen(process_args, cwd=self._mod_dir, shell=True, env=os.environ)
