@@ -25,7 +25,7 @@ def openapiart():
         output_dir="./art",
         python_module_name="sanity",
         protobuf_file_name="sanity",
-        protobuf_package_name="openapiart",
+        protobuf_package_name="sanity",
         go_module_name="openapiart",
         extension_prefix="sanity",
     )
