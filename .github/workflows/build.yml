@@ -23,8 +23,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Set up go
+      - name: Install go
         uses: actions/setup-go@v2
+      - name: Setup go
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go
+          go get golang.org/x/tools/cmd/goimports
       - name: Install dependencies
         run: |
           python do.py setup
