@@ -58,6 +58,8 @@ def default_config(api):
     config.b = 1.1
     config.c = 1
     return config
+
+@pytest.fixture
 def pb_config(pb2):
     """ Returns an instance of config of *_pb2 package"""
     return pb2.PrefixConfig()
