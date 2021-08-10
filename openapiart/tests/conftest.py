@@ -22,10 +22,11 @@ def openapiart():
     openapiart_class = getattr(module, "OpenApiArt")
     openapiart = openapiart_class(
         api_files=api_files,
-        output_dir="./.output/openapiart",
+        output_dir="./art",
         python_module_name="sanity",
         protobuf_file_name="sanity",
-        protobuf_package_name="test.sanity",
+        protobuf_package_name="openapiart",
+        go_module_name="openapiart",
         extension_prefix="sanity",
     )
     return openapiart
@@ -35,11 +36,12 @@ def openapiart():
 def api(openapiart):
     """Return an instance of the top level Api class from the generated package"""
     from .server import OpenApiServer
+
     sys.path.append(openapiart.output_dir)
     module = importlib.import_module(openapiart.python_module_name)
     # package = getattr(module, openapiart.python_module_name)
     pytest.server = OpenApiServer(module).start()
-    return module.api(location='http://127.0.0.1:80', verify=False, logger=None, loglevel=logging.DEBUG)
+    return module.api(location="http://127.0.0.1:80", verify=False, logger=None, loglevel=logging.DEBUG)
 
 
 @pytest.fixture
