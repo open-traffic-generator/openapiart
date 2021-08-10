@@ -48,6 +48,8 @@ class FluentField(object):
         self.name = None
         self.type = None
         self.isPointer = True
+        self.struct = None
+        self.external_struct = None
         self.setter_method = None
         self.getter_method = None
         self.adder_method = None
@@ -244,16 +246,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 panic("validation errors")
             }
         }
-
-        func MessageToJson(obj interface{}) string {
-            data, _ := json.Marshal(obj)
-            return string(data)
-        }
-
-        func MessageToYaml(obj interface{}) string {
-            data, _ := yaml.Marshal(obj)
-            return string(data)
-        }
         """
         )
 
@@ -346,7 +338,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for new in self._api.external_new_methods:
             self._write(
                 f"""func (api *{self._api.internal_struct_name}) {new.method} {{
-                    return &{new.struct}{{}}
+                    return &{new.struct}{{obj: &{self._protobuf_package_name}.{new.interface}{{}}}}
                 }}
                 """
             )
@@ -387,11 +379,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_interface(self, new):
         self._write(
             f"""type {new.struct} struct {{
-                obj {self._protobuf_package_name}.{new.interface}
+                obj *{self._protobuf_package_name}.{new.interface}
             }}
             
             func (obj *{new.struct}) msg() *{self._protobuf_package_name}.{new.interface} {{
-                return &obj.obj
+                return obj.obj
             }}
 
             func (obj *{new.struct}) Yaml() string {{
@@ -430,7 +422,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
-        if field.isPointer:
+        if field.struct is not None:
+            body = f"""if obj.obj.{field.name} == nil {{
+                    obj.obj.{field.name} = &{self._protobuf_package_name}.{field.external_struct}{{}}
+                }}
+                return &{field.struct}{{obj: obj.obj.{field.name}}}
+            """
+        elif field.isPointer:
             body = f"""return *obj.obj.{field.name}"""
         else:
             body = f"""return obj.obj.{field.name}"""
@@ -485,8 +483,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 field.isPointer = fluent_new.isOptional(property_name)
             field.getter_method = f"{field.name}() {field.type}"
-            if field.type not in self._oapi_go_types.values():  # temporary
+            if field.type not in self._oapi_go_types.values() and "$ref" not in property_schema:
                 continue
+            if "$ref" in property_schema:
+                schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
+                field.struct = self._get_internal_name(schema_name)
+                field.external_struct = self._get_external_name(schema_name)
             if field.type in self._oapi_go_types.values():
                 field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
             elif field.type.startswith("["):
