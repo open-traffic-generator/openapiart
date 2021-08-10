@@ -323,9 +323,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
         )
         methods = []
-        for new in self._api.external_new_methods:
+        for new in set(self._api.external_new_methods):
             methods.append(new.method)
-        for rpc in self._api.external_rpc_methods:
+        for rpc in set(self._api.external_rpc_methods):
             methods.append(rpc.method)
         method_signatures = "\n".join(methods)
         self._write(
@@ -471,6 +471,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
+        if "properties" not in fluent_new.schema_object:
+            return
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
             if len(self._get_parser("$..enum").find(property_schema)) > 0:  # temporary
                 continue
