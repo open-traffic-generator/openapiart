@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-go@v2
       - name: Install protoc
         uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get go dependencies
         run: |
           go get github.com/golang/protobuf/protoc-gen-go
