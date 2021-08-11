@@ -25,6 +25,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install go
         uses: actions/setup-go@v2
+        with:
+          stable: 'false'
+          go-version: 1.16.6
       - name: Install protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -34,7 +37,7 @@ jobs:
           go get github.com/golang/protobuf/protoc-gen-go
           go get google.golang.org/grpc/cmd/protoc-gen-go-grpc  
           go get golang.org/x/tools/cmd/goimports
-          export PATH=$PATH:/$GO_PATH/bin
+          export PATH=$PATH:$GO_PATH/bin
       - name: Install dependencies
         run: |
           python do.py setup
@@ -42,7 +45,7 @@ jobs:
       - name: Build distribution
         run: |
           python do.py dist
-      - name: Install package on clean env
+      - name: Install package on clean envactions
         run: |
           rm -rf .env
           python do.py setup
