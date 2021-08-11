@@ -50,6 +50,11 @@ jobs:
       - name: Run tests
         run: |
           sudo python do.py test
+      - name: Archive generated artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-artifacts
+          path: openapiart/tests/art/**
       - name: Get package version
         id: get_version
         run: |
