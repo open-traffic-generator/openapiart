@@ -34,15 +34,15 @@ def openapiart():
 
 @pytest.fixture(scope="session")
 def api(openapiart):
-    """Return an instance of the top level Api class from the generated package"""
+    """Return an instance of the top level Api
+    class from the generated package"""
     from .server import OpenApiServer
     sys.path.append(openapiart.output_dir)
     module = importlib.import_module(openapiart.python_module_name)
-    # package = getattr(module, openapiart.python_module_name)
     pytest.server = OpenApiServer(module).start()
-    return module.api(location='http://127.0.0.1:80', verify=False, logger=None, loglevel=logging.DEBUG)
-    # return module.api(
-    #     location=None, verify=False, logger=None, loglevel=logging.DEBUG)
+    return module.api(
+        location='http://127.0.0.1:80', verify=False,
+        logger=None, loglevel=logging.DEBUG)
 
 
 @pytest.fixture
@@ -58,6 +58,7 @@ def default_config(api):
     config.b = 1.1
     config.c = 1
     return config
+
 
 @pytest.fixture
 def pb_config(pb2):
