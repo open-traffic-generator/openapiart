@@ -157,7 +157,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=False)
+            process = subprocess.Popen(process_args, shell=True)
             process.wait()
         except Exception as e:
             print("Bypassed creation of go stubs: {}".format(e))
