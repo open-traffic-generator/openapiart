@@ -134,7 +134,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
         self.default_indent = "    "
         self._init_fp(self._filename)
-        self._write("module {}".format(self._go_module_name))
+        self._write("module {}/pkg".format(self._go_module_name))
         self._write()
         self._write("go 1.16")
         self._close_fp()
