@@ -157,6 +157,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
+            print("which protoc")
             subprocess.Popen(["which", "protoc"], shell=False)
             # process = subprocess.Popen(process_args, shell=True)
             process.wait()
