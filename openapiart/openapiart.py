@@ -139,7 +139,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_file_name),
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=False)
+            process = subprocess.Popen(process_args, shell=True)
             process.wait()
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
