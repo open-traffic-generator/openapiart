@@ -158,7 +158,7 @@ class OpenApiArt(object):
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
             print("which protoc")
-            subprocess.Popen(["which", "protoc"], shell=False)
+            subprocess.Popen(["which", "protoc"], shell=True)
             # process = subprocess.Popen(process_args, shell=True)
             process.wait()
         except Exception as e:
