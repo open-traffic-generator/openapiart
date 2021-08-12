@@ -139,7 +139,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_file_name),
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=True)
+            process = subprocess.Popen(process_args, shell=False)
             process.wait()
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
@@ -157,7 +157,8 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=True)
+            subprocess.Popen(["which", "protoc"], shell=False)
+            # process = subprocess.Popen(process_args, shell=True)
             process.wait()
         except Exception as e:
             print("Bypassed creation of go stubs: {}".format(e))
