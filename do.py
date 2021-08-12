@@ -184,6 +184,27 @@ def py():
         return py.path
 
 
+def get_protoc():
+    PROTOC_VERSION = "3.17.3"
+    PROTOC_ZIP = "protoc-%s-linux-aarch_64.zip" % PROTOC_VERSION
+    process_args = [
+        "curl",
+        "-kL",
+        "-o",
+        "./protc.zip",
+        "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" %(PROTOC_VERSION, PROTOC_ZIP),
+        "&&",
+        "unzip -o ./protc.zip -d {$HOME} bin/protoc",
+        "include/*",
+        "&& rm -rf ./protc.zip",
+    ]
+    process = subprocess.Popen(process_args, shell=True)
+    process.wait()
+    return
+
+
+
+
 def run(commands):
     """
     Executes a list of commands in a native shell and raises exception upon
