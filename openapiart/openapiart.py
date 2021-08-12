@@ -152,7 +152,7 @@ class OpenApiArt(object):
             proto_path = os.path.normpath(os.path.join(self._output_dir, "go"))
             process_args = [
                 "protoc",
-                "--go_opts=M{}.proto=./{}".format(self._protobuf_package_name, self._protobuf_package_name),
+                "--go_opt=M{}.proto=./{}".format(self._protobuf_package_name, self._protobuf_package_name),
                 "--go_out={}".format(protoc_out_dir),
                 "--go-grpc_out={}".format(protoc_out_dir),
                 "--proto_path={}".format(proto_path),
