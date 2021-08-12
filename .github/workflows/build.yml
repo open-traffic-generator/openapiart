@@ -57,6 +57,18 @@ jobs:
         with:
           name: generated-artifacts
           path: art
+      - name: Commit go pkg
+        run: |
+          git config user.name "Github Actions Bot"
+          git config user.email "actions@github.com"
+          git add --force pkg/\*
+          if git status --porcelain | grep .
+            then
+              git commit -m "Update auto generated go pkg" 
+              git push
+            else
+              echo "No change in auto generated go pkg"
+          fi
       - name: Get package version
         id: get_version
         run: |

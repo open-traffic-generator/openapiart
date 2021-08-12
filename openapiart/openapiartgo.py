@@ -1,6 +1,7 @@
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
+import shutil
 
 
 class FluentStructure(object):
@@ -127,6 +128,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
+        self._copy_generated_go_to_pkg()
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
@@ -580,3 +582,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
+
+    def _copy_generated_go_to_pkg(self):
+        shutil.rmtree("./pkg", ignore_errors=True)
+        shutil.copytree(self._ux_path, "./pkg", dirs_exist_ok=True)
