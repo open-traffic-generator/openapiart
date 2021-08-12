@@ -561,7 +561,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 self._filename,
             ]
             print("Formatting generated go ux file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=True)
+            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=False)
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))
@@ -576,7 +576,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             ]
             os.environ["GO111MODULE"] = "on"
             print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=True, env=os.environ)
+            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=False, env=os.environ)
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))

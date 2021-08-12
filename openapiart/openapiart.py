@@ -56,16 +56,11 @@ class OpenApiArt(object):
 
     def _get_license(self):
         try:
-            self._license = "License: {}".format(self._bundler._content["info"]["license"]["url"])
-            return
-            # currently license URL returns an HTML and not solely license text
-            # hence skipping this part unless we come across a better way to
-            # parse licenses
             response = requests.request("GET", self._bundler._content["info"]["license"]["url"])
             if response.ok:
                 self._license = response.text
             else:
-                raise Exception(response.text)
+                self._license = "License: {}".format(self._bundler._content["info"]["license"]["url"])
         except Exception as e:
             self._license = "OpenAPI info.license.url error [{}]".format(e)
 
