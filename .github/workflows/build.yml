@@ -14,10 +14,6 @@ jobs:
         python-version: [3.9]
 
     steps:
-      - name: Setup env
-        shell: bash
-        run: |
-          echo "::set-env name=GO111MODULE::on"
       - name: Checkout source
         uses: actions/checkout@v2
         with:
