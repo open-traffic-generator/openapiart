@@ -194,9 +194,9 @@ def get_protoc():
         "./protc.zip",
         "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" %(PROTOC_VERSION, PROTOC_ZIP),
         "&&",
-        "unzip -o ./protc.zip -d {$HOME} bin/protoc",
+        "unzip", "-o", "./protc.zip", "-d", "{$HOME}" "bin/protoc",
         "include/*",
-        "&& rm -rf ./protc.zip",
+        "&&", "rm", "-rf", "./protc.zip",
     ]
     process = subprocess.Popen(process_args, shell=True)
     process.wait()
