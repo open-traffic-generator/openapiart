@@ -10,7 +10,6 @@ def test_grpc_response(utils, grpc_api, pb2, pb2_grpc):
     Send a protobuf request to the mock server and
     validate the response with expected response
     """
-    # TODO: check why there is = in the response
     expected_response = """{
             "status_code_200": {
                 "bytes": "%s"
