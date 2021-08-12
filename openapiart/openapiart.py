@@ -127,6 +127,7 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of protobuf file: {}".format(e))
 
+        # this generates the python stubs
         try:
             grpc_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
             process_args = [
@@ -144,12 +145,14 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
 
+        # this generates the go stubs
         try:
             protoc_out_dir = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name, self._protobuf_package_name))
             os.makedirs(protoc_out_dir)
             proto_path = os.path.normpath(os.path.join(self._output_dir, "go"))
             process_args = [
                 "protoc",
+                "--go_opts=M{}.proto=./{}".format(self._protobuf_package_name, self._protobuf_package_name),
                 "--go_out={}".format(protoc_out_dir),
                 "--go-grpc_out={}".format(protoc_out_dir),
                 "--proto_path={}".format(proto_path),
