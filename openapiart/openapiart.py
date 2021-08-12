@@ -95,8 +95,7 @@ class OpenApiArt(object):
                 "--output",
                 os.path.join(self._output_dir, "openapi.html"),
             ]
-            process = subprocess.Popen(process_args, shell=True)
-            process.wait()
+            subprocess.check_call(process_args, shell=True)
         except Exception as e:
             print("Bypassed creation of static documentation [missing redoc-cli]: {}".format(e))
 
@@ -140,8 +139,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_file_name),
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=False)
-            process.wait()
+            subprocess.check_call(process_args, shell=False)
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
 
@@ -160,8 +158,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, shell=True)
-            process.wait()
+            subprocess.check_call(process_args, shell=True)
         except Exception as e:
             print("Bypassed creation of go stubs: {}".format(e))
 
