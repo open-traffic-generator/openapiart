@@ -135,7 +135,7 @@ class OpenApiArt(object):
                 "grpc_tools.protoc",
                 "--python_out={}".format(grpc_dir),
                 "--grpc_python_out={}".format(grpc_dir),
-                "--proto_path={}".format(self._output_dir),
+                "--proto_path={}".format(os.path.join(self._output_dir, "go")),
                 "{}.proto".format(self._protobuf_file_name),
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
