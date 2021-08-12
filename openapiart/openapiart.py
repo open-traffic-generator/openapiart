@@ -145,12 +145,11 @@ class OpenApiArt(object):
 
         # this generates the go stubs
         try:
-            protoc_out_dir = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name, self._protobuf_package_name))
+            protoc_out_dir = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name))
             os.makedirs(protoc_out_dir)
             proto_path = os.path.normpath(os.path.join(self._output_dir, "go"))
             process_args = [
                 "protoc",
-                "--go_opt=M{}.proto=./{}".format(self._protobuf_package_name, self._protobuf_package_name),
                 "--go_out={}".format(protoc_out_dir),
                 "--go-grpc_out={}".format(protoc_out_dir),
                 "--proto_path={}".format(proto_path),
@@ -158,7 +157,7 @@ class OpenApiArt(object):
                 "{}.proto".format(self._protobuf_package_name),
             ]
             print("Generating go stubs: {}".format(" ".join(process_args)))
-            subprocess.check_call(process_args, shell=True)
+            subprocess.check_call(process_args, shell=False)
         except Exception as e:
             print("Bypassed creation of go stubs: {}".format(e))
 

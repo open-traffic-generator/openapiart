@@ -115,6 +115,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("package {};".format(self._protobuf_package_name))
         self._write()
+        self._write('option go_package = "./{}";'.format(self._protobuf_package_name))
+        self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
         self._write()

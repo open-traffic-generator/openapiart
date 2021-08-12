@@ -58,11 +58,23 @@ func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	fmt.Println(config.Yaml())
 }
 
-func TestGetNestedObjectField(t *testing.T) {
+func TestGetObject(t *testing.T) {
 	config := openapiart.NewApi().NewPrefixConfig()
 	e := config.SetName("PrefixConfig Name").E().SetName("E Name")
+	f := config.F().SetFA("a f_a value")
 	assert.NotNil(t, config.E().Name())
 	assert.NotNil(t, e.Name())
 	assert.Equal(t, e.Name(), config.E().Name())
-	fmt.Println(e.Yaml())
+	assert.Equal(t, f.FA(), config.F().FA())
+	fmt.Println(config.Yaml())
 }
+
+// func TestChoiceObject(t *testing.T) {
+// 	config := openapiart.NewApi().NewPrefixConfig()
+// 	fmt.Println(config.Yaml())
+// }
+
+// func TestAddObject(t *testing.T) {
+// 	config := openapiart.NewApi().NewPrefixConfig()
+// 	fmt.Println(config.Yaml())
+// }
