@@ -46,12 +46,12 @@ jobs:
           rm -rf .env
           python do.py setup
           python do.py install
+      - name: Run artifact generation
+        run: |
+          python do.py generate
       - name: Run tests
         run: |
           sudo python do.py test
-      - name: Generate artifacts (this should be moved to before tests, once conftest.py does not generate artifacts)
-        run: |
-          python do.py generate
       - name: Archive generated artifacts
         uses: actions/upload-artifact@v2
         with:
