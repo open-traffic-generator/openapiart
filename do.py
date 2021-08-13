@@ -205,7 +205,7 @@ def setup_globals():
     global PROTOC_VERSION
     global PROTOC_ZIP
 
-    GOPATH = "/usr/local/"
+    GOPATH = "./"
     GO_VERSION = "1.16.6"
     PROTOC_VERSION = "3.17.3"
 
@@ -245,7 +245,7 @@ def get_protoc():
         "./protc.zip",
         "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" % (PROTOC_VERSION, PROTOC_ZIP)
     ]
-    unzip = f"unzip -o ./protc.zip -d {GOPATH} bin/protoc \"include/*\""
+    unzip = f"unzip -o ./protc.zip -d {GOPATH}/go bin/protoc \"include/*\""
 
     print("Executing", " ".join(process_args))
     process = subprocess.run([" ".join(process_args)], shell=True)
