@@ -264,8 +264,8 @@ def get_protoc():
 def get_go_dependencies():
     deps = " ".join([
         "go get -v",
-        "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
-        "google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
+        "google.golang.org/grpc/cmd/protoc-gen-go-grpc",
+        "google.golang.org/protobuf/cmd/protoc-gen-go",
         "golang.org/x/tools/cmd/goimports"
     ])
     print(f"installing dependencies {deps}")
