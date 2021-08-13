@@ -4,6 +4,13 @@ import re
 import sys
 import shutil
 import subprocess
+import platform
+
+global GOPATH
+global GO_VERSION
+global GO_TARGZ
+global PROTOC_VERSION
+global PROTOC_ZIP
 
 
 def setup():
@@ -191,29 +198,83 @@ def py():
         return py.path
 
 
-def get_protoc():
+def setup_globals():
+    global GOPATH
+    global GO_VERSION
+    global GO_TARGZ
+    global PROTOC_VERSION
+    global PROTOC_ZIP
+
+    GOPATH = "/usr/local/"
+    GO_VERSION = "1.16.6"
     PROTOC_VERSION = "3.17.3"
-    PROTOC_ZIP = "protoc-%s-linux-aarch_64.zip" % PROTOC_VERSION
+
+    arch = platform.uname().machine.lower()
+    if arch == 'arm64' or arch == "aarch64":
+        print("Host architecture is ARM64")
+        GO_TARGZ = f"go{GO_VERSION}.linux-arm64.tar.gz"
+        PROTOC_ZIP=f"protoc-{PROTOC_VERSION}-linux-aarch_64.zip"
+    elif arch == "x86_64":
+        print("Host architecture is x86_64")
+        GO_TARGZ = f"go{GO_VERSION}.linux-amd64.tar.gz"
+        PROTOC_ZIP = f"protoc-{PROTOC_VERSION}-linux-x86_64.zip"
+    else:
+        print(f"Host architecture {arch} is not supported")
+
+
+def get_go():
+    global GO_TARGZ
+    global GOPATH
+    process = subprocess.run([f"curl -kL https://dl.google.com/go/{GO_TARGZ} | tar -C {GOPATH} -xzf -"], shell=True)
+    if process.returncode == 0:
+        print("Installed go successfully")
+    else:
+        print("installation unsucessful")
+        print(process.stderr)
+    return
+
+
+def get_protoc():
+    global PROTOC_VERSION
+    global PROTOC_ZIP
+    global GOPATH
     process_args = [
         "curl",
         "-kL",
         "-o",
         "./protc.zip",
-        "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" % (PROTOC_VERSION, PROTOC_ZIP),
-        "&&",
-        "unzip",
-        "-o",
-        "./protc.zip",
-        "-d",
-        "{$HOME}" "bin/protoc",
-        "include/*",
-        "&&",
-        "rm",
-        "-rf",
-        "./protc.zip",
+        "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" % (PROTOC_VERSION, PROTOC_ZIP)
     ]
-    process = subprocess.Popen(process_args, shell=True)
-    process.wait()
+    unzip = f"unzip -o ./protc.zip -d {GOPATH} bin/protoc \"include/*\""
+
+    print("Executing", " ".join(process_args))
+    process = subprocess.run([" ".join(process_args)], shell=True)
+    if process.returncode == 0:
+        print("installed go protoc")
+        print("Executing", unzip)
+        process = subprocess.run([unzip], shell=True)
+        print("Executing", "rm -rf ./protc.zip")
+        process = subprocess.run(["rm -rf ./protc.zip"], shell=True)
+    else:
+        print("installation unsucessful")
+        print(process.stderr)
+    return
+
+
+def get_go_dependencies():
+    deps = " ".join([
+        "go get -v",
+        "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
+        "google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
+        "golang.org/x/tools/cmd/goimports"
+    ])
+    print(f"installing dependencies {deps}")
+    process = subprocess.run([deps], shell=True, capture_output=True)
+    if process == 0:
+        print("go dependencies installed sucessfully")
+    else:
+        print("installation unsucessful")
+        print(process.stderr)
     return
 
 
@@ -241,4 +302,5 @@ def main():
 
 
 if __name__ == "__main__":
+    setup_globals()
     main()
