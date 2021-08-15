@@ -5,16 +5,19 @@ import importlib
 import logging
 from .utils import common as utl
 
+# TBD: fix this hardcoding
+# artifacts should not be generated from here as these tests are run as sudo
+pytest.module_name = "sanity"
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", pytest.module_name))
+
 
 @pytest.fixture(scope="session")
 def api():
     """Return an instance of the top level Api class from the generated package"""
     from .server import OpenApiServer
 
-    # TBD: fix this hardcoding
-    # artifacts should not be generated from here as these tests are run as sudo
-    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
-    module = importlib.import_module("sanity")
+    module = importlib.import_module(pytest.module_name)
 
     pytest.server = OpenApiServer(module).start()
     return module.api(location="http://127.0.0.1:80", verify=False, logger=None, loglevel=logging.DEBUG)
@@ -47,21 +50,15 @@ def utils():
 
 
 @pytest.fixture(scope="session")
-def pb2(openapiart):
+def pb2():
     """Returns pb2 package"""
-    path = os.path.join(openapiart.output_dir, openapiart.python_module_name)
-    if path not in sys.path:
-        sys.path.append(path)
-    return importlib.import_module(openapiart.python_module_name + "_pb2")
+    return importlib.import_module(pytest.module_name + "_pb2")
 
 
 @pytest.fixture(scope="session")
-def pb2_grpc(openapiart):
+def pb2_grpc():
     """Returns pb2_grpc package"""
-    path = os.path.join(openapiart.output_dir, openapiart.python_module_name)
-    if path not in sys.path:
-        sys.path.append(path)
-    return importlib.import_module(openapiart.python_module_name + "_pb2_grpc")
+    return importlib.import_module(pytest.module_name + "_pb2_grpc")
 
 
 @pytest.fixture(scope="session")
