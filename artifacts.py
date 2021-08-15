@@ -21,11 +21,11 @@ import importlib
 def create_openapi_artifacts(openapiart_class):
     openapiart_class(
         api_files=[
-        os.path.join(os.path.dirname(__file__), "./api/info.yaml"),
-        os.path.join(os.path.dirname(__file__), "./common/common.yaml"),
-        os.path.join(os.path.dirname(__file__), "./api/api.yaml"),
+        os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"),
+        os.path.join(os.path.dirname(__file__), "./openapiart/tests/common/common.yaml"),
+        os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"),
     ],
-        output_dir="./art",
+        output_dir=os.path.join(os.path.dirname(__file__), "art"),
         python_module_name="sanity",
         protobuf_package_name="sanity",
         go_sdk_package_dir="github.com/open-traffic-generator/openapiart/pkg",
@@ -34,24 +34,8 @@ def create_openapi_artifacts(openapiart_class):
     )
 
 
-def create_snappi_artifacts(openapiart_class):
-    openapiart_class(
-        api_files=[
-            "../../../models/api/info.yaml",
-            "../../../models/api/api.yaml",
-        ],
-        output_dir="./art",
-        python_module_name="snappi",
-        protobuf_package_name="otg",
-        go_sdk_package_dir="github.com/open-traffic-generator/snappi/pkg",
-        go_sdk_package_name="snappi",
-        extension_prefix="snappi",
-    )
-
-
 if __name__ == "__main__":
     sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), "..")))
     module = importlib.import_module("openapiart.openapiart")
     openapiart_class = getattr(module, "OpenApiArt")
     create_openapi_artifacts(openapiart_class)
-    # create_snappi_artifacts(openapiart_class)

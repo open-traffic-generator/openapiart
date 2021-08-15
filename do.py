@@ -37,7 +37,7 @@ def lint():
 
 
 def generate():
-    artifacts = os.path.normpath(os.path.join(os.path.dirname(__file__), "openapiart", "tests", "artifacts.py"))
+    artifacts = os.path.normpath(os.path.join(os.path.dirname(__file__), "artifacts.py"))
     run(
         [
             py() + " " + artifacts,
