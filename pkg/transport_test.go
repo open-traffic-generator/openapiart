@@ -1,22 +1,22 @@
-package openapiart_tests
+package openapiart_test
 
 import (
 	"fmt"
 	"testing"
 
-	openapiart "./art/go/openapiart"
+	. "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestApi(t *testing.T) {
-	api := openapiart.NewApi()
+	api := NewApi()
 	assert.NotNil(t, api)
 }
 
 func TestApiGrpc(t *testing.T) {
-	api := openapiart.NewApi().
-		SetTransport(openapiart.ApiTransport.GRPC).
+	api := NewApi().
+		SetTransport(ApiTransport.GRPC).
 		SetGrpcLocation("127.0.0.1:5050").
 		SetGrpcRequestTimeout(10)
 	assert.NotNil(t, api.Transport())
@@ -24,20 +24,20 @@ func TestApiGrpc(t *testing.T) {
 }
 
 func TestNewPrefixConfig(t *testing.T) {
-	api := openapiart.NewApi()
+	api := NewApi()
 	config := api.NewPrefixConfig()
 	assert.NotNil(t, config)
 }
 
 func TestPrefixConfigSetName(t *testing.T) {
-	config := openapiart.NewApi().NewPrefixConfig()
+	config := NewApi().NewPrefixConfig()
 	name := "asdfasdf"
 	config.SetName(name)
 	assert.Equal(t, name, config.Name())
 }
 
 func TestYamlSerialization(t *testing.T) {
-	api := openapiart.NewApi()
+	api := NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("simple string")
 	yaml := config.Yaml()
@@ -46,7 +46,7 @@ func TestYamlSerialization(t *testing.T) {
 }
 
 func TestNewPrefixConfigSimpleTypes(t *testing.T) {
-	api := openapiart.NewApi()
+	api := NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("simple string")
 	config.SetB(12.2)
@@ -59,7 +59,7 @@ func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 }
 
 func TestGetObject(t *testing.T) {
-	config := openapiart.NewApi().NewPrefixConfig()
+	config := NewApi().NewPrefixConfig()
 	e := config.SetName("PrefixConfig Name").E().SetName("E Name")
 	f := config.F().SetFA("a f_a value")
 	assert.NotNil(t, config.E().Name())

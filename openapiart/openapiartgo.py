@@ -121,26 +121,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def generate(self, openapi):
         self._openapi = openapi
-        self._ux_path = os.path.normpath(os.path.join(self._output_dir, "go", self._go_module_name))
+        self._ux_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", os.path.split(self._go_sdk_package_dir)[-1]))
         self._protoc_path = os.path.normpath(os.path.join(self._ux_path, self._protobuf_package_name))
         self._structs = {}
         self._write_mod_file()
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
-        self._copy_generated_go_to_pkg()
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
         self.default_indent = "    "
         self._init_fp(self._filename)
-        self._write("module {}/pkg".format(self._go_module_name))
+        self._write("module {}".format(self._go_sdk_package_dir))
         self._write()
         self._write("go 1.16")
         self._close_fp()
 
     def _write_go_file(self):
-        self._filename = os.path.normpath(os.path.join(self._ux_path, "{}.go".format(self._go_module_name)))
+        self._filename = os.path.normpath(os.path.join(self._ux_path, "{}.go".format(self._go_sdk_package_name)))
         self.default_indent = "    "
         self._init_fp(self._filename)
         self._write_package_docstring(self._openapi["info"])
@@ -164,7 +163,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
 
     def _write_package(self):
-        self._write(f"package {self._go_module_name}")
+        self._write(f"package {self._go_sdk_package_name}")
         self._write()
 
     def _write_common_code(self):
@@ -172,7 +171,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
         #     self._write(fp.read().strip().strip("\n"))
         # self._write()
-        self._write(f'''import {self._protobuf_package_name} "./{self._protobuf_package_name}"''')
+        self._write(f'''import {self._protobuf_package_name} "{self._go_sdk_package_dir}/{self._protobuf_package_name}"''')
         self._write('import "google.golang.org/grpc"')
         self._write(
             r"""
@@ -276,8 +275,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return self._get_external_name(openapi_name) + "_"
 
     def _build_api_interface(self):
-        self._api.internal_struct_name = f"""{self._get_internal_name(self._go_module_name)}Api"""
-        self._api.external_interface_name = f"""{self._get_external_name(self._go_module_name)}Api"""
+        self._api.internal_struct_name = f"""{self._get_internal_name(self._go_sdk_package_name)}Api"""
+        self._api.external_interface_name = f"""{self._get_external_name(self._go_sdk_package_name)}Api"""
         for _, path_object in self._openapi["paths"].items():
             for _, path_item_object in path_object.items():
                 ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
@@ -582,7 +581,3 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
-
-    def _copy_generated_go_to_pkg(self):
-        shutil.rmtree("./pkg", ignore_errors=True)
-        shutil.copytree(self._ux_path, "./pkg", dirs_exist_ok=True)
