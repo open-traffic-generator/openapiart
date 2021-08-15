@@ -12,7 +12,7 @@ def api():
 
     # TBD: fix this hardcoding
     # artifacts should not be generated from here as these tests are run as sudo
-    sys.path.append("./art")
+    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
     module = importlib.import_module("sanity")
 
     pytest.server = OpenApiServer(module).start()
