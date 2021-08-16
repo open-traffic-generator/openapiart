@@ -4,24 +4,19 @@ import os
 import importlib
 import logging
 from .utils import common as utl
+from .server import OpenApiServer
+from .grpcserver import grpc_server
 
 # TBD: fix this hardcoding
 # artifacts should not be generated from here as these tests are run as sudo
 pytest.module_name = "sanity"
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", pytest.module_name))
-
-
-def pytest_sessionstart(session):
-    """Setup and start http and grpc servers"""
-    from .server import OpenApiServer
-    from .grpcserver import grpc_server
-
-    pytest.module = importlib.import_module(pytest.module_name)
-    pytest.http_server = OpenApiServer(pytest.module).start()
-    pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
-    pytest.pb2_grpc_module = importlib.import_module(pytest.module_name + "_pb2_grpc")
-    pytest.grpc_server = grpc_server(pytest.pb2_module, pytest.pb2_grpc_module).start()
+pytest.module = importlib.import_module(pytest.module_name)
+pytest.http_server = OpenApiServer(pytest.module).start()
+pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
+pytest.pb2_grpc_module = importlib.import_module(pytest.module_name + "_pb2_grpc")
+pytest.grpc_server = grpc_server(pytest.pb2_module, pytest.pb2_grpc_module).start()
 
 
 @pytest.fixture(scope="session")
