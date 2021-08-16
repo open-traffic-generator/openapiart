@@ -35,57 +35,102 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ApiTransportEnum string
+type grpcTransport struct {
+	location       string
+	requestTimeout time.Duration
+}
 
-var ApiTransport = struct {
-	GRPC ApiTransportEnum
-	HTTP ApiTransportEnum
-}{
-	GRPC: "grpc",
-	HTTP: "http",
+type GrpcTransport interface {
+	SetLocation(value string) GrpcTransport
+	Location() string
+	SetRequestTimeout(value int) GrpcTransport
+	RequestTimeout() int
+}
+
+// Location
+func (obj *grpcTransport) Location() string {
+	return obj.location
+}
+
+// SetLocation
+func (obj *grpcTransport) SetLocation(value string) GrpcTransport {
+	obj.location = value
+	return obj
+}
+
+// RequestTimeout returns the grpc request timeout in seconds
+func (obj *grpcTransport) RequestTimeout() int {
+	return int(obj.requestTimeout / time.Second)
+}
+
+// SetRequestTimeout contains the timeout value in seconds for a grpc request
+func (obj *grpcTransport) SetRequestTimeout(value int) GrpcTransport {
+	obj.requestTimeout = time.Duration(value) * time.Second
+	return obj
+}
+
+type httpTransport struct {
+	location string
+	verify   bool
+}
+
+type HttpTransport interface {
+	SetLocation(value string) HttpTransport
+	Location() string
+	SetVerify(value bool) HttpTransport
+	Verify() bool
+}
+
+// Location
+func (obj *httpTransport) Location() string {
+	return obj.location
+}
+
+// SetLocation
+func (obj *httpTransport) SetLocation(value string) HttpTransport {
+	obj.location = value
+	return obj
+}
+
+// Verify returns whether or not TLS certificates will be verified by the server
+func (obj *httpTransport) Verify() bool {
+	return obj.verify
+}
+
+// SetVerify determines whether or not TLS certificates will be verified by the server
+func (obj *httpTransport) SetVerify(value bool) HttpTransport {
+	obj.verify = value
+	return obj
 }
 
 type api struct {
-	transport          ApiTransportEnum
-	grpcLocation       string
-	grpcRequestTimeout time.Duration
+	grpc *grpcTransport
+	http *httpTransport
 }
 
 type Api interface {
-	SetTransport(value ApiTransportEnum) *api
-	SetGrpcLocation(value string) *api
-	SetGrpcRequestTimeout(value time.Duration) *api
+	NewGrpcTransport() GrpcTransport
+	NewHttpTransport() HttpTransport
 }
 
-// Transport returns the active transport
-func (api *api) Transport() string {
-	return string(api.transport)
+// NewGrpcTransport sets the underlying transport of the Api as grpc
+func (api *api) NewGrpcTransport() GrpcTransport {
+	api.grpc = &grpcTransport{
+		location:       "127.0.0.1:5050",
+		requestTimeout: time.Duration(10),
+	}
+	api.http = nil
+	return api.grpc
 }
 
-// SetTransport sets the active type of transport to be used
-func (api *api) SetTransport(value ApiTransportEnum) *api {
-	api.transport = value
-	return api
-}
-
-func (api *api) GrpcLocation() string {
-	return api.grpcLocation
-}
-
-// SetGrpcLocation
-func (api *api) SetGrpcLocation(value string) *api {
-	api.grpcLocation = value
-	return api
-}
-
-func (api *api) GrpcRequestTimeout() time.Duration {
-	return api.grpcRequestTimeout
-}
-
-// SetGrpcRequestTimeout contains the timeout value in seconds for a grpc request
-func (api *api) SetGrpcRequestTimeout(value int) *api {
-	api.grpcRequestTimeout = time.Duration(value) * time.Second
-	return api
+// NewHttpTransport sets the underlying transport of the Api as http
+func (api *api) NewHttpTransport() HttpTransport {
+	api.http = &httpTransport{
+		location: "https://127.0.0.1:443",
+		verify:   false,
+	}
+	api.grpc = nil
+	return api.http
 }
 
 // All methods that perform validation will add errors here
@@ -109,7 +154,7 @@ type openapiartApi struct {
 // grpcConnect builds up a grpc connection
 func (api *openapiartApi) grpcConnect() error {
 	if api.grpcClient == nil {
-		conn, err := grpc.Dial(api.grpcLocation, grpc.WithInsecure())
+		conn, err := grpc.Dial(api.grpc.location, grpc.WithInsecure())
 		if err != nil {
 			return err
 		}
@@ -121,10 +166,6 @@ func (api *openapiartApi) grpcConnect() error {
 // NewApi returns a new instance of the top level interface hierarchy
 func NewApi() *openapiartApi {
 	api := openapiartApi{}
-	api.transport = ApiTransport.GRPC
-	api.grpcLocation = "127.0.0.1:5050"
-	api.grpcRequestTimeout = 10 * time.Second
-	api.grpcClient = nil
 	return &api
 }
 
@@ -143,7 +184,7 @@ func (api *openapiartApi) SetConfig(prefixConfig PrefixConfig) error {
 		return err
 	}
 	request := sanity.SetConfigRequest{PrefixConfig: prefixConfig.msg()}
-	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpcRequestTimeout)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
 	client, err := api.grpcClient.SetConfig(ctx, &request)
 	if err != nil {

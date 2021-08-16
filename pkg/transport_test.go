@@ -14,13 +14,24 @@ func TestApi(t *testing.T) {
 	assert.NotNil(t, api)
 }
 
-func TestApiGrpc(t *testing.T) {
-	api := NewApi().
-		SetTransport(ApiTransport.GRPC).
-		SetGrpcLocation("127.0.0.1:5050").
-		SetGrpcRequestTimeout(10)
-	assert.NotNil(t, api.Transport())
-	assert.NotNil(t, api.GrpcLocation())
+func TestGrpcTransport(t *testing.T) {
+	location := "127.0.0.1:5050"
+	timeout := 10
+	api := NewApi()
+	transport := api.NewGrpcTransport().SetLocation("127.0.0.1:5050").SetRequestTimeout(10)
+	assert.NotNil(t, transport)
+	assert.NotNil(t, transport.Location(), location)
+	assert.NotNil(t, transport.RequestTimeout(), timeout)
+}
+
+func TestHttpTransport(t *testing.T) {
+	location := "https://127.0.0.1:5050"
+	verify := false
+	api := NewApi()
+	transport := api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+	assert.NotNil(t, transport)
+	assert.NotNil(t, transport.Location(), location)
+	assert.NotNil(t, transport.Verify(), verify)
 }
 
 func TestNewPrefixConfig(t *testing.T) {

@@ -168,88 +168,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _write_common_code(self):
         """Writes the base wrapper go code"""
-        # with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
-        #     self._write(fp.read().strip().strip("\n"))
-        # self._write()
         self._write(f'''import {self._protobuf_package_name} "{self._go_sdk_package_dir}/{self._protobuf_package_name}"''')
         self._write('import "google.golang.org/grpc"')
-        self._write(
-            r"""
-        import (
-            "encoding/json"
-            "fmt"
-            "time"
-
-            "gopkg.in/yaml.v3"
-        )
-
-        type ApiTransportEnum string
-
-        var ApiTransport = struct {
-            GRPC ApiTransportEnum
-            HTTP ApiTransportEnum
-        }{
-            GRPC: "grpc",
-            HTTP: "http",
-        }
-
-        type api struct {
-            transport          ApiTransportEnum
-            grpcLocation       string
-            grpcRequestTimeout time.Duration
-        }
-
-        type Api interface {
-            SetTransport(value ApiTransportEnum) *api
-            SetGrpcLocation(value string) *api
-            SetGrpcRequestTimeout(value time.Duration) *api
-        }
-
-        // Transport returns the active transport
-        func (api *api) Transport() string {
-            return string(api.transport)
-        }
-
-        // SetTransport sets the active type of transport to be used
-        func (api *api) SetTransport(value ApiTransportEnum) *api {
-            api.transport = value
-            return api
-        }
-
-        func (api *api) GrpcLocation() string {
-            return api.grpcLocation
-        }
-
-        // SetGrpcLocation
-        func (api *api) SetGrpcLocation(value string) *api {
-            api.grpcLocation = value
-            return api
-        }
-
-        func (api *api) GrpcRequestTimeout() time.Duration {
-            return api.grpcRequestTimeout
-        }
-
-        // SetGrpcRequestTimeout contains the timeout value in seconds for a grpc request
-        func (api *api) SetGrpcRequestTimeout(value int) *api {
-            api.grpcRequestTimeout = time.Duration(value) * time.Second
-            return api
-        }
-
-        // All methods that perform validation will add errors here
-        // All api rpcs MUST call Validate
-        var validation []string
-
-        func Validate() {
-            if len(validation) > 0 {
-                for _, item := range validation {
-                    fmt.Println(item)
-                }
-                panic("validation errors")
-            }
-        }
-        """
-        )
+        with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
 
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
@@ -306,7 +229,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             // grpcConnect builds up a grpc connection
             func (api *{self._api.internal_struct_name}) grpcConnect() error {{
                 if api.grpcClient == nil {{
-                    conn, err := grpc.Dial(api.grpcLocation, grpc.WithInsecure())
+                    conn, err := grpc.Dial(api.grpc.location, grpc.WithInsecure())
                     if err != nil {{
                         return err
                     }}
@@ -318,10 +241,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             // NewApi returns a new instance of the top level interface hierarchy
             func NewApi() *{self._api.internal_struct_name} {{
                 api := {self._api.internal_struct_name}{{}}
-                api.transport = ApiTransport.GRPC
-                api.grpcLocation = "127.0.0.1:5050"
-                api.grpcRequestTimeout = 10 * time.Second
-                api.grpcClient = nil
                 return &api
             }}
             """
@@ -353,7 +272,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return err
                     }}
                     request := {rpc.request}
-                    ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpcRequestTimeout)
+                    ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
                     client, err := api.grpcClient.{rpc.operation_name}(ctx, &request)
                     if err != nil {{
