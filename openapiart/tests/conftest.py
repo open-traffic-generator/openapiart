@@ -12,14 +12,22 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", pytest.module_name))
 
 
+def pytest_sessionstart(session):
+    """Setup and start http and grpc servers"""
+    from .server import OpenApiServer
+    from .grpcserver import grpc_server
+
+    pytest.module = importlib.import_module(pytest.module_name)
+    pytest.http_server = OpenApiServer(pytest.module).start()
+    pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
+    pytest.pb2_grpc_module = importlib.import_module(pytest.module_name + "_pb2_grpc")
+    pytest.grpc_server = grpc_server(pytest.pb2_module, pytest.pb2_grpc_module).start()
+
+
 @pytest.fixture(scope="session")
 def api():
     """Return an instance of the top level Api class from the generated package"""
-    from .server import OpenApiServer
-
     module = importlib.import_module(pytest.module_name)
-
-    pytest.server = OpenApiServer(module).start()
     return module.api(location="http://127.0.0.1:80", verify=False, logger=None, loglevel=logging.DEBUG)
 
 
@@ -52,19 +60,10 @@ def utils():
 @pytest.fixture(scope="session")
 def pb2():
     """Returns pb2 package"""
-    return importlib.import_module(pytest.module_name + "_pb2")
+    return pytest.pb2_module
 
 
 @pytest.fixture(scope="session")
 def pb2_grpc():
     """Returns pb2_grpc package"""
-    return importlib.import_module(pytest.module_name + "_pb2_grpc")
-
-
-@pytest.fixture(scope="session")
-def grpc_api(pb2, pb2_grpc):
-    """grpc API"""
-    from .grpcserver import web_server
-
-    grpc_api = web_server(pb2, pb2_grpc).start()
-    yield grpc_api
+    return pytest.pb2_grpc_module
