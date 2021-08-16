@@ -1,5 +1,6 @@
 .mypy_cache
 .pytest_cache
+.coverage
 __pycache__
 *.pyc
 *.output
@@ -10,3 +11,5 @@ __pycache__
 /.vscode
 /scratch
 /cov_report
+/**/art
+

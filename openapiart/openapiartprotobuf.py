@@ -113,6 +113,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("package {};".format(self._protobuf_package_name))
         self._write()
+        self._write('option go_package = "{}/{}";'.format(self._go_sdk_package_dir, self._protobuf_package_name))
+        self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
         self._write()
@@ -174,7 +176,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if type == "integer":
                 return "int32"
             if type == "number":
-                return "double"
+                if "format" in openapi_object:
+                    if openapi_object["format"] == "double":
+                        return "double"
+                    elif openapi_object["format"] == "float":
+                        return "float"
+                return "float"
             if type == "array":
                 return "repeated " + self._get_field_type(property_name, openapi_object["items"])
         elif "$ref" in openapi_object:

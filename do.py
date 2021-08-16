@@ -36,6 +36,15 @@ def lint():
     )
 
 
+def generate():
+    artifacts = os.path.normpath(os.path.join(os.path.dirname(__file__), "artifacts.py"))
+    run(
+        [
+            py() + " " + artifacts,
+        ]
+    )
+
+
 def test():
     run(
         [
@@ -44,18 +53,16 @@ def test():
         ]
     )
     import re
+
     coverage_threshold = 50
     with open("./cov_report/index.html") as fp:
         out = fp.read()
-        result = re.findall(r'data-ratio.*?[>](\d+)\b', out)[0]
+        result = re.findall(r"data-ratio.*?[>](\d+)\b", out)[0]
         if int(result) < coverage_threshold:
-            raise Exception("Coverage thresold[{0}] is NOT achieved[{1}]".format(
-                coverage_threshold, result
-            ))
+            raise Exception("Coverage thresold[{0}] is NOT achieved[{1}]".format(coverage_threshold, result))
         else:
-            print("Coverage thresold[{0}] is achieved[{1}]".format(
-                coverage_threshold, result
-            ))
+            print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
+
 
 def dist():
     clean()
@@ -184,6 +191,32 @@ def py():
         return py.path
 
 
+def get_protoc():
+    PROTOC_VERSION = "3.17.3"
+    PROTOC_ZIP = "protoc-%s-linux-aarch_64.zip" % PROTOC_VERSION
+    process_args = [
+        "curl",
+        "-kL",
+        "-o",
+        "./protc.zip",
+        "https://github.com/protocolbuffers/protobuf/releases/download/v%s/%s" % (PROTOC_VERSION, PROTOC_ZIP),
+        "&&",
+        "unzip",
+        "-o",
+        "./protc.zip",
+        "-d",
+        "{$HOME}" "bin/protoc",
+        "include/*",
+        "&&",
+        "rm",
+        "-rf",
+        "./protc.zip",
+    ]
+    process = subprocess.Popen(process_args, shell=True)
+    process.wait()
+    return
+
+
 def run(commands):
     """
     Executes a list of commands in a native shell and raises exception upon
@@ -192,8 +225,11 @@ def run(commands):
     try:
         for cmd in commands:
             print(cmd)
-            subprocess.check_call(cmd.encode("utf-8", errors="ignore"), shell=True)
-    except Exception:
+            if sys.platform != "win32":
+                cmd = cmd.encode("utf-8", errors="ignore")
+            subprocess.check_call(cmd, shell=True)
+    except Exception as e:
+        print(e)
         sys.exit(1)
 
 

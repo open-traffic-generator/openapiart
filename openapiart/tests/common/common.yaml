@@ -5,13 +5,11 @@ components:
       properties:
         name:
           type: string
-          format: string
     ListObject:
       type: object
       properties:
         name:
           type: string
-          format: string
     MultiParamObject:
       type: object
       properties:
