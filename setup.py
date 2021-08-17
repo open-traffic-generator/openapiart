@@ -30,6 +30,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
     ],
     keywords="testing openapi artifact generator",
+    package_data={"openapiart": ["*.go"]},
     include_package_data=True,
     packages=[pkg_name],
     python_requires=">=2.7, <4",
