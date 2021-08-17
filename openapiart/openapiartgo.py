@@ -10,6 +10,7 @@ class FluentStructure(object):
         self.external_interface_name = None
         self.external_new_methods = []
         self.external_rpc_methods = []
+        self.external_http_methods = []
         self.components = {}
 
 
@@ -20,7 +21,19 @@ class FluentRpc(object):
         self.operation_name = None
         self.method = None
         self.request = None
+        self.http_call = None
 
+# todo : extened it to return struct (for metric )
+class FluentHttp(object):
+    """httpSetConfig(config Config) error"""
+
+    def __init__(self):
+        self.operation_name = None
+        self.method = None
+        self.http_method = None
+        self.url_path = None
+        self.response_type = None
+        self.struct = None
 
 class FluentNew(object):
     """New<external_interface_name> <external_interface_name>"""
@@ -200,8 +213,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_api_interface(self):
         self._api.internal_struct_name = f"""{self._get_internal_name(self._go_sdk_package_name)}Api"""
         self._api.external_interface_name = f"""{self._get_external_name(self._go_sdk_package_name)}Api"""
-        for _, path_object in self._openapi["paths"].items():
-            for _, path_item_object in path_object.items():
+        for url_path, path_object in self._openapi["paths"].items():
+            for method, path_item_object in path_object.items():
                 ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
                 if len(ref) == 1:
                     new = FluentNew()
@@ -216,14 +229,28 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.operation_name = self._get_external_name(path_item_object["operationId"])
                     rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
                     rpc.request = f"""{self._protobuf_package_name}.{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
+                    rpc.http_call = f"""api.http{rpc.operation_name}({new.struct})"""
                     if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
                         self._api.external_rpc_methods.append(rpc)
+                    http = FluentHttp()
+                    http.operation_name = "http" + rpc.operation_name
+                    http.method = f"""{http.operation_name}({new.struct} {new.interface}) error"""
+                    http.http_method = method.upper()
+                    http.struct = new.struct
+                    if url_path.startswith('/'):
+                        http.url_path = url_path[1:]
+                    else:
+                        http.url_path = url_path
+                    if len([m for m in self._api.external_http_methods if m.operation_name == http.operation_name]) == 0:
+                        self._api.external_http_methods.append(http)
+                    
 
         # write the go code
         self._write(
             f"""type {self._api.internal_struct_name} struct {{
                 api
                 grpcClient {self._protobuf_package_name}.OpenapiClient
+                httpClient httpClient
             }}
 
             // grpcConnect builds up a grpc connection
@@ -242,6 +269,56 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func NewApi() *{self._api.internal_struct_name} {{
                 api := {self._api.internal_struct_name}{{}}
                 return &api
+            }}
+
+            // httpConnect builds up a http connection
+            func (api *{self._api.internal_struct_name}) httpConnect() error {{
+                if api.httpClient.client == nil {{
+                    var verify = !api.http.verify
+                    client := httpClient{{
+                        client: &http.Client{{
+                            Transport: &http.Transport{{
+                                TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
+                            }},
+                        }},
+                        ctx: context.Background(),
+                    }}
+                    api.httpClient = client
+                }}
+                return nil
+            }}
+            
+            func (api *{self._api.internal_struct_name}) httpSend(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+                err := api.httpConnect()
+                if err != nil {{
+                    return nil, err
+                }}
+                httpClient := api.httpClient
+                var bodyReader = bytes.NewReader([]byte(jsonBody))
+                queryUrl, err := url.Parse(api.http.location)
+                if err != nil {{
+                    return nil, err
+                }}
+                basePath := fmt.Sprintf(urlPath)
+                queryUrl, _ = queryUrl.Parse(basePath)
+                req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
+                req.Header.Set("Content-Type", "application/json")
+                req = req.WithContext(httpClient.ctx)
+                return httpClient.client.Do(req)
+            }}
+            
+            func (api *{self._api.internal_struct_name}) httpResponse(rsp *http.Response) ([]byte, error) {{
+                bodyBytes, err := ioutil.ReadAll(rsp.Body)
+                defer rsp.Body.Close()
+                if err != nil {{
+                    return nil, err
+                }}
+            
+                if rsp.StatusCode == 200 {{
+                    return bodyBytes, nil
+                }} else {{
+                    return nil, fmt.Errorf("fail")
+                }}
             }}
             """
         )
@@ -268,6 +345,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for rpc in self._api.external_rpc_methods:
             self._write(
                 f"""func (api *{self._api.internal_struct_name}) {rpc.method} {{
+                    if api.HasHttpTransport() {{
+                        err := {rpc.http_call}
+                        return err
+                    }}
                     if err := api.grpcConnect(); err != nil {{
                         return err
                     }}
@@ -286,6 +367,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """
             )
+        for http in self._api.external_http_methods:
+            self._write(
+                f"""func (api *{self._api.internal_struct_name}) {http.method} {{
+	                res, err := api.httpSend("{http.url_path}", {http.struct}.Json(), "{http.http_method}")
+                    if err != nil {{
+                        return err
+                    }}
+                    _, err = api.httpResponse(res)
+                    if err != nil {{
+                        return err
+                    }}
+                    return nil
+                }}
+                """
+            )
+        
 
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:

@@ -1,6 +1,12 @@
 import (
+	"bytes"
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -81,7 +87,9 @@ type api struct {
 
 type Api interface {
 	NewGrpcTransport() GrpcTransport
+	HasGrpcTransport() bool
 	NewHttpTransport() HttpTransport
+	HasHttpTransport() bool
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -94,6 +102,10 @@ func (api *api) NewGrpcTransport() GrpcTransport {
 	return api.grpc
 }
 
+func (api *api) HasGrpcTransport() bool {
+	return api.grpc != nil
+}
+
 // NewHttpTransport sets the underlying transport of the Api as http
 func (api *api) NewHttpTransport() HttpTransport {
 	api.http = &httpTransport{
@@ -102,6 +114,19 @@ func (api *api) NewHttpTransport() HttpTransport {
 	}
 	api.grpc = nil
 	return api.http
+}
+
+func (api *api) HasHttpTransport() bool {
+	return api.http != nil
+}
+
+type HttpRequestDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type httpClient struct {
+	client HttpRequestDoer
+	ctx    context.Context
 }
 
 // All methods that perform validation will add errors here
