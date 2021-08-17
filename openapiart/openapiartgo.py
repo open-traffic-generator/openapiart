@@ -49,6 +49,7 @@ class FluentField(object):
         self.name = None
         self.type = None
         self.isPointer = True
+        self.isArray = False
         self.struct = None
         self.external_struct = None
         self.setter_method = None
@@ -345,12 +346,35 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
-        if field.struct is not None:
-            body = f"""if obj.obj.{field.name} == nil {{
-                    obj.obj.{field.name} = &{self._protobuf_package_name}.{field.external_struct}{{}}
-                }}
-                return &{field.struct}{{obj: obj.obj.{field.name}}}
-            """
+        elif field.isArray:
+            if field.struct:
+                body = f"""if obj.obj.{field.name} == nil {{
+                        obj.obj.{field.name} = make([]*{self._protobuf_package_name}.{field.external_struct}, 0)
+                    }}
+                    values := make([]{field.external_struct}, 0)
+                    for _, item := range obj.obj.{field.name} {{
+                        values = append(values, &{field.struct}{{obj: item}})
+                    }}
+                    return values
+                """
+            else:
+                body = f"""if obj.obj.{field.name} == nil {{
+                        obj.obj.{field.name} = make({field.type}, 0)
+                    }}
+                    for _, item := range value {{
+                        obj.obj.{field.name} = append(obj.obj.{field.name}, item)
+                    }}
+                    return obj
+                """
+        elif field.struct is not None:
+            if field.isPointer:
+                body = f"""if obj.obj.{field.name} == nil {{
+                        obj.obj.{field.name} = &{self._protobuf_package_name}.{field.external_struct}{{}}
+                    }}
+                    return &{field.struct}{{obj: obj.obj.{field.name}}}
+                """
+            else:
+                body = f"return &{field.struct}{{obj: obj.obj.{field.name}}}"
         elif field.isPointer:
             body = f"""return *obj.obj.{field.name}"""
         else:
@@ -365,7 +389,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_setter(self, new, field):
         if field.setter_method is None:
             return
-        if field.isPointer:
+        if field.isArray:
+            body = f"""func (obj *{new.struct}) {field.setter_method} {{
+                if obj.obj.{field.name} == nil {{
+                    obj.obj.{field.name} = make({field.type}, 0)
+                }}
+                for _, item := range value {{
+                    obj.obj.{field.name} = append(obj.obj.{field.name}, item)
+                }}
+            }}
+            """
+        elif field.isPointer:
             body = f"""obj.obj.{field.name} = &value"""
         else:
             body = f"""obj.obj.{field.name} = value"""
@@ -383,11 +417,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(
             f"""func (obj *{new.struct}) {field.adder_method} {{
                 if obj.obj.{field.name} == nil {{
-                    obj.obj.{field.name} = &{field.type}{{}}
+                    obj.obj.{field.name} = make([]*{self._protobuf_package_name}.{field.external_struct}, 0)
                 }}
-                slice := append(*obj.obj.{field.name}, value)
-                obj.obj.{field.name} = &slice
-                return &slice[len(slice)-1]
+                slice := append(obj.obj.{field.name}, &{self._protobuf_package_name}.{field.external_struct}{{}})
+                obj.obj.{field.name} = slice
+                return &{field.struct}{{obj: slice[len(slice)-1]}}
             }}
             """
         )
@@ -400,6 +434,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if len(self._get_parser("$..enum").find(property_schema)) > 0:  # temporary
                 continue
             field = FluentField()
+            field.schema = property_schema
             field.name = self._get_external_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
             if field.type.startswith("["):
@@ -408,19 +443,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 field.isPointer = fluent_new.isOptional(property_name)
             field.getter_method = f"{field.name}() {field.type}"
-            if field.type not in self._oapi_go_types.values() and "$ref" not in property_schema:
-                continue
+            # if field.type not in self._oapi_go_types.values() and "$ref" not in property_schema:
+            #     continue
             if "$ref" in property_schema:
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
                 field.external_struct = self._get_external_name(schema_name)
             if field.type in self._oapi_go_types.values():
                 field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
-            elif field.type.startswith("["):
-                if field.type.split("]")[-1] in self._oapi_go_types.values():
-                    field.adder_method = f"Add{field.name}(value {field.type}) {fluent_new.interface}"
+            elif "type" in property_schema and property_schema["type"] == "array":
+                if "$ref" in property_schema["items"]:
+                    schema_name = self._get_schema_object_name_from_ref(property_schema["items"]["$ref"])
+                    field.isArray = True
+                    field.struct = self._get_internal_name(schema_name)
+                    field.external_struct = self._get_external_name(schema_name)
+                    field.adder_method = f"New{field.name}() {field.external_struct}"
                 else:
-                    field.adder_method = f"Add{field.name}() {field.type[2:]}"
+                    field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
             fluent_new.interface_fields.append(field)
 
     def _get_schema_object_name_from_ref(self, ref):
