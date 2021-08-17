@@ -137,7 +137,7 @@ class OpenApiArt(object):
 
         # this generates the go stubs
         if self._go_sdk_package_dir and self._protobuf_package_name:
-            go_sdk_output_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", os.path.split(self._go_sdk_package_dir)[-1]))
+            go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
             go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
             os.makedirs(go_protobuffer_out_dir, exist_ok=True)
             process_args = [

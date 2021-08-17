@@ -121,7 +121,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def generate(self, openapi):
         self._openapi = openapi
-        self._ux_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", os.path.split(self._go_sdk_package_dir)[-1]))
+        self._ux_path = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
         self._protoc_path = os.path.normpath(os.path.join(self._ux_path, self._protobuf_package_name))
         self._structs = {}
         self._write_mod_file()
