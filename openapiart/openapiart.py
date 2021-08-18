@@ -139,7 +139,8 @@ class OpenApiArt(object):
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
             go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
-            os.makedirs(go_protobuffer_out_dir, exist_ok=True)
+            if not os.path.exists(go_protobuffer_out_dir):
+                os.makedirs(go_protobuffer_out_dir)
             process_args = [
                 "protoc",
                 "--go_opt=paths=source_relative",
