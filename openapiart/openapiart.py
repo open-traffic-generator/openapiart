@@ -43,7 +43,7 @@ class OpenApiArt(object):
         self._go_sdk_package_name = go_sdk_package_name
         self._extension_prefix = extension_prefix
         self._output_dir = os.path.abspath(output_dir)
-        print(f"Artifact output directory: {self._output_dir}")
+        print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         self._bundle()
