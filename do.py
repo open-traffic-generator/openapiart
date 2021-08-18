@@ -7,7 +7,9 @@ import subprocess
 import platform
 
 
-os.environ["GOPATH"] = ".local"
+os.environ["GOPATH"] = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), ".local"
+)
 os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
 
 
@@ -74,7 +76,7 @@ def get_protoc():
     cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
     cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
     cmd += version + "/" + zipfile
-    cmd += ' && unzip ./protoc.zip -d .local'
+    cmd += ' && unzip ./protoc.zip -d ' + os.environ["GOPATH"]
     cmd += ' && rm -rf ./protoc.zip )'
     run([cmd])
 
