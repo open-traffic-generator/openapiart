@@ -74,7 +74,7 @@ def get_protoc():
     cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
     cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
     cmd += version + "/" + zipfile
-    cmd += ' && unzip ./protoc.zip -d /home/.local'
+    cmd += ' && unzip ./protoc.zip -d .local'
     cmd += ' && rm -rf ./protoc.zip )'
     run([cmd])
 
