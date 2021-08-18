@@ -7,7 +7,7 @@ import subprocess
 import platform
 
 
-os.environ["GOPATH"] = "/home/.local"
+os.environ["GOPATH"] = ".local"
 os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
 
 
