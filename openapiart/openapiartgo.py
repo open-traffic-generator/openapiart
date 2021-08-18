@@ -16,7 +16,7 @@ class FluentStructure(object):
 
 class FluentRpc(object):
     """SetConfig(config Config) error"""
-    
+
     def __init__(self):
         self.operation_name = None
         self.method = None
@@ -39,7 +39,7 @@ class FluentHttp(object):
 
 class FluentNew(object):
     """New<external_interface_name> <external_interface_name>"""
-    
+
     def __init__(self):
         self.generated = False
         self.interface = None
@@ -48,7 +48,7 @@ class FluentNew(object):
         self.schema_name = None
         self.schema_object = None
         self.interface_fields = []
-    
+
     def isOptional(self, property_name):
         if self.schema_object is None:
             return True
@@ -116,7 +116,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     Which needs to copy the generated go file to the test dir
     The action then needs to run the go test to ensure all tests pass
     """
-    
+
     def __init__(self, **kwargs):
         super(OpenApiArtGo, self).__init__(**kwargs)
         self._api = FluentStructure()
@@ -134,7 +134,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
-    
+
     def generate(self, openapi):
         self._openapi = openapi
         self._ux_path = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
@@ -144,7 +144,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
-    
+
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
         self.default_indent = "    "
@@ -153,7 +153,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
         self._write("go 1.16")
         self._close_fp()
-    
+
     def _write_go_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "{}.go".format(self._go_sdk_package_name)))
         self.default_indent = "    "
@@ -166,7 +166,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_request_interfaces()
         self._build_component_interfaces()
         self._close_fp()
-    
+
     def _write_package_docstring(self, info_object):
         """Write the header of the generated go code file which consists of:
         - license, version and description
@@ -177,28 +177,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for line in self._license.split("\n"):
             self._write("// {}".format(line))
         self._write()
-    
+
     def _write_package(self):
-        self._write(f"package {self._go_sdk_package_name}")
+        self._write("package {go_sdk_package_name}".format(go_sdk_package_name=self._go_sdk_package_name))
         self._write()
-    
+
     def _write_common_code(self):
         """Writes the base wrapper go code"""
-        self._write(f'''import {self._protobuf_package_name} "{self._go_sdk_package_dir}/{self._protobuf_package_name}"''')
+        line = "import {pb_pkg_name} \"{go_sdk_pkg_dir}/{pb_pkg_name}\"".format(
+            pb_pkg_name=self._protobuf_package_name, go_sdk_pkg_dir=self._go_sdk_package_dir
+        )
+        self._write(line)
         self._write('import "google.golang.org/grpc"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
-    
+
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
             if go_type.startswith("String"):
-                self._write(f"type {go_type} string")
+                self._write("type {go_type} string".format(go_type=go_type))
         self._write()
-    
+
     def _get_internal_name(self, openapi_name):
         return openapi_name[0].lower() + openapi_name[1:].replace("_", "").replace(".", "")
-    
+
     def _get_external_name(self, openapi_name):
         pieces = openapi_name.replace(".", "").split("_")
         external_name = ""
@@ -209,13 +212,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if external_name in ["String"]:
             external_name += "_"
         return external_name
-    
+
     def _get_external_field_name(self, openapi_name):
         return self._get_external_name(openapi_name) + "_"
-    
+
     def _build_api_interface(self):
-        self._api.internal_struct_name = f"""{self._get_internal_name(self._go_sdk_package_name)}Api"""
-        self._api.external_interface_name = f"""{self._get_external_name(self._go_sdk_package_name)}Api"""
+        self._api.internal_struct_name = """{internal_name}Api""".format(
+            internal_name=self._get_internal_name(self._go_sdk_package_name)
+        )
+        self._api.external_interface_name = """{external_name}Api""".format(
+            external_name=self._get_external_name(self._go_sdk_package_name)
+        )
         for url_path, path_object in self._openapi["paths"].items():
             for method, path_item_object in path_object.items():
                 ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
@@ -225,13 +232,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.schema_object = self._get_schema_object_from_ref(ref[0].value)
                     new.interface = self._get_external_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
-                    new.method = f"""New{new.interface}() {new.interface}"""
+                    new.method = """New{interface}() {interface}""".format(interface=new.interface)
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
                     rpc = FluentRpc()
                     rpc.operation_name = self._get_external_name(path_item_object["operationId"])
-                    rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
-                    rpc.request = f"""{self._protobuf_package_name}.{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
+                    rpc.method = """{operation_name}({struct} {interface}) error""".format(
+                        operation_name=rpc.operation_name, struct=new.struct, interface=new.interface
+                    )
+                    rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
+                        pb_pkg_name=self._protobuf_package_name, operation_name=rpc.operation_name,
+                        interface=new.interface, struct=new.struct
+                    )
                     rpc.http_call = f"""api.http{rpc.operation_name}({new.struct})"""
                     if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
                         self._api.external_rpc_methods.append(rpc)
@@ -249,31 +261,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
         
         # write the go code
         self._write(
-            f"""type {self._api.internal_struct_name} struct {{
+            """type {internal_struct_name} struct {{
                 api
-                grpcClient {self._protobuf_package_name}.OpenapiClient
+                grpcClient {pb_pkg_name}.OpenapiClient
                 httpClient httpClient
             }}
 
             // grpcConnect builds up a grpc connection
-            func (api *{self._api.internal_struct_name}) grpcConnect() error {{
+            func (api *{internal_struct_name}) grpcConnect() error {{
                 if api.grpcClient == nil {{
                     conn, err := grpc.Dial(api.grpc.location, grpc.WithInsecure())
                     if err != nil {{
                         return err
                     }}
-                    api.grpcClient = {self._protobuf_package_name}.NewOpenapiClient(conn)
+                    api.grpcClient = {pb_pkg_name}.NewOpenapiClient(conn)
                 }}
                 return nil
             }}
 
             // NewApi returns a new instance of the top level interface hierarchy
-            func NewApi() *{self._api.internal_struct_name} {{
-                api := {self._api.internal_struct_name}{{}}
+            func NewApi() *{internal_struct_name} {{
+                api := {internal_struct_name}{{}}
                 return &api
             }}
-
-            // httpConnect builds up a http connection
+            
+                        // httpConnect builds up a http connection
             func (api *{self._api.internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
                     var verify = !api.http.verify
@@ -322,7 +334,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return nil, fmt.Errorf("fail")
                 }}
             }}
-            """
+            """.format(internal_struct_name=self._api.internal_struct_name, pb_pkg_name=self._protobuf_package_name,)
         )
         methods = []
         for new in self._api.external_new_methods:
@@ -331,22 +343,28 @@ class OpenApiArtGo(OpenApiArtPlugin):
             methods.append(rpc.method)
         method_signatures = "\n".join(methods)
         self._write(
-            f"""type {self._api.external_interface_name} interface {{
+            """type {external_interface_name} interface {{
                 Api
                 {method_signatures}
             }}
-            """
+            """.format(
+                external_interface_name=self._api.external_interface_name,
+                method_signatures=method_signatures
+            )
         )
         for new in self._api.external_new_methods:
             self._write(
-                f"""func (api *{self._api.internal_struct_name}) {new.method} {{
-                    return &{new.struct}{{obj: &{self._protobuf_package_name}.{new.interface}{{}}}}
+                """func (api *{internal_struct_name}) {method} {{
+                    return &{struct}{{obj: &{pb_pkg_name}.{interface}{{}}}}
                 }}
-                """
+                """.format(
+                    internal_struct_name=self._api.internal_struct_name, method=new.method, struct=new.struct,
+                    pb_pkg_name=self._protobuf_package_name, interface=new.interface
+                )
             )
         for rpc in self._api.external_rpc_methods:
             self._write(
-                f"""func (api *{self._api.internal_struct_name}) {rpc.method} {{
+                """func (api *{internal_struct_name}) {method} {{
                     if api.HasHttpTransport() {{
                         err := {rpc.http_call}
                         return err
@@ -354,10 +372,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err := api.grpcConnect(); err != nil {{
                         return err
                     }}
-                    request := {rpc.request}
+                    request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
-                    client, err := api.grpcClient.{rpc.operation_name}(ctx, &request)
+                    client, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
                         return err
                     }}
@@ -367,7 +385,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     return nil
                 }}
-                """
+                """.format(
+                    internal_struct_name=self._api.internal_struct_name, method=rpc.method,
+                    request=rpc.request, operation_name=rpc.operation_name
+                )
             )
         for http in self._api.external_http_methods:
             self._write(
@@ -388,7 +409,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
             self._build_interface(new)
-    
+
     def _build_component_interfaces(self):
         while True:
             components = [component for _, component in self._api.components.items() if component.generated is False]
@@ -396,27 +417,29 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 break
             for component in components:
                 self._build_interface(component)
-    
+
     def _build_interface(self, new):
         self._write(
-            f"""type {new.struct} struct {{
-                obj *{self._protobuf_package_name}.{new.interface}
+            """type {struct} struct {{
+                obj *{pb_pkg_name}.{interface}
             }}
-
-            func (obj *{new.struct}) msg() *{self._protobuf_package_name}.{new.interface} {{
+            
+            func (obj *{struct}) msg() *{pb_pkg_name}.{interface} {{
                 return obj.obj
             }}
 
-            func (obj *{new.struct}) Yaml() string {{
+            func (obj *{struct}) Yaml() string {{
                 data, _ := yaml.Marshal(obj.msg())
                 return string(data)
             }}
 
-            func (obj *{new.struct}) Json() string {{
+            func (obj *{struct}) Json() string {{
                 data, _ := json.Marshal(obj.msg())
                 return string(data)
             }}
-        """
+        """.format(
+            struct=new.struct, pb_pkg_name=self._protobuf_package_name, interface=new.interface
+        )
         )
         self._build_setters_getters(new)
         interfaces = ["Yaml() string", "Json() string"]
@@ -428,86 +451,100 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interfaces.append(field.adder_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
-            f"""type {new.interface} interface {{
-                msg() *{self._protobuf_package_name}.{new.interface}
+            """type {interface} interface {{
+                msg() *{pb_pkg_name}.{interface}
                 {interface_signatures}
             }}
-        """
+        """.format(
+            interface=new.interface, pb_pkg_name=self._protobuf_package_name,
+            interface_signatures=interface_signatures
+        )
         )
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_setter(new, field)
             self._write_field_adder(new, field)
         new.generated = True
-    
+
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
         elif field.isArray:
             if field.struct:
-                body = f"""if obj.obj.{field.name} == nil {{
-                        obj.obj.{field.name} = make([]*{self._protobuf_package_name}.{field.external_struct}, 0)
+                body = """if obj.obj.{name} == nil {{
+                        obj.obj.{name} = make([]*{pb_pkg_name}.{external_struct}, 0)
                     }}
-                    values := make([]{field.external_struct}, 0)
-                    for _, item := range obj.obj.{field.name} {{
-                        values = append(values, &{field.struct}{{obj: item}})
+                    values := make([]{external_struct}, 0)
+                    for _, item := range obj.obj.{name} {{
+                        values = append(values, &{struct}{{obj: item}})
                     }}
                     return values
-                """
+                """.format(
+                    name=field.name, pb_pkg_name=self._protobuf_package_name, external_struct=field.external_struct,
+                    struct=field.struct
+                )
             else:
-                body = f"""if obj.obj.{field.name} == nil {{
-                        obj.obj.{field.name} = make({field.type}, 0)
+                body = """if obj.obj.{name} == nil {{
+                        obj.obj.{name} = make({type}, 0)
                     }}
                     for _, item := range value {{
-                        obj.obj.{field.name} = append(obj.obj.{field.name}, item)
+                        obj.obj.{name} = append(obj.obj.{name}, item)
                     }}
                     return obj
-                """
+                """.format(name=field.name, type=field.type)
         elif field.struct is not None:
             if field.isPointer:
-                body = f"""if obj.obj.{field.name} == nil {{
-                        obj.obj.{field.name} = &{self._protobuf_package_name}.{field.external_struct}{{}}
+                body = """if obj.obj.{name} == nil {{
+                        obj.obj.{name} = &{pb_pkg_name}.{external_struct}{{}}
                     }}
-                    return &{field.struct}{{obj: obj.obj.{field.name}}}
-                """
+                    return &{struct}{{obj: obj.obj.{name}}}
+                """.format(
+                    name=field.name, pb_pkg_name=self._protobuf_package_name, external_struct=field.external_struct,
+                    struct=field.struct
+                )
             else:
-                body = f"return &{field.struct}{{obj: obj.obj.{field.name}}}"
+                body = "return &{struct}{{obj: obj.obj.{name}}}".format(
+                    struct=field.struct, name=field.name
+                )
         elif field.isPointer:
-            body = f"""return *obj.obj.{field.name}"""
+            body = """return *obj.obj.{name}""".format(name=field.name)
         else:
-            body = f"""return obj.obj.{field.name}"""
+            body = """return obj.obj.{name}""".format(name=field.name)
         self._write(
-            f"""func (obj *{new.struct}) {field.getter_method} {{
+            """func (obj *{struct}) {getter_method} {{
                 {body}
             }}
-            """
+            """.format(struct=new.struct, getter_method=field.getter_method, body=body)
         )
-    
+
     def _write_field_setter(self, new, field):
         if field.setter_method is None:
             return
         if field.isArray:
-            body = f"""func (obj *{new.struct}) {field.setter_method} {{
-                if obj.obj.{field.name} == nil {{
-                    obj.obj.{field.name} = make({field.type}, 0)
+            body = """func (obj *{newstruct}) {fieldsetter_method} {{
+                if obj.obj.{fieldname} == nil {{
+                    obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
                 for _, item := range value {{
                     obj.obj.{field.name} = append(obj.obj.{field.name}, item)
                 }}
             }}
-            """
+            """.format(
+                newstruct=new.struct, fieldsetter_method=field.setter_method,
+                fieldname=field.name, fieldtype=field.type
+            )
         elif field.isPointer:
-            body = f"""obj.obj.{field.name} = &value"""
+            body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
-            body = f"""obj.obj.{field.name} = value"""
+            body = """obj.obj.{fieldname} = value""".format(fieldname=field.name)
         self._write(
-            f"""func (obj *{new.struct}) {field.setter_method} {{
+            """func (obj *{newstruct}) {fieldsetter_method} {{
                 {body}
                 return obj
             }}
-            """
+            """.format(newstruct=new.struct, fieldsetter_method=field.setter_method, body=body)
         )
-    
+
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
@@ -522,7 +559,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """
         )
-    
+
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
         if "properties" not in fluent_new.schema_object:
@@ -558,17 +595,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 else:
                     field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
             fluent_new.interface_fields.append(field)
-    
+
     def _get_schema_object_name_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
         return final_piece.replace(".", "")
-    
+
     def _get_schema_object_from_ref(self, ref):
         leaf = self._openapi
         for attr in ref.split("/")[1:]:
             leaf = leaf[attr]
         return leaf
-    
+
     def _get_struct_field_type(self, property_schema, field=None):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
@@ -600,14 +637,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         else:
             raise Exception(f"No type or $ref keyword present in property schema: {property_schema}")
         return go_type
-    
+
     def _get_description(self, function_name, openapi_object):
         description = f"// {function_name} TBD"
         if "description" in openapi_object:
             description = function_name + "\n" + openapi_object["description"].strip("\n")
             description = "/* {}\n*/".format(description)
         return description
-    
+
     def _format_go_file(self):
         """Format the generated go code"""
         try:
@@ -621,7 +658,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))
-    
+
     def _tidy_mod_file(self):
         """Tidy the mod file"""
         try:

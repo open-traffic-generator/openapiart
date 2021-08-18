@@ -43,7 +43,7 @@ class OpenApiArt(object):
         self._go_sdk_package_name = go_sdk_package_name
         self._extension_prefix = extension_prefix
         self._output_dir = os.path.abspath(output_dir)
-        print(f"Artifact output directory: {self._output_dir}")
+        print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         self._bundle()
@@ -54,13 +54,10 @@ class OpenApiArt(object):
 
     def _get_license(self):
         try:
-            response = requests.request("GET", self._bundler._content["info"]["license"]["url"])
-            if response.ok:
-                self._license = response.text
-            else:
-                self._license = "License: {}".format(self._bundler._content["info"]["license"]["url"])
-        except Exception as e:
-            self._license = "OpenAPI info.license.url error [{}]".format(e)
+            license_name = self._bundler._content["info"]["license"]["name"]
+            self._license = "License: {}".format(license_name)
+        except:
+            raise Exception("The /info/license/name is a REQUIRED property and must be present in the schema.")
 
     def _get_info(self):
         try:
@@ -139,7 +136,8 @@ class OpenApiArt(object):
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
             go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
-            os.makedirs(go_protobuffer_out_dir, exist_ok=True)
+            if not os.path.exists(go_protobuffer_out_dir):
+                os.makedirs(go_protobuffer_out_dir)
             process_args = [
                 "protoc",
                 "--go_opt=paths=source_relative",
