@@ -1,7 +1,7 @@
 components:
   schemas:
     GlobalObject:
-      type: object 
+      type: object
       properties:
         name:
           type: string
@@ -31,17 +31,6 @@ components:
           type: array
           items:
             type: string
-    Response.Warning:
-      description: |-
-        A list of warnings that have occurred while executing the request.
-      type: object
-      properties:
-        warnings:
-          description: "A list of any system specific warnings that have occurred\
-            \ while \nexecuting the request."
-          type: array
-          items:
-            type: string
 
   responses:
     Success:
@@ -50,8 +39,8 @@ components:
         content:
           application/octet-stream:
             schema:
-              $ref: '#/components/schemas/Response.Warning'
-
+              type: string
+              format: binary
     Error.400:
       '400':
         description: 'error 4xx'
@@ -66,4 +55,3 @@ components:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-

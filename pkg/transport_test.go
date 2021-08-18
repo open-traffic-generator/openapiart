@@ -62,11 +62,9 @@ func TestHttpTransport(t *testing.T) {
 	assert.NotNil(t, transport)
 	assert.NotNil(t, transport.Location(), location)
 	assert.NotNil(t, transport.Verify(), verify)
-	result, err := api.SetConfig(config)
-	fmt.Println("HTTP Transport Result", result)
+	err := api.SetConfig(config)
 	fmt.Println("HTTP Transport Error", err)
 	assert.Nil(t, err)
-	assert.Equal(t, result.Warnings, []string{"Nothing bad..."})
 }
 
 func TestNewPrefixConfig(t *testing.T) {
@@ -115,14 +113,12 @@ func TestGetObject(t *testing.T) {
 	fmt.Println(config.Yaml())
 }
 
-func TestAddObject(t *testing.T) {
-	config := NewApi().NewPrefixConfig()
-	g := config.NewG()
-	g.SetName("G-1")
+func TestChoiceObject(t *testing.T) {
+	config := openapiart.NewApi().NewPrefixConfig()
 	fmt.Println(config.Yaml())
 }
 
-// func TestChoiceObject(t *testing.T) {
+// func TestAddObject(t *testing.T) {
 // 	config := openapiart.NewApi().NewPrefixConfig()
 // 	fmt.Println(config.Yaml())
 // }

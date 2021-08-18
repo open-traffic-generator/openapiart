@@ -1,7 +1,6 @@
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
-from collections import namedtuple
 import shutil
 
 
@@ -17,19 +16,18 @@ class FluentStructure(object):
 
 class FluentRpc(object):
     """SetConfig(config Config) error"""
-
+    
     def __init__(self):
         self.operation_name = None
         self.method = None
         self.request = None
         self.http_call = None
-        self.res_success = None
-        self.res_errors = None
+
 
 # todo : extened it to return struct (for metric )
 class FluentHttp(object):
     """httpSetConfig(config Config) error"""
-
+    
     def __init__(self):
         self.operation_name = None
         self.method = None
@@ -37,12 +35,11 @@ class FluentHttp(object):
         self.url_path = None
         self.response_type = None
         self.struct = None
-        self.res_success = None
-        self.res_errors = None
+
 
 class FluentNew(object):
     """New<external_interface_name> <external_interface_name>"""
-
+    
     def __init__(self):
         self.generated = False
         self.interface = None
@@ -51,7 +48,7 @@ class FluentNew(object):
         self.schema_name = None
         self.schema_object = None
         self.interface_fields = []
-
+    
     def isOptional(self, property_name):
         if self.schema_object is None:
             return True
@@ -119,7 +116,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     Which needs to copy the generated go file to the test dir
     The action then needs to run the go test to ensure all tests pass
     """
-
+    
     def __init__(self, **kwargs):
         super(OpenApiArtGo, self).__init__(**kwargs)
         self._api = FluentStructure()
@@ -137,10 +134,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
-        self._response = namedtuple(
-            "Response", ["status_code", "response_name"]
-        )
-
+    
     def generate(self, openapi):
         self._openapi = openapi
         self._ux_path = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
@@ -150,7 +144,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
-
+    
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
         self.default_indent = "    "
@@ -159,7 +153,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
         self._write("go 1.16")
         self._close_fp()
-
+    
     def _write_go_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "{}.go".format(self._go_sdk_package_name)))
         self.default_indent = "    "
@@ -172,7 +166,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_request_interfaces()
         self._build_component_interfaces()
         self._close_fp()
-
+    
     def _write_package_docstring(self, info_object):
         """Write the header of the generated go code file which consists of:
         - license, version and description
@@ -183,11 +177,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for line in self._license.split("\n"):
             self._write("// {}".format(line))
         self._write()
-
+    
     def _write_package(self):
         self._write(f"package {self._go_sdk_package_name}")
         self._write()
-
+    
     def _write_common_code(self):
         """Writes the base wrapper go code"""
         self._write(f'''import {self._protobuf_package_name} "{self._go_sdk_package_dir}/{self._protobuf_package_name}"''')
@@ -195,16 +189,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
-
+    
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
             if go_type.startswith("String"):
                 self._write(f"type {go_type} string")
         self._write()
-
+    
     def _get_internal_name(self, openapi_name):
         return openapi_name[0].lower() + openapi_name[1:].replace("_", "").replace(".", "")
-
+    
     def _get_external_name(self, openapi_name):
         pieces = openapi_name.replace(".", "").split("_")
         external_name = ""
@@ -215,21 +209,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if external_name in ["String"]:
             external_name += "_"
         return external_name
-
+    
     def _get_external_field_name(self, openapi_name):
         return self._get_external_name(openapi_name) + "_"
-
-    def _get_response_name(self, ref):
-        response_name = None
-        ref_name = None
-        if isinstance(ref, dict) is True and "$ref" in ref:
-            ref_name = ref["$ref"]
-        elif isinstance(ref, str) is True:
-            ref_name = ref
-        if ref_name is not None:
-            object_name = ref_name.split("/")[-1]
-            response_name = object_name.replace(".", "")
-        return response_name
     
     def _build_api_interface(self):
         self._api.internal_struct_name = f"""{self._get_internal_name(self._go_sdk_package_name)}Api"""
@@ -246,54 +228,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.method = f"""New{new.interface}() {new.interface}"""
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
-                    
-                    res_success = None
-                    res_errors = []
-                    responses = path_item_object.get('responses')
-                    if responses is not None:
-                        for status_code, response in responses.items():
-                            schema = self._get_parser("$..schema").find(response)
-                            if len(schema) > 0:
-                                response_name = self._get_response_name(schema[0].value)
-                                if int(status_code) <= 206:
-                                    res_success = self._response(status_code, response_name)
-                                else:
-                                    res_errors.append(self._response(status_code, response_name))
-                            else:
-                                pass
-                    
                     rpc = FluentRpc()
                     rpc.operation_name = self._get_external_name(path_item_object["operationId"])
-                    if res_success.response_name == None:
-                        rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
-                    else:
-                        args = f"""(*{self._protobuf_package_name}.{res_success.response_name}, error)"""
-                        rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) {args}"""
+                    rpc.method = f"""{rpc.operation_name}({new.struct} {new.interface}) error"""
                     rpc.request = f"""{self._protobuf_package_name}.{rpc.operation_name}Request{{{new.interface}: {new.struct}.msg()}}"""
                     rpc.http_call = f"""api.http{rpc.operation_name}({new.struct})"""
-                    rpc.res_success = res_success
-                    rpc.res_errors = res_errors
                     if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
                         self._api.external_rpc_methods.append(rpc)
                     http = FluentHttp()
                     http.operation_name = "http" + rpc.operation_name
-                    if res_success.response_name == None:
-                        http.method = f"""{http.operation_name}({new.struct} {new.interface}) error"""
-                    else:
-                        args = f"""(*{self._protobuf_package_name}.{res_success.response_name}, error)"""
-                        http.method = f"""{http.operation_name}({new.struct} {new.interface}) {args}"""
+                    http.method = f"""{http.operation_name}({new.struct} {new.interface}) error"""
                     http.http_method = method.upper()
                     http.struct = new.struct
-                    http.res_success = res_success
-                    http.res_errors = res_errors
                     if url_path.startswith('/'):
                         http.url_path = url_path[1:]
                     else:
                         http.url_path = url_path
                     if len([m for m in self._api.external_http_methods if m.operation_name == http.operation_name]) == 0:
                         self._api.external_http_methods.append(http)
-                    
-
+        
         # write the go code
         self._write(
             f"""type {self._api.internal_struct_name} struct {{
@@ -336,8 +289,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return nil
             }}
-            
-            func (api *{self._api.internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+
+            func (api *{self._api.internal_struct_name}) httpSend(urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -354,6 +307,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
                 return httpClient.client.Do(req)
+            }}
+
+            func (api *{self._api.internal_struct_name}) httpResponse(rsp *http.Response) ([]byte, error) {{
+                bodyBytes, err := ioutil.ReadAll(rsp.Body)
+                defer rsp.Body.Close()
+                if err != nil {{
+                    return nil, err
+                }}
+
+                if rsp.StatusCode == 200 {{
+                    return bodyBytes, nil
+                }} else {{
+                    return nil, fmt.Errorf("fail")
+                }}
             }}
             """
         )
@@ -378,88 +345,50 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """
             )
         for rpc in self._api.external_rpc_methods:
-            error_code = ""
-            for res_error in rpc.res_errors:
-                error_code += f"""
-                    case *{self._protobuf_package_name}.{rpc.operation_name}Response_StatusCode_{res_error.status_code}:
-                        dest := resp.GetStatusCode_{res_error.status_code}().{res_error.response_name}
-                        data, _ := yaml.Marshal(&dest)
-                        return nil, fmt.Errorf(string(data))
-                """
-            
             self._write(
                 f"""func (api *{self._api.internal_struct_name}) {rpc.method} {{
                     if api.HasHttpTransport() {{
-                        return {rpc.http_call}
+                        err := {rpc.http_call}
+                        return err
                     }}
                     if err := api.grpcConnect(); err != nil {{
-                        return nil, err
+                        return err
                     }}
                     request := {rpc.request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
                     client, err := api.grpcClient.{rpc.operation_name}(ctx, &request)
                     if err != nil {{
-                        return nil, err
+                        return err
                     }}
                     resp, _ := client.Recv()
-                    switch resp.Statuscode.(type) {{
-                    case *{self._protobuf_package_name}.{rpc.operation_name}Response_StatusCode_{rpc.res_success.status_code}:
-                        return resp.GetStatusCode_{rpc.res_success.status_code}().{rpc.res_success.response_name}, nil
-                    {error_code}
-                    default:
-                        return nil, fmt.Errorf(resp.String())
+                    if resp.GetStatusCode_200() == nil {{
+                        return fmt.Errorf("fail")
                     }}
+                    return nil
                 }}
                 """
             )
         for http in self._api.external_http_methods:
-            error_code = ""
-            for res_error in http.res_errors:
-                error_code += f"""
-                    case rsp.StatusCode == {res_error.status_code}:
-                        var dest {self._protobuf_package_name}.{res_error.response_name}
-                        if err := json.Unmarshal(bodyBytes, &dest); err != nil {{
-                            return nil, err
-                        }}
-                        data, _ := yaml.Marshal(&dest)
-                        return nil, fmt.Errorf(string(data))
-                """
-            
             self._write(
                 f"""func (api *{self._api.internal_struct_name}) {http.method} {{
-	                rsp, err := api.httpSendRecv("{http.url_path}", {http.struct}.Json(), "{http.http_method}")
+	                res, err := api.httpSend("{http.url_path}", {http.struct}.Json(), "{http.http_method}")
                     if err != nil {{
-                        return nil, err
+                        return err
                     }}
-
-                    bodyBytes, err := ioutil.ReadAll(rsp.Body)
-                    defer rsp.Body.Close()
+                    _, err = api.httpResponse(res)
                     if err != nil {{
-                        return nil, err
+                        return err
                     }}
-                    
-                    switch {{
-                    case rsp.StatusCode == {http.res_success.status_code}:
-                        var dest {self._protobuf_package_name}.{http.res_success.response_name}
-                        if err := json.Unmarshal(bodyBytes, &dest); err != nil {{
-                            return nil, err
-                        }}
-                        return &dest, nil
-                    {error_code}
-                    default:
-                        fmt.Println("it in default ", rsp.StatusCode)
-                        return nil, fmt.Errorf(string(bodyBytes))
-                    }}
+                    return nil
                 }}
                 """
             )
-        
-
+    
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
             self._build_interface(new)
-
+    
     def _build_component_interfaces(self):
         while True:
             components = [component for _, component in self._api.components.items() if component.generated is False]
@@ -467,13 +396,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 break
             for component in components:
                 self._build_interface(component)
-
+    
     def _build_interface(self, new):
         self._write(
             f"""type {new.struct} struct {{
                 obj *{self._protobuf_package_name}.{new.interface}
             }}
-            
+
             func (obj *{new.struct}) msg() *{self._protobuf_package_name}.{new.interface} {{
                 return obj.obj
             }}
@@ -510,7 +439,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_setter(new, field)
             self._write_field_adder(new, field)
         new.generated = True
-
+    
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
@@ -553,7 +482,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """
         )
-
+    
     def _write_field_setter(self, new, field):
         if field.setter_method is None:
             return
@@ -578,7 +507,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """
         )
-
+    
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
@@ -593,7 +522,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """
         )
-
+    
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
         if "properties" not in fluent_new.schema_object:
@@ -629,17 +558,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 else:
                     field.setter_method = f"Set{field.name}(value {field.type}) {fluent_new.interface}"
             fluent_new.interface_fields.append(field)
-
+    
     def _get_schema_object_name_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
         return final_piece.replace(".", "")
-
+    
     def _get_schema_object_from_ref(self, ref):
         leaf = self._openapi
         for attr in ref.split("/")[1:]:
             leaf = leaf[attr]
         return leaf
-
+    
     def _get_struct_field_type(self, property_schema, field=None):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
@@ -671,14 +600,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         else:
             raise Exception(f"No type or $ref keyword present in property schema: {property_schema}")
         return go_type
-
+    
     def _get_description(self, function_name, openapi_object):
         description = f"// {function_name} TBD"
         if "description" in openapi_object:
             description = function_name + "\n" + openapi_object["description"].strip("\n")
             description = "/* {}\n*/".format(description)
         return description
-
+    
     def _format_go_file(self):
         """Format the generated go code"""
         try:
@@ -692,7 +621,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))
-
+    
     def _tidy_mod_file(self):
         """Tidy the mod file"""
         try:
