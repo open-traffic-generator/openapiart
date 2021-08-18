@@ -113,12 +113,14 @@ func TestGetObject(t *testing.T) {
 	fmt.Println(config.Yaml())
 }
 
-func TestChoiceObject(t *testing.T) {
-	config := openapiart.NewApi().NewPrefixConfig()
+func TestAddObject(t *testing.T) {
+	config := NewApi().NewPrefixConfig()
+	g := config.NewG()
+	g.SetName("G-1")
 	fmt.Println(config.Yaml())
 }
 
-// func TestAddObject(t *testing.T) {
+// func TestChoiceObject(t *testing.T) {
 // 	config := openapiart.NewApi().NewPrefixConfig()
 // 	fmt.Println(config.Yaml())
 // }
