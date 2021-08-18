@@ -42,7 +42,7 @@ def get_go():
 
     print("Installing Go ...")
     cmd = "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
-    cmd += " | tar -C /home/.local -xzf -"
+    cmd += " | tar -C " + os.environ["GOPATH"] + " -xzf -"
     run([cmd])
 
 
