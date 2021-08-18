@@ -601,8 +601,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "-w",
                 self._filename,
             ]
-            print("Formatting generated go ux file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=False)
+            cmd = " ".join(process_args)
+            print("Formatting generated go ux file: {}".format(cmd))
+            process = subprocess.Popen(cmd, cwd=self._ux_path, shell=True)
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))

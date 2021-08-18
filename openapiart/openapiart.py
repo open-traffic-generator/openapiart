@@ -148,8 +148,9 @@ class OpenApiArt(object):
                 "--experimental_allow_proto3_optional",
                 "{}.proto".format(self._protobuf_package_name),
             ]
-            print("Generating go stubs: {}".format(" ".join(process_args)))
-            subprocess.check_call(process_args, shell=False)
+            cmd = " ".join(process_args)
+            print("Generating go gRPC stubs: {}".format(cmd))
+            subprocess.check_call(cmd, shell=True)
 
         # this generates the go ux module
         if self._protobuf_package_name and self._go_sdk_package_dir:
