@@ -1,13 +1,35 @@
 package openapiart_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"testing"
 
 	. "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type ResponseWarning struct {
+	Warnings []string
+}
+
+func StartMockHttpServer() {
+	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		data := ResponseWarning{Warnings: []string{"Nothing bad..."}}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(data)
+	})
+
+	log.Fatal(http.ListenAndServe(":50051", nil))
+}
+
+func init() {
+	go StartMockHttpServer()
+}
 
 func TestApi(t *testing.T) {
 	api := NewApi()
@@ -25,13 +47,26 @@ func TestGrpcTransport(t *testing.T) {
 }
 
 func TestHttpTransport(t *testing.T) {
-	location := "https://127.0.0.1:5050"
+	location := "http://127.0.0.1:50051"
 	verify := false
 	api := NewApi()
 	transport := api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+	config := api.NewPrefixConfig()
+	config.SetA("simple string")
+	config.SetB(12.2)
+	config.SetC(-33)
+	config.SetH(true)
+	config.SetI([]byte("a simple byte string"))
+	config.SetName("name string")
+	assert.NotNil(t, config)
 	assert.NotNil(t, transport)
 	assert.NotNil(t, transport.Location(), location)
 	assert.NotNil(t, transport.Verify(), verify)
+	result, err := api.SetConfig(config)
+	fmt.Println("HTTP Transport Result", result)
+	fmt.Println("HTTP Transport Error", err)
+	assert.Nil(t, err)
+	assert.Equal(t, result.Warnings, []string{"Nothing bad..."})
 }
 
 func TestNewPrefixConfig(t *testing.T) {
