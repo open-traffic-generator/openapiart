@@ -5,7 +5,7 @@ import os
 import setuptools
 
 pkg_name = "openapiart"
-version = "0.0.48"
+version = "0.0.52"
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
@@ -30,6 +30,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
     ],
     keywords="testing openapi artifact generator",
+    package_data={"openapiart": ["*.go"]},
     include_package_data=True,
     packages=[pkg_name],
     python_requires=">=2.7, <4",

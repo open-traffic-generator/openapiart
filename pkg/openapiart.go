@@ -227,10 +227,14 @@ type PrefixConfig interface {
 	SetC(value int32) PrefixConfig
 	E() EObject
 	F() FObject
+	G() []GObject
+	NewG() GObject
 	H() bool
 	SetH(value bool) PrefixConfig
 	I() []byte
 	SetI(value []byte) PrefixConfig
+	J() []JObject
+	NewJ() JObject
 	K() KObject
 	L() LObject
 	Level() LevelOne
@@ -287,6 +291,27 @@ func (obj *prefixConfig) F() FObject {
 
 }
 
+func (obj *prefixConfig) G() []GObject {
+	if obj.obj.G == nil {
+		obj.obj.G = make([]*sanity.GObject, 0)
+	}
+	values := make([]GObject, 0)
+	for _, item := range obj.obj.G {
+		values = append(values, &gObject{obj: item})
+	}
+	return values
+
+}
+
+func (obj *prefixConfig) NewG() GObject {
+	if obj.obj.G == nil {
+		obj.obj.G = make([]*sanity.GObject, 0)
+	}
+	slice := append(obj.obj.G, &sanity.GObject{})
+	obj.obj.G = slice
+	return &gObject{obj: slice[len(slice)-1]}
+}
+
 func (obj *prefixConfig) H() bool {
 	return *obj.obj.H
 }
@@ -303,6 +328,27 @@ func (obj *prefixConfig) I() []byte {
 func (obj *prefixConfig) SetI(value []byte) PrefixConfig {
 	obj.obj.I = value
 	return obj
+}
+
+func (obj *prefixConfig) J() []JObject {
+	if obj.obj.J == nil {
+		obj.obj.J = make([]*sanity.JObject, 0)
+	}
+	values := make([]JObject, 0)
+	for _, item := range obj.obj.J {
+		values = append(values, &jObject{obj: item})
+	}
+	return values
+
+}
+
+func (obj *prefixConfig) NewJ() JObject {
+	if obj.obj.J == nil {
+		obj.obj.J = make([]*sanity.JObject, 0)
+	}
+	slice := append(obj.obj.J, &sanity.JObject{})
+	obj.obj.J = slice
+	return &jObject{obj: slice[len(slice)-1]}
 }
 
 func (obj *prefixConfig) K() KObject {
@@ -1129,6 +1175,8 @@ type PatternIpv4PatternIpv4 interface {
 	Json() string
 	Value() string
 	SetValue(value string) PatternIpv4PatternIpv4
+	Values() []string
+	SetValues(value []string) PatternIpv4PatternIpv4
 	Increment() PatternIpv4PatternIpv4Counter
 	Decrement() PatternIpv4PatternIpv4Counter
 }
@@ -1139,6 +1187,15 @@ func (obj *patternIpv4PatternIpv4) Value() string {
 
 func (obj *patternIpv4PatternIpv4) SetValue(value string) PatternIpv4PatternIpv4 {
 	obj.obj.Value = &value
+	return obj
+}
+
+func (obj *patternIpv4PatternIpv4) Values() []string {
+	return obj.obj.Values
+}
+
+func (obj *patternIpv4PatternIpv4) SetValues(value []string) PatternIpv4PatternIpv4 {
+	obj.obj.Values = value
 	return obj
 }
 
@@ -1182,6 +1239,8 @@ type PatternIpv6PatternIpv6 interface {
 	Json() string
 	Value() string
 	SetValue(value string) PatternIpv6PatternIpv6
+	Values() []string
+	SetValues(value []string) PatternIpv6PatternIpv6
 	Increment() PatternIpv6PatternIpv6Counter
 	Decrement() PatternIpv6PatternIpv6Counter
 }
@@ -1192,6 +1251,15 @@ func (obj *patternIpv6PatternIpv6) Value() string {
 
 func (obj *patternIpv6PatternIpv6) SetValue(value string) PatternIpv6PatternIpv6 {
 	obj.obj.Value = &value
+	return obj
+}
+
+func (obj *patternIpv6PatternIpv6) Values() []string {
+	return obj.obj.Values
+}
+
+func (obj *patternIpv6PatternIpv6) SetValues(value []string) PatternIpv6PatternIpv6 {
+	obj.obj.Values = value
 	return obj
 }
 
@@ -1235,6 +1303,8 @@ type PatternMacPatternMac interface {
 	Json() string
 	Value() string
 	SetValue(value string) PatternMacPatternMac
+	Values() []string
+	SetValues(value []string) PatternMacPatternMac
 	Increment() PatternMacPatternMacCounter
 	Decrement() PatternMacPatternMacCounter
 }
@@ -1245,6 +1315,15 @@ func (obj *patternMacPatternMac) Value() string {
 
 func (obj *patternMacPatternMac) SetValue(value string) PatternMacPatternMac {
 	obj.obj.Value = &value
+	return obj
+}
+
+func (obj *patternMacPatternMac) Values() []string {
+	return obj.obj.Values
+}
+
+func (obj *patternMacPatternMac) SetValues(value []string) PatternMacPatternMac {
+	obj.obj.Values = value
 	return obj
 }
 
@@ -1288,6 +1367,8 @@ type PatternIntegerPatternInteger interface {
 	Json() string
 	Value() int32
 	SetValue(value int32) PatternIntegerPatternInteger
+	Values() []int32
+	SetValues(value []int32) PatternIntegerPatternInteger
 	Increment() PatternIntegerPatternIntegerCounter
 	Decrement() PatternIntegerPatternIntegerCounter
 }
@@ -1298,6 +1379,15 @@ func (obj *patternIntegerPatternInteger) Value() int32 {
 
 func (obj *patternIntegerPatternInteger) SetValue(value int32) PatternIntegerPatternInteger {
 	obj.obj.Value = &value
+	return obj
+}
+
+func (obj *patternIntegerPatternInteger) Values() []int32 {
+	return obj.obj.Values
+}
+
+func (obj *patternIntegerPatternInteger) SetValues(value []int32) PatternIntegerPatternInteger {
+	obj.obj.Values = value
 	return obj
 }
 

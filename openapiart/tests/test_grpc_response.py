@@ -5,7 +5,7 @@ import json
 import base64
 
 
-def test_grpc_response(utils, grpc_api, pb2, pb2_grpc):
+def test_grpc_response(utils, pb2, pb2_grpc):
     """
     Send a protobuf request to the mock server and
     validate the response with expected response
