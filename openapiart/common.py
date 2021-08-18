@@ -193,7 +193,7 @@ class OpenApiValidator(object):
         pass
 
     def validate_mac(self, mac):
-        if mac is None or not isinstance(mac, str) or mac.count(" ") != 0:
+        if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
             return False
         try:
             if len(mac) != 17:
@@ -205,7 +205,7 @@ class OpenApiValidator(object):
             return False
 
     def validate_ipv4(self, ip):
-        if ip is None or not isinstance(ip, str) or ip.count(" ") != 0:
+        if ip is None or not isinstance(ip, (str, unicode)) or ip.count(" ") != 0:
             return False
         if len(ip.split(".")) != 4:
             return False
@@ -215,7 +215,7 @@ class OpenApiValidator(object):
             return False
 
     def validate_ipv6(self, ip):
-        if ip is None or not isinstance(ip, str):
+        if ip is None or not isinstance(ip, (str, unicode)):
             return False
         ip = ip.strip()
         if ip.count(" ") > 0 or ip.count(":") > 7 or ip.count("::") > 1 or ip.count(":::") > 0:
@@ -241,7 +241,7 @@ class OpenApiValidator(object):
             return False
 
     def validate_hex(self, hex):
-        if hex is None or not isinstance(hex, str):
+        if hex is None or not isinstance(hex, (str, unicode)):
             return False
         try:
             int(hex, 16)
@@ -281,7 +281,7 @@ class OpenApiValidator(object):
         ]
     
     def validate_binary(self, value):
-        if value is None or not isinstance(value, str):
+        if value is None or not isinstance(value, (str, unicode)):
             return False
         return all([
             True if int(bin) == 0 or int(bin) == 1 else False
