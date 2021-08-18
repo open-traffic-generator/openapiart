@@ -54,13 +54,10 @@ class OpenApiArt(object):
 
     def _get_license(self):
         try:
-            response = requests.request("GET", self._bundler._content["info"]["license"]["url"])
-            if response.ok:
-                self._license = response.text
-            else:
-                self._license = "License: {}".format(self._bundler._content["info"]["license"]["url"])
-        except Exception as e:
-            self._license = "OpenAPI info.license.url error [{}]".format(e)
+            license_name = self._bundler._content["info"]["license"]["name"]
+            self._license = "License: {}".format(license_name)
+        except:
+            raise Exception("The /info/license/name is a REQUIRED property and must be present in the schema.")
 
     def _get_info(self):
         try:
