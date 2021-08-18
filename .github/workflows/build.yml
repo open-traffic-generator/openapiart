@@ -24,7 +24,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Setup Go and protoc
         run: |
-          sudo python do.py setup_ext
+          python do.py setup_ext
       - name: Install dependencies
         run: |
           python do.py setup

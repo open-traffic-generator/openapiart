@@ -7,8 +7,8 @@ import subprocess
 import platform
 
 
-os.environ["GOPATH"] = "/home/go"
-os.environ["PATH"] = os.environ["PATH"] + ":/usr/local/go/bin:" + "/home/go/bin"
+os.environ["GOPATH"] = "/home/.local"
+os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
 
 
 def on_arm():
@@ -37,9 +37,12 @@ def get_go():
         print("host architecture not supported")
         return
 
+    if not os.path.exists(os.environ["GOPATH"]):
+        os.mkdir(os.environ["GOPATH"])
+
     print("Installing Go ...")
     cmd = "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
-    cmd += " | tar -C /usr/local/ -xzf -"
+    cmd += " | tar -C /home/.local -xzf -"
     run([cmd])
 
 
@@ -68,11 +71,11 @@ def get_protoc():
         return
 
     print("Installing protoc ...")
-    cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protc.zip "
+    cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
     cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
     cmd += version + "/" + zipfile
-    cmd += ' && unzip -o ./protc.zip -d /usr/local bin/protoc "include/*"'
-    cmd += ' && rm -rf ./protc.zip )'
+    cmd += ' && unzip ./protoc.zip -d /home/.local'
+    cmd += ' && rm -rf ./protoc.zip )'
     run([cmd])
 
 
