@@ -285,8 +285,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return &api
             }}
             
-                        // httpConnect builds up a http connection
-            func (api *{self._api.internal_struct_name}) httpConnect() error {{
+            // httpConnect builds up a http connection
+            func (api *{internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
                     var verify = !api.http.verify
                     client := httpClient{{
@@ -302,7 +302,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            func (api *{self._api.internal_struct_name}) httpSend(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+            func (api *{internal_struct_name}) httpSend(urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -321,7 +321,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return httpClient.client.Do(req)
             }}
 
-            func (api *{self._api.internal_struct_name}) httpResponse(rsp *http.Response) ([]byte, error) {{
+            func (api *{internal_struct_name}) httpResponse(rsp *http.Response) ([]byte, error) {{
                 bodyBytes, err := ioutil.ReadAll(rsp.Body)
                 defer rsp.Body.Close()
                 if err != nil {{
@@ -366,7 +366,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     if api.HasHttpTransport() {{
-                        err := {rpc.http_call}
+                        err := {http_call}
                         return err
                     }}
                     if err := api.grpcConnect(); err != nil {{
@@ -387,7 +387,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name, method=rpc.method,
-                    request=rpc.request, operation_name=rpc.operation_name
+                    request=rpc.request, operation_name=rpc.operation_name, http_call = rpc.http_call
                 )
             )
         for http in self._api.external_http_methods:
@@ -526,7 +526,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
                 for _, item := range value {{
-                    obj.obj.{field.name} = append(obj.obj.{field.name}, item)
+                    obj.obj.{fieldname} = append(obj.obj.{fieldname}, item)
                 }}
             }}
             """.format(
