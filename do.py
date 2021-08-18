@@ -76,7 +76,7 @@ def get_protoc():
     run([cmd])
 
 
-def setup():
+def setup_ext():
     if on_linux():
         get_go()
         get_protoc()
@@ -84,6 +84,8 @@ def setup():
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
+
+def setup():
     run(
         [
             py() + " -m pip install --upgrade pip",

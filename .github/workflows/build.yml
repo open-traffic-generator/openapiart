@@ -22,9 +22,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Setup Go and protoc
+        run: |
+          sudo python do.py setup_ext
       - name: Install dependencies
         run: |
-          sudo python do.py setup
+          python do.py setup
           python do.py init
       - name: Build distribution
         run: |
