@@ -206,14 +206,12 @@ type PrefixConfig interface {
 	SetC(value int32) PrefixConfig
 	E() EObject
 	F() FObject
-	G() []GObject
-	NewG() GObject
+	G() GObjectList
 	H() bool
 	SetH(value bool) PrefixConfig
 	I() []byte
 	SetI(value []byte) PrefixConfig
-	J() []JObject
-	NewJ() JObject
+	J() JObjectList
 	K() KObject
 	L() LObject
 	Level() LevelOne
@@ -292,27 +290,35 @@ func (obj *prefixConfig) F() FObject {
 
 // G returns a []GObject
 //  A list of objects with choice and properties
-func (obj *prefixConfig) G() []GObject {
+func (obj *prefixConfig) G() GObjectList {
 	if obj.obj.G == nil {
-		obj.obj.G = make([]*sanity.GObject, 0)
+		obj.obj.G = []*sanity.GObject{}
 	}
-	values := make([]GObject, 0)
-	for _, item := range obj.obj.G {
-		values = append(values, &gObject{obj: item})
-	}
-	return values
+	return &gObjectList{obj: obj}
 
 }
 
-// NewG creates and returns a new GObject object
-//  A list of objects with choice and properties
-func (obj *prefixConfig) NewG() GObject {
-	if obj.obj.G == nil {
-		obj.obj.G = make([]*sanity.GObject, 0)
+type gObjectList struct {
+	obj *prefixConfig
+}
+
+type GObjectList interface {
+	Add() GObject
+	Items() []GObject
+}
+
+func (obj *gObjectList) Add() GObject {
+	newObj := &sanity.GObject{}
+	obj.obj.obj.G = append(obj.obj.obj.G, newObj)
+	return &gObject{obj: newObj}
+}
+
+func (obj *gObjectList) Items() []GObject {
+	slice := []GObject{}
+	for _, item := range obj.obj.obj.G {
+		slice = append(slice, &gObject{obj: item})
 	}
-	slice := append(obj.obj.G, &sanity.GObject{})
-	obj.obj.G = slice
-	return &gObject{obj: slice[len(slice)-1]}
+	return slice
 }
 
 // H returns a bool
@@ -343,27 +349,35 @@ func (obj *prefixConfig) SetI(value []byte) PrefixConfig {
 
 // J returns a []JObject
 //  A list of objects with only choice
-func (obj *prefixConfig) J() []JObject {
+func (obj *prefixConfig) J() JObjectList {
 	if obj.obj.J == nil {
-		obj.obj.J = make([]*sanity.JObject, 0)
+		obj.obj.J = []*sanity.JObject{}
 	}
-	values := make([]JObject, 0)
-	for _, item := range obj.obj.J {
-		values = append(values, &jObject{obj: item})
-	}
-	return values
+	return &jObjectList{obj: obj}
 
 }
 
-// NewJ creates and returns a new JObject object
-//  A list of objects with only choice
-func (obj *prefixConfig) NewJ() JObject {
-	if obj.obj.J == nil {
-		obj.obj.J = make([]*sanity.JObject, 0)
+type jObjectList struct {
+	obj *prefixConfig
+}
+
+type JObjectList interface {
+	Add() JObject
+	Items() []JObject
+}
+
+func (obj *jObjectList) Add() JObject {
+	newObj := &sanity.JObject{}
+	obj.obj.obj.J = append(obj.obj.obj.J, newObj)
+	return &jObject{obj: newObj}
+}
+
+func (obj *jObjectList) Items() []JObject {
+	slice := []JObject{}
+	for _, item := range obj.obj.obj.J {
+		slice = append(slice, &jObject{obj: item})
 	}
-	slice := append(obj.obj.J, &sanity.JObject{})
-	obj.obj.J = slice
-	return &jObject{obj: slice[len(slice)-1]}
+	return slice
 }
 
 // K returns a KObject
