@@ -227,33 +227,51 @@ type PrefixConfig interface {
 	SetName(value string) PrefixConfig
 }
 
+// A returns a string
+//  Small single line description
 func (obj *prefixConfig) A() string {
 	return obj.obj.A
 }
 
+// SetA sets the string value in the None object
+//  Small single line description
 func (obj *prefixConfig) SetA(value string) PrefixConfig {
 	obj.obj.A = value
 	return obj
 }
 
+// B returns a float32
+//  Longer multi-line description
+//  Second line is here
+//  Third line
 func (obj *prefixConfig) B() float32 {
 	return obj.obj.B
 }
 
+// SetB sets the float32 value in the None object
+//  Longer multi-line description
+//  Second line is here
+//  Third line
 func (obj *prefixConfig) SetB(value float32) PrefixConfig {
 	obj.obj.B = value
 	return obj
 }
 
+// C returns a int32
+//  description is TBD
 func (obj *prefixConfig) C() int32 {
 	return obj.obj.C
 }
 
+// SetC sets the int32 value in the None object
+//  description is TBD
 func (obj *prefixConfig) SetC(value int32) PrefixConfig {
 	obj.obj.C = value
 	return obj
 }
 
+// E returns a EObject
+//  A child object
 func (obj *prefixConfig) E() EObject {
 	if obj.obj.E == nil {
 		obj.obj.E = &sanity.EObject{}
@@ -262,6 +280,8 @@ func (obj *prefixConfig) E() EObject {
 
 }
 
+// F returns a FObject
+//  An object with only choice(s)
 func (obj *prefixConfig) F() FObject {
 	if obj.obj.F == nil {
 		obj.obj.F = &sanity.FObject{}
@@ -270,6 +290,8 @@ func (obj *prefixConfig) F() FObject {
 
 }
 
+// G returns a []GObject
+//  A list of objects with choice and properties
 func (obj *prefixConfig) G() []GObject {
 	if obj.obj.G == nil {
 		obj.obj.G = make([]*sanity.GObject, 0)
@@ -282,6 +304,8 @@ func (obj *prefixConfig) G() []GObject {
 
 }
 
+// NewG creates and returns a new GObject object
+//  A list of objects with choice and properties
 func (obj *prefixConfig) NewG() GObject {
 	if obj.obj.G == nil {
 		obj.obj.G = make([]*sanity.GObject, 0)
@@ -291,24 +315,34 @@ func (obj *prefixConfig) NewG() GObject {
 	return &gObject{obj: slice[len(slice)-1]}
 }
 
+// H returns a bool
+//  A boolean value
 func (obj *prefixConfig) H() bool {
 	return *obj.obj.H
 }
 
+// SetH sets the bool value in the None object
+//  A boolean value
 func (obj *prefixConfig) SetH(value bool) PrefixConfig {
 	obj.obj.H = &value
 	return obj
 }
 
+// I returns a []byte
+//  A byte string
 func (obj *prefixConfig) I() []byte {
 	return obj.obj.I
 }
 
+// SetI sets the []byte value in the None object
+//  A byte string
 func (obj *prefixConfig) SetI(value []byte) PrefixConfig {
 	obj.obj.I = value
 	return obj
 }
 
+// J returns a []JObject
+//  A list of objects with only choice
 func (obj *prefixConfig) J() []JObject {
 	if obj.obj.J == nil {
 		obj.obj.J = make([]*sanity.JObject, 0)
@@ -321,6 +355,8 @@ func (obj *prefixConfig) J() []JObject {
 
 }
 
+// NewJ creates and returns a new JObject object
+//  A list of objects with only choice
 func (obj *prefixConfig) NewJ() JObject {
 	if obj.obj.J == nil {
 		obj.obj.J = make([]*sanity.JObject, 0)
@@ -330,6 +366,8 @@ func (obj *prefixConfig) NewJ() JObject {
 	return &jObject{obj: slice[len(slice)-1]}
 }
 
+// K returns a KObject
+//  A nested object with only one property which is a choice object
 func (obj *prefixConfig) K() KObject {
 	if obj.obj.K == nil {
 		obj.obj.K = &sanity.KObject{}
@@ -338,6 +376,8 @@ func (obj *prefixConfig) K() KObject {
 
 }
 
+// L returns a LObject
+//  description is TBD
 func (obj *prefixConfig) L() LObject {
 	if obj.obj.L == nil {
 		obj.obj.L = &sanity.LObject{}
@@ -346,6 +386,8 @@ func (obj *prefixConfig) L() LObject {
 
 }
 
+// Level returns a LevelOne
+//  description is TBD
 func (obj *prefixConfig) Level() LevelOne {
 	if obj.obj.Level == nil {
 		obj.obj.Level = &sanity.LevelOne{}
@@ -354,6 +396,8 @@ func (obj *prefixConfig) Level() LevelOne {
 
 }
 
+// Mandatory returns a Mandate
+//  description is TBD
 func (obj *prefixConfig) Mandatory() Mandate {
 	if obj.obj.Mandatory == nil {
 		obj.obj.Mandatory = &sanity.Mandate{}
@@ -362,6 +406,8 @@ func (obj *prefixConfig) Mandatory() Mandate {
 
 }
 
+// Ipv4Pattern returns a Ipv4Pattern
+//  description is TBD
 func (obj *prefixConfig) Ipv4Pattern() Ipv4Pattern {
 	if obj.obj.Ipv4Pattern == nil {
 		obj.obj.Ipv4Pattern = &sanity.Ipv4Pattern{}
@@ -370,6 +416,8 @@ func (obj *prefixConfig) Ipv4Pattern() Ipv4Pattern {
 
 }
 
+// Ipv6Pattern returns a Ipv6Pattern
+//  description is TBD
 func (obj *prefixConfig) Ipv6Pattern() Ipv6Pattern {
 	if obj.obj.Ipv6Pattern == nil {
 		obj.obj.Ipv6Pattern = &sanity.Ipv6Pattern{}
@@ -378,6 +426,8 @@ func (obj *prefixConfig) Ipv6Pattern() Ipv6Pattern {
 
 }
 
+// MacPattern returns a MacPattern
+//  description is TBD
 func (obj *prefixConfig) MacPattern() MacPattern {
 	if obj.obj.MacPattern == nil {
 		obj.obj.MacPattern = &sanity.MacPattern{}
@@ -386,6 +436,8 @@ func (obj *prefixConfig) MacPattern() MacPattern {
 
 }
 
+// IntegerPattern returns a IntegerPattern
+//  description is TBD
 func (obj *prefixConfig) IntegerPattern() IntegerPattern {
 	if obj.obj.IntegerPattern == nil {
 		obj.obj.IntegerPattern = &sanity.IntegerPattern{}
@@ -394,6 +446,8 @@ func (obj *prefixConfig) IntegerPattern() IntegerPattern {
 
 }
 
+// ChecksumPattern returns a ChecksumPattern
+//  description is TBD
 func (obj *prefixConfig) ChecksumPattern() ChecksumPattern {
 	if obj.obj.ChecksumPattern == nil {
 		obj.obj.ChecksumPattern = &sanity.ChecksumPattern{}
@@ -402,10 +456,14 @@ func (obj *prefixConfig) ChecksumPattern() ChecksumPattern {
 
 }
 
+// Name returns a string
+//  description is TBD
 func (obj *prefixConfig) Name() string {
 	return *obj.obj.Name
 }
 
+// SetName sets the string value in the None object
+//  description is TBD
 func (obj *prefixConfig) SetName(value string) PrefixConfig {
 	obj.obj.Name = &value
 	return obj
@@ -445,46 +503,66 @@ type EObject interface {
 	SetMParam2(value string) EObject
 }
 
+// EA returns a float32
+//  description is TBD
 func (obj *eObject) EA() float32 {
 	return obj.obj.EA
 }
 
+// SetEA sets the float32 value in the None object
+//  description is TBD
 func (obj *eObject) SetEA(value float32) EObject {
 	obj.obj.EA = value
 	return obj
 }
 
+// EB returns a float64
+//  description is TBD
 func (obj *eObject) EB() float64 {
 	return obj.obj.EB
 }
 
+// SetEB sets the float64 value in the None object
+//  description is TBD
 func (obj *eObject) SetEB(value float64) EObject {
 	obj.obj.EB = value
 	return obj
 }
 
+// Name returns a string
+//  description is TBD
 func (obj *eObject) Name() string {
 	return *obj.obj.Name
 }
 
+// SetName sets the string value in the None object
+//  description is TBD
 func (obj *eObject) SetName(value string) EObject {
 	obj.obj.Name = &value
 	return obj
 }
 
+// MParam1 returns a string
+//  description is TBD
 func (obj *eObject) MParam1() string {
 	return *obj.obj.MParam1
 }
 
+// SetMParam1 sets the string value in the None object
+//  description is TBD
 func (obj *eObject) SetMParam1(value string) EObject {
 	obj.obj.MParam1 = &value
 	return obj
 }
 
+// MParam2 returns a string
+//  description is TBD
 func (obj *eObject) MParam2() string {
 	return *obj.obj.MParam2
 }
 
+// SetMParam2 sets the string value in the None object
+//  description is TBD
 func (obj *eObject) SetMParam2(value string) EObject {
 	obj.obj.MParam2 = &value
 	return obj
@@ -518,19 +596,27 @@ type FObject interface {
 	SetFB(value float64) FObject
 }
 
+// FA returns a string
+//  description is TBD
 func (obj *fObject) FA() string {
 	return *obj.obj.FA
 }
 
+// SetFA sets the string value in the None object
+//  description is TBD
 func (obj *fObject) SetFA(value string) FObject {
 	obj.obj.FA = &value
 	return obj
 }
 
+// FB returns a float64
+//  description is TBD
 func (obj *fObject) FB() float64 {
 	return *obj.obj.FB
 }
 
+// SetFB sets the float64 value in the None object
+//  description is TBD
 func (obj *fObject) SetFB(value float64) FObject {
 	obj.obj.FB = &value
 	return obj
@@ -572,55 +658,79 @@ type GObject interface {
 	SetName(value string) GObject
 }
 
+// GA returns a string
+//  description is TBD
 func (obj *gObject) GA() string {
 	return *obj.obj.GA
 }
 
+// SetGA sets the string value in the None object
+//  description is TBD
 func (obj *gObject) SetGA(value string) GObject {
 	obj.obj.GA = &value
 	return obj
 }
 
+// GB returns a int32
+//  description is TBD
 func (obj *gObject) GB() int32 {
 	return *obj.obj.GB
 }
 
+// SetGB sets the int32 value in the None object
+//  description is TBD
 func (obj *gObject) SetGB(value int32) GObject {
 	obj.obj.GB = &value
 	return obj
 }
 
+// GC returns a float32
+//  description is TBD
 func (obj *gObject) GC() float32 {
 	return *obj.obj.GC
 }
 
+// SetGC sets the float32 value in the None object
+//  description is TBD
 func (obj *gObject) SetGC(value float32) GObject {
 	obj.obj.GC = &value
 	return obj
 }
 
+// GD returns a string
+//  description is TBD
 func (obj *gObject) GD() string {
 	return *obj.obj.GD
 }
 
+// SetGD sets the string value in the None object
+//  description is TBD
 func (obj *gObject) SetGD(value string) GObject {
 	obj.obj.GD = &value
 	return obj
 }
 
+// GE returns a float64
+//  description is TBD
 func (obj *gObject) GE() float64 {
 	return *obj.obj.GE
 }
 
+// SetGE sets the float64 value in the None object
+//  description is TBD
 func (obj *gObject) SetGE(value float64) GObject {
 	obj.obj.GE = &value
 	return obj
 }
 
+// Name returns a string
+//  description is TBD
 func (obj *gObject) Name() string {
 	return *obj.obj.Name
 }
 
+// SetName sets the string value in the None object
+//  description is TBD
 func (obj *gObject) SetName(value string) GObject {
 	obj.obj.Name = &value
 	return obj
@@ -652,6 +762,8 @@ type JObject interface {
 	JB() FObject
 }
 
+// JA returns a EObject
+//  description is TBD
 func (obj *jObject) JA() EObject {
 	if obj.obj.JA == nil {
 		obj.obj.JA = &sanity.EObject{}
@@ -660,6 +772,8 @@ func (obj *jObject) JA() EObject {
 
 }
 
+// JB returns a FObject
+//  description is TBD
 func (obj *jObject) JB() FObject {
 	if obj.obj.JB == nil {
 		obj.obj.JB = &sanity.FObject{}
@@ -694,6 +808,8 @@ type KObject interface {
 	FObject() FObject
 }
 
+// EObject returns a EObject
+//  description is TBD
 func (obj *kObject) EObject() EObject {
 	if obj.obj.EObject == nil {
 		obj.obj.EObject = &sanity.EObject{}
@@ -702,6 +818,8 @@ func (obj *kObject) EObject() EObject {
 
 }
 
+// FObject returns a FObject
+//  description is TBD
 func (obj *kObject) FObject() FObject {
 	if obj.obj.FObject == nil {
 		obj.obj.FObject = &sanity.FObject{}
@@ -750,73 +868,105 @@ type LObject interface {
 	SetHex(value string) LObject
 }
 
+// String_ returns a string
+//  description is TBD
 func (obj *lObject) String_() string {
 	return *obj.obj.String_
 }
 
+// SetString_ sets the string value in the None object
+//  description is TBD
 func (obj *lObject) SetString_(value string) LObject {
 	obj.obj.String_ = &value
 	return obj
 }
 
+// Integer returns a int32
+//  description is TBD
 func (obj *lObject) Integer() int32 {
 	return *obj.obj.Integer
 }
 
+// SetInteger sets the int32 value in the None object
+//  description is TBD
 func (obj *lObject) SetInteger(value int32) LObject {
 	obj.obj.Integer = &value
 	return obj
 }
 
+// Float returns a float32
+//  description is TBD
 func (obj *lObject) Float() float32 {
 	return *obj.obj.Float
 }
 
+// SetFloat sets the float32 value in the None object
+//  description is TBD
 func (obj *lObject) SetFloat(value float32) LObject {
 	obj.obj.Float = &value
 	return obj
 }
 
+// Double returns a float64
+//  description is TBD
 func (obj *lObject) Double() float64 {
 	return *obj.obj.Double
 }
 
+// SetDouble sets the float64 value in the None object
+//  description is TBD
 func (obj *lObject) SetDouble(value float64) LObject {
 	obj.obj.Double = &value
 	return obj
 }
 
+// Mac returns a string
+//  description is TBD
 func (obj *lObject) Mac() string {
 	return *obj.obj.Mac
 }
 
+// SetMac sets the string value in the None object
+//  description is TBD
 func (obj *lObject) SetMac(value string) LObject {
 	obj.obj.Mac = &value
 	return obj
 }
 
+// Ipv4 returns a string
+//  description is TBD
 func (obj *lObject) Ipv4() string {
 	return *obj.obj.Ipv4
 }
 
+// SetIpv4 sets the string value in the None object
+//  description is TBD
 func (obj *lObject) SetIpv4(value string) LObject {
 	obj.obj.Ipv4 = &value
 	return obj
 }
 
+// Ipv6 returns a string
+//  description is TBD
 func (obj *lObject) Ipv6() string {
 	return *obj.obj.Ipv6
 }
 
+// SetIpv6 sets the string value in the None object
+//  description is TBD
 func (obj *lObject) SetIpv6(value string) LObject {
 	obj.obj.Ipv6 = &value
 	return obj
 }
 
+// Hex returns a string
+//  description is TBD
 func (obj *lObject) Hex() string {
 	return *obj.obj.Hex
 }
 
+// SetHex sets the string value in the None object
+//  description is TBD
 func (obj *lObject) SetHex(value string) LObject {
 	obj.obj.Hex = &value
 	return obj
@@ -848,6 +998,8 @@ type LevelOne interface {
 	L1P2() LevelFour
 }
 
+// L1P1 returns a LevelTwo
+//  Level one
 func (obj *levelOne) L1P1() LevelTwo {
 	if obj.obj.L1P1 == nil {
 		obj.obj.L1P1 = &sanity.LevelTwo{}
@@ -856,6 +1008,8 @@ func (obj *levelOne) L1P1() LevelTwo {
 
 }
 
+// L1P2 returns a LevelFour
+//  Level one to four
 func (obj *levelOne) L1P2() LevelFour {
 	if obj.obj.L1P2 == nil {
 		obj.obj.L1P2 = &sanity.LevelFour{}
@@ -890,10 +1044,14 @@ type Mandate interface {
 	SetRequiredParam(value string) Mandate
 }
 
+// RequiredParam returns a string
+//  description is TBD
 func (obj *mandate) RequiredParam() string {
 	return obj.obj.RequiredParam
 }
 
+// SetRequiredParam sets the string value in the None object
+//  description is TBD
 func (obj *mandate) SetRequiredParam(value string) Mandate {
 	obj.obj.RequiredParam = value
 	return obj
@@ -924,6 +1082,8 @@ type Ipv4Pattern interface {
 	Ipv4() PatternIpv4PatternIpv4
 }
 
+// Ipv4 returns a PatternIpv4PatternIpv4
+//  description is TBD
 func (obj *ipv4Pattern) Ipv4() PatternIpv4PatternIpv4 {
 	if obj.obj.Ipv4 == nil {
 		obj.obj.Ipv4 = &sanity.PatternIpv4PatternIpv4{}
@@ -957,6 +1117,8 @@ type Ipv6Pattern interface {
 	Ipv6() PatternIpv6PatternIpv6
 }
 
+// Ipv6 returns a PatternIpv6PatternIpv6
+//  description is TBD
 func (obj *ipv6Pattern) Ipv6() PatternIpv6PatternIpv6 {
 	if obj.obj.Ipv6 == nil {
 		obj.obj.Ipv6 = &sanity.PatternIpv6PatternIpv6{}
@@ -990,6 +1152,8 @@ type MacPattern interface {
 	Mac() PatternMacPatternMac
 }
 
+// Mac returns a PatternMacPatternMac
+//  description is TBD
 func (obj *macPattern) Mac() PatternMacPatternMac {
 	if obj.obj.Mac == nil {
 		obj.obj.Mac = &sanity.PatternMacPatternMac{}
@@ -1023,6 +1187,8 @@ type IntegerPattern interface {
 	Integer() PatternIntegerPatternInteger
 }
 
+// Integer returns a PatternIntegerPatternInteger
+//  description is TBD
 func (obj *integerPattern) Integer() PatternIntegerPatternInteger {
 	if obj.obj.Integer == nil {
 		obj.obj.Integer = &sanity.PatternIntegerPatternInteger{}
@@ -1056,6 +1222,8 @@ type ChecksumPattern interface {
 	Checksum() PatternChecksumPatternChecksum
 }
 
+// Checksum returns a PatternChecksumPatternChecksum
+//  description is TBD
 func (obj *checksumPattern) Checksum() PatternChecksumPatternChecksum {
 	if obj.obj.Checksum == nil {
 		obj.obj.Checksum = &sanity.PatternChecksumPatternChecksum{}
@@ -1089,6 +1257,8 @@ type LevelTwo interface {
 	L2P1() LevelThree
 }
 
+// L2P1 returns a LevelThree
+//  Level Two
 func (obj *levelTwo) L2P1() LevelThree {
 	if obj.obj.L2P1 == nil {
 		obj.obj.L2P1 = &sanity.LevelThree{}
@@ -1122,6 +1292,8 @@ type LevelFour interface {
 	L4P1() LevelOne
 }
 
+// L4P1 returns a LevelOne
+//  loop over level 1
 func (obj *levelFour) L4P1() LevelOne {
 	if obj.obj.L4P1 == nil {
 		obj.obj.L4P1 = &sanity.LevelOne{}
@@ -1160,24 +1332,34 @@ type PatternIpv4PatternIpv4 interface {
 	Decrement() PatternIpv4PatternIpv4Counter
 }
 
+// Value returns a string
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) Value() string {
 	return *obj.obj.Value
 }
 
+// SetValue sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) SetValue(value string) PatternIpv4PatternIpv4 {
 	obj.obj.Value = &value
 	return obj
 }
 
+// Values returns a []string
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) Values() []string {
 	return obj.obj.Values
 }
 
+// SetValues sets the []string value in the None object
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) SetValues(value []string) PatternIpv4PatternIpv4 {
 	obj.obj.Values = value
 	return obj
 }
 
+// Increment returns a PatternIpv4PatternIpv4Counter
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) Increment() PatternIpv4PatternIpv4Counter {
 	if obj.obj.Increment == nil {
 		obj.obj.Increment = &sanity.PatternIpv4PatternIpv4Counter{}
@@ -1186,6 +1368,8 @@ func (obj *patternIpv4PatternIpv4) Increment() PatternIpv4PatternIpv4Counter {
 
 }
 
+// Decrement returns a PatternIpv4PatternIpv4Counter
+//  description is TBD
 func (obj *patternIpv4PatternIpv4) Decrement() PatternIpv4PatternIpv4Counter {
 	if obj.obj.Decrement == nil {
 		obj.obj.Decrement = &sanity.PatternIpv4PatternIpv4Counter{}
@@ -1224,24 +1408,34 @@ type PatternIpv6PatternIpv6 interface {
 	Decrement() PatternIpv6PatternIpv6Counter
 }
 
+// Value returns a string
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) Value() string {
 	return *obj.obj.Value
 }
 
+// SetValue sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) SetValue(value string) PatternIpv6PatternIpv6 {
 	obj.obj.Value = &value
 	return obj
 }
 
+// Values returns a []string
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) Values() []string {
 	return obj.obj.Values
 }
 
+// SetValues sets the []string value in the None object
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) SetValues(value []string) PatternIpv6PatternIpv6 {
 	obj.obj.Values = value
 	return obj
 }
 
+// Increment returns a PatternIpv6PatternIpv6Counter
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) Increment() PatternIpv6PatternIpv6Counter {
 	if obj.obj.Increment == nil {
 		obj.obj.Increment = &sanity.PatternIpv6PatternIpv6Counter{}
@@ -1250,6 +1444,8 @@ func (obj *patternIpv6PatternIpv6) Increment() PatternIpv6PatternIpv6Counter {
 
 }
 
+// Decrement returns a PatternIpv6PatternIpv6Counter
+//  description is TBD
 func (obj *patternIpv6PatternIpv6) Decrement() PatternIpv6PatternIpv6Counter {
 	if obj.obj.Decrement == nil {
 		obj.obj.Decrement = &sanity.PatternIpv6PatternIpv6Counter{}
@@ -1288,24 +1484,34 @@ type PatternMacPatternMac interface {
 	Decrement() PatternMacPatternMacCounter
 }
 
+// Value returns a string
+//  description is TBD
 func (obj *patternMacPatternMac) Value() string {
 	return *obj.obj.Value
 }
 
+// SetValue sets the string value in the None object
+//  description is TBD
 func (obj *patternMacPatternMac) SetValue(value string) PatternMacPatternMac {
 	obj.obj.Value = &value
 	return obj
 }
 
+// Values returns a []string
+//  description is TBD
 func (obj *patternMacPatternMac) Values() []string {
 	return obj.obj.Values
 }
 
+// SetValues sets the []string value in the None object
+//  description is TBD
 func (obj *patternMacPatternMac) SetValues(value []string) PatternMacPatternMac {
 	obj.obj.Values = value
 	return obj
 }
 
+// Increment returns a PatternMacPatternMacCounter
+//  description is TBD
 func (obj *patternMacPatternMac) Increment() PatternMacPatternMacCounter {
 	if obj.obj.Increment == nil {
 		obj.obj.Increment = &sanity.PatternMacPatternMacCounter{}
@@ -1314,6 +1520,8 @@ func (obj *patternMacPatternMac) Increment() PatternMacPatternMacCounter {
 
 }
 
+// Decrement returns a PatternMacPatternMacCounter
+//  description is TBD
 func (obj *patternMacPatternMac) Decrement() PatternMacPatternMacCounter {
 	if obj.obj.Decrement == nil {
 		obj.obj.Decrement = &sanity.PatternMacPatternMacCounter{}
@@ -1352,24 +1560,34 @@ type PatternIntegerPatternInteger interface {
 	Decrement() PatternIntegerPatternIntegerCounter
 }
 
+// Value returns a int32
+//  description is TBD
 func (obj *patternIntegerPatternInteger) Value() int32 {
 	return *obj.obj.Value
 }
 
+// SetValue sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIntegerPatternInteger) SetValue(value int32) PatternIntegerPatternInteger {
 	obj.obj.Value = &value
 	return obj
 }
 
+// Values returns a []int32
+//  description is TBD
 func (obj *patternIntegerPatternInteger) Values() []int32 {
 	return obj.obj.Values
 }
 
+// SetValues sets the []int32 value in the None object
+//  description is TBD
 func (obj *patternIntegerPatternInteger) SetValues(value []int32) PatternIntegerPatternInteger {
 	obj.obj.Values = value
 	return obj
 }
 
+// Increment returns a PatternIntegerPatternIntegerCounter
+//  description is TBD
 func (obj *patternIntegerPatternInteger) Increment() PatternIntegerPatternIntegerCounter {
 	if obj.obj.Increment == nil {
 		obj.obj.Increment = &sanity.PatternIntegerPatternIntegerCounter{}
@@ -1378,6 +1596,8 @@ func (obj *patternIntegerPatternInteger) Increment() PatternIntegerPatternIntege
 
 }
 
+// Decrement returns a PatternIntegerPatternIntegerCounter
+//  description is TBD
 func (obj *patternIntegerPatternInteger) Decrement() PatternIntegerPatternIntegerCounter {
 	if obj.obj.Decrement == nil {
 		obj.obj.Decrement = &sanity.PatternIntegerPatternIntegerCounter{}
@@ -1412,10 +1632,14 @@ type PatternChecksumPatternChecksum interface {
 	SetCustom(value int32) PatternChecksumPatternChecksum
 }
 
+// Custom returns a int32
+//  A custom checksum value
 func (obj *patternChecksumPatternChecksum) Custom() int32 {
 	return *obj.obj.Custom
 }
 
+// SetCustom sets the int32 value in the None object
+//  A custom checksum value
 func (obj *patternChecksumPatternChecksum) SetCustom(value int32) PatternChecksumPatternChecksum {
 	obj.obj.Custom = &value
 	return obj
@@ -1447,10 +1671,14 @@ type LevelThree interface {
 	SetL3P1(value string) LevelThree
 }
 
+// L3P1 returns a string
+//  Set value at Level 3
 func (obj *levelThree) L3P1() string {
 	return *obj.obj.L3P1
 }
 
+// SetL3P1 sets the string value in the None object
+//  Set value at Level 3
 func (obj *levelThree) SetL3P1(value string) LevelThree {
 	obj.obj.L3P1 = &value
 	return obj
@@ -1486,28 +1714,40 @@ type PatternIpv4PatternIpv4Counter interface {
 	SetCount(value int32) PatternIpv4PatternIpv4Counter
 }
 
+// Start returns a string
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) Start() string {
 	return *obj.obj.Start
 }
 
+// SetStart sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) SetStart(value string) PatternIpv4PatternIpv4Counter {
 	obj.obj.Start = &value
 	return obj
 }
 
+// Step returns a string
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) Step() string {
 	return *obj.obj.Step
 }
 
+// SetStep sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) SetStep(value string) PatternIpv4PatternIpv4Counter {
 	obj.obj.Step = &value
 	return obj
 }
 
+// Count returns a int32
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) Count() int32 {
 	return *obj.obj.Count
 }
 
+// SetCount sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIpv4PatternIpv4Counter) SetCount(value int32) PatternIpv4PatternIpv4Counter {
 	obj.obj.Count = &value
 	return obj
@@ -1543,28 +1783,40 @@ type PatternIpv6PatternIpv6Counter interface {
 	SetCount(value int32) PatternIpv6PatternIpv6Counter
 }
 
+// Start returns a string
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) Start() string {
 	return *obj.obj.Start
 }
 
+// SetStart sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) SetStart(value string) PatternIpv6PatternIpv6Counter {
 	obj.obj.Start = &value
 	return obj
 }
 
+// Step returns a string
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) Step() string {
 	return *obj.obj.Step
 }
 
+// SetStep sets the string value in the None object
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) SetStep(value string) PatternIpv6PatternIpv6Counter {
 	obj.obj.Step = &value
 	return obj
 }
 
+// Count returns a int32
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) Count() int32 {
 	return *obj.obj.Count
 }
 
+// SetCount sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIpv6PatternIpv6Counter) SetCount(value int32) PatternIpv6PatternIpv6Counter {
 	obj.obj.Count = &value
 	return obj
@@ -1600,28 +1852,40 @@ type PatternMacPatternMacCounter interface {
 	SetCount(value int32) PatternMacPatternMacCounter
 }
 
+// Start returns a string
+//  description is TBD
 func (obj *patternMacPatternMacCounter) Start() string {
 	return *obj.obj.Start
 }
 
+// SetStart sets the string value in the None object
+//  description is TBD
 func (obj *patternMacPatternMacCounter) SetStart(value string) PatternMacPatternMacCounter {
 	obj.obj.Start = &value
 	return obj
 }
 
+// Step returns a string
+//  description is TBD
 func (obj *patternMacPatternMacCounter) Step() string {
 	return *obj.obj.Step
 }
 
+// SetStep sets the string value in the None object
+//  description is TBD
 func (obj *patternMacPatternMacCounter) SetStep(value string) PatternMacPatternMacCounter {
 	obj.obj.Step = &value
 	return obj
 }
 
+// Count returns a int32
+//  description is TBD
 func (obj *patternMacPatternMacCounter) Count() int32 {
 	return *obj.obj.Count
 }
 
+// SetCount sets the int32 value in the None object
+//  description is TBD
 func (obj *patternMacPatternMacCounter) SetCount(value int32) PatternMacPatternMacCounter {
 	obj.obj.Count = &value
 	return obj
@@ -1657,28 +1921,40 @@ type PatternIntegerPatternIntegerCounter interface {
 	SetCount(value int32) PatternIntegerPatternIntegerCounter
 }
 
+// Start returns a int32
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) Start() int32 {
 	return *obj.obj.Start
 }
 
+// SetStart sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) SetStart(value int32) PatternIntegerPatternIntegerCounter {
 	obj.obj.Start = &value
 	return obj
 }
 
+// Step returns a int32
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) Step() int32 {
 	return *obj.obj.Step
 }
 
+// SetStep sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) SetStep(value int32) PatternIntegerPatternIntegerCounter {
 	obj.obj.Step = &value
 	return obj
 }
 
+// Count returns a int32
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) Count() int32 {
 	return *obj.obj.Count
 }
 
+// SetCount sets the int32 value in the None object
+//  description is TBD
 func (obj *patternIntegerPatternIntegerCounter) SetCount(value int32) PatternIntegerPatternIntegerCounter {
 	obj.obj.Count = &value
 	return obj
