@@ -82,8 +82,18 @@ func TestGetObject(t *testing.T) {
 
 func TestAddObject(t *testing.T) {
 	config := NewApi().NewPrefixConfig()
-	g := config.NewG()
-	g.SetName("G-1")
+	config.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+	config.G().Add().SetName("G2")
+	config.G().Add().SetName("G3").SetGA("3 is not 2 or 1 or none")
+	config.J().Add().JB().SetFA("a FA string")
+	config.J().Add().JA().SetEA(22.2)
+	for _, item := range config.G().Items() {
+		fmt.Println(item.Name())
+	}
+	name := "new persistent name"
+	config.G().Items()[1].SetName(name)
+	assert.Equal(t, len(config.G().Items()), 3)
+	assert.Equal(t, config.G().Items()[1].Name(), name)
 	fmt.Println(config.Yaml())
 }
 

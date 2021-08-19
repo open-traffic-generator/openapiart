@@ -355,8 +355,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
                 interfaces.append(field.setter_method)
-            if field.adder_method is not None:
-                interfaces.append(field.adder_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
             """type {interface} interface {{
@@ -381,13 +379,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif field.isArray:
             if field.struct:
                 body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = make([]*{pb_pkg_name}.{external_struct}, 0)
+                        obj.obj.{name} = []*{pb_pkg_name}.{external_struct}{{}}
                     }}
-                    values := make([]{external_struct}, 0)
-                    for _, item := range obj.obj.{name} {{
-                        values = append(values, &{struct}{{obj: item}})
-                    }}
-                    return values
+                    return &{struct}List{{obj: obj}}
                 """.format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
@@ -486,24 +480,35 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         self._write(
             """
-            // New{fieldname} creates and returns a new {fieldexternal_struct} object\n{description}
-            func (obj *{newstruct}) {adder_method} {{
-                if obj.obj.{fieldname} == nil {{
-                    obj.obj.{fieldname} = make([]*{pb_pkg_name}.{fieldexternal_struct}, 0)
+            type {field_internal_struct}List struct {{
+                obj *{parent_internal_struct}
+            }}
+
+            type {field_external_struct}List interface {{
+                Add() {field_external_struct}
+                Items() {field_type}
+            }}
+
+            func (obj *{field_internal_struct}List) Add() {field_external_struct} {{
+                newObj := &{pb_pkg_name}.{field_external_struct}{{}}
+                obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
+                return &{field_internal_struct}{{obj: newObj}}
+            }}
+
+            func (obj *{field_internal_struct}List) Items() {field_type} {{
+                slice := {field_type}{{}}
+                for _, item := range obj.obj.obj.{field_name} {{
+                    slice = append(slice, &{field_internal_struct}{{obj: item}})
                 }}
-                slice := append(obj.obj.{fieldname}, &{pb_pkg_name}.{fieldexternal_struct}{{}})
-                obj.obj.{fieldname} = slice
-                return &{fieldstruct}{{obj: slice[len(slice)-1]}}
+                return slice
             }}
             """.format(
-                newstruct=new.struct,
-                adder_method=field.adder_method,
-                fieldname=field.name,
-                fieldtype=field.type,
+                field_internal_struct=field.struct,
+                parent_internal_struct=new.struct,
+                field_external_struct=field.external_struct,
+                field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
-                fieldexternal_struct=field.external_struct,
-                description=field.description,
-                fieldstruct=field.struct,
+                field_type=field.type,
             )
         )
 
@@ -520,27 +525,43 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.name = self._get_external_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
             field.isOptional = fluent_new.isOptional(property_name)
-            if field.type.startswith("["):
-                # field pointer cannot be done on array(slice)
-                field.isPointer = False
-            else:
-                field.isPointer = fluent_new.isOptional(property_name)
-            field.getter_method = "{name}() {ftype}".format(name=field.name, ftype=field.type)
+            field.isPointer = False if field.type.startswith("[") else field.isOptional
+            field.getter_method = "{name}() {ftype}".format(
+                name=field.name,
+                ftype=field.type,
+            )
             if "$ref" in property_schema:
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
                 field.external_struct = self._get_external_name(schema_name)
             if field.type in self._oapi_go_types.values():
-                field.setter_method = "Set{name}(value {ftype}) {interface}".format(name=field.name, ftype=field.type, interface=fluent_new.interface)
+                field.setter_method = "Set{name}(value {ftype}) {interface}".format(
+                    name=field.name,
+                    ftype=field.type,
+                    interface=fluent_new.interface,
+                )
             elif "type" in property_schema and property_schema["type"] == "array":
+                field.isPointer = False
                 if "$ref" in property_schema["items"]:
                     schema_name = self._get_schema_object_name_from_ref(property_schema["items"]["$ref"])
                     field.isArray = True
                     field.struct = self._get_internal_name(schema_name)
                     field.external_struct = self._get_external_name(schema_name)
-                    field.adder_method = "New{name}() {external_struct}".format(name=field.name, external_struct=field.external_struct)
+                    field.adder_method = "Add() {external_struct}List".format(
+                        name=field.name,
+                        external_struct=field.external_struct,
+                    )
+                    field.isOptional = False
+                    field.getter_method = "{name}() {external_struct}List".format(
+                        name=field.name,
+                        external_struct=field.external_struct,
+                    )
                 else:
-                    field.setter_method = "Set{name}(value {ftype}) {interface}".format(name=field.name, ftype=field.type, interface=fluent_new.interface)
+                    field.setter_method = "Set{name}(value {ftype}) {interface}".format(
+                        name=field.name,
+                        ftype=field.type,
+                        interface=fluent_new.interface,
+                    )
             fluent_new.interface_fields.append(field)
 
     def _get_schema_object_name_from_ref(self, ref):
