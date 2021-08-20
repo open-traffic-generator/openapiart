@@ -19,7 +19,19 @@ class FluentRpc(object):
     def __init__(self):
         self.operation_name = None
         self.method = None
-        self.request = None
+        self.request = "emptypb.Empty{}"
+        self.responses = []
+
+
+class FluentRpcResponse(object):
+    """<operation_name>StatusCode<status_code>
+    status_code is the http status code
+    fluent_new is the 2xx response, all other status codes this should be None
+    """
+
+    def __init__(self):
+        self.status_code = None
+        self.schema = None
 
 
 class FluentNew(object):
@@ -151,7 +163,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_types()
         self._build_api_interface()
         self._build_request_interfaces()
-        self._build_component_interfaces()
+        self._write_component_interfaces()
+        self._write_response_interfaces()
         self._close_fp()
 
     def _write_package_docstring(self, info_object):
@@ -206,6 +219,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._api.external_interface_name = """{external_name}Api""".format(external_name=self._get_external_name(self._go_sdk_package_name))
         for _, path_object in self._openapi["paths"].items():
             for _, path_item_object in path_object.items():
+                rpc = FluentRpc()
+                rpc.operation_name = self._get_external_name(path_item_object["operationId"])
+                if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
+                    self._api.external_rpc_methods.append(rpc)
                 ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
                 if len(ref) == 1:
                     new = FluentNew()
@@ -216,16 +233,29 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.method = """New{interface}() {interface}""".format(interface=new.interface)
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
-                    rpc = FluentRpc()
-                    rpc.operation_name = self._get_external_name(path_item_object["operationId"])
-                    rpc.method = """{operation_name}({struct} {interface}) error""".format(
-                        operation_name=rpc.operation_name, struct=new.struct, interface=new.interface
-                    )
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
-                        pb_pkg_name=self._protobuf_package_name, operation_name=rpc.operation_name, interface=new.interface, struct=new.struct
+                        pb_pkg_name=self._protobuf_package_name,
+                        operation_name=rpc.operation_name,
+                        interface=new.interface,
+                        struct=new.struct,
                     )
-                    if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
-                        self._api.external_rpc_methods.append(rpc)
+                    rpc.method = """{operation_name}({struct} {interface}) ({operation_response_name}Response_StatusCode200, error)""".format(
+                        operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_name(rpc.operation_name),
+                        struct=new.struct,
+                        interface=new.interface,
+                    )
+                else:
+                    rpc.method = """{operation_name}() ({operation_response_name}Response_StatusCode200, error)""".format(
+                        operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_name(rpc.operation_name),
+                    )
+                for ref in self._get_parser("$..responses").find(path_item_object):
+                    for status_code, schema in ref.value.items():
+                        response = FluentRpcResponse()
+                        response.status_code = status_code
+                        response.schema = schema
+                        rpc.responses.append(response)
 
         # write the go code
         self._write(
@@ -286,29 +316,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             )
         for rpc in self._api.external_rpc_methods:
+            error_handling = ""
+            for response in rpc.responses:
+                if response.status_code.startswith("2"):
+                    continue
+                error_handling += """if resp.GetStatusCode_{status_code}() != nil {{
+                        data, _ := yaml.Marshal(resp.GetStatusCode_400())
+                        return nil, fmt.Errorf(string(data))
+                    }}
+                    """.format(
+                    status_code=response.status_code,
+                )
+            error_handling += 'return nil, fmt.Errorf("Response not implemented")'
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     if err := api.grpcConnect(); err != nil {{
-                        return err
+                        return nil, err
                     }}
                     request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
-                    client, err := api.grpcClient.{operation_name}(ctx, &request)
+                    resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
-                        return err
+                        return nil, err
                     }}
-                    resp, _ := client.Recv()
-                    if resp.GetStatusCode_200() == nil {{
-                        return fmt.Errorf("fail")
+                    if resp.GetStatusCode_200() != nil {{
+                        return &{operation_response_name}ResponseStatusCode200{{obj: resp.GetStatusCode_200()}}, nil
                     }}
-                    return nil
+                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=rpc.method,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
+                    operation_response_name=self._get_internal_name(rpc.operation_name),
+                    error_handling=error_handling,
                 )
             )
 
@@ -316,13 +359,52 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for new in self._api.external_new_methods:
             self._build_interface(new)
 
-    def _build_component_interfaces(self):
+    def _write_component_interfaces(self):
         while True:
             components = [component for _, component in self._api.components.items() if component.generated is False]
             if len(components) == 0:
                 break
             for component in components:
                 self._build_interface(component)
+
+    def _write_response_interfaces(self):
+        for rpc in self._api.external_rpc_methods:
+            for response in rpc.responses:
+                if response.status_code.startswith("2") is False:
+                    continue
+                new = FluentNew()
+                new.schema_object = response.schema
+                new.struct = "{operation_name}ResponseStatusCode{status_code}".format(
+                    operation_name=self._get_internal_name(rpc.operation_name),
+                    status_code=response.status_code,
+                )
+                new.interface = "{operation_name}Response_StatusCode{status_code}".format(
+                    operation_name=rpc.operation_name,
+                    status_code=response.status_code,
+                )
+                self._build_interface(new)
+                # write the internal struct
+                # self._write(
+                #     """type {operation_name}StatusCode{status_code} struct {{
+                #     obj *{pb_pkg_name}.{operation_name}_StatusCode{status_code}
+                # }}
+                # """.format(
+                #         operation_name=rpc.operation_name,
+                #         status_code=response.status_code,
+                #         pb_pkg_name=self._protobuf_package_name,
+                #     )
+                # )
+                # # write the external interface
+                # self._write(
+                #     """type {operation_name}StatusCode{status_code} interface {{
+                #     obj *{pb_pkg_name}.{operation_name}_StatusCode{status_code}
+                # }}
+                # """.format(
+                #         operation_name=rpc.operation_name,
+                #         status_code=response.status_code,
+                #         pb_pkg_name=self._protobuf_package_name,
+                #     )
+                # )
 
     def _build_interface(self, new):
         self._write(

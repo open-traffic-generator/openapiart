@@ -33,13 +33,10 @@ def test_grpc_response(utils, pb2, pb2_grpc):
     req_obj = pb2.SetConfigRequest(prefix_config=pb_obj)
 
     # get the responses
-    responses = stub.SetConfig(req_obj)
-
-    # Loop over the responses as this is a server stream
-    for response in responses:
-        resp = json_format.MessageToJson(
-            response, preserving_proto_field_name=True)
-        assert utils.compare_json(resp, expected_response)
+    response = stub.SetConfig(req_obj)
+    resp = json_format.MessageToJson(
+        response, preserving_proto_field_name=True)
+    assert utils.compare_json(resp, expected_response)
 
 
 if __name__ == "__main__":

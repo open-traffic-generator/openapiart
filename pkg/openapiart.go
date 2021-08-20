@@ -11,6 +11,7 @@ import (
 
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -96,7 +97,7 @@ type Api interface {
 func (api *api) NewGrpcTransport() GrpcTransport {
 	api.grpc = &grpcTransport{
 		location:       "127.0.0.1:5050",
-		requestTimeout: time.Duration(10),
+		requestTimeout: 10 * time.Second,
 	}
 	api.http = nil
 	return api.grpc
@@ -151,29 +152,54 @@ func NewApi() *openapiartApi {
 type OpenapiartApi interface {
 	Api
 	NewPrefixConfig() PrefixConfig
-	SetConfig(prefixConfig PrefixConfig) error
+	SetConfig(prefixConfig PrefixConfig) (SetConfigResponse_StatusCode200, error)
+	GetConfig() (GetConfigResponse_StatusCode200, error)
 }
 
 func (api *openapiartApi) NewPrefixConfig() PrefixConfig {
 	return &prefixConfig{obj: &sanity.PrefixConfig{}}
 }
 
-func (api *openapiartApi) SetConfig(prefixConfig PrefixConfig) error {
+func (api *openapiartApi) SetConfig(prefixConfig PrefixConfig) (SetConfigResponse_StatusCode200, error) {
 	if err := api.grpcConnect(); err != nil {
-		return err
+		return nil, err
 	}
 	request := sanity.SetConfigRequest{PrefixConfig: prefixConfig.msg()}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
-	client, err := api.grpcClient.SetConfig(ctx, &request)
+	resp, err := api.grpcClient.SetConfig(ctx, &request)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	resp, _ := client.Recv()
-	if resp.GetStatusCode_200() == nil {
-		return fmt.Errorf("fail")
+	if resp.GetStatusCode_200() != nil {
+		return &setConfigResponseStatusCode200{obj: resp.GetStatusCode_200()}, nil
 	}
-	return nil
+	if resp.GetStatusCode_400() != nil {
+		data, _ := yaml.Marshal(resp.GetStatusCode_400())
+		return nil, fmt.Errorf(string(data))
+	}
+	if resp.GetStatusCode_500() != nil {
+		data, _ := yaml.Marshal(resp.GetStatusCode_400())
+		return nil, fmt.Errorf(string(data))
+	}
+	return nil, fmt.Errorf("Response not implemented")
+}
+
+func (api *openapiartApi) GetConfig() (GetConfigResponse_StatusCode200, error) {
+	if err := api.grpcConnect(); err != nil {
+		return nil, err
+	}
+	request := emptypb.Empty{}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+	defer cancelFunc()
+	resp, err := api.grpcClient.GetConfig(ctx, &request)
+	if err != nil {
+		return nil, err
+	}
+	if resp.GetStatusCode_200() != nil {
+		return &getConfigResponseStatusCode200{obj: resp.GetStatusCode_200()}, nil
+	}
+	return nil, fmt.Errorf("Response not implemented")
 }
 
 type prefixConfig struct {
@@ -1972,4 +1998,52 @@ func (obj *patternIntegerPatternIntegerCounter) Count() int32 {
 func (obj *patternIntegerPatternIntegerCounter) SetCount(value int32) PatternIntegerPatternIntegerCounter {
 	obj.obj.Count = &value
 	return obj
+}
+
+type setConfigResponseStatusCode200 struct {
+	obj *sanity.SetConfigResponse_StatusCode200
+}
+
+func (obj *setConfigResponseStatusCode200) msg() *sanity.SetConfigResponse_StatusCode200 {
+	return obj.obj
+}
+
+func (obj *setConfigResponseStatusCode200) Yaml() string {
+	data, _ := yaml.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *setConfigResponseStatusCode200) Json() string {
+	data, _ := json.Marshal(obj.msg())
+	return string(data)
+}
+
+type SetConfigResponse_StatusCode200 interface {
+	msg() *sanity.SetConfigResponse_StatusCode200
+	Yaml() string
+	Json() string
+}
+
+type getConfigResponseStatusCode200 struct {
+	obj *sanity.GetConfigResponse_StatusCode200
+}
+
+func (obj *getConfigResponseStatusCode200) msg() *sanity.GetConfigResponse_StatusCode200 {
+	return obj.obj
+}
+
+func (obj *getConfigResponseStatusCode200) Yaml() string {
+	data, _ := yaml.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *getConfigResponseStatusCode200) Json() string {
+	data, _ := json.Marshal(obj.msg())
+	return string(data)
+}
+
+type GetConfigResponse_StatusCode200 interface {
+	msg() *sanity.GetConfigResponse_StatusCode200
+	Yaml() string
+	Json() string
 }

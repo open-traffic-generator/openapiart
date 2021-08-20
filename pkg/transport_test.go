@@ -2,12 +2,19 @@ package openapiart_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	. "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	if err := StartMockServer(); err != nil {
+		log.Fatal("Mock Server Init failed")
+	}
+}
 
 func TestApi(t *testing.T) {
 	api := NewApi()
@@ -97,7 +104,12 @@ func TestAddObject(t *testing.T) {
 	fmt.Println(config.Yaml())
 }
 
-// func TestChoiceObject(t *testing.T) {
-// 	config := openapiart.NewApi().NewPrefixConfig()
-// 	fmt.Println(config.Yaml())
-// }
+func TestSetConfigSuccess(t *testing.T) {
+	api := NewApi()
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	c := api.NewPrefixConfig()
+	c.SetA("asdfasdf").SetB(22.2).SetC(33).E().SetEA(44.4)
+	resp, err := api.SetConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
