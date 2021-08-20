@@ -151,6 +151,7 @@ def test():
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     try:
+        run(["go test -v"])
         run(["go test -coverprofile coverage.txt > coverage.out"])
     except:
         os.chdir("..")
