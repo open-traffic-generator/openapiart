@@ -39,7 +39,7 @@ def grpc_server(pb2, pb2_grpc):
             else:
                 res_obj = json_format.Parse(response_200, pb2.SetConfigResponse())
 
-            yield res_obj
+            return res_obj
 
         def start(self):
             self._web_server_thread = threading.Thread(target=local_web_server)
