@@ -147,6 +147,27 @@ def test():
         else:
             print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
 
+    go_coverage_threshold = 60
+    # TODO: not able to run the test from main directory
+    os.chdir("pkg")
+    try:
+        run(["go test -coverprofile coverage.txt > coverage.out"])
+    except:
+        os.chdir("..")
+    os.chdir("..")
+
+    with open("pkg/coverage.out") as fp:
+        out = fp.read()
+        result = re.findall(r"coverage:.*\s(\d+)", out)[0]
+        if int(result) < go_coverage_threshold:
+            raise Exception(
+                "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
+                    go_coverage_threshold, result))
+        else:
+            print(
+                "Go tests achieved {1}% ,Coverage thresold {0}%".format(
+                    go_coverage_threshold, result))
+
 
 def dist():
     clean()
@@ -273,6 +294,23 @@ def py():
         # since some paths may contain spaces
         py.path = '"' + py.path + '"'
         return py.path
+
+
+def go():
+    """
+    Returns path to go executable to be used.
+    """
+    try:
+        return go.path
+    except AttributeError:
+        go.path = os.path.join(".env", "bin", "go")
+        if not os.path.exists(go.path):
+            go.path = sys.executable
+
+        # since some paths may contain spaces
+        go.path = '"' + go.path + '"'
+        print(go.path)
+        return go.path
 
 
 def run(commands):

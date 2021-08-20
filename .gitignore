@@ -13,3 +13,5 @@ __pycache__
 /cov_report
 /**/art
 .local
+/pkg/coverage.txt
+/pkg/coverage.out
