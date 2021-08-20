@@ -3,8 +3,14 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [a, b, c]
+      required: [response, a, b, c]
       properties:
+        response:
+          description: |-
+            Indicate to the server what response should be returned
+          type: string
+          enum: [status_200, status_400, status_500]
+          default: status_200
         a:
           description: |-
             Small single line description

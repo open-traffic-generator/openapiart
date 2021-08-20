@@ -31,7 +31,7 @@ class FluentRpcResponse(object):
 
     def __init__(self):
         self.status_code = None
-        self.fluent_new = None
+        self.schema = None
 
 
 class FluentNew(object):
@@ -239,24 +239,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         struct=new.struct,
                     )
-                    rpc.method = """{operation_name}({struct} {interface}) (*{operation_name}StatusCode200, error)""".format(
+                    rpc.method = """{operation_name}({struct} {interface}) ({operation_response_name}Response_StatusCode200, error)""".format(
                         operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_name(rpc.operation_name),
                         struct=new.struct,
                         interface=new.interface,
                     )
                 else:
-                    rpc.method = """{operation_name}() (*{operation_name}StatusCode200, error)""".format(
+                    rpc.method = """{operation_name}() ({operation_response_name}Response_StatusCode200, error)""".format(
                         operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_name(rpc.operation_name),
                     )
                 for ref in self._get_parser("$..responses").find(path_item_object):
                     for status_code, schema in ref.value.items():
                         response = FluentRpcResponse()
                         response.status_code = status_code
-                        # new = FluentNew()
-                        # new.schema_name = self._get_schema_object_name_from_ref(ref.value)
-                        # new.schema_object = self._get_schema_object_from_ref(ref.value)
-                        # new.interface = self._get_external_name(new.schema_name)
-                        # new.struct = self._get_internal_name(new.schema_name)
+                        response.schema = schema
                         rpc.responses.append(response)
 
         # write the go code
@@ -343,7 +341,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.GetStatusCode_200() != nil {{
-                        return &{operation_name}StatusCode200{{obj: resp.GetStatusCode_200()}}, nil
+                        return &{operation_response_name}ResponseStatusCode200{{obj: resp.GetStatusCode_200()}}, nil
                     }}
                     {error_handling}
                 }}
@@ -352,6 +350,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     method=rpc.method,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
+                    operation_response_name=self._get_internal_name(rpc.operation_name),
                     error_handling=error_handling,
                 )
             )
@@ -373,14 +372,39 @@ class OpenApiArtGo(OpenApiArtPlugin):
             for response in rpc.responses:
                 if response.status_code.startswith("2") is False:
                     continue
-                self._write(
-                    """type {operation_name}StatusCode{status_code} struct {{
-                }}
-                """.format(
-                        operation_name=rpc.operation_name,
-                        status_code=response.status_code,
-                    )
+                new = FluentNew()
+                new.schema_object = response.schema
+                new.struct = "{operation_name}ResponseStatusCode{status_code}".format(
+                    operation_name=self._get_internal_name(rpc.operation_name),
+                    status_code=response.status_code,
                 )
+                new.interface = "{operation_name}Response_StatusCode{status_code}".format(
+                    operation_name=rpc.operation_name,
+                    status_code=response.status_code,
+                )
+                self._build_interface(new)
+                # write the internal struct
+                # self._write(
+                #     """type {operation_name}StatusCode{status_code} struct {{
+                #     obj *{pb_pkg_name}.{operation_name}_StatusCode{status_code}
+                # }}
+                # """.format(
+                #         operation_name=rpc.operation_name,
+                #         status_code=response.status_code,
+                #         pb_pkg_name=self._protobuf_package_name,
+                #     )
+                # )
+                # # write the external interface
+                # self._write(
+                #     """type {operation_name}StatusCode{status_code} interface {{
+                #     obj *{pb_pkg_name}.{operation_name}_StatusCode{status_code}
+                # }}
+                # """.format(
+                #         operation_name=rpc.operation_name,
+                #         status_code=response.status_code,
+                #         pb_pkg_name=self._protobuf_package_name,
+                #     )
+                # )
 
     def _build_interface(self, new):
         self._write(
