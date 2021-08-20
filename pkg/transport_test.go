@@ -58,7 +58,7 @@ func TestYamlSerialization(t *testing.T) {
 	api := NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("simple string")
-	yaml := config.Yaml()
+	yaml := config.ToJson()
 	yamlLength := len(yaml)
 	assert.True(t, yamlLength > 10)
 }
@@ -73,7 +73,7 @@ func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	config.SetI([]byte("a simple byte string"))
 	config.SetName("name string")
 	assert.NotNil(t, config)
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
 func TestGetObject(t *testing.T) {
@@ -84,7 +84,7 @@ func TestGetObject(t *testing.T) {
 	assert.NotNil(t, e.Name())
 	assert.Equal(t, e.Name(), config.E().Name())
 	assert.Equal(t, f.FA(), config.F().FA())
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
 func TestAddObject(t *testing.T) {
@@ -101,7 +101,7 @@ func TestAddObject(t *testing.T) {
 	config.G().Items()[1].SetName(name)
 	assert.Equal(t, len(config.G().Items()), 3)
 	assert.Equal(t, config.G().Items()[1].Name(), name)
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
 func TestSetConfigSuccess(t *testing.T) {
