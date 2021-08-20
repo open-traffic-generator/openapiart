@@ -8,7 +8,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
         self._filename = os.path.normpath(os.path.join(self._output_dir, "{}.proto".format(self._protobuf_file_name)))
         self.default_indent = "  "
-        self._custom_id = 50000
+        self._custom_id = 60000
         self._init_fp(self._filename)
 
     def generate(self, openapi):
