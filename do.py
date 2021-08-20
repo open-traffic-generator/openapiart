@@ -296,23 +296,6 @@ def py():
         return py.path
 
 
-def go():
-    """
-    Returns path to go executable to be used.
-    """
-    try:
-        return go.path
-    except AttributeError:
-        go.path = os.path.join(".env", "bin", "go")
-        if not os.path.exists(go.path):
-            go.path = sys.executable
-
-        # since some paths may contain spaces
-        go.path = '"' + go.path + '"'
-        print(go.path)
-        return go.path
-
-
 def run(commands):
     """
     Executes a list of commands in a native shell and raises exception upon
