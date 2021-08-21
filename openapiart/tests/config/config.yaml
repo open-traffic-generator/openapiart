@@ -5,6 +5,12 @@ components:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [response, a, b, c]
       properties:
+        ieee_802_1qbb:
+          type: boolean
+        space_1:
+          type: integer
+        full_duplex_100_mb:
+          type: integer
         response:
           description: |-
             Indicate to the server what response should be returned

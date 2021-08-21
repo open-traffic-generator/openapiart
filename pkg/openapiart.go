@@ -232,6 +232,12 @@ type PrefixConfig interface {
 	msg() *sanity.PrefixConfig
 	ToYaml() string
 	ToJson() string
+	Ieee8021Qbb() bool
+	SetIeee8021Qbb(value bool) PrefixConfig
+	Space1() int32
+	SetSpace1(value int32) PrefixConfig
+	FullDuplex100Mb() int32
+	SetFullDuplex100Mb(value int32) PrefixConfig
 	A() string
 	SetA(value string) PrefixConfig
 	B() float32
@@ -240,12 +246,12 @@ type PrefixConfig interface {
 	SetC(value int32) PrefixConfig
 	E() EObject
 	F() FObject
-	G() GObjectList
+	G() GObjectIter
 	H() bool
 	SetH(value bool) PrefixConfig
 	I() []byte
 	SetI(value []byte) PrefixConfig
-	J() JObjectList
+	J() JObjectIter
 	K() KObject
 	L() LObject
 	Level() LevelOne
@@ -257,6 +263,45 @@ type PrefixConfig interface {
 	ChecksumPattern() ChecksumPattern
 	Name() string
 	SetName(value string) PrefixConfig
+}
+
+// Ieee_802_1Qbb returns a bool
+//  description is TBD
+func (obj *prefixConfig) Ieee8021Qbb() bool {
+	return *obj.obj.Ieee_802_1Qbb
+}
+
+// SetIeee_802_1Qbb sets the bool value in the None object
+//  description is TBD
+func (obj *prefixConfig) SetIeee8021Qbb(value bool) PrefixConfig {
+	obj.obj.Ieee_802_1Qbb = &value
+	return obj
+}
+
+// Space_1 returns a int32
+//  description is TBD
+func (obj *prefixConfig) Space1() int32 {
+	return *obj.obj.Space_1
+}
+
+// SetSpace_1 sets the int32 value in the None object
+//  description is TBD
+func (obj *prefixConfig) SetSpace1(value int32) PrefixConfig {
+	obj.obj.Space_1 = &value
+	return obj
+}
+
+// FullDuplex_100Mb returns a int32
+//  description is TBD
+func (obj *prefixConfig) FullDuplex100Mb() int32 {
+	return *obj.obj.FullDuplex_100Mb
+}
+
+// SetFullDuplex_100Mb sets the int32 value in the None object
+//  description is TBD
+func (obj *prefixConfig) SetFullDuplex100Mb(value int32) PrefixConfig {
+	obj.obj.FullDuplex_100Mb = &value
+	return obj
 }
 
 // A returns a string
@@ -324,30 +369,30 @@ func (obj *prefixConfig) F() FObject {
 
 // G returns a []GObject
 //  A list of objects with choice and properties
-func (obj *prefixConfig) G() GObjectList {
+func (obj *prefixConfig) G() GObjectIter {
 	if obj.obj.G == nil {
 		obj.obj.G = []*sanity.GObject{}
 	}
-	return &gObjectList{obj: obj}
+	return &gObjectIter{obj: obj}
 
 }
 
-type gObjectList struct {
+type gObjectIter struct {
 	obj *prefixConfig
 }
 
-type GObjectList interface {
+type GObjectIter interface {
 	Add() GObject
 	Items() []GObject
 }
 
-func (obj *gObjectList) Add() GObject {
+func (obj *gObjectIter) Add() GObject {
 	newObj := &sanity.GObject{}
 	obj.obj.obj.G = append(obj.obj.obj.G, newObj)
 	return &gObject{obj: newObj}
 }
 
-func (obj *gObjectList) Items() []GObject {
+func (obj *gObjectIter) Items() []GObject {
 	slice := []GObject{}
 	for _, item := range obj.obj.obj.G {
 		slice = append(slice, &gObject{obj: item})
@@ -383,30 +428,30 @@ func (obj *prefixConfig) SetI(value []byte) PrefixConfig {
 
 // J returns a []JObject
 //  A list of objects with only choice
-func (obj *prefixConfig) J() JObjectList {
+func (obj *prefixConfig) J() JObjectIter {
 	if obj.obj.J == nil {
 		obj.obj.J = []*sanity.JObject{}
 	}
-	return &jObjectList{obj: obj}
+	return &jObjectIter{obj: obj}
 
 }
 
-type jObjectList struct {
+type jObjectIter struct {
 	obj *prefixConfig
 }
 
-type JObjectList interface {
+type JObjectIter interface {
 	Add() JObject
 	Items() []JObject
 }
 
-func (obj *jObjectList) Add() JObject {
+func (obj *jObjectIter) Add() JObject {
 	newObj := &sanity.JObject{}
 	obj.obj.obj.J = append(obj.obj.obj.J, newObj)
 	return &jObject{obj: newObj}
 }
 
-func (obj *jObjectList) Items() []JObject {
+func (obj *jObjectIter) Items() []JObject {
 	slice := []JObject{}
 	for _, item := range obj.obj.obj.J {
 		slice = append(slice, &jObject{obj: item})
@@ -946,8 +991,8 @@ type LObject interface {
 	msg() *sanity.LObject
 	ToYaml() string
 	ToJson() string
-	String_() string
-	SetString_(value string) LObject
+	String() string
+	SetString(value string) LObject
 	Integer() int32
 	SetInteger(value int32) LObject
 	Float() float32
@@ -966,13 +1011,13 @@ type LObject interface {
 
 // String_ returns a string
 //  description is TBD
-func (obj *lObject) String_() string {
+func (obj *lObject) String() string {
 	return *obj.obj.String_
 }
 
 // SetString_ sets the string value in the None object
 //  description is TBD
-func (obj *lObject) SetString_(value string) LObject {
+func (obj *lObject) SetString(value string) LObject {
 	obj.obj.String_ = &value
 	return obj
 }
