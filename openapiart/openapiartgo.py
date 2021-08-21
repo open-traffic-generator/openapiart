@@ -186,6 +186,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """Writes the base wrapper go code"""
         line = 'import {pb_pkg_name} "{go_sdk_pkg_dir}/{pb_pkg_name}"'.format(pb_pkg_name=self._protobuf_package_name, go_sdk_pkg_dir=self._go_sdk_package_dir)
         self._write(line)
+        self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
