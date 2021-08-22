@@ -152,12 +152,18 @@ func NewApi() *openapiartApi {
 type OpenapiartApi interface {
 	Api
 	NewPrefixConfig() PrefixConfig
+	NewUpdateConfig() UpdateConfig
 	SetConfig(prefixConfig PrefixConfig) (SetConfigResponse_StatusCode200, error)
+	UpdateConfig(updateConfig UpdateConfig) (UpdateConfigResponse_StatusCode200, error)
 	GetConfig() (GetConfigResponse_StatusCode200, error)
 }
 
 func (api *openapiartApi) NewPrefixConfig() PrefixConfig {
 	return &prefixConfig{obj: &sanity.PrefixConfig{}}
+}
+
+func (api *openapiartApi) NewUpdateConfig() UpdateConfig {
+	return &updateConfig{obj: &sanity.UpdateConfig{}}
 }
 
 func (api *openapiartApi) SetConfig(prefixConfig PrefixConfig) (SetConfigResponse_StatusCode200, error) {
@@ -173,6 +179,31 @@ func (api *openapiartApi) SetConfig(prefixConfig PrefixConfig) (SetConfigRespons
 	}
 	if resp.GetStatusCode_200() != nil {
 		return &setConfigResponseStatusCode200{obj: resp.GetStatusCode_200()}, nil
+	}
+	if resp.GetStatusCode_400() != nil {
+		data, _ := yaml.Marshal(resp.GetStatusCode_400())
+		return nil, fmt.Errorf(string(data))
+	}
+	if resp.GetStatusCode_500() != nil {
+		data, _ := yaml.Marshal(resp.GetStatusCode_400())
+		return nil, fmt.Errorf(string(data))
+	}
+	return nil, fmt.Errorf("Response not implemented")
+}
+
+func (api *openapiartApi) UpdateConfig(updateConfig UpdateConfig) (UpdateConfigResponse_StatusCode200, error) {
+	if err := api.grpcConnect(); err != nil {
+		return nil, err
+	}
+	request := sanity.UpdateConfigRequest{UpdateConfig: updateConfig.msg()}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+	defer cancelFunc()
+	resp, err := api.grpcClient.UpdateConfig(ctx, &request)
+	if err != nil {
+		return nil, err
+	}
+	if resp.GetStatusCode_200() != nil {
+		return &updateConfigResponseStatusCode200{obj: resp.GetStatusCode_200()}, nil
 	}
 	if resp.GetStatusCode_400() != nil {
 		data, _ := yaml.Marshal(resp.GetStatusCode_400())
@@ -246,12 +277,12 @@ type PrefixConfig interface {
 	SetC(value int32) PrefixConfig
 	E() EObject
 	F() FObject
-	G() GObjectIter
+	G() PrefixConfigGObjectIter
 	H() bool
 	SetH(value bool) PrefixConfig
 	I() []byte
 	SetI(value []byte) PrefixConfig
-	J() JObjectIter
+	J() PrefixConfigJObjectIter
 	K() KObject
 	L() LObject
 	Level() LevelOne
@@ -369,30 +400,30 @@ func (obj *prefixConfig) F() FObject {
 
 // G returns a []GObject
 //  A list of objects with choice and properties
-func (obj *prefixConfig) G() GObjectIter {
+func (obj *prefixConfig) G() PrefixConfigGObjectIter {
 	if obj.obj.G == nil {
 		obj.obj.G = []*sanity.GObject{}
 	}
-	return &gObjectIter{obj: obj}
+	return &prefixConfigGObjectIter{obj: obj}
 
 }
 
-type gObjectIter struct {
+type prefixConfigGObjectIter struct {
 	obj *prefixConfig
 }
 
-type GObjectIter interface {
+type PrefixConfigGObjectIter interface {
 	Add() GObject
 	Items() []GObject
 }
 
-func (obj *gObjectIter) Add() GObject {
+func (obj *prefixConfigGObjectIter) Add() GObject {
 	newObj := &sanity.GObject{}
 	obj.obj.obj.G = append(obj.obj.obj.G, newObj)
 	return &gObject{obj: newObj}
 }
 
-func (obj *gObjectIter) Items() []GObject {
+func (obj *prefixConfigGObjectIter) Items() []GObject {
 	slice := []GObject{}
 	for _, item := range obj.obj.obj.G {
 		slice = append(slice, &gObject{obj: item})
@@ -428,30 +459,30 @@ func (obj *prefixConfig) SetI(value []byte) PrefixConfig {
 
 // J returns a []JObject
 //  A list of objects with only choice
-func (obj *prefixConfig) J() JObjectIter {
+func (obj *prefixConfig) J() PrefixConfigJObjectIter {
 	if obj.obj.J == nil {
 		obj.obj.J = []*sanity.JObject{}
 	}
-	return &jObjectIter{obj: obj}
+	return &prefixConfigJObjectIter{obj: obj}
 
 }
 
-type jObjectIter struct {
+type prefixConfigJObjectIter struct {
 	obj *prefixConfig
 }
 
-type JObjectIter interface {
+type PrefixConfigJObjectIter interface {
 	Add() JObject
 	Items() []JObject
 }
 
-func (obj *jObjectIter) Add() JObject {
+func (obj *prefixConfigJObjectIter) Add() JObject {
 	newObj := &sanity.JObject{}
 	obj.obj.obj.J = append(obj.obj.obj.J, newObj)
 	return &jObject{obj: newObj}
 }
 
-func (obj *jObjectIter) Items() []JObject {
+func (obj *prefixConfigJObjectIter) Items() []JObject {
 	slice := []JObject{}
 	for _, item := range obj.obj.obj.J {
 		slice = append(slice, &jObject{obj: item})
@@ -560,6 +591,72 @@ func (obj *prefixConfig) Name() string {
 func (obj *prefixConfig) SetName(value string) PrefixConfig {
 	obj.obj.Name = &value
 	return obj
+}
+
+type updateConfig struct {
+	obj *sanity.UpdateConfig
+}
+
+func (obj *updateConfig) msg() *sanity.UpdateConfig {
+	return obj.obj
+}
+
+func (obj *updateConfig) ToYaml() string {
+	data, _ := yaml.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *updateConfig) FromYaml(value string) error {
+	return yaml.Unmarshal([]byte(value), obj.msg())
+}
+
+func (obj *updateConfig) ToJson() string {
+	data, _ := json.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *updateConfig) FromJson(value string) error {
+	return json.Unmarshal([]byte(value), obj.msg())
+}
+
+type UpdateConfig interface {
+	msg() *sanity.UpdateConfig
+	ToYaml() string
+	ToJson() string
+	G() UpdateConfigGObjectIter
+}
+
+// G returns a []GObject
+//  A list of objects with choice and properties
+func (obj *updateConfig) G() UpdateConfigGObjectIter {
+	if obj.obj.G == nil {
+		obj.obj.G = []*sanity.GObject{}
+	}
+	return &updateConfigGObjectIter{obj: obj}
+
+}
+
+type updateConfigGObjectIter struct {
+	obj *updateConfig
+}
+
+type UpdateConfigGObjectIter interface {
+	Add() GObject
+	Items() []GObject
+}
+
+func (obj *updateConfigGObjectIter) Add() GObject {
+	newObj := &sanity.GObject{}
+	obj.obj.obj.G = append(obj.obj.obj.G, newObj)
+	return &gObject{obj: newObj}
+}
+
+func (obj *updateConfigGObjectIter) Items() []GObject {
+	slice := []GObject{}
+	for _, item := range obj.obj.obj.G {
+		slice = append(slice, &gObject{obj: item})
+	}
+	return slice
 }
 
 type eObject struct {
@@ -2281,6 +2378,38 @@ func (obj *setConfigResponseStatusCode200) FromJson(value string) error {
 
 type SetConfigResponse_StatusCode200 interface {
 	msg() *sanity.SetConfigResponse_StatusCode200
+	ToYaml() string
+	ToJson() string
+}
+
+type updateConfigResponseStatusCode200 struct {
+	obj *sanity.UpdateConfigResponse_StatusCode200
+}
+
+func (obj *updateConfigResponseStatusCode200) msg() *sanity.UpdateConfigResponse_StatusCode200 {
+	return obj.obj
+}
+
+func (obj *updateConfigResponseStatusCode200) ToYaml() string {
+	data, _ := yaml.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *updateConfigResponseStatusCode200) FromYaml(value string) error {
+	return yaml.Unmarshal([]byte(value), obj.msg())
+}
+
+func (obj *updateConfigResponseStatusCode200) ToJson() string {
+	data, _ := json.Marshal(obj.msg())
+	return string(data)
+}
+
+func (obj *updateConfigResponseStatusCode200) FromJson(value string) error {
+	return json.Unmarshal([]byte(value), obj.msg())
+}
+
+type UpdateConfigResponse_StatusCode200 interface {
+	msg() *sanity.UpdateConfigResponse_StatusCode200
 	ToYaml() string
 	ToJson() string
 }
