@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OpenapiClient interface {
 	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error)
+	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error)
 	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error)
 }
 
@@ -40,6 +41,15 @@ func (c *openapiClient) SetConfig(ctx context.Context, in *SetConfigRequest, opt
 	return out, nil
 }
 
+func (c *openapiClient) UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error) {
+	out := new(UpdateConfigResponse)
+	err := c.cc.Invoke(ctx, "/sanity.Openapi/UpdateConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *openapiClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error) {
 	out := new(GetConfigResponse)
 	err := c.cc.Invoke(ctx, "/sanity.Openapi/GetConfig", in, out, opts...)
@@ -54,6 +64,7 @@ func (c *openapiClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...
 // for forward compatibility
 type OpenapiServer interface {
 	SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error)
+	UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error)
 	GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error)
 	mustEmbedUnimplementedOpenapiServer()
 }
@@ -64,6 +75,9 @@ type UnimplementedOpenapiServer struct {
 
 func (UnimplementedOpenapiServer) SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+}
+func (UnimplementedOpenapiServer) UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfig not implemented")
 }
 func (UnimplementedOpenapiServer) GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
@@ -99,6 +113,24 @@ func _Openapi_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Openapi_UpdateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenapiServer).UpdateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sanity.Openapi/UpdateConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenapiServer).UpdateConfig(ctx, req.(*UpdateConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Openapi_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(empty.Empty)
 	if err := dec(in); err != nil {
@@ -127,6 +159,10 @@ var Openapi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetConfig",
 			Handler:    _Openapi_SetConfig_Handler,
+		},
+		{
+			MethodName: "UpdateConfig",
+			Handler:    _Openapi_UpdateConfig_Handler,
 		},
 		{
 			MethodName: "GetConfig",

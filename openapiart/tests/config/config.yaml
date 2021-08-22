@@ -201,3 +201,13 @@ components:
       properties:
         required_param:
           type: string
+
+    Update.Config:
+      description: "Object to Test required Parameter"
+      type: object
+      properties:
+        g:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: '#/components/schemas/GObject'

@@ -459,12 +459,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
-                    return &{struct}Iter{{obj: obj}}
+                    return &{parent}{interface}Iter{{obj: obj}}
                 """.format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
                     pb_struct=field.external_struct,
-                    struct=field.struct,
+                    interface=field.external_struct,
+                    parent=new.struct,
                 )
             else:
                 body = """if obj.obj.{name} == nil {{
@@ -556,27 +557,33 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
-        interface_name = field.external_struct + "Iter"
+        interface_name = new.interface + field.external_struct + "Iter"
         if interface_name in self._api.components:
             return
+        new_iter = FluentNew()
+        new_iter.schema_name = interface_name
+        new_iter.interface = interface_name
+        new_iter.internal_struct = interface_name[0].lower() + interface_name[1:]
+        new_iter.generated = True
+        self._api.components[interface_name] = new_iter
         self._write(
             """
-            type {field_internal_struct}Iter struct {{
+            type {internal_struct} struct {{
                 obj *{parent_internal_struct}
             }}
 
-            type {field_external_struct}Iter interface {{
+            type {interface} interface {{
                 Add() {field_external_struct}
                 Items() {field_type}
             }}
 
-            func (obj *{field_internal_struct}Iter) Add() {field_external_struct} {{
+            func (obj *{internal_struct}) Add() {field_external_struct} {{
                 newObj := &{pb_pkg_name}.{field_external_struct}{{}}
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 return &{field_internal_struct}{{obj: newObj}}
             }}
 
-            func (obj *{field_internal_struct}Iter) Items() {field_type} {{
+            func (obj *{internal_struct}) Items() {field_type} {{
                 slice := {field_type}{{}}
                 for _, item := range obj.obj.obj.{field_name} {{
                     slice = append(slice, &{field_internal_struct}{{obj: item}})
@@ -584,6 +591,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return slice
             }}
             """.format(
+                internal_struct=new_iter.internal_struct,
+                interface=new_iter.interface,
                 field_internal_struct=field.struct,
                 parent_internal_struct=new.struct,
                 field_external_struct=field.external_struct,
@@ -592,11 +601,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_type=field.type,
             )
         )
-        new_iter = FluentNew()
-        new_iter.schema_name = interface_name
-        new_iter.interface = interface_name
-        new_iter.generated = True
-        self._api.components[interface_name] = new_iter
 
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
@@ -633,13 +637,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.isArray = True
                     field.struct = self._get_internal_name(schema_name)
                     field.external_struct = self._get_external_struct_name(schema_name)
-                    field.adder_method = "Add() {external_struct}Iter".format(
-                        name=self._get_external_struct_name(field.name),
+                    field.adder_method = "Add() {parent}{external_struct}Iter".format(
+                        parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
                     field.isOptional = False
-                    field.getter_method = "{name}() {external_struct}Iter".format(
+                    field.getter_method = "{name}() {parent}{external_struct}Iter".format(
                         name=self._get_external_struct_name(field.name),
+                        parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
                 else:
