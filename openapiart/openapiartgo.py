@@ -188,6 +188,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(line)
         self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
+        self._write('import "github.com/ghodss/yaml"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
@@ -405,12 +406,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToYaml() string {{
-                data, _ := yaml.Marshal(obj.msg())
+                data, _ := json.Marshal(obj.msg())
+                data, _ = yaml.JSONToYAML(data)
                 return string(data)
             }}
 
             func (obj *{struct}) FromYaml(value string) error {{
-                return yaml.Unmarshal([]byte(value), obj.msg())
+                data, _ := yaml.YAMLToJSON([]byte(value))
+                return json.Unmarshal([]byte(data), obj.msg())
             }}
 
             func (obj *{struct}) ToJson() string {{

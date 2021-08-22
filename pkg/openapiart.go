@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ghodss/yaml"
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"gopkg.in/yaml.v3"
 )
 
 type grpcTransport struct {
@@ -242,12 +242,14 @@ func (obj *prefixConfig) msg() *sanity.PrefixConfig {
 }
 
 func (obj *prefixConfig) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *prefixConfig) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *prefixConfig) ToJson() string {
@@ -602,12 +604,14 @@ func (obj *updateConfig) msg() *sanity.UpdateConfig {
 }
 
 func (obj *updateConfig) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *updateConfig) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *updateConfig) ToJson() string {
@@ -668,12 +672,14 @@ func (obj *eObject) msg() *sanity.EObject {
 }
 
 func (obj *eObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *eObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *eObject) ToJson() string {
@@ -775,12 +781,14 @@ func (obj *fObject) msg() *sanity.FObject {
 }
 
 func (obj *fObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *fObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *fObject) ToJson() string {
@@ -837,12 +845,14 @@ func (obj *gObject) msg() *sanity.GObject {
 }
 
 func (obj *gObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *gObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *gObject) ToJson() string {
@@ -959,12 +969,14 @@ func (obj *jObject) msg() *sanity.JObject {
 }
 
 func (obj *jObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *jObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *jObject) ToJson() string {
@@ -1013,12 +1025,14 @@ func (obj *kObject) msg() *sanity.KObject {
 }
 
 func (obj *kObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *kObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *kObject) ToJson() string {
@@ -1067,12 +1081,14 @@ func (obj *lObject) msg() *sanity.LObject {
 }
 
 func (obj *lObject) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *lObject) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *lObject) ToJson() string {
@@ -1219,12 +1235,14 @@ func (obj *levelOne) msg() *sanity.LevelOne {
 }
 
 func (obj *levelOne) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *levelOne) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *levelOne) ToJson() string {
@@ -1273,12 +1291,14 @@ func (obj *mandate) msg() *sanity.Mandate {
 }
 
 func (obj *mandate) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *mandate) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *mandate) ToJson() string {
@@ -1320,12 +1340,14 @@ func (obj *ipv4Pattern) msg() *sanity.Ipv4Pattern {
 }
 
 func (obj *ipv4Pattern) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *ipv4Pattern) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *ipv4Pattern) ToJson() string {
@@ -1363,12 +1385,14 @@ func (obj *ipv6Pattern) msg() *sanity.Ipv6Pattern {
 }
 
 func (obj *ipv6Pattern) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *ipv6Pattern) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *ipv6Pattern) ToJson() string {
@@ -1406,12 +1430,14 @@ func (obj *macPattern) msg() *sanity.MacPattern {
 }
 
 func (obj *macPattern) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *macPattern) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *macPattern) ToJson() string {
@@ -1449,12 +1475,14 @@ func (obj *integerPattern) msg() *sanity.IntegerPattern {
 }
 
 func (obj *integerPattern) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *integerPattern) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *integerPattern) ToJson() string {
@@ -1492,12 +1520,14 @@ func (obj *checksumPattern) msg() *sanity.ChecksumPattern {
 }
 
 func (obj *checksumPattern) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *checksumPattern) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *checksumPattern) ToJson() string {
@@ -1535,12 +1565,14 @@ func (obj *levelTwo) msg() *sanity.LevelTwo {
 }
 
 func (obj *levelTwo) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *levelTwo) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *levelTwo) ToJson() string {
@@ -1578,12 +1610,14 @@ func (obj *levelFour) msg() *sanity.LevelFour {
 }
 
 func (obj *levelFour) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *levelFour) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *levelFour) ToJson() string {
@@ -1621,12 +1655,14 @@ func (obj *patternIpv4PatternIpv4) msg() *sanity.PatternIpv4PatternIpv4 {
 }
 
 func (obj *patternIpv4PatternIpv4) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIpv4PatternIpv4) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIpv4PatternIpv4) ToJson() string {
@@ -1705,12 +1741,14 @@ func (obj *patternIpv6PatternIpv6) msg() *sanity.PatternIpv6PatternIpv6 {
 }
 
 func (obj *patternIpv6PatternIpv6) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIpv6PatternIpv6) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIpv6PatternIpv6) ToJson() string {
@@ -1789,12 +1827,14 @@ func (obj *patternMacPatternMac) msg() *sanity.PatternMacPatternMac {
 }
 
 func (obj *patternMacPatternMac) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternMacPatternMac) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternMacPatternMac) ToJson() string {
@@ -1873,12 +1913,14 @@ func (obj *patternIntegerPatternInteger) msg() *sanity.PatternIntegerPatternInte
 }
 
 func (obj *patternIntegerPatternInteger) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIntegerPatternInteger) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIntegerPatternInteger) ToJson() string {
@@ -1957,12 +1999,14 @@ func (obj *patternChecksumPatternChecksum) msg() *sanity.PatternChecksumPatternC
 }
 
 func (obj *patternChecksumPatternChecksum) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternChecksumPatternChecksum) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternChecksumPatternChecksum) ToJson() string {
@@ -2004,12 +2048,14 @@ func (obj *levelThree) msg() *sanity.LevelThree {
 }
 
 func (obj *levelThree) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *levelThree) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *levelThree) ToJson() string {
@@ -2051,12 +2097,14 @@ func (obj *patternIpv4PatternIpv4Counter) msg() *sanity.PatternIpv4PatternIpv4Co
 }
 
 func (obj *patternIpv4PatternIpv4Counter) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIpv4PatternIpv4Counter) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIpv4PatternIpv4Counter) ToJson() string {
@@ -2128,12 +2176,14 @@ func (obj *patternIpv6PatternIpv6Counter) msg() *sanity.PatternIpv6PatternIpv6Co
 }
 
 func (obj *patternIpv6PatternIpv6Counter) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIpv6PatternIpv6Counter) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIpv6PatternIpv6Counter) ToJson() string {
@@ -2205,12 +2255,14 @@ func (obj *patternMacPatternMacCounter) msg() *sanity.PatternMacPatternMacCounte
 }
 
 func (obj *patternMacPatternMacCounter) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternMacPatternMacCounter) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternMacPatternMacCounter) ToJson() string {
@@ -2282,12 +2334,14 @@ func (obj *patternIntegerPatternIntegerCounter) msg() *sanity.PatternIntegerPatt
 }
 
 func (obj *patternIntegerPatternIntegerCounter) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *patternIntegerPatternIntegerCounter) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *patternIntegerPatternIntegerCounter) ToJson() string {
@@ -2359,12 +2413,14 @@ func (obj *setConfigResponseStatusCode200) msg() *sanity.SetConfigResponse_Statu
 }
 
 func (obj *setConfigResponseStatusCode200) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *setConfigResponseStatusCode200) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *setConfigResponseStatusCode200) ToJson() string {
@@ -2391,12 +2447,14 @@ func (obj *updateConfigResponseStatusCode200) msg() *sanity.UpdateConfigResponse
 }
 
 func (obj *updateConfigResponseStatusCode200) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *updateConfigResponseStatusCode200) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *updateConfigResponseStatusCode200) ToJson() string {
@@ -2423,12 +2481,14 @@ func (obj *getConfigResponseStatusCode200) msg() *sanity.GetConfigResponse_Statu
 }
 
 func (obj *getConfigResponseStatusCode200) ToYaml() string {
-	data, _ := yaml.Marshal(obj.msg())
+	data, _ := json.Marshal(obj.msg())
+	data, _ = yaml.JSONToYAML(data)
 	return string(data)
 }
 
 func (obj *getConfigResponseStatusCode200) FromYaml(value string) error {
-	return yaml.Unmarshal([]byte(value), obj.msg())
+	data, _ := yaml.YAMLToJSON([]byte(value))
+	return json.Unmarshal([]byte(data), obj.msg())
 }
 
 func (obj *getConfigResponseStatusCode200) ToJson() string {

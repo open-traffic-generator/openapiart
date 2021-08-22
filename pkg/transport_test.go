@@ -66,6 +66,8 @@ func TestYamlSerialization(t *testing.T) {
 func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	api := NewApi()
 	config := api.NewPrefixConfig()
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
 	config.SetA("simple string")
 	config.SetB(12.2)
 	config.SetC(-33)
