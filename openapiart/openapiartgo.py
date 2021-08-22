@@ -406,18 +406,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToYaml() string {{
-                data, _ := json.Marshal(obj.msg())
-                data, _ = yaml.JSONToYAML(data)
+                data, err := json.Marshal(obj.msg())
+                if err != nil {{
+                    panic(err)
+                }}
+                data, err = yaml.JSONToYAML(data)
+                if err != nil {{
+                    panic(err)
+                }}
                 return string(data)
             }}
 
             func (obj *{struct}) FromYaml(value string) error {{
-                data, _ := yaml.YAMLToJSON([]byte(value))
-                return json.Unmarshal([]byte(data), obj.msg())
+                data, err := yaml.YAMLToJSON([]byte(value))
+                if err != nil {{
+                    return err
+                }}
+                return json.Unmarshal(data, obj.msg())
             }}
 
-            func (obj *{struct}) ToJson() string {{
-                data, _ := json.Marshal(obj.msg())
+            func (obj *{struct}) ToJson() string  {{
+                data, err := json.Marshal(obj.msg())
+                if err != nil {{
+                    panic(err)
+                }}
                 return string(data)
             }}
 
@@ -431,7 +443,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
         self._build_setters_getters(new)
-        interfaces = ["ToYaml() string", "ToJson() string"]
+        interfaces = [
+            "ToYaml() string",
+            "ToJson() string",
+            "FromYaml(value string) error",
+            "FromJson(value string) error",
+        ]
         for field in new.interface_fields:
             interfaces.append(field.getter_method)
             if field.setter_method is not None:

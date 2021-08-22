@@ -54,15 +54,6 @@ func TestPrefixConfigSetName(t *testing.T) {
 	assert.Equal(t, name, config.Name())
 }
 
-func TestYamlSerialization(t *testing.T) {
-	api := NewApi()
-	config := api.NewPrefixConfig()
-	config.SetA("simple string")
-	yaml := config.ToJson()
-	yamlLength := len(yaml)
-	assert.True(t, yamlLength > 10)
-}
-
 func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	api := NewApi()
 	config := api.NewPrefixConfig()
