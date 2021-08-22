@@ -2,8 +2,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 type grpcTransport struct {
