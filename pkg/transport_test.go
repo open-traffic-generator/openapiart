@@ -2,12 +2,19 @@ package openapiart_test
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	. "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	if err := StartMockServer(); err != nil {
+		log.Fatal("Mock Server Init failed")
+	}
+}
 
 func TestApi(t *testing.T) {
 	api := NewApi()
@@ -47,18 +54,11 @@ func TestPrefixConfigSetName(t *testing.T) {
 	assert.Equal(t, name, config.Name())
 }
 
-func TestYamlSerialization(t *testing.T) {
-	api := NewApi()
-	config := api.NewPrefixConfig()
-	config.SetA("simple string")
-	yaml := config.Yaml()
-	yamlLength := len(yaml)
-	assert.True(t, yamlLength > 10)
-}
-
 func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	api := NewApi()
 	config := api.NewPrefixConfig()
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
 	config.SetA("simple string")
 	config.SetB(12.2)
 	config.SetC(-33)
@@ -66,7 +66,7 @@ func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 	config.SetI([]byte("a simple byte string"))
 	config.SetName("name string")
 	assert.NotNil(t, config)
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
 func TestGetObject(t *testing.T) {
@@ -77,7 +77,7 @@ func TestGetObject(t *testing.T) {
 	assert.NotNil(t, e.Name())
 	assert.Equal(t, e.Name(), config.E().Name())
 	assert.Equal(t, f.FA(), config.F().FA())
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
 func TestAddObject(t *testing.T) {
@@ -94,10 +94,15 @@ func TestAddObject(t *testing.T) {
 	config.G().Items()[1].SetName(name)
 	assert.Equal(t, len(config.G().Items()), 3)
 	assert.Equal(t, config.G().Items()[1].Name(), name)
-	fmt.Println(config.Yaml())
+	fmt.Println(config.ToYaml())
 }
 
-// func TestChoiceObject(t *testing.T) {
-// 	config := openapiart.NewApi().NewPrefixConfig()
-// 	fmt.Println(config.Yaml())
-// }
+func TestSetConfigSuccess(t *testing.T) {
+	api := NewApi()
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	c := api.NewPrefixConfig()
+	c.SetA("asdfasdf").SetB(22.2).SetC(33).E().SetEA(44.4)
+	resp, err := api.SetConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}

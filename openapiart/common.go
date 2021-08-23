@@ -2,8 +2,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 type grpcTransport struct {
@@ -88,7 +86,7 @@ type Api interface {
 func (api *api) NewGrpcTransport() GrpcTransport {
 	api.grpc = &grpcTransport{
 		location:       "127.0.0.1:5050",
-		requestTimeout: time.Duration(10),
+		requestTimeout: 10 * time.Second,
 	}
 	api.http = nil
 	return api.grpc

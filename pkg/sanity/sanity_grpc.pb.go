@@ -19,7 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OpenapiClient interface {
-	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (Openapi_SetConfigClient, error)
+	SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error)
+	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error)
 	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error)
 }
 
@@ -31,36 +32,22 @@ func NewOpenapiClient(cc grpc.ClientConnInterface) OpenapiClient {
 	return &openapiClient{cc}
 }
 
-func (c *openapiClient) SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (Openapi_SetConfigClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Openapi_ServiceDesc.Streams[0], "/sanity.Openapi/SetConfig", opts...)
+func (c *openapiClient) SetConfig(ctx context.Context, in *SetConfigRequest, opts ...grpc.CallOption) (*SetConfigResponse, error) {
+	out := new(SetConfigResponse)
+	err := c.cc.Invoke(ctx, "/sanity.Openapi/SetConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &openapiSetConfigClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type Openapi_SetConfigClient interface {
-	Recv() (*SetConfigResponse, error)
-	grpc.ClientStream
-}
-
-type openapiSetConfigClient struct {
-	grpc.ClientStream
-}
-
-func (x *openapiSetConfigClient) Recv() (*SetConfigResponse, error) {
-	m := new(SetConfigResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *openapiClient) UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error) {
+	out := new(UpdateConfigResponse)
+	err := c.cc.Invoke(ctx, "/sanity.Openapi/UpdateConfig", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
 }
 
 func (c *openapiClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error) {
@@ -76,7 +63,8 @@ func (c *openapiClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...
 // All implementations must embed UnimplementedOpenapiServer
 // for forward compatibility
 type OpenapiServer interface {
-	SetConfig(*SetConfigRequest, Openapi_SetConfigServer) error
+	SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error)
+	UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error)
 	GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error)
 	mustEmbedUnimplementedOpenapiServer()
 }
@@ -85,8 +73,11 @@ type OpenapiServer interface {
 type UnimplementedOpenapiServer struct {
 }
 
-func (UnimplementedOpenapiServer) SetConfig(*SetConfigRequest, Openapi_SetConfigServer) error {
-	return status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+func (UnimplementedOpenapiServer) SetConfig(context.Context, *SetConfigRequest) (*SetConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+}
+func (UnimplementedOpenapiServer) UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfig not implemented")
 }
 func (UnimplementedOpenapiServer) GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
@@ -104,25 +95,40 @@ func RegisterOpenapiServer(s grpc.ServiceRegistrar, srv OpenapiServer) {
 	s.RegisterService(&Openapi_ServiceDesc, srv)
 }
 
-func _Openapi_SetConfig_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SetConfigRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Openapi_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(OpenapiServer).SetConfig(m, &openapiSetConfigServer{stream})
+	if interceptor == nil {
+		return srv.(OpenapiServer).SetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sanity.Openapi/SetConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenapiServer).SetConfig(ctx, req.(*SetConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type Openapi_SetConfigServer interface {
-	Send(*SetConfigResponse) error
-	grpc.ServerStream
-}
-
-type openapiSetConfigServer struct {
-	grpc.ServerStream
-}
-
-func (x *openapiSetConfigServer) Send(m *SetConfigResponse) error {
-	return x.ServerStream.SendMsg(m)
+func _Openapi_UpdateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenapiServer).UpdateConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sanity.Openapi/UpdateConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenapiServer).UpdateConfig(ctx, req.(*UpdateConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Openapi_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -151,16 +157,18 @@ var Openapi_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*OpenapiServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "SetConfig",
+			Handler:    _Openapi_SetConfig_Handler,
+		},
+		{
+			MethodName: "UpdateConfig",
+			Handler:    _Openapi_UpdateConfig_Handler,
+		},
+		{
 			MethodName: "GetConfig",
 			Handler:    _Openapi_GetConfig_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "SetConfig",
-			Handler:       _Openapi_SetConfig_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "sanity.proto",
 }

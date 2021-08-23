@@ -19,7 +19,19 @@ class FluentRpc(object):
     def __init__(self):
         self.operation_name = None
         self.method = None
-        self.request = None
+        self.request = "emptypb.Empty{}"
+        self.responses = []
+
+
+class FluentRpcResponse(object):
+    """<operation_name>StatusCode<status_code>
+    status_code is the http status code
+    fluent_new is the 2xx response, all other status codes this should be None
+    """
+
+    def __init__(self):
+        self.status_code = None
+        self.schema = None
 
 
 class FluentNew(object):
@@ -151,7 +163,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_types()
         self._build_api_interface()
         self._build_request_interfaces()
-        self._build_component_interfaces()
+        self._write_component_interfaces()
+        self._write_response_interfaces()
         self._close_fp()
 
     def _write_package_docstring(self, info_object):
@@ -173,7 +186,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """Writes the base wrapper go code"""
         line = 'import {pb_pkg_name} "{go_sdk_pkg_dir}/{pb_pkg_name}"'.format(pb_pkg_name=self._protobuf_package_name, go_sdk_pkg_dir=self._go_sdk_package_dir)
         self._write(line)
+        self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
+        self._write('import "github.com/ghodss/yaml"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
@@ -185,47 +200,73 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
 
     def _get_internal_name(self, openapi_name):
-        return openapi_name[0].lower() + openapi_name[1:].replace("_", "").replace(".", "")
+        name = self._get_external_struct_name(openapi_name)
+        return name[0].lower() + name[1:]
 
-    def _get_external_name(self, openapi_name):
-        pieces = openapi_name.replace(".", "").split("_")
+    def _get_external_field_name(self, openapi_name):
         external_name = ""
-        for piece in pieces:
-            external_name += piece[0].upper()
-            if len(external_name) > 0:
-                external_name += piece[1:]
+        for piece in openapi_name.replace(".", "").split("_"):
+            for i in range(len(piece)):
+                if i == 0 and piece[i].isdigit() is False:
+                    external_name += piece[i].upper()
+                elif piece[i].isdigit():
+                    if "_" + piece[i] in openapi_name:
+                        external_name += "_" + piece[i]
+                    else:
+                        external_name += piece[i]
+                elif external_name[-1].isdigit():
+                    external_name += piece[i].upper()
+                else:
+                    external_name += piece[i]
         if external_name in ["String"]:
             external_name += "_"
         return external_name
 
-    def _get_external_field_name(self, openapi_name):
-        return self._get_external_name(openapi_name) + "_"
+    def _get_external_struct_name(self, openapi_name):
+        return self._get_external_field_name(openapi_name).replace("_", "")
 
     def _build_api_interface(self):
         self._api.internal_struct_name = """{internal_name}Api""".format(internal_name=self._get_internal_name(self._go_sdk_package_name))
-        self._api.external_interface_name = """{external_name}Api""".format(external_name=self._get_external_name(self._go_sdk_package_name))
-        for _, path_object in self._openapi["paths"].items():
-            for _, path_item_object in path_object.items():
-                ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
-                if len(ref) == 1:
-                    new = FluentNew()
-                    new.schema_name = self._get_schema_object_name_from_ref(ref[0].value)
-                    new.schema_object = self._get_schema_object_from_ref(ref[0].value)
-                    new.interface = self._get_external_name(new.schema_name)
-                    new.struct = self._get_internal_name(new.schema_name)
-                    new.method = """New{interface}() {interface}""".format(interface=new.interface)
-                    if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
-                        self._api.external_new_methods.append(new)
-                    rpc = FluentRpc()
-                    rpc.operation_name = self._get_external_name(path_item_object["operationId"])
-                    rpc.method = """{operation_name}({struct} {interface}) error""".format(
-                        operation_name=rpc.operation_name, struct=new.struct, interface=new.interface
-                    )
-                    rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
-                        pb_pkg_name=self._protobuf_package_name, operation_name=rpc.operation_name, interface=new.interface, struct=new.struct
-                    )
-                    if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
-                        self._api.external_rpc_methods.append(rpc)
+        self._api.external_interface_name = """{external_name}Api""".format(external_name=self._get_external_struct_name(self._go_sdk_package_name))
+        for operation_id in self._get_parser("$.paths..operationId").find(self._openapi):
+            path_item_object = operation_id.context.value
+            rpc = FluentRpc()
+            rpc.operation_name = self._get_external_struct_name(operation_id.value)
+            if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
+                self._api.external_rpc_methods.append(rpc)
+            ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
+            if len(ref) == 1:
+                new = FluentNew()
+                new.schema_name = self._get_schema_object_name_from_ref(ref[0].value)
+                new.schema_object = self._get_schema_object_from_ref(ref[0].value)
+                new.interface = self._get_external_struct_name(new.schema_name)
+                new.struct = self._get_internal_name(new.schema_name)
+                new.method = """New{interface}() {interface}""".format(interface=new.interface)
+                if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
+                    self._api.external_new_methods.append(new)
+                rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
+                    pb_pkg_name=self._protobuf_package_name,
+                    operation_name=rpc.operation_name,
+                    interface=new.interface,
+                    struct=new.struct,
+                )
+                rpc.method = """{operation_name}({struct} {interface}) ({operation_response_name}Response_StatusCode200, error)""".format(
+                    operation_name=rpc.operation_name,
+                    operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                    struct=new.struct,
+                    interface=new.interface,
+                )
+            else:
+                rpc.method = """{operation_name}() ({operation_response_name}Response_StatusCode200, error)""".format(
+                    operation_name=rpc.operation_name,
+                    operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                )
+            for ref in self._get_parser("$..responses").find(path_item_object):
+                for status_code, schema in ref.value.items():
+                    response = FluentRpcResponse()
+                    response.status_code = status_code
+                    response.schema = schema
+                    rpc.responses.append(response)
 
         # write the go code
         self._write(
@@ -286,29 +327,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             )
         for rpc in self._api.external_rpc_methods:
+            error_handling = ""
+            for response in rpc.responses:
+                if response.status_code.startswith("2"):
+                    continue
+                error_handling += """if resp.GetStatusCode_{status_code}() != nil {{
+                        data, _ := yaml.Marshal(resp.GetStatusCode_400())
+                        return nil, fmt.Errorf(string(data))
+                    }}
+                    """.format(
+                    status_code=response.status_code,
+                )
+            error_handling += 'return nil, fmt.Errorf("Response not implemented")'
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     if err := api.grpcConnect(); err != nil {{
-                        return err
+                        return nil, err
                     }}
                     request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
-                    client, err := api.grpcClient.{operation_name}(ctx, &request)
+                    resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
-                        return err
+                        return nil, err
                     }}
-                    resp, _ := client.Recv()
-                    if resp.GetStatusCode_200() == nil {{
-                        return fmt.Errorf("fail")
+                    if resp.GetStatusCode_200() != nil {{
+                        return &{operation_response_name}ResponseStatusCode200{{obj: resp.GetStatusCode_200()}}, nil
                     }}
-                    return nil
+                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=rpc.method,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
+                    operation_response_name=self._get_internal_name(rpc.operation_name),
+                    error_handling=error_handling,
                 )
             )
 
@@ -316,13 +370,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for new in self._api.external_new_methods:
             self._build_interface(new)
 
-    def _build_component_interfaces(self):
+    def _write_component_interfaces(self):
         while True:
             components = [component for _, component in self._api.components.items() if component.generated is False]
             if len(components) == 0:
                 break
             for component in components:
                 self._build_interface(component)
+
+    def _write_response_interfaces(self):
+        for rpc in self._api.external_rpc_methods:
+            for response in rpc.responses:
+                if response.status_code.startswith("2") is False:
+                    continue
+                new = FluentNew()
+                new.schema_object = response.schema
+                new.struct = "{operation_name}ResponseStatusCode{status_code}".format(
+                    operation_name=self._get_internal_name(rpc.operation_name),
+                    status_code=response.status_code,
+                )
+                new.interface = "{operation_name}Response_StatusCode{status_code}".format(
+                    operation_name=rpc.operation_name,
+                    status_code=response.status_code,
+                )
+                self._build_interface(new)
 
     def _build_interface(self, new):
         self._write(
@@ -334,14 +405,36 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj.obj
             }}
 
-            func (obj *{struct}) Yaml() string {{
-                data, _ := yaml.Marshal(obj.msg())
+            func (obj *{struct}) ToYaml() string {{
+                data, err := json.Marshal(obj.msg())
+                if err != nil {{
+                    panic(err)
+                }}
+                data, err = yaml.JSONToYAML(data)
+                if err != nil {{
+                    panic(err)
+                }}
                 return string(data)
             }}
 
-            func (obj *{struct}) Json() string {{
-                data, _ := json.Marshal(obj.msg())
+            func (obj *{struct}) FromYaml(value string) error {{
+                data, err := yaml.YAMLToJSON([]byte(value))
+                if err != nil {{
+                    return err
+                }}
+                return json.Unmarshal(data, obj.msg())
+            }}
+
+            func (obj *{struct}) ToJson() string  {{
+                data, err := json.Marshal(obj.msg())
+                if err != nil {{
+                    panic(err)
+                }}
                 return string(data)
+            }}
+
+            func (obj *{struct}) FromJson(value string) error {{
+                return json.Unmarshal([]byte(value), obj.msg())
             }}
         """.format(
                 struct=new.struct,
@@ -350,7 +443,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
         self._build_setters_getters(new)
-        interfaces = ["Yaml() string", "Json() string"]
+        interfaces = [
+            "ToYaml() string",
+            "ToJson() string",
+            "FromYaml(value string) error",
+            "FromJson(value string) error",
+        ]
         for field in new.interface_fields:
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
@@ -379,14 +477,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif field.isArray:
             if field.struct:
                 body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = []*{pb_pkg_name}.{external_struct}{{}}
+                        obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
-                    return &{struct}List{{obj: obj}}
+                    return &{parent}{interface}Iter{{obj: obj}}
                 """.format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
-                    external_struct=field.external_struct,
-                    struct=field.struct,
+                    pb_struct=field.external_struct,
+                    interface=field.external_struct,
+                    parent=new.struct,
                 )
             else:
                 body = """if obj.obj.{name} == nil {{
@@ -403,13 +502,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif field.struct is not None:
             if field.isPointer:
                 body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = &{pb_pkg_name}.{external_struct}{{}}
+                        obj.obj.{name} = &{pb_pkg_name}.{pb_struct}{{}}
                     }}
                     return &{struct}{{obj: obj.obj.{name}}}
                 """.format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
-                    external_struct=field.external_struct,
+                    pb_struct=field.external_struct,
                     struct=field.struct,
                 )
             else:
@@ -478,24 +577,33 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
+        interface_name = new.interface + field.external_struct + "Iter"
+        if interface_name in self._api.components:
+            return
+        new_iter = FluentNew()
+        new_iter.schema_name = interface_name
+        new_iter.interface = interface_name
+        new_iter.internal_struct = interface_name[0].lower() + interface_name[1:]
+        new_iter.generated = True
+        self._api.components[interface_name] = new_iter
         self._write(
             """
-            type {field_internal_struct}List struct {{
+            type {internal_struct} struct {{
                 obj *{parent_internal_struct}
             }}
 
-            type {field_external_struct}List interface {{
+            type {interface} interface {{
                 Add() {field_external_struct}
                 Items() {field_type}
             }}
 
-            func (obj *{field_internal_struct}List) Add() {field_external_struct} {{
+            func (obj *{internal_struct}) Add() {field_external_struct} {{
                 newObj := &{pb_pkg_name}.{field_external_struct}{{}}
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 return &{field_internal_struct}{{obj: newObj}}
             }}
 
-            func (obj *{field_internal_struct}List) Items() {field_type} {{
+            func (obj *{internal_struct}) Items() {field_type} {{
                 slice := {field_type}{{}}
                 for _, item := range obj.obj.obj.{field_name} {{
                     slice = append(slice, &{field_internal_struct}{{obj: item}})
@@ -503,6 +611,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return slice
             }}
             """.format(
+                internal_struct=new_iter.internal_struct,
+                interface=new_iter.interface,
                 field_internal_struct=field.struct,
                 parent_internal_struct=new.struct,
                 field_external_struct=field.external_struct,
@@ -522,21 +632,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field = FluentField()
             field.schema = property_schema
             field.description = self._get_description(property_schema)
-            field.name = self._get_external_name(property_name)
+            field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
             field.getter_method = "{name}() {ftype}".format(
-                name=field.name,
+                name=self._get_external_struct_name(field.name),
                 ftype=field.type,
             )
             if "$ref" in property_schema:
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
-                field.external_struct = self._get_external_name(schema_name)
+                field.external_struct = self._get_external_struct_name(schema_name)
             if field.type in self._oapi_go_types.values():
                 field.setter_method = "Set{name}(value {ftype}) {interface}".format(
-                    name=field.name,
+                    name=self._get_external_struct_name(field.name),
                     ftype=field.type,
                     interface=fluent_new.interface,
                 )
@@ -546,19 +656,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     schema_name = self._get_schema_object_name_from_ref(property_schema["items"]["$ref"])
                     field.isArray = True
                     field.struct = self._get_internal_name(schema_name)
-                    field.external_struct = self._get_external_name(schema_name)
-                    field.adder_method = "Add() {external_struct}List".format(
-                        name=field.name,
+                    field.external_struct = self._get_external_struct_name(schema_name)
+                    field.adder_method = "Add() {parent}{external_struct}Iter".format(
+                        parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
                     field.isOptional = False
-                    field.getter_method = "{name}() {external_struct}List".format(
-                        name=field.name,
+                    field.getter_method = "{name}() {parent}{external_struct}Iter".format(
+                        name=self._get_external_struct_name(field.name),
+                        parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
                 else:
                     field.setter_method = "Set{name}(value {ftype}) {interface}".format(
-                        name=field.name,
+                        name=self._get_external_struct_name(field.name),
                         ftype=field.type,
                         interface=fluent_new.interface,
                     )
@@ -599,7 +710,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new.schema_object = schema_object
                 new.schema_name = schema_object_name
                 new.struct = self._get_internal_name(schema_object_name)
-                new.interface = self._get_external_name(schema_object_name)
+                new.interface = self._get_external_struct_name(schema_object_name)
                 self._api.components[new.schema_name] = new
             go_type = new.interface
         else:

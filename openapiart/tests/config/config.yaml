@@ -3,8 +3,20 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [a, b, c]
+      required: [response, a, b, c]
       properties:
+        ieee_802_1qbb:
+          type: boolean
+        space_1:
+          type: integer
+        full_duplex_100_mb:
+          type: integer
+        response:
+          description: |-
+            Indicate to the server what response should be returned
+          type: string
+          enum: [status_200, status_400, status_500]
+          default: status_200
         a:
           description: |-
             Small single line description
@@ -189,3 +201,13 @@ components:
       properties:
         required_param:
           type: string
+
+    Update.Config:
+      description: "Object to Test required Parameter"
+      type: object
+      properties:
+        g:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: '#/components/schemas/GObject'

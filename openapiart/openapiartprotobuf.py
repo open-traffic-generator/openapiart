@@ -8,7 +8,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
         self._filename = os.path.normpath(os.path.join(self._output_dir, "{}.proto".format(self._protobuf_file_name)))
         self.default_indent = "  "
-        self._custom_id = 50000
+        self._custom_id = 60000
         self._init_fp(self._filename)
 
     def generate(self, openapi):
@@ -87,14 +87,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                                 field_type = "bytes"
                             self._write("{} {} = 1;".format(field_type, self._lowercase(field_type)), indent=2)
                     self._write("}", indent=1)
-            self._write("oneof statuscode {", indent=1)
+            self._write()
             id = 1
             for detail_message in detail_messages:
                 field_type = detail_message.replace(".", "")
                 field_name = self._lowercase(field_type)
-                self._write("{} {} = {};".format(field_type, field_name, id), indent=2)
+                self._write("optional {} {} = {};".format(field_type, field_name, id), indent=1)
                 id += 1
-            self._write("}", indent=1)
             self._write("}")
 
     def _get_message_name(self, ref):
@@ -298,7 +297,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """ """
         operation = self._get_operation(path_item_object)
         print("writing rpc {}".format(operation.rpc))
-        line = "rpc {}({}) returns ({}{}) {{".format(operation.rpc, operation.request, "stream " if operation.stream else "", operation.response)
+        line = "rpc {}({}) returns ({}{}) {{".format(operation.rpc, operation.request, "", operation.response)
         self._write(line, indent=1)
         self._write('option (rpc_meta).description = "{}";'.format(self._get_description(path_item_object)), indent=2)
         self._write("}", indent=1)
