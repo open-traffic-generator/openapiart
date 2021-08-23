@@ -338,7 +338,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                     status_code=response.status_code,
                 )
-            error_handling += 'return nil, fmt.Errorf("Response not implemented")'
+            error_handling += 'return nil, fmt.Errorf("response not implemented")'
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     if err := api.grpcConnect(); err != nil {{
