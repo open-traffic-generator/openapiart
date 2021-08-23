@@ -198,9 +198,7 @@ class OpenApiValidator(object):
         try:
             if len(mac) != 17:
                 return False
-            return all([
-                0 <= int(oct, 16) <= 255 for oct in mac.split(":")
-            ])
+            return all([0 <= int(oct, 16) <= 255 for oct in mac.split(":")])
         except Exception:
             return False
 
@@ -233,10 +231,7 @@ class OpenApiValidator(object):
         else:
             ip = ip.replace("::", ":0:")
         try:
-            return all([
-                True if (0 <= int(oct, 16) <= 65535) and (1 <= len(oct) <= 4) else False
-                for oct in ip.split(":")
-            ])
+            return all([True if (0 <= int(oct, 16) <= 65535) and (1 <= len(oct) <= 4) else False for oct in ip.split(":")])
         except Exception:
             return False
 
@@ -265,7 +260,7 @@ class OpenApiValidator(object):
 
     def validate_string(self, value):
         return isinstance(value, (str, unicode))
-    
+
     def validate_bool(self, value):
         return isinstance(value, bool)
 
@@ -275,26 +270,15 @@ class OpenApiValidator(object):
         v_obj = getattr(self, "validate_{}".format(itemtype), None)
         if v_obj is None:
             raise AttributeError("{} is not a valid attribute".format(itemtype))
-        return [
-            v_obj(item, min, max) if itemtype == 'integer' else v_obj(item)
-            for item in value
-        ]
-    
+        return [v_obj(item, min, max) if itemtype == "integer" else v_obj(item) for item in value]
+
     def validate_binary(self, value):
         if value is None or not isinstance(value, (str, unicode)):
             return False
-        return all([
-            True if int(bin) == 0 or int(bin) == 1 else False
-            for bin in value
-        ])
-    
+        return all([True if int(bin) == 0 or int(bin) == 1 else False for bin in value])
+
     def types_validation(self, value, type_, err_msg, itemtype=None, min=None, max=None):
-        type_map = {
-            int: "integer", str: "string",
-            float: "float", bool: "bool",
-            list: "list", "int64": "integer",
-            "int32": "integer", "double": "float"
-        }
+        type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "integer", "int32": "integer", "double": "float"}
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -303,16 +287,13 @@ class OpenApiValidator(object):
         if v_obj is None:
             msg = "{} is not a valid or unsupported format".format(type_)
             raise TypeError(msg)
-        if type_ == 'list':
+        if type_ == "list":
             verdict = v_obj(value, itemtype, min, max)
             if all(verdict) is True:
                 return
-            err_msg = "{} \n {} are not valid".format(
-                err_msg,
-                [value[index] for index, item in enumerate(verdict) if item is False]
-            )
+            err_msg = "{} \n {} are not valid".format(err_msg, [value[index] for index, item in enumerate(verdict) if item is False])
             verdict = False
-        elif type_ == 'integer':
+        elif type_ == "integer":
             verdict = v_obj(value, min, max)
             if verdict is True:
                 return
@@ -321,9 +302,7 @@ class OpenApiValidator(object):
                 min_max = ", expected min {}".format(min)
             if max is not None:
                 min_max = min_max + ", expected max {}".format(max)
-            err_msg = "{} \n got {} of type {} {}".format(
-                err_msg, value, type(value), min_max
-            )
+            err_msg = "{} \n got {} of type {} {}".format(err_msg, value, type(value), min_max)
         else:
             verdict = v_obj(value)
         if verdict is False:
@@ -463,14 +442,18 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self.__deepcopy__(None)
 
     def _validate_required(self):
-        """Validates the required properties are set"""
+        """Validates the required properties are set
+        Use getattr as it will set any defaults prior to validating
+        """
         if getattr(self, "_REQUIRED", None) is None:
             return
-        for p in self._REQUIRED:
-            if p in self._properties and self._properties[p] is not None:
-                continue
-            msg = "{} is a mandatory property of {}" " and should not be set to None".format(p, self.__class__)
-            raise ValueError(msg)
+        for name in self._REQUIRED:
+            if getattr(self, name, None) is None:
+                msg = "{} is a mandatory property of {}" " and should not be set to None".format(
+                    name,
+                    self.__class__,
+                )
+                raise ValueError(msg)
 
     def _validate_types(self, property_name, property_value):
         common_data_types = [list, str, int, float, bool]
@@ -481,20 +464,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if property_value is None and property_name not in self._DEFAULTS and property_name not in self._REQUIRED:
             return
         if "enum" in details and property_value not in details["enum"]:
-            msg = "property {} shall be one of these" \
-                " {} enum, but got {} at {}"
-            raise TypeError(msg.format(
-                property_name, details["enum"], property_value, self.__class__
-            ))
-        if details["type"] in common_data_types and \
-                "format" not in details:
-            msg = "property {} shall be of type {} at {}".format(
-                    property_name, details["type"], self.__class__
-                )
-            self.types_validation(
-                property_value, details["type"], msg, details.get("itemtype"),
-                details.get("minimum"), details.get("maximum")
-            )
+            msg = "property {} shall be one of these" " {} enum, but got {} at {}"
+            raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
+        if details["type"] in common_data_types and "format" not in details:
+            msg = "property {} shall be of type {} at {}".format(property_name, details["type"], self.__class__)
+            self.types_validation(property_value, details["type"], msg, details.get("itemtype"), details.get("minimum"), details.get("maximum"))
 
         if details["type"] not in common_data_types:
             class_name = details["type"]
@@ -505,14 +479,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 msg = "property {} shall be of type {}," " but got {} at {}"
                 raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
         if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(
-                property_value, details["format"], self.__class__
-            )
+            msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
             _type = details["type"] if details["type"] is list else details["format"]
-            self.types_validation(
-                property_value, _type, msg, details["format"],
-                details.get("minimum"), details.get("maximum")
-            )
+            self.types_validation(property_value, _type, msg, details["format"], details.get("minimum"), details.get("maximum"))
 
     def validate(self):
         self._validate_required()

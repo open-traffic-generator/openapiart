@@ -3,8 +3,16 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [response, a, b, c]
+      required: [response, a, b, c, required_object]
       properties:
+        required_object:
+          description: |-
+            A required object that MUST be generated as such.
+          $ref: '#/components/schemas/EObject'
+        optional_object:
+          description: |-
+            An optional object that MUST be generated as such.
+          $ref: '#/components/schemas/EObject'
         ieee_802_1qbb:
           type: boolean
         space_1:

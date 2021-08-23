@@ -153,3 +153,29 @@ func TestLObject(t *testing.T) {
 	assert.Equal(t, "0x12", config.L().Hex())
 	log.Print(l.ToJson(), l.ToYaml())
 }
+
+// TestRequiredObject
+//  This test MUST create the underlying protobuf EObject
+//  The generated wrapper get accessor must create the underlying protobuf EObject
+//  Confirm the underlying protobuf EObject has been created by setting the
+//  properties of the returned RequiredObject
+func TestRequiredObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	r := config.RequiredObject()
+	r.SetEA(22.2)
+	r.SetEB(66.1)
+}
+
+// TestOptionalObject
+//  This test MUST create the underlying protobuf EObject
+//  The generated wrapper get accessor must create the underlying protobuf EObject
+//  Confirm the underlying protobuf EObject has been created by setting the
+//  properties of the returned OptionalObject
+func TestOptionalObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	r := config.OptionalObject()
+	r.SetEA(22.2)
+	r.SetEB(66.1)
+}

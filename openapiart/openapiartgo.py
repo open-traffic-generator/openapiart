@@ -500,22 +500,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     type=field.type,
                 )
         elif field.struct is not None:
-            if field.isPointer:
-                body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = &{pb_pkg_name}.{pb_struct}{{}}
-                    }}
-                    return &{struct}{{obj: obj.obj.{name}}}
-                """.format(
-                    name=field.name,
-                    pb_pkg_name=self._protobuf_package_name,
-                    pb_struct=field.external_struct,
-                    struct=field.struct,
-                )
-            else:
-                body = "return &{struct}{{obj: obj.obj.{name}}}".format(
-                    struct=field.struct,
-                    name=field.name,
-                )
+            # at this time proto generation ignores the optional keyword 
+            # if the type is an object
+            body = """if obj.obj.{name} == nil {{
+                    obj.obj.{name} = &{pb_pkg_name}.{pb_struct}{{}}
+                }}
+                return &{struct}{{obj: obj.obj.{name}}}
+            """.format(
+                name=field.name,
+                pb_pkg_name=self._protobuf_package_name,
+                pb_struct=field.external_struct,
+                struct=field.struct,
+            )
         elif field.isPointer:
             body = """return *obj.obj.{name}""".format(name=field.name)
         else:
