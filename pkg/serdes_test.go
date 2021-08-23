@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/open-traffic-generator/openapiart/pkg"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ c: 33
 `
 
 func TestFromYaml(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	c := api.NewPrefixConfig()
 	err := c.FromYaml(yaml_config)
 	if err != nil {
@@ -30,7 +30,7 @@ func TestFromYaml(t *testing.T) {
 
 func TestFromJson(t *testing.T) {
 	var json_config = `{"a": "asdf", "b": 22.2,	"c": 33}`
-	api := NewApi()
+	api := openapiart.NewApi()
 	c := api.NewPrefixConfig()
 	err := c.FromJson(json_config)
 	if err != nil {

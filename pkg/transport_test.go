@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	. "github.com/open-traffic-generator/openapiart/pkg"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,14 +17,14 @@ func init() {
 }
 
 func TestApi(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	assert.NotNil(t, api)
 }
 
 func TestGrpcTransport(t *testing.T) {
 	location := "127.0.0.1:5050"
 	timeout := 10
-	api := NewApi()
+	api := openapiart.NewApi()
 	transport := api.NewGrpcTransport().SetLocation("127.0.0.1:5050").SetRequestTimeout(10)
 	assert.NotNil(t, transport)
 	assert.NotNil(t, transport.Location(), location)
@@ -34,7 +34,7 @@ func TestGrpcTransport(t *testing.T) {
 func TestHttpTransport(t *testing.T) {
 	location := "https://127.0.0.1:5050"
 	verify := false
-	api := NewApi()
+	api := openapiart.NewApi()
 	transport := api.NewHttpTransport().SetLocation(location).SetVerify(verify)
 	assert.NotNil(t, transport)
 	assert.NotNil(t, transport.Location(), location)
@@ -42,20 +42,20 @@ func TestHttpTransport(t *testing.T) {
 }
 
 func TestNewPrefixConfig(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	assert.NotNil(t, config)
 }
 
 func TestPrefixConfigSetName(t *testing.T) {
-	config := NewApi().NewPrefixConfig()
+	config := openapiart.NewApi().NewPrefixConfig()
 	name := "asdfasdf"
 	config.SetName(name)
 	assert.Equal(t, name, config.Name())
 }
 
 func TestNewPrefixConfigSimpleTypes(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetIeee8021Qbb(true)
 	config.SetFullDuplex100Mb(2)
@@ -70,7 +70,7 @@ func TestNewPrefixConfigSimpleTypes(t *testing.T) {
 }
 
 func TestGetObject(t *testing.T) {
-	config := NewApi().NewPrefixConfig()
+	config := openapiart.NewApi().NewPrefixConfig()
 	e := config.SetName("PrefixConfig Name").E().SetName("E Name")
 	f := config.F().SetFA("a f_a value")
 	assert.NotNil(t, config.E().Name())
@@ -81,7 +81,7 @@ func TestGetObject(t *testing.T) {
 }
 
 func TestAddObject(t *testing.T) {
-	config := NewApi().NewPrefixConfig()
+	config := openapiart.NewApi().NewPrefixConfig()
 	config.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 	config.G().Add().SetName("G2")
 	config.G().Add().SetName("G3").SetGA("3 is not 2 or 1 or none")
@@ -98,11 +98,29 @@ func TestAddObject(t *testing.T) {
 }
 
 func TestSetConfigSuccess(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
 	c := api.NewPrefixConfig()
 	c.SetA("asdfasdf").SetB(22.2).SetC(33).E().SetEA(44.4)
 	resp, err := api.SetConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestGetConfigSuccess(t *testing.T) {
+	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	resp, err := api.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestUpdateConfigSuccess(t *testing.T) {
+	api := openapiart.NewApi()
+	c := api.NewUpdateConfig()
+	c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	resp, err := api.UpdateConfig(c)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }

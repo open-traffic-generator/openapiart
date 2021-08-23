@@ -147,6 +147,26 @@ def test():
         else:
             print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
 
+    go_coverage_threshold = 35
+    # TODO: not able to run the test from main directory
+    os.chdir("pkg")
+    try:
+        run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"])
+    finally:
+        os.chdir("..")
+
+    with open("pkg/coverage.out") as fp:
+        out = fp.read()
+        result = re.findall(r"coverage:.*\s(\d+)", out)[0]
+        if int(result) < go_coverage_threshold:
+            raise Exception(
+                "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
+                    go_coverage_threshold, result))
+        else:
+            print(
+                "Go tests achieved {1}% ,Coverage thresold {0}%".format(
+                    go_coverage_threshold, result))
+
 
 def dist():
     clean()
