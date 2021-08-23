@@ -106,3 +106,21 @@ func TestSetConfigSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
+
+func TestGetConfigSuccess(t *testing.T) {
+	api := NewApi()
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	resp, err := api.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestUpdateConfigSuccess(t *testing.T) {
+	api := NewApi()
+	c := api.NewUpdateConfig()
+	c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	resp, err := api.UpdateConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}

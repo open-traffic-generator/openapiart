@@ -2,78 +2,14 @@ package openapiart_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
-	"net"
 	"reflect"
 	"testing"
 
 	. "github.com/open-traffic-generator/openapiart/pkg"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
-
-var (
-	testPort   uint         = 40051
-	testServer *grpc.Server = nil
-)
-
-type server struct {
-	sanity.UnimplementedOpenapiServer
-}
-
-func StartMockServer() error {
-	if testServer != nil {
-		log.Print("MockServer: Server already running")
-		return nil
-	}
-
-	addr := fmt.Sprintf("[::]:%d", testPort)
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("MockServer: Server failed to listen on address %s", addr))
-	}
-
-	svr := grpc.NewServer()
-	log.Print(fmt.Sprintf("MockServer: Server started and listening on address %s", addr))
-
-	sanity.RegisterOpenapiServer(svr, &server{})
-	log.Print("MockServer: Server subscribed with gRPC Protocol Service")
-
-	go func() {
-		if err := svr.Serve(lis); err != nil {
-			log.Fatal("MockServer: Server failed to serve for incoming gRPC request.")
-		}
-	}()
-
-	testServer = svr
-	return nil
-}
-
-func init() {
-	var err error
-	if err = StartMockServer(); err != nil {
-		log.Fatal("Mock Server Init failed")
-	}
-}
-
-func (s *server) SetConfig(req *sanity.SetConfigRequest, stream sanity.Openapi_SetConfigServer) error {
-	for i := 0; i < 1; i++ {
-		resp := &sanity.SetConfigResponse{
-			Statuscode: &sanity.SetConfigResponse_StatusCode_500{
-				StatusCode_500: &sanity.SetConfigResponse_StatusCode500{
-					Error: &sanity.Error{
-						Errors: []string{"server error"},
-					},
-				},
-			},
-		}
-		stream.Send(resp)
-	}
-	return nil
-}
 
 // JSONBytesEqual compares the JSON in two byte slices.
 func JSONBytesEqual(a, b []byte) (bool, error) {
@@ -98,7 +34,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.K().EObject().SetEA(77.7).SetEB(2.0)
 	config.K().FObject().SetFA("asdf")
 	l := config.L()
-	l.SetString_("test")
+	l.SetString("test")
 	l.SetInteger(80)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)
@@ -128,7 +64,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.MacPattern().Mac().Decrement().SetStart("00:00:00:00:00:0a").SetStart("00:00:00:00:00:01").SetCount(100)
 	config.ChecksumPattern().Checksum().SetCustom(64)
 
-	out := config.Json()
+	out := config.ToJson()
 	actualJson := []byte(out)
 	bs, err := ioutil.ReadFile("expected.json")
 	if err != nil {
@@ -138,19 +74,8 @@ func TestJsonSerialization(t *testing.T) {
 	expectedJson := bs
 	eq, _ := JSONBytesEqual(actualJson, expectedJson)
 	assert.Equal(t, eq, true)
-	yaml := config.Yaml()
+	yaml := config.ToYaml()
 	log.Print(yaml)
-}
-
-func TestSetConfigResponse(t *testing.T) {
-	location := "127.0.0.1:40051"
-	timeout := 10
-	api := NewApi()
-	api.NewGrpcTransport().SetLocation(location).SetRequestTimeout(timeout)
-	config := api.NewPrefixConfig()
-	config.SetName("Anish").SetA("hello").SetB(12.2)
-	res := api.SetConfig(config)
-	log.Print(res)
 }
 
 func TestSimpleTypes(t *testing.T) {
@@ -181,7 +106,7 @@ func TestEObject(t *testing.T) {
 	assert.Equal(t, eb, config.E().EB())
 	assert.Equal(t, mparam1, config.E().MParam1())
 	assert.Equal(t, maparam2, config.E().MParam2())
-	log.Print(config.E().Json(), config.E().Yaml())
+	log.Print(config.E().ToJson(), config.E().ToYaml())
 }
 
 func TestGObject(t *testing.T) {
@@ -201,7 +126,7 @@ func TestGObject(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	log.Print(g1.Json(), g1.Yaml())
+	log.Print(g1.ToJson(), g1.ToYaml())
 }
 
 func TestLObject(t *testing.T) {
@@ -210,7 +135,7 @@ func TestLObject(t *testing.T) {
 	api := NewApi()
 	config := api.NewPrefixConfig()
 	l := config.L()
-	l.SetString_("test")
+	l.SetString("test")
 	l.SetInteger(80)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)
@@ -218,7 +143,7 @@ func TestLObject(t *testing.T) {
 	l.SetIpv4("1.1.1.1")
 	l.SetIpv6("2000::1")
 	l.SetHex("0x12")
-	assert.Equal(t, "test", config.L().String_())
+	assert.Equal(t, "test", config.L().String())
 	assert.Equal(t, int_, config.L().Integer())
 	assert.Equal(t, float_, config.L().Float())
 	assert.Equal(t, 1.7976931348623157e+308, config.L().Double())
@@ -226,5 +151,5 @@ func TestLObject(t *testing.T) {
 	assert.Equal(t, "1.1.1.1", config.L().Ipv4())
 	assert.Equal(t, "2000::1", config.L().Ipv6())
 	assert.Equal(t, "0x12", config.L().Hex())
-	log.Print(l.Json(), l.Yaml())
+	log.Print(l.ToJson(), l.ToYaml())
 }

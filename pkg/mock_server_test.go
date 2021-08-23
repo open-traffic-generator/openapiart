@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	. "github.com/open-traffic-generator/openapiart/pkg/sanity"
 
 	"google.golang.org/grpc"
@@ -74,6 +75,22 @@ func (s *server) SetConfig(ctx context.Context, req *SetConfigRequest) (*SetConf
 				Bytes: []byte("SetConfig has completed successfully"),
 			},
 		}
+	}
+	return resp, nil
+}
+
+func (s *server) GetConfig(ctx context.Context, req *empty.Empty) (*GetConfigResponse, error) {
+	resp := &GetConfigResponse{
+		StatusCode_200: &GetConfigResponse_StatusCode200{},
+	}
+	return resp, nil
+}
+
+func (s *server) UpdateConfig(ctx context.Context, req *UpdateConfigRequest) (*UpdateConfigResponse, error) {
+	resp := &UpdateConfigResponse{
+		StatusCode_200: &UpdateConfigResponse_StatusCode200{
+			Bytes: []byte("UpdateConfig has completed successfully"),
+		},
 	}
 	return resp, nil
 }
