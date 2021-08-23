@@ -2,6 +2,7 @@ package openapiart_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"reflect"
@@ -178,4 +179,12 @@ func TestOptionalObject(t *testing.T) {
 	r := config.OptionalObject()
 	r.SetEA(22.2)
 	r.SetEB(66.1)
+}
+
+func TestResponseEnum(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	assert.Equal(t, config.Response(), openapiart.PrefixConfigResponse.STATUS_400)
+	fmt.Println("response: ", config.Response())
 }
