@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/open-traffic-generator/openapiart/pkg"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +24,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 }
 
 func TestJsonSerialization(t *testing.T) {
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
@@ -84,7 +84,7 @@ func TestSimpleTypes(t *testing.T) {
 	var c int32 = 1
 	h := true
 	i := []byte("sample string")
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("asdfg").SetB(12.2).SetC(1).SetH(true).SetI([]byte("sample string"))
 	assert.Equal(t, a, config.A())
@@ -99,7 +99,7 @@ func TestEObject(t *testing.T) {
 	eb := 1.2
 	mparam1 := "Mparam1"
 	maparam2 := "Mparam2"
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	assert.Equal(t, ea, config.E().EA())
@@ -114,7 +114,7 @@ func TestGObject(t *testing.T) {
 	gb := []int32{1, 2}
 	gc := []float32{11.1, 22.2}
 	ge := []float64{1.0, 2.0}
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	g1 := config.G().Add()
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
@@ -132,7 +132,7 @@ func TestGObject(t *testing.T) {
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
 	var float_ float32 = 100.11
-	api := NewApi()
+	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	l := config.L()
 	l.SetString("test")

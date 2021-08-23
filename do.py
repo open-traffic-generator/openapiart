@@ -152,9 +152,8 @@ def test():
     os.chdir("pkg")
     try:
         run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"])
-    except:
+    finally:
         os.chdir("..")
-    os.chdir("..")
 
     with open("pkg/coverage.out") as fp:
         out = fp.read()
