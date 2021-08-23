@@ -479,8 +479,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
-                    return &{parent}{interface}Iter{{obj: obj}}
-                """.format(
+                    return &{parent}{interface}Iter{{obj: obj}}""".format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
                     pb_struct=field.external_struct,
@@ -494,23 +493,29 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     for _, item := range value {{
                         obj.obj.{name} = append(obj.obj.{name}, item)
                     }}
-                    return obj
-                """.format(
+                    return obj""".format(
                     name=field.name,
                     type=field.type,
                 )
         elif field.struct is not None:
             # at this time proto generation ignores the optional keyword
             # if the type is an object
+            set_choice = ""
+            if field.setChoiceValue is not None:
+                set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
+                    interface=new.interface,
+                    enum=field.setChoiceValue,
+                )
             body = """if obj.obj.{name} == nil {{
                     obj.obj.{name} = &{pb_pkg_name}.{pb_struct}{{}}
                 }}
-                return &{struct}{{obj: obj.obj.{name}}}
-            """.format(
+                {set_choice}
+                return &{struct}{{obj: obj.obj.{name}}}""".format(
                 name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 pb_struct=field.external_struct,
                 struct=field.struct,
+                set_choice=set_choice,
             )
         elif field.isEnum:
             enum_types = []
@@ -627,11 +632,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
             body = """obj.obj.{fieldname} = value""".format(fieldname=field.name)
+        set_choice = ""
+        if field.setChoiceValue is not None:
+            set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
+                interface=new.interface,
+                enum=field.setChoiceValue,
+            )
         self._write(
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
                 {body}
+                {set_choice}
                 return obj
             }}
             """.format(
@@ -642,6 +654,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 description=field.description,
                 fieldtype=field.type,
                 fieldstruct=field.external_struct,
+                set_choice=set_choice,
             )
         )
 
@@ -697,6 +710,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """Add new FluentField objects for each interface field"""
         if "properties" not in fluent_new.schema_object:
             return
+        choice_enums = self._get_parser("$..choice..enum").find(fluent_new.schema_object["properties"])
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
             if len(self._get_parser("$..enum").find(property_schema)) > 0 and property_schema["type"] == "array":  # temporary
                 continue
@@ -705,6 +719,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema)
+            if len(choice_enums) == 1 and property_name in choice_enums[0].value:
+                field.setChoiceValue = property_name.upper()
+            else:
+                field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
