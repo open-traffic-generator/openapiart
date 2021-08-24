@@ -1,7 +1,6 @@
 package openapiart_test
 
 import (
-	"fmt"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -9,36 +8,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var yaml_config = `a: asdf
-b: 22.2
-c: 33
-`
-
-func TestFromYaml(t *testing.T) {
+func TestPrefixConfigYamlSerDes(t *testing.T) {
 	api := openapiart.NewApi()
-	c := api.NewPrefixConfig()
-	err := c.FromYaml(yaml_config)
-	if err != nil {
-		t.Error(err)
-	} else {
-		assert.Equal(t, c.A(), "asdf")
-		assert.Equal(t, c.B(), float32(22.2))
-		assert.Equal(t, c.C(), int32(33))
-		fmt.Println(c.ToYaml())
-	}
+	c1 := api.NewPrefixConfig()
+	c1.SetA("a string").
+		SetB(22.2).
+		SetC(12).
+		SetC(50).
+		ChecksumPattern().
+		Checksum().
+		SetCustom(55)
+	c1.G().Add().SetGA("a ga string")
+	c1.E().SetEA(67.1)
+	yaml1 := c1.ToYaml()
+	c2 := api.NewPrefixConfig()
+	c2.FromYaml(yaml1)
+	yaml2 := c2.ToYaml()
+	assert.Equal(t, yaml1, yaml2)
 }
 
-func TestFromJson(t *testing.T) {
-	var json_config = `{"a": "asdf", "b": 22.2,	"c": 33}`
+func TestPrefixConfigJsonSerDes(t *testing.T) {
 	api := openapiart.NewApi()
-	c := api.NewPrefixConfig()
-	err := c.FromJson(json_config)
-	if err != nil {
-		t.Error(err)
-	} else {
-		assert.Equal(t, c.A(), "asdf")
-		assert.Equal(t, c.B(), float32(22.2))
-		assert.Equal(t, c.C(), int32(33))
-		fmt.Println(c.ToYaml())
-	}
+	c1 := api.NewPrefixConfig()
+	c1.SetA("a string").
+		SetB(22.2).
+		SetC(12).
+		SetC(50).
+		ChecksumPattern().
+		Checksum().
+		SetCustom(55)
+	c1.G().Add().SetGA("a ga string")
+	c1.E().SetEA(67.1)
+	json1 := c1.ToJson()
+	c2 := api.NewPrefixConfig()
+	c2.FromJson(json1)
+	json2 := c2.ToJson()
+	assert.Equal(t, json1, json2)
+}
+
+func TestResponseJsonSerDes(t *testing.T) {
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	c1.SetA("a string").
+		SetB(22.2).
+		SetC(12).
+		SetC(50).
+		ChecksumPattern().
+		Checksum().
+		SetCustom(55)
+	c1.G().Add().SetGA("a ga string")
+	c1.E().SetEA(67.1)
+	json1 := c1.ToJson()
+	c2 := api.NewPrefixConfig()
+	c2.FromJson(json1)
+	json2 := c2.ToJson()
+	assert.Equal(t, json1, json2)
 }
