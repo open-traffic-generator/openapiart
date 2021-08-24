@@ -1,6 +1,8 @@
 package openapiart_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -46,7 +48,7 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 	assert.Equal(t, json1, json2)
 }
 
-func TestResponseJsonSerDes(t *testing.T) {
+func TestPartialSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
 	c1.SetA("a string").
@@ -58,9 +60,20 @@ func TestResponseJsonSerDes(t *testing.T) {
 		SetCustom(55)
 	c1.G().Add().SetGA("a ga string")
 	c1.E().SetEA(67.1)
-	json1 := c1.ToJson()
+
+	// convert the configuration to a map[string]interface{}
+	var jsonMap map[string]interface{}
+	json.Unmarshal([]byte(c1.ToJson()), &jsonMap)
+
+	// extract just the e object
+	data1, _ := json.Marshal(jsonMap["e"])
+
+	// extract the first object in the g array
+	data2, _ := json.Marshal(jsonMap["g"].([]interface{})[0].(map[string]interface{}))
+
+	// create a new config that consists of just the e object and the g object
 	c2 := api.NewPrefixConfig()
-	c2.FromJson(json1)
-	json2 := c2.ToJson()
-	assert.Equal(t, json1, json2)
+	c2.E().FromJson(string(data1))
+	c2.G().Add().FromJson(string(data2))
+	fmt.Println(c2.ToYaml())
 }
