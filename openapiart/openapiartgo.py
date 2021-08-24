@@ -189,6 +189,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
         self._write('import "github.com/ghodss/yaml"')
+        self._write('import "google.golang.org/protobuf/encoding/protojson"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
@@ -406,10 +407,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToYaml() string {{
-                data, err := json.Marshal(obj.msg())
-                if err != nil {{
-                    panic(err)
+                opts := protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: false,
                 }}
+                data, err := opts.Marshal(obj.msg())
                 data, err = yaml.JSONToYAML(data)
                 if err != nil {{
                     panic(err)
@@ -422,11 +425,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if err != nil {{
                     return err
                 }}
-                return json.Unmarshal(data, obj.msg())
+                opts := protojson.UnmarshalOptions{{
+                    AllowPartial: true,
+                    DiscardUnknown: true,
+                }}
+                return opts.Unmarshal([]byte(data), obj.msg())
             }}
 
-            func (obj *{struct}) ToJson() string  {{
-                data, err := json.Marshal(obj.msg())
+            func (obj *{struct}) ToJson() string {{
+                opts := protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: false,
+                    Indent:          "  ",
+                }}
+                data, err := opts.Marshal(obj.msg())
                 if err != nil {{
                     panic(err)
                 }}
@@ -434,7 +447,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) FromJson(value string) error {{
-                return json.Unmarshal([]byte(value), obj.msg())
+                opts := protojson.UnmarshalOptions{{
+                    AllowPartial: true,
+                    DiscardUnknown: true,
+                }}
+                return opts.Unmarshal([]byte(value), obj.msg())
             }}
         """.format(
                 struct=new.struct,
