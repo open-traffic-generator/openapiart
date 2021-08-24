@@ -574,7 +574,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {body}
             }}
             """.format(
-                fieldname=field.name,
+                fieldname=self._get_external_struct_name(field.name),
                 struct=new.struct,
                 getter_method=field.getter_method,
                 body=body,
@@ -647,13 +647,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj
             }}
             """.format(
-                fieldname=field.name,
+                fieldname=self._get_external_struct_name(field.name),
                 newstruct=new.struct,
                 setter_method=field.setter_method,
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
-                fieldstruct=field.external_struct,
+                fieldstruct=new.interface,
                 set_choice=set_choice,
             )
         )
@@ -712,7 +712,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         choice_enums = self._get_parser("$..choice..enum").find(fluent_new.schema_object["properties"])
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
-            if len(self._get_parser("$..enum").find(property_schema)) > 0 and property_schema["type"] == "array":  # temporary
+            if len(self._get_parser("$.items.enum").find(property_schema)) > 0:  # temporary
                 continue
             field = FluentField()
             field.schema = property_schema
@@ -726,6 +726,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
+                field.enums.remove("unspecified")
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
             if field.isEnum:
