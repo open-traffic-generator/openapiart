@@ -183,6 +183,10 @@ func TestOptionalObject(t *testing.T) {
 }
 
 func TestResponseEnum(t *testing.T) {
+	flds := reflect.VisibleFields(reflect.TypeOf(openapiart.PrefixConfigResponse))
+	for _, fld := range flds {
+		assert.NotEqual(t, fld.Name, "UNSPECIFIED")
+	}
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
