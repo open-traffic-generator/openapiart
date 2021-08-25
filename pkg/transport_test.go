@@ -100,9 +100,9 @@ func TestAddObject(t *testing.T) {
 func TestSetConfigSuccess(t *testing.T) {
 	api := openapiart.NewApi()
 	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
-	c := api.NewPrefixConfig()
-	c.SetA("asdfasdf").SetB(22.2).SetC(33).E().SetEA(44.4)
-	resp, err := api.SetConfig(c)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
@@ -110,17 +110,26 @@ func TestSetConfigSuccess(t *testing.T) {
 func TestGetConfigSuccess(t *testing.T) {
 	api := openapiart.NewApi()
 	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
 	resp, err := api.GetConfig()
+	fmt.Println(resp.ToYaml())
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
 
 func TestUpdateConfigSuccess(t *testing.T) {
 	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
 	c := api.NewUpdateConfig()
 	c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
-	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
-	resp, err := api.UpdateConfig(c)
+	updatedConfig, err := api.UpdateConfig(c)
 	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+	assert.NotNil(t, updatedConfig)
+	fmt.Println(updatedConfig.ToYaml())
 }

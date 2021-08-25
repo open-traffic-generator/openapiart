@@ -35,7 +35,7 @@ components:
   responses:
     Success:
       '200':
-        description: 'Success with payload'
+        description: 'Standard success binary payload'
         content:
           application/octet-stream:
             schema:

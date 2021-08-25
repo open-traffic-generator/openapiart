@@ -32,6 +32,7 @@ class FluentRpcResponse(object):
     def __init__(self):
         self.status_code = None
         self.schema = None
+        self.request_return_type = None
 
 
 class FluentNew(object):
@@ -44,6 +45,7 @@ class FluentNew(object):
         self.method = None
         self.schema_name = None
         self.schema_object = None
+        self.isRpcResponse = False
         self.interface_fields = []
 
     def isOptional(self, property_name):
@@ -162,9 +164,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_common_code()
         self._write_types()
         self._build_api_interface()
+        self._build_response_interfaces()
         self._build_request_interfaces()
         self._write_component_interfaces()
-        self._write_response_interfaces()
         self._close_fp()
 
     def _write_package_docstring(self, info_object):
@@ -235,6 +237,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             rpc.operation_name = self._get_external_struct_name(operation_id.value)
             if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
                 self._api.external_rpc_methods.append(rpc)
+
+            rpc.request_return_type = "{operation_response_name}Response_StatusCode200".format(
+                operation_response_name=self._get_external_struct_name(rpc.operation_name),
+            )
+            binary_type = self._get_parser("$..responses..'200'..schema..format").find(path_item_object)
+            ref_type = self._get_parser("$..responses..'200'..schema..'$ref'").find(path_item_object)
+            if len(binary_type) == 1:
+                rpc.request_return_type = "[]byte"
+            elif len(ref_type) == 1:
+                request_return_type = self._get_schema_object_name_from_ref(ref_type[0].value)
+                rpc.request_return_type = self._get_external_struct_name(request_return_type)
+
             ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
             if len(ref) == 1:
                 new = FluentNew()
@@ -251,22 +265,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     struct=new.struct,
                 )
-                rpc.method = """{operation_name}({struct} {interface}) ({operation_response_name}Response_StatusCode200, error)""".format(
+                rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
                     operation_name=rpc.operation_name,
                     operation_response_name=self._get_external_struct_name(rpc.operation_name),
                     struct=new.struct,
                     interface=new.interface,
+                    request_return_type=rpc.request_return_type,
                 )
             else:
-                rpc.method = """{operation_name}() ({operation_response_name}Response_StatusCode200, error)""".format(
+                rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                     operation_name=rpc.operation_name,
                     operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                    request_return_type=rpc.request_return_type,
                 )
             for ref in self._get_parser("$..responses").find(path_item_object):
-                for status_code, schema in ref.value.items():
+                for status_code, resonse_object in ref.value.items():
                     response = FluentRpcResponse()
                     response.status_code = status_code
-                    response.schema = schema
+                    response.schema = self._get_parser("$..schema").find(resonse_object)[0].value
                     rpc.responses.append(response)
 
         # write the go code
@@ -340,6 +356,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     status_code=response.status_code,
                 )
             error_handling += 'return nil, fmt.Errorf("response not implemented")'
+            if rpc.request_return_type == "[]byte":
+                return_value = "resp.GetStatusCode_200().Bytes"
+            else:
+                return_value = "&{struct}{{obj: resp.GetStatusCode_200().{request_return_type}}}".format(
+                    struct=self._get_internal_name(rpc.request_return_type),
+                    request_return_type=rpc.request_return_type,
+                )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     if err := api.grpcConnect(); err != nil {{
@@ -353,7 +376,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.GetStatusCode_200() != nil {{
-                        return &{operation_response_name}ResponseStatusCode200{{obj: resp.GetStatusCode_200()}}, nil
+                        return {return_value}, nil
                     }}
                     {error_handling}
                 }}
@@ -364,6 +387,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     operation_name=rpc.operation_name,
                     operation_response_name=self._get_internal_name(rpc.operation_name),
                     error_handling=error_handling,
+                    return_value=return_value,
                 )
             )
 
@@ -379,13 +403,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
             for component in components:
                 self._build_interface(component)
 
-    def _write_response_interfaces(self):
+    def _build_response_interfaces(self):
         for rpc in self._api.external_rpc_methods:
             for response in rpc.responses:
                 if response.status_code.startswith("2") is False:
                     continue
                 new = FluentNew()
-                new.schema_object = response.schema
+                new.schema_object = {
+                    "type": "object",
+                    "properties": {"response": response.schema},
+                }
+                # if "type" in new.schema_object and new.schema_object["type"] != "object":
                 new.struct = "{operation_name}ResponseStatusCode{status_code}".format(
                     operation_name=self._get_internal_name(rpc.operation_name),
                     status_code=response.status_code,
@@ -394,9 +422,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     operation_name=rpc.operation_name,
                     status_code=response.status_code,
                 )
+                new.schema_name = self._get_external_struct_name(new.interface)
+                new.isRpcResponse = True
                 self._build_interface(new)
 
     def _build_interface(self, new):
+        if new.schema_name in self._api.components:
+            new = self._api.components[new.schema_name]
+        else:
+            self._api.components[new.schema_name] = new
+        if new.generated is True:
+            return
+        else:
+            new.generated = True
         self._write(
             """type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
@@ -486,7 +524,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_getter(new, field)
             self._write_field_setter(new, field)
             self._write_field_adder(new, field)
-        new.generated = True
 
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
@@ -581,9 +618,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             return
         elif field.isPointer:
-            body = """return *obj.obj.{fieldname}""".format(fieldname=field.name)
+            body = """return *obj.obj.{fieldname}""".format(
+                fieldname=field.name,
+            )
         else:
-            body = """return obj.obj.{fieldname}""".format(fieldname=field.name)
+            body = """return obj.obj.{fieldname}""".format(
+                fieldname=field.name,
+            )
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
@@ -743,7 +784,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
-                field.enums.remove("unspecified")
+                if "unspecified" in field.enums:
+                    field.enums.remove("unspecified")
+            if fluent_new.isRpcResponse:
+                if field.type == "[]byte":
+                    field.name = "Bytes"
+                elif "$ref" in property_schema:
+                    schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
+                    field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
             if field.isEnum:
