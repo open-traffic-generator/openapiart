@@ -15,6 +15,7 @@ import (
 var (
 	testPort   uint         = 40051
 	testServer *grpc.Server = nil
+	config     *sanity.PrefixConfig
 )
 
 type server struct {
@@ -69,7 +70,7 @@ func (s *server) SetConfig(ctx context.Context, req *sanity.SetConfigRequest) (*
 			},
 		}
 	case sanity.PrefixConfig_Response_status_200.Enum().Number():
-	default:
+		config = req.PrefixConfig
 		resp = &sanity.SetConfigResponse{
 			StatusCode_200: &sanity.SetConfigResponse_StatusCode200{
 				Bytes: []byte("SetConfig has completed successfully"),
@@ -81,7 +82,9 @@ func (s *server) SetConfig(ctx context.Context, req *sanity.SetConfigRequest) (*
 
 func (s *server) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {
 	resp := &sanity.GetConfigResponse{
-		StatusCode_200: &sanity.GetConfigResponse_StatusCode200{},
+		StatusCode_200: &sanity.GetConfigResponse_StatusCode200{
+			PrefixConfig: config,
+		},
 	}
 	return resp, nil
 }
@@ -89,7 +92,7 @@ func (s *server) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetCo
 func (s *server) UpdateConfig(ctx context.Context, req *sanity.UpdateConfigRequest) (*sanity.UpdateConfigResponse, error) {
 	resp := &sanity.UpdateConfigResponse{
 		StatusCode_200: &sanity.UpdateConfigResponse_StatusCode200{
-			Bytes: []byte("UpdateConfig has completed successfully"),
+			PrefixConfig: config,
 		},
 	}
 	return resp, nil
