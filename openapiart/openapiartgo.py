@@ -204,6 +204,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/grpc"')
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
+        self._write('import "github.com/golang/protobuf/proto"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
@@ -532,7 +533,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
-            self._build_interface(new)
+            self._write_interface(new)
 
     def _write_component_interfaces(self):
         while True:
@@ -540,7 +541,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if len(components) == 0:
                 break
             for component in components:
-                self._build_interface(component)
+                self._write_interface(component)
 
     def _build_response_interfaces(self):
         for rpc in self._api.external_rpc_methods:
@@ -565,7 +566,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new.isRpcResponse = True
                 self._api.external_new_methods.append(new)
 
-    def _build_interface(self, new):
+    def _write_interface(self, new):
         if new.schema_name in self._api.components:
             new = self._api.components[new.schema_name]
         else:
@@ -581,6 +582,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             
             func (obj *{struct}) msg() *{pb_pkg_name}.{interface} {{
                 return obj.obj
+            }}
+
+            func (obj *{struct}) ToPbText() string {{
+                return proto.MarshalTextString(obj.msg())
+            }}
+
+            func (obj *{struct}) FromPbText(value string) error {{
+                return proto.UnmarshalText(value, obj.msg())
             }}
 
             func (obj *{struct}) ToYaml() string {{
@@ -638,8 +647,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         self._build_setters_getters(new)
         interfaces = [
+            "ToPbText() string",
             "ToYaml() string",
             "ToJson() string",
+            "FromPbText(value string) error",
             "FromYaml(value string) error",
             "FromJson(value string) error",
         ]

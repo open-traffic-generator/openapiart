@@ -97,3 +97,12 @@ func TestPartialSerDes(t *testing.T) {
 	c2.G().Add().FromJson(string(data2))
 	fmt.Println(c2.ToYaml())
 }
+
+func TestPrefixConfigPbTextSerDes(t *testing.T) {
+	api := openapiart.NewApi()
+	c1 := NewFullyPopulatedPrefixConfig(api)
+	pbString := c1.ToPbText()
+	c2 := api.NewPrefixConfig()
+	c2.FromPbText(pbString)
+	assert.Equal(t, c1.ToJson(), c2.ToJson())
+}
