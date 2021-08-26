@@ -112,8 +112,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("package {};".format(self._protobuf_package_name))
         self._write()
-        self._write('option go_package = "{}/{}";'.format(self._go_sdk_package_dir, self._protobuf_package_name))
-        self._write()
+        if self._go_sdk_package_dir is not None:
+            self._write('option go_package = "{}/{}";'.format(self._go_sdk_package_dir, self._protobuf_package_name))
+            self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
         self._write()
@@ -227,7 +228,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """
         self._write("message {} {{".format(enum_msg_name.replace(".", "")), indent=1)
         self._write("enum Enum {", indent=2)
-        enums.insert(0, "unspecified")
+        if "unspecified" not in enums:
+            enums.insert(0, "unspecified")
         id = 0
         for enum in enums:
             self._write("{} = {};".format(enum.lower(), id), indent=3)

@@ -25,12 +25,12 @@ def create_openapi_artifacts(openapiart_class):
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/common/common.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"),
     ],
-        output_dir=os.path.join(os.path.dirname(__file__), "art"),
-        python_module_name="sanity",
-        protobuf_package_name="sanity",
-        go_sdk_package_dir="github.com/open-traffic-generator/openapiart/pkg",
-        go_sdk_package_name="openapiart",
+        artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
+    ).GeneratePythonSdk(
+        package_name="sanity"
+    ).GenerateGoSdk(
+        package_dir="github.com/open-traffic-generator/openapiart/pkg", package_name="openapiart"
     )
 
 

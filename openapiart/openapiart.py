@@ -30,19 +30,15 @@ class OpenApiArt(object):
     def __init__(
         self,
         api_files,
-        python_module_name=None,
-        protobuf_package_name=None,
-        go_sdk_package_dir=None,
-        go_sdk_package_name=None,
-        output_dir=None,
+        protobuf_name=None,
+        artifact_dir=None,
         extension_prefix=None,
     ):
-        self._python_module_name = python_module_name
-        self._protobuf_package_name = protobuf_package_name
-        self._go_sdk_package_dir = go_sdk_package_dir
-        self._go_sdk_package_name = go_sdk_package_name
-        self._extension_prefix = extension_prefix
-        self._output_dir = os.path.abspath(output_dir)
+        self._output_dir = os.path.abspath(artifact_dir if artifact_dir is not None else "art")
+        self._go_sdk_package_dir = None
+        self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
+        self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
+        
         print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
@@ -50,7 +46,7 @@ class OpenApiArt(object):
         self._get_license()
         self._get_info()
         self._document()
-        self._generate()
+        # self._generate()
 
     def _get_license(self):
         try:
@@ -88,9 +84,24 @@ class OpenApiArt(object):
             subprocess.check_call(process_args, shell=True)
         except Exception as e:
             print("Bypassed creation of static documentation [missing redoc-cli]: {}".format(e))
-
-    def _generate(self):
-        # this generates the python ux module
+    
+    def GeneratePythonSdk(self, package_name):
+        """
+        Generates Python Sdk
+            Example:
+                Openapiart(
+                    api_files=["<list of open_api_file_path>"], artifact_dir="./"
+                    python_package_name="sanity", protobuf_package_name="sanity") \
+                    .GeneratePy()
+                output:
+                    ./sanity
+                            |_ __init__.py
+                            |_ sanity.py
+                            |_ sanity_pb.py
+                            |_ sanity_grpc_pb.py
+        """
+        self._python_module_name = package_name
+        self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -100,22 +111,6 @@ class OpenApiArt(object):
                 extension_prefix=self._extension_prefix,
             )
             python_ux.generate()
-
-        # this generates protobuf definitions into the output_dir
-        if self._protobuf_package_name and self._go_sdk_package_dir:
-            module = importlib.import_module("openapiart.openapiartprotobuf")
-            protobuf = getattr(module, "OpenApiArtProtobuf")(
-                **{
-                    "info": self._info,
-                    "license": self._license,
-                    "protobuf_package_name": self._protobuf_package_name,
-                    "go_sdk_package_dir": self._go_sdk_package_dir,
-                    "output_dir": self._output_dir,
-                }
-            )
-            protobuf.generate(self._openapi)
-
-        # this generates the python stubs into the output dir/python module
         try:
             python_sdk_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
             process_args = [
@@ -131,8 +126,32 @@ class OpenApiArt(object):
             subprocess.check_call(process_args, shell=False)
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
+        return self
 
-        # this generates the go stubs
+    def GenerateGoSdk(self,  package_dir, package_name):
+        """
+            Args:
+                package_dir: Go mod package dir published under go.mod
+                package_name: Name of the Go package to generate
+            Example:
+                Openapiart(api_files=["<list of open_api_file_path>"], output_dir="./")
+                    .GenerateGoSdk(
+                        package_dir="github.com/<path to repo>/$package_name",
+                        package_name="sanity"
+                    )
+                output_dir:
+                    ./sanity
+                            |_ sanity.go
+                            |_ go.mod
+                            |_ go.sum
+                            |_ sanitypb
+                                        |_ sanitypb.pb.go
+                                        |_ sanitypb_grpc.go
+        """
+        
+        self._go_sdk_package_dir = package_dir
+        self._go_sdk_package_name = package_name
+        self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
             go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
@@ -167,6 +186,23 @@ class OpenApiArt(object):
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
             go_ux.generate(self._openapi)
+        return self
+
+    def _generate_proto_file(self):
+        if self._protobuf_package_name is None:
+            self._protobuf_package_name = "default"
+        module = importlib.import_module("openapiart.openapiartprotobuf")
+        protobuf = getattr(module, "OpenApiArtProtobuf")(
+            **{
+                "info": self._info,
+                "license": self._license,
+                "protobuf_package_name": self._protobuf_package_name,
+                "go_sdk_package_dir": self._go_sdk_package_dir,
+                "output_dir": self._output_dir,
+            }
+        )
+        protobuf.generate(self._openapi)
+
 
     @property
     def output_dir(self):
