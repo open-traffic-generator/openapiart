@@ -135,14 +135,47 @@ func TestUpdateConfigSuccess(t *testing.T) {
 	fmt.Println(updatedConfig.ToYaml())
 }
 
-func TestHttpGetConfigSuccess(t *testing.T) {
+func TestHttpSetConfigSuccess(t *testing.T) {
 	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
 	verify := false
 	api := openapiart.NewApi()
 	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+
 	config := NewFullyPopulatedPrefixConfig(api)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+}
+
+func TestHttpGetConfigSuccess(t *testing.T) {
+	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	verify := false
+	api := openapiart.NewApi()
+	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
+	resp, err := api.GetConfig()
+	fmt.Println(resp.ToYaml())
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestHttpUpdateConfigSuccess(t *testing.T) {
+	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	verify := false
+	api := openapiart.NewApi()
+	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
+	c := api.NewUpdateConfig()
+	c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+	updatedConfig, err := api.UpdateConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedConfig)
+	fmt.Println(updatedConfig.ToYaml())
 }
