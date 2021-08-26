@@ -204,6 +204,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/grpc"')
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
+        self._write('import "github.com/golang/protobuf/proto"')
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
