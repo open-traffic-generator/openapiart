@@ -6,21 +6,25 @@ import (
 	"log"
 	"net/http"
 
-	art "github.com/open-traffic-generator/openapiart/pkg"
+	. "github.com/open-traffic-generator/openapiart/pkg"
 )
 
 type HttpServer struct {
-	Api    art.OpenapiartApi
-	Config art.PrefixConfig
+	serverLocation string
+	Location       string
+	Api            OpenapiartApi
+	Config         PrefixConfig
 }
 
 var (
-	httpTestPort uint       = 50051
-	httpServer   HttpServer = HttpServer{}
+	httpServer HttpServer = HttpServer{
+		serverLocation: "127.0.0.1:50051",
+	}
 )
 
 func StartMockHttpServer() {
-	httpServer.Api = art.NewApi()
+	httpServer.Location = fmt.Sprintf("http://%s", httpServer.serverLocation)
+	httpServer.Api = NewApi()
 	httpServer.Config = httpServer.Api.NewPrefixConfig()
 
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +54,10 @@ func StartMockHttpServer() {
 			w.Write([]byte(response.ToJson()))
 		}
 	})
-	server_path := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
-	log.Fatal(http.ListenAndServe(server_path, nil))
-}
 
-// func init() {
-// 	go StartMockHttpServer()
-// }
+	go func() {
+		if err := http.ListenAndServe(httpServer.serverLocation, nil); err != nil {
+			log.Fatal("Server failed to serve incoming HTTP request.")
+		}
+	}()
+}

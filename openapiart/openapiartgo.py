@@ -36,6 +36,7 @@ class FluentRpcResponse(object):
         self.schema = None
         self.request_return_type = None
 
+
 class FluentHttp(object):
     """httpSetConfig(config Config) error"""
 
@@ -45,6 +46,7 @@ class FluentHttp(object):
         self.request = None
         self.request_return_type = None
         self.responses = []
+
 
 class FluentNew(object):
     """New<external_interface_name> <external_interface_name>"""
@@ -215,7 +217,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _get_internal_name(self, openapi_name):
         name = self._get_external_struct_name(openapi_name)
         name = name[0].lower() + name[1:]
-        if name in ['error']:
+        if name in ["error"]:
             name = "_" + name
         return name
 
@@ -294,17 +296,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                         struct=new.struct,
                     )
-                    if url.startswith('/'):
+                    if url.startswith("/"):
                         url = url[1:]
                     http.request = """api.httpSendRecv("{url}", {struct}.ToJson(), "{method}")""".format(
-                        operation_name=http.operation_name,
-                        url=url,
-                        struct=new.struct,
-                        method=str(operation_id.context.path.fields[0]).upper()
+                        operation_name=http.operation_name, url=url, struct=new.struct, method=str(operation_id.context.path.fields[0]).upper()
                     )
-                    http.method = """http{rpc_method}""".format(
-                        rpc_method=rpc.method
-                    )
+                    http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 else:
                     rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
@@ -314,13 +311,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.http_call = """return api.http{operation_name}()""".format(
                         operation_name=rpc.operation_name,
                     )
-                    http.request = """api.httpSendRecv("{url}", "", "{method}")""".format(
-                        url=url,
-                        method=str(operation_id.context.path.fields[0]).upper()
-                    )
-                    http.method = """http{rpc_method}""".format(
-                        rpc_method=rpc.method
-                    )
+                    http.request = """api.httpSendRecv("{url}", "", "{method}")""".format(url=url, method=str(operation_id.context.path.fields[0]).upper())
+                    http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 for ref in self._get_parser("$..responses").find(path_item_object):
                     for status_code, response_object in ref.value.items():
                         response = FluentRpcResponse()
@@ -352,7 +344,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             // NewApi returns a new instance of the top level interface hierarchy
-            func NewApi() *{internal_struct_name} {{
+            func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
                 return &api
             }}
@@ -394,6 +386,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}            
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
+                interface=self._api.external_interface_name,
                 pb_pkg_name=self._protobuf_package_name,
             )
         )
@@ -475,7 +468,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     operation_response_name=self._get_internal_name(rpc.operation_name),
                     error_handling=error_handling,
                     return_value=return_value,
-                    http_call=rpc.http_call
+                    http_call=rpc.http_call,
                 )
             )
 
@@ -498,8 +491,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     return dest.Bytes, nil
                 """.format(
-                    package_name=self._protobuf_package_name,
-                    operation_name=http.operation_name
+                    package_name=self._protobuf_package_name, operation_name=http.operation_name
                 )
             else:
                 success_handling = """	var dest {request_return_type}
@@ -569,7 +561,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new.schema_name = self._get_external_struct_name(new.interface)
                 new.isRpcResponse = True
                 self._api.external_new_methods.append(new)
-                
+
     def _build_interface(self, new):
         if new.schema_name in self._api.components:
             new = self._api.components[new.schema_name]
