@@ -262,7 +262,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     operation_response_name=self._get_external_struct_name(rpc.operation_name),
                 )
                 binary_type = self._get_parser("$..responses..'200'..schema..format").find(path_item_object)
-                ref_type = self._get_parser("$..responses..'200'..schema..'$ref'").find(path_item_object)
+                ref_type = self._get_parser("$..responses..'200'..'$ref'").find(path_item_object)
                 if len(binary_type) == 1:
                     rpc.request_return_type = "[]byte"
                 elif len(ref_type) == 1:
@@ -489,22 +489,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             error_handling += 'return nil, fmt.Errorf("response not implemented")'
             if http.request_return_type == "[]byte":
-                success_handling = """var dest {package_name}.{operation_name}Response_StatusCode200
-                    if err := json.Unmarshal(bodyBytes, &dest); err != nil {{
-                        return nil, err
-                    }}
-                    return dest.Bytes, nil
-                """.format(
-                    package_name=self._protobuf_package_name, operation_name=http.operation_name
-                )
+                success_handling = """return bodyBytes, nil""".format(package_name=self._protobuf_package_name, operation_name=http.operation_name)
             else:
-                success_handling = """	var dest {request_return_type}
-                    if err := json.Unmarshal(bodyBytes, &dest.obj); err != nil {{
+                success_handling = """value := {pb_pkg_name}.{external_name}{{}}
+                    dest := {request_return_type}{{obj: &value}}
+                    if err := dest.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    return &dest, nil
-                """.format(
-                    request_return_type=self._get_internal_name(http.request_return_type)
+                    return &dest, nil""".format(
+                    request_return_type=self._get_internal_name(http.request_return_type),
+                    pb_pkg_name=self._protobuf_package_name,
+                    external_name=http.request_return_type,
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
