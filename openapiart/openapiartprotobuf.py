@@ -228,7 +228,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """
         self._write("message {} {{".format(enum_msg_name.replace(".", "")), indent=1)
         self._write("enum Enum {", indent=2)
-        enums.insert(0, "unspecified")
+        if "unspecified" not in enums:
+            enums.insert(0, "unspecified")
         id = 0
         for enum in enums:
             self._write("{} = {};".format(enum.lower(), id), indent=3)

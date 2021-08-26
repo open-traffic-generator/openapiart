@@ -32,17 +32,11 @@ class OpenApiArt(object):
         api_files,
         protobuf_name=None,
         artifact_dir=None,
-        python_package_name=None,
-        go_sdk_package_dir=None,
-        go_sdk_package_name=None,
         extension_prefix=None,
     ):
         self._output_dir = os.path.abspath(artifact_dir if artifact_dir is not None else "art")
-        self._python_module_name = python_package_name if python_package_name is not None else "sanity"
+        self._go_sdk_package_dir = None
         self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
-        self._go_sdk_package_dir = go_sdk_package_dir if go_sdk_package_dir is not None else \
-            "github.com/open-traffic-generator/openapiart/pkg"
-        self._go_sdk_package_name = go_sdk_package_name if go_sdk_package_name is not None else "openapiart"
         self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
         
         print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
@@ -52,7 +46,6 @@ class OpenApiArt(object):
         self._get_license()
         self._get_info()
         self._document()
-        self._generate_proto_file()
         # self._generate()
 
     def _get_license(self):
@@ -92,7 +85,7 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of static documentation [missing redoc-cli]: {}".format(e))
     
-    def GeneratePythonSdk(self):
+    def GeneratePythonSdk(self, package_name):
         """
         Generates Python Sdk
             Example:
@@ -107,6 +100,8 @@ class OpenApiArt(object):
                             |_ sanity_pb.py
                             |_ sanity_grpc_pb.py
         """
+        self._python_module_name = package_name
+        self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -133,7 +128,7 @@ class OpenApiArt(object):
             print("Bypassed creation of python stubs: {}".format(e))
         return self
 
-    def GenerateGoSdk(self):
+    def GenerateGoSdk(self,  package_dir, package_name):
         """
             Args:
                 package_dir: Go mod package dir published under go.mod
@@ -153,6 +148,10 @@ class OpenApiArt(object):
                                         |_ sanitypb.pb.go
                                         |_ sanitypb_grpc.go
         """
+        
+        self._go_sdk_package_dir = package_dir
+        self._go_sdk_package_name = package_name
+        self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
             go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
@@ -204,84 +203,6 @@ class OpenApiArt(object):
         )
         protobuf.generate(self._openapi)
 
-    # def _generate(self):
-        # this generates the python ux module
-        # if self._python_module_name is not None:
-        #     module = importlib.import_module("openapiart.generator")
-        #     python_ux = getattr(module, "Generator")(
-        #         self._bundler.openapi_filepath,
-        #         self._python_module_name,
-        #         output_dir=self._output_dir,
-        #         extension_prefix=self._extension_prefix,
-        #     )
-        #     python_ux.generate()
-
-        # this generates protobuf definitions into the output_dir
-        # if self._protobuf_package_name and self._go_sdk_package_dir:
-        #     module = importlib.import_module("openapiart.openapiartprotobuf")
-        #     protobuf = getattr(module, "OpenApiArtProtobuf")(
-        #         **{
-        #             "info": self._info,
-        #             "license": self._license,
-        #             "protobuf_package_name": self._protobuf_package_name,
-        #             "go_sdk_package_dir": self._go_sdk_package_dir,
-        #             "output_dir": self._output_dir,
-        #         }
-        #     )
-        #     protobuf.generate(self._openapi)
-
-        # this generates the python stubs into the output dir/python module
-        # try:
-        #     python_sdk_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
-        #     process_args = [
-        #         sys.executable,
-        #         "-m",
-        #         "grpc_tools.protoc",
-        #         "--python_out={}".format(python_sdk_dir),
-        #         "--grpc_python_out={}".format(python_sdk_dir),
-        #         "--proto_path={}".format(self._output_dir),
-        #         "{}.proto".format(self._protobuf_package_name),
-        #     ]
-        #     print("Generating python grpc stubs: {}".format(" ".join(process_args)))
-        #     subprocess.check_call(process_args, shell=False)
-        # except Exception as e:
-        #     print("Bypassed creation of python stubs: {}".format(e))
-
-        # this generates the go stubs
-        # if self._go_sdk_package_dir and self._protobuf_package_name:
-        #     go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
-        #     go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
-        #     if not os.path.exists(go_protobuffer_out_dir):
-        #         os.makedirs(go_protobuffer_out_dir)
-        #     process_args = [
-        #         "protoc",
-        #         "--go_opt=paths=source_relative",
-        #         "--go-grpc_opt=paths=source_relative",
-        #         "--go_out={}".format(go_protobuffer_out_dir),
-        #         "--go-grpc_out={}".format(go_protobuffer_out_dir),
-        #         "--proto_path={}".format(self._output_dir),
-        #         "--experimental_allow_proto3_optional",
-        #         "{}.proto".format(self._protobuf_package_name),
-        #     ]
-        #     cmd = " ".join(process_args)
-        #     print("Generating go gRPC stubs: {}".format(cmd))
-        #     subprocess.check_call(cmd, shell=True)
-
-        # # this generates the go ux module
-        # if self._protobuf_package_name and self._go_sdk_package_dir:
-        #     module = importlib.import_module("openapiart.openapiartgo")
-        #     go_ux = getattr(module, "OpenApiArtGo")(
-        #         **{
-        #             "info": self._info,
-        #             "license": self._license,
-        #             "protobuf_package_name": self._protobuf_package_name,
-        #             "go_sdk_package_dir": self._go_sdk_package_dir,
-        #             "go_sdk_package_name": self._go_sdk_package_name,
-        #             "output_dir": self._output_dir,
-        #         }
-        #     )
-        #     print("Generating go ux sdk: {}".format(" ".join(process_args)))
-        #     go_ux.generate(self._openapi)
 
     @property
     def output_dir(self):
