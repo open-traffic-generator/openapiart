@@ -13,12 +13,10 @@ The `OpenAPIArt` (OpenAPI Artifact Generator) python package does the following:
 - using the path keyword bundles all dependency OpenAPI yaml files into a single openapi.yaml file
 - post-processes any [MODELGUIDE](../main/MODELGUIDE.md) extensions
 - validates the bundled openapi.yaml file
-
-Using the validated openapi.yaml file it then:
-- generates a static redocly documentation file 
-- generates a `protobuf` file
-- generates protobuf based python files
-- generates an enhanced ux python module
+- generates a `.proto` file from the openapi file
+- optionally generates a static redocly documentation file 
+- optionally generates a `python ux sdk` from the openapi file
+- optionally generates a `go ux sdk` from the openapi file
 
 ## Getting started
 Install the package
@@ -28,8 +26,6 @@ pip install openapiart
 
 Generate artifacts from OpenAPI files
 ```python
-import openapiart
-
 """ 
 The following command will produce these artifacts:
     - ./artifacts/openapi.yaml
@@ -40,18 +36,37 @@ The following command will produce these artifacts:
     - ./artifacts/sample/sample.py
     - ./artifacts/sample/sample_pb2.py
     - ./artifacts/sample/sample_pb2_grpc.py
+    - ./pkg/openapiart.go
+    - ./pkg/go.mod
+    - ./pkg/go.sum
+    - ./pkg/sanity/sanity_grpc.pb.go
+    - ./pkg/sanity/sanity.pb.go
 """
-openapiart.OpenApiArt(
+import openapiart
+
+# bundle api files
+# validate the bundled file
+# generate the documentation file
+art = openapiart.OpenapiArt(
     api_files=[
-        './tests/api/api.yaml'
-        './tests/api/info.yaml'
-        './tests/common/common.yaml'
-        ], 
-    python_module_name='sample', 
-    protobuf_file_name='sample',
-    protobuf_package_name='sample',
-    output_dir='./artifacts',
-    extension_prefix='sample'
+        "./openapiart/tests/api/info.yaml",
+        "./openapiart/tests/common/common.yaml",
+        "./openapiart/tests/api/api.yaml",
+    ],
+    artifact_dir="./artifacts",
+    protobuf_name="sanity",
+    extension_prefix="sanity",
+)
+
+# optionally generate a python ux sdk and python protobuf/grpc stubs
+art.GeneratePythonSdk(
+    package_name="sanity"
+)
+
+# optionally generate a go ux sdk and go protobuf/grpc stubs
+art.GenerateGoSdk(
+    package_dir="github.com/open-traffic-generator/openapiart/pkg", 
+    package_name="openapiart"
 )
 ```
 
