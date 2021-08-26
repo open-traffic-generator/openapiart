@@ -1,6 +1,7 @@
 package openapiart_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,7 +15,8 @@ type HttpServer struct {
 }
 
 var (
-	httpServer HttpServer = HttpServer{}
+	httpTestPort uint       = 50051
+	httpServer   HttpServer = HttpServer{}
 )
 
 func StartMockHttpServer() {
@@ -48,10 +50,10 @@ func StartMockHttpServer() {
 			w.Write([]byte(response.ToJson()))
 		}
 	})
-
-	log.Fatal(http.ListenAndServe(":50051", nil))
+	server_path := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	log.Fatal(http.ListenAndServe(server_path, nil))
 }
 
-func init() {
-	go StartMockHttpServer()
-}
+// func init() {
+// 	go StartMockHttpServer()
+// }

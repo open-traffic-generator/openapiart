@@ -14,6 +14,7 @@ func init() {
 	if err := StartMockServer(); err != nil {
 		log.Fatal("Mock Server Init failed")
 	}
+	go StartMockHttpServer()
 }
 
 func TestApi(t *testing.T) {
@@ -122,6 +123,51 @@ func TestGetConfigSuccess(t *testing.T) {
 func TestUpdateConfigSuccess(t *testing.T) {
 	api := openapiart.NewApi()
 	api.NewGrpcTransport().SetLocation(fmt.Sprintf("127.0.0.1:%d", testPort))
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
+	c := api.NewUpdateConfig()
+	c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+	updatedConfig, err := api.UpdateConfig(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedConfig)
+	fmt.Println(updatedConfig.ToYaml())
+}
+
+func TestHttpSetConfigSuccess(t *testing.T) {
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
+	verify := false
+	api := openapiart.NewApi()
+	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestHttpGetConfigSuccess(t *testing.T) {
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
+	verify := false
+	api := openapiart.NewApi()
+	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
+	resp, err := api.GetConfig()
+	fmt.Println(resp.ToYaml())
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestHttpUpdateConfigSuccess(t *testing.T) {
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
+	verify := false
+	api := openapiart.NewApi()
+	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
 
 	config := NewFullyPopulatedPrefixConfig(api)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)

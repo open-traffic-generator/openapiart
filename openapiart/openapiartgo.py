@@ -10,6 +10,7 @@ class FluentStructure(object):
         self.external_interface_name = None
         self.external_new_methods = []
         self.external_rpc_methods = []
+        self.internal_http_methods = []
         self.components = {}
 
 
@@ -21,6 +22,7 @@ class FluentRpc(object):
         self.method = None
         self.request = "emptypb.Empty{}"
         self.responses = []
+        self.http_call = None
 
 
 class FluentRpcResponse(object):
@@ -34,6 +36,15 @@ class FluentRpcResponse(object):
         self.schema = None
         self.request_return_type = None
 
+class FluentHttp(object):
+    """httpSetConfig(config Config) error"""
+
+    def __init__(self):
+        self.operation_name = None
+        self.method = None
+        self.request = None
+        self.request_return_type = None
+        self.responses = []
 
 class FluentNew(object):
     """New<external_interface_name> <external_interface_name>"""
@@ -233,59 +244,90 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_api_interface(self):
         self._api.internal_struct_name = """{internal_name}Api""".format(internal_name=self._get_internal_name(self._go_sdk_package_name))
         self._api.external_interface_name = """{external_name}Api""".format(external_name=self._get_external_struct_name(self._go_sdk_package_name))
-        for operation_id in self._get_parser("$.paths..operationId").find(self._openapi):
-            path_item_object = operation_id.context.value
-            rpc = FluentRpc()
-            rpc.operation_name = self._get_external_struct_name(operation_id.value)
-            if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
-                self._api.external_rpc_methods.append(rpc)
-
-            rpc.request_return_type = "{operation_response_name}Response_StatusCode200".format(
-                operation_response_name=self._get_external_struct_name(rpc.operation_name),
-            )
-            binary_type = self._get_parser("$..responses..'200'..schema..format").find(path_item_object)
-            ref_type = self._get_parser("$..responses..'200'..schema..'$ref'").find(path_item_object)
-            if len(binary_type) == 1:
-                rpc.request_return_type = "[]byte"
-            elif len(ref_type) == 1:
-                request_return_type = self._get_schema_object_name_from_ref(ref_type[0].value)
-                rpc.request_return_type = self._get_external_struct_name(request_return_type)
-
-            ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
-            if len(ref) == 1:
-                new = FluentNew()
-                new.schema_name = self._get_schema_object_name_from_ref(ref[0].value)
-                new.schema_object = self._get_schema_object_from_ref(ref[0].value)
-                new.interface = self._get_external_struct_name(new.schema_name)
-                new.struct = self._get_internal_name(new.schema_name)
-                new.method = """New{interface}() {interface}""".format(interface=new.interface)
-                if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
-                    self._api.external_new_methods.append(new)
-                rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
-                    pb_pkg_name=self._protobuf_package_name,
-                    operation_name=rpc.operation_name,
-                    interface=new.interface,
-                    struct=new.struct,
-                )
-                rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
-                    operation_name=rpc.operation_name,
+        for url, path_object in self._openapi["paths"].items():
+            for operation_id in self._get_parser("$..operationId").find(path_object):
+                path_item_object = operation_id.context.value
+                rpc = FluentRpc()
+                http = FluentHttp()
+                rpc.operation_name = self._get_external_struct_name(operation_id.value)
+                http.operation_name = self._get_external_struct_name(operation_id.value)
+                if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
+                    self._api.external_rpc_methods.append(rpc)
+                if len([m for m in self._api.internal_http_methods if m.operation_name == http.operation_name]) == 0:
+                    self._api.internal_http_methods.append(http)
+                rpc.request_return_type = "{operation_response_name}Response_StatusCode200".format(
                     operation_response_name=self._get_external_struct_name(rpc.operation_name),
-                    struct=new.struct,
-                    interface=new.interface,
-                    request_return_type=rpc.request_return_type,
                 )
-            else:
-                rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
-                    operation_name=rpc.operation_name,
-                    operation_response_name=self._get_external_struct_name(rpc.operation_name),
-                    request_return_type=rpc.request_return_type,
-                )
-            for ref in self._get_parser("$..responses").find(path_item_object):
-                for status_code, response_object in ref.value.items():
-                    response = FluentRpcResponse()
-                    response.status_code = status_code
-                    response.schema = self._get_parser("$..schema").find(response_object)[0].value
-                    rpc.responses.append(response)
+                binary_type = self._get_parser("$..responses..'200'..schema..format").find(path_item_object)
+                ref_type = self._get_parser("$..responses..'200'..schema..'$ref'").find(path_item_object)
+                if len(binary_type) == 1:
+                    rpc.request_return_type = "[]byte"
+                elif len(ref_type) == 1:
+                    request_return_type = self._get_schema_object_name_from_ref(ref_type[0].value)
+                    rpc.request_return_type = self._get_external_struct_name(request_return_type)
+
+                http.request_return_type = rpc.request_return_type
+                ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
+                if len(ref) == 1:
+                    new = FluentNew()
+                    new.schema_name = self._get_schema_object_name_from_ref(ref[0].value)
+                    new.schema_object = self._get_schema_object_from_ref(ref[0].value)
+                    new.interface = self._get_external_struct_name(new.schema_name)
+                    new.struct = self._get_internal_name(new.schema_name)
+                    new.method = """New{interface}() {interface}""".format(interface=new.interface)
+                    if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
+                        self._api.external_new_methods.append(new)
+                    rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
+                        pb_pkg_name=self._protobuf_package_name,
+                        operation_name=rpc.operation_name,
+                        interface=new.interface,
+                        struct=new.struct,
+                    )
+                    rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
+                        operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                        struct=new.struct,
+                        interface=new.interface,
+                        request_return_type=rpc.request_return_type,
+                    )
+                    rpc.http_call = """return api.http{operation_name}({struct})""".format(
+                        operation_name=rpc.operation_name,
+                        struct=new.struct,
+                    )
+                    if url.startswith('/'):
+                        url = url[1:]
+                    http.request = """api.httpSendRecv("{url}", {struct}.ToJson(), "{method}")""".format(
+                        operation_name=http.operation_name,
+                        url=url,
+                        struct=new.struct,
+                        method=str(operation_id.context.path.fields[0]).upper()
+                    )
+                    http.method = """http{rpc_method}""".format(
+                        rpc_method=rpc.method
+                    )
+                else:
+                    rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
+                        operation_name=rpc.operation_name,
+                        operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                        request_return_type=rpc.request_return_type,
+                    )
+                    rpc.http_call = """return api.http{operation_name}()""".format(
+                        operation_name=rpc.operation_name,
+                    )
+                    http.request = """api.httpSendRecv("{url}", "", "{method}")""".format(
+                        url=url,
+                        method=str(operation_id.context.path.fields[0]).upper()
+                    )
+                    http.method = """http{rpc_method}""".format(
+                        rpc_method=rpc.method
+                    )
+                for ref in self._get_parser("$..responses").find(path_item_object):
+                    for status_code, response_object in ref.value.items():
+                        response = FluentRpcResponse()
+                        response.status_code = status_code
+                        response.schema = self._get_parser("$..schema").find(response_object)[0].value
+                        rpc.responses.append(response)
+                        http.responses.append(response)
 
         self._build_response_interfaces()
 
@@ -294,6 +336,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """type {internal_struct_name} struct {{
                 api
                 grpcClient {pb_pkg_name}.OpenapiClient
+                httpClient httpClient
             }}
 
             // grpcConnect builds up a grpc connection
@@ -313,6 +356,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 return &api
             }}
+            
+            // httpConnect builds up a http connection
+            func (api *{internal_struct_name}) httpConnect() error {{
+                if api.httpClient.client == nil {{
+                    var verify = !api.http.verify
+                    client := httpClient{{
+                        client: &http.Client{{
+                            Transport: &http.Transport{{
+                                TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
+                            }},
+                        }},
+                        ctx: context.Background(),
+                    }}
+                    api.httpClient = client
+                }}
+                return nil
+            }}
+            
+            func (api *{internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+                err := api.httpConnect()
+                if err != nil {{
+                    return nil, err
+                }}
+                httpClient := api.httpClient
+                var bodyReader = bytes.NewReader([]byte(jsonBody))
+                queryUrl, err := url.Parse(api.http.location)
+                if err != nil {{
+                    return nil, err
+                }}
+                basePath := fmt.Sprintf(urlPath)
+                queryUrl, _ = queryUrl.Parse(basePath)
+                req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
+                req.Header.Set("Content-Type", "application/json")
+                req = req.WithContext(httpClient.ctx)
+                return httpClient.client.Do(req)
+            }}            
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
                 pb_pkg_name=self._protobuf_package_name,
@@ -369,6 +448,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    if api.hasHttpTransport() {{
+                            {http_call}
+                    }}
+                    
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
@@ -392,6 +475,63 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     operation_response_name=self._get_internal_name(rpc.operation_name),
                     error_handling=error_handling,
                     return_value=return_value,
+                    http_call=rpc.http_call
+                )
+            )
+
+        for http in self._api.internal_http_methods:
+            error_handling = ""
+            for response in http.responses:
+                if response.status_code.startswith("2"):
+                    continue
+                error_handling += """if rsp.StatusCode == {status_code} {{
+                        return nil, fmt.Errorf(string(bodyBytes))
+                    }}
+                    """.format(
+                    status_code=response.status_code,
+                )
+            error_handling += 'return nil, fmt.Errorf("response not implemented")'
+            if http.request_return_type == "[]byte":
+                success_handling = """var dest {package_name}.{operation_name}Response_StatusCode200
+                    if err := json.Unmarshal(bodyBytes, &dest); err != nil {{
+                        return nil, err
+                    }}
+                    return dest.Bytes, nil
+                """.format(
+                    package_name=self._protobuf_package_name,
+                    operation_name=http.operation_name
+                )
+            else:
+                success_handling = """	var dest {request_return_type}
+                    if err := json.Unmarshal(bodyBytes, &dest.obj); err != nil {{
+                        return nil, err
+                    }}
+                    return &dest, nil
+                """.format(
+                    request_return_type=self._get_internal_name(http.request_return_type)
+                )
+            self._write(
+                """func (api *{internal_struct_name}) {method} {{
+                    rsp, err := {request}
+                    if err != nil {{
+                        return nil, err
+                    }}
+                    bodyBytes, err := ioutil.ReadAll(rsp.Body)
+                    defer rsp.Body.Close()
+                    if err != nil {{
+                        return nil, err
+                    }}
+                    if rsp.StatusCode == 200 {{
+                        {success_handling}
+                    }}
+                    {error_handling}
+                }}
+                """.format(
+                    internal_struct_name=self._api.internal_struct_name,
+                    method=http.method,
+                    request=http.request,
+                    success_handling=success_handling,
+                    error_handling=error_handling,
                 )
             )
 
