@@ -448,7 +448,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    if api.HasHttpTransport() {{
+                    if api.hasHttpTransport() {{
                             {http_call}
                     }}
                     

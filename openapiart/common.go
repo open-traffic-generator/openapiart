@@ -78,9 +78,9 @@ type api struct {
 
 type Api interface {
 	NewGrpcTransport() GrpcTransport
-	HasGrpcTransport() bool
+	hasGrpcTransport() bool
 	NewHttpTransport() HttpTransport
-	HasHttpTransport() bool
+	hasHttpTransport() bool
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -94,7 +94,7 @@ func (api *api) NewGrpcTransport() GrpcTransport {
 }
 
 // HasGrpcTransport will return True for gRPC transport
-func (api *api) HasGrpcTransport() bool {
+func (api *api) hasGrpcTransport() bool {
 	return api.grpc != nil
 }
 
@@ -108,17 +108,17 @@ func (api *api) NewHttpTransport() HttpTransport {
 	return api.http
 }
 
-func (api *api) HasHttpTransport() bool {
+func (api *api) hasHttpTransport() bool {
 	return api.http != nil
 }
 
 // HttpRequestDoer will return True for HTTP transport
-type HttpRequestDoer interface {
+type httpRequestDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
 type httpClient struct {
-	client HttpRequestDoer
+	client httpRequestDoer
 	ctx    context.Context
 }
 
