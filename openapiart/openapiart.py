@@ -5,6 +5,7 @@ import shutil
 import yaml
 import subprocess
 import requests
+import platform
 
 
 class OpenApiArt(object):
@@ -38,7 +39,7 @@ class OpenApiArt(object):
         self._go_sdk_package_dir = None
         self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
         self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
-        
+
         print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
@@ -46,7 +47,6 @@ class OpenApiArt(object):
         self._get_license()
         self._get_info()
         self._document()
-        # self._generate()
 
     def _get_license(self):
         try:
@@ -72,7 +72,14 @@ class OpenApiArt(object):
             self._openapi = yaml.safe_load(fp.read())
 
     def _document(self):
-        """Try documenting the openapi using redoc-cli"""
+        """Try documenting the openapi using redoc-cli
+
+        - Requires nodejs, npm, redoc-cli
+        - npm install -g redoc-cli
+
+        If the requirements are not installed/reachable then the document step
+        will be bypassed but the generation will not fail.
+        """
         try:
             process_args = [
                 "redoc-cli",
@@ -81,10 +88,10 @@ class OpenApiArt(object):
                 "--output",
                 os.path.join(self._output_dir, "openapi.html"),
             ]
-            subprocess.check_call(process_args, shell=True)
+            subprocess.check_call(process_args, shell=platform.system() == "Windows")
         except Exception as e:
-            print("Bypassed creation of static documentation [missing redoc-cli]: {}".format(e))
-    
+            print("Bypassed creation of static documentation: {}".format(e))
+
     def GeneratePythonSdk(self, package_name):
         """
         Generates Python Sdk
@@ -128,27 +135,27 @@ class OpenApiArt(object):
             print("Bypassed creation of python stubs: {}".format(e))
         return self
 
-    def GenerateGoSdk(self,  package_dir, package_name):
+    def GenerateGoSdk(self, package_dir, package_name):
         """
-            Args:
-                package_dir: Go mod package dir published under go.mod
-                package_name: Name of the Go package to generate
-            Example:
-                Openapiart(api_files=["<list of open_api_file_path>"], output_dir="./")
-                    .GenerateGoSdk(
-                        package_dir="github.com/<path to repo>/$package_name",
-                        package_name="sanity"
-                    )
-                output_dir:
-                    ./sanity
-                            |_ sanity.go
-                            |_ go.mod
-                            |_ go.sum
-                            |_ sanitypb
-                                        |_ sanitypb.pb.go
-                                        |_ sanitypb_grpc.go
+        Args:
+            package_dir: Go mod package dir published under go.mod
+            package_name: Name of the Go package to generate
+        Example:
+            Openapiart(api_files=["<list of open_api_file_path>"], output_dir="./")
+                .GenerateGoSdk(
+                    package_dir="github.com/<path to repo>/$package_name",
+                    package_name="sanity"
+                )
+            output_dir:
+                ./sanity
+                        |_ sanity.go
+                        |_ go.mod
+                        |_ go.sum
+                        |_ sanitypb
+                                    |_ sanitypb.pb.go
+                                    |_ sanitypb_grpc.go
         """
-        
+
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
         self._generate_proto_file()
@@ -202,7 +209,6 @@ class OpenApiArt(object):
             }
         )
         protobuf.generate(self._openapi)
-
 
     @property
     def output_dir(self):
