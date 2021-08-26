@@ -8,6 +8,10 @@ import (
 	art "github.com/open-traffic-generator/openapiart/pkg"
 )
 
+var (
+	httpTestPort uint = 50051
+)
+
 type HttpServer struct {
 	Api    art.OpenapiartApi
 	Config art.PrefixConfig
@@ -49,9 +53,9 @@ func StartMockHttpServer() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(":50051", nil))
+	log.Fatal(http.ListenAndServe(":%d", httpTestPort, nil))
 }
 
-func init() {
-	go StartMockHttpServer()
-}
+// func init() {
+// 	go StartMockHttpServer()
+// }

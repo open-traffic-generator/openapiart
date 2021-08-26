@@ -14,6 +14,7 @@ func init() {
 	if err := StartMockServer(); err != nil {
 		log.Fatal("Mock Server Init failed")
 	}
+	go StartMockHttpServer()
 }
 
 func TestApi(t *testing.T) {
@@ -132,4 +133,16 @@ func TestUpdateConfigSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, updatedConfig)
 	fmt.Println(updatedConfig.ToYaml())
+}
+
+func TestHttpGetConfigSuccess(t *testing.T) {
+	location := "http://127.0.0.1:%d", httpTestPort
+	verify := false
+	api := openapiart.NewApi()
+	transport := api.NewHttpTransport().SetLocation(location).SetVerify(verify)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 }
