@@ -15,17 +15,11 @@ class OpenApiArt(object):
     ----
     - api_files (list[str]): list of OpenAPI files that contain info and/or path
       keywords
-    - python_module_name (str): name of the consolidated python file that will be generated
-    - output_dir (str): directory where artifacts will be created.
+    - protobuf_name (str): name of the .proto file that will be generated
+    - artifact_dir (str): directory where artifacts will be created.
       Unless otherwise specified the default directory for generated artifacts
-      is `current working directory/.output`.
-      The artifacts that will be generated are:
-      - openapi.yaml
-      - openapi.json
-      - openapi.html (static documentation, if redoc-cli has been installed)
-      - python package
-      - protobuf file
-      - python grpc
+      is `current working directory/.art`.
+    - extension_prefix (str): name of the python extension
     """
 
     def __init__(
@@ -93,19 +87,27 @@ class OpenApiArt(object):
             print("Bypassed creation of static documentation: {}".format(e))
 
     def GeneratePythonSdk(self, package_name):
-        """
-        Generates Python Sdk
-            Example:
-                Openapiart(
-                    api_files=["<list of open_api_file_path>"], artifact_dir="./"
-                    python_package_name="sanity", protobuf_package_name="sanity") \
-                    .GeneratePy()
-                output:
-                    ./sanity
-                            |_ __init__.py
-                            |_ sanity.py
-                            |_ sanity_pb.py
-                            |_ sanity_grpc_pb.py
+        """Generates a Python UX Sdk
+        Args
+        ----
+        - package_name (str): the name of the python module
+
+        Example
+        -------
+        ```
+        art = Openapiart(api_files=["<list of open_api_file_path>"], artifact_dir="./")
+        art.GeneratePythonSdk(package_name="sanity")
+        ```
+
+        Output
+        ------
+        ```
+        ./sanity
+                |_ __init__.py
+                |_ sanity.py
+                |_ sanity_pb.py
+                |_ sanity_grpc_pb.py
+        ```
         """
         self._python_module_name = package_name
         self._generate_proto_file()
@@ -136,24 +138,34 @@ class OpenApiArt(object):
         return self
 
     def GenerateGoSdk(self, package_dir, package_name):
-        """
-        Args:
-            package_dir: Go mod package dir published under go.mod
-            package_name: Name of the Go package to generate
-        Example:
-            Openapiart(api_files=["<list of open_api_file_path>"], output_dir="./")
-                .GenerateGoSdk(
-                    package_dir="github.com/<path to repo>/$package_name",
-                    package_name="sanity"
-                )
-            output_dir:
-                ./sanity
-                        |_ sanity.go
-                        |_ go.mod
-                        |_ go.sum
-                        |_ sanitypb
-                                    |_ sanitypb.pb.go
-                                    |_ sanitypb_grpc.go
+        """Generates a Go UX Sdk
+
+        Args
+        ----
+        - package_dir: Go mod package dir published under go.mod
+        - package_name: Name of the Go package to generate
+
+        Example
+        -------
+        ```
+        art = Openapiart(api_files=["list of open_api_file_path"], artifact_dir="./")
+        art.GenerateGoSdk(
+            package_dir="github.com/<path to repo>/$package_name",
+            package_name="sanity"
+        )
+        ```
+
+        Output
+        ------
+        ```
+        ./sanity
+                |_ sanity.go
+                |_ go.mod
+                |_ go.sum
+                |_ sanitypb
+                            |_ sanitypb.pb.go
+                            |_ sanitypb_grpc.go
+        ```
         """
 
         self._go_sdk_package_dir = package_dir
