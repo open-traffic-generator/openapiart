@@ -9,17 +9,14 @@ import (
 	art "github.com/open-traffic-generator/openapiart/pkg"
 )
 
-var (
-	httpTestPort uint = 50051
-)
-
 type HttpServer struct {
 	Api    art.OpenapiartApi
 	Config art.PrefixConfig
 }
 
 var (
-	httpServer HttpServer = HttpServer{}
+	httpTestPort uint       = 50051
+	httpServer   HttpServer = HttpServer{}
 )
 
 func StartMockHttpServer() {

@@ -136,7 +136,7 @@ func TestUpdateConfigSuccess(t *testing.T) {
 }
 
 func TestHttpSetConfigSuccess(t *testing.T) {
-	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
 	verify := false
 	api := openapiart.NewApi()
 	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
@@ -149,7 +149,7 @@ func TestHttpSetConfigSuccess(t *testing.T) {
 }
 
 func TestHttpGetConfigSuccess(t *testing.T) {
-	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
 	verify := false
 	api := openapiart.NewApi()
 	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
@@ -164,7 +164,7 @@ func TestHttpGetConfigSuccess(t *testing.T) {
 }
 
 func TestHttpUpdateConfigSuccess(t *testing.T) {
-	location := fmt.Sprintf("127.0.0.1:%d", httpTestPort)
+	location := fmt.Sprintf("http://127.0.0.1:%d", httpTestPort)
 	verify := false
 	api := openapiart.NewApi()
 	api.NewHttpTransport().SetLocation(location).SetVerify(verify)
