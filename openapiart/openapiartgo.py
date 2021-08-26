@@ -325,7 +325,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     for status_code, response_object in ref.value.items():
                         response = FluentRpcResponse()
                         response.status_code = status_code
-                        response.schema = self._get_parser("$..schema").find(response_object)[0].value
+                        if "$ref" in response_object:
+                            response.schema = response_object
+                        else:
+                            response.schema = self._get_parser("$..schema").find(response_object)[0].value
                         rpc.responses.append(response)
                         http.responses.append(response)
 
