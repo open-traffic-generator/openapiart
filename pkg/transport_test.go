@@ -1,6 +1,7 @@
 package openapiart_test
 
 import (
+	"log"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -52,5 +53,16 @@ func TestUpdateConfigSuccess(t *testing.T) {
 		updatedConfig, err := api.UpdateConfig(c)
 		assert.Nil(t, err)
 		assert.NotNil(t, updatedConfig)
+	}
+}
+
+func TestGetMetrics(t *testing.T) {
+	for _, api := range apis {
+		metrics, err := api.GetMetrics()
+		assert.Nil(t, err)
+		assert.NotNil(t, metrics)
+		for _, row := range metrics.Ports().Items() {
+			log.Println(row.ToYaml())
+		}
 	}
 }

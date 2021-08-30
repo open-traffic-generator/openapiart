@@ -231,3 +231,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GObject'
+
+    Metrics:
+      type: object
+      properties:
+        ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/Port.Metric'
+
+    Port.Metric:
+      type: object
+      required: [name, tx_frames, rx_frames]
+      properties:
+        name:
+          type: string
+        tx_frames:
+          type: number
+          format: double
+        rx_frames:
+          type: number
+          format: double
