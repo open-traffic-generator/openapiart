@@ -10,6 +10,7 @@ import (
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type GrpcServer struct {
@@ -95,6 +96,30 @@ func (s *GrpcServer) UpdateConfig(ctx context.Context, req *sanity.UpdateConfigR
 	resp := &sanity.UpdateConfigResponse{
 		StatusCode_200: &sanity.UpdateConfigResponse_StatusCode200{
 			PrefixConfig: s.Config,
+		},
+	}
+	return resp, nil
+}
+
+func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*sanity.GetMetricsResponse, error) {
+	metrics := sanity.Metrics{
+		Ports: []*sanity.PortMetric{},
+	}
+	p1 := sanity.PortMetric{
+		Name:     "P1",
+		TxFrames: 2323,
+		RxFrames: 2000,
+	}
+	p2 := sanity.PortMetric{
+		Name:     "P2",
+		TxFrames: 3000,
+		RxFrames: 2788,
+	}
+	metrics.Ports = append(metrics.Ports, &p1)
+	metrics.Ports = append(metrics.Ports, &p2)
+	resp := &sanity.GetMetricsResponse{
+		StatusCode_200: &sanity.GetMetricsResponse_StatusCode200{
+			Metrics: &metrics,
 		},
 	}
 	return resp, nil

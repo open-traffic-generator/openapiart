@@ -52,3 +52,17 @@ paths:
             application/json:
               schema:
                 $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
+
+  /metrics:
+    get:
+      tags: ['Metrics']
+      operationId: get_metrics
+      description: >-
+        Gets metrics.
+      responses:
+        '200':
+          description: Unique metrics response
+          content:
+            application/json:
+              schema:
+                $ref: '../config/config.yaml#/components/schemas/Metrics'

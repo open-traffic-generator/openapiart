@@ -55,6 +55,18 @@ func StartMockHttpServer() {
 		}
 	})
 
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			response := httpServer.Api.NewGetMetricsResponse_StatusCode200()
+			response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
+			response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(response.ToJson()))
+		}
+	})
+
 	go func() {
 		if err := http.ListenAndServe(httpServer.serverLocation, nil); err != nil {
 			log.Fatal("Server failed to serve incoming HTTP request.")
