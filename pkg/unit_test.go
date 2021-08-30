@@ -197,7 +197,7 @@ func TestResponseEnum(t *testing.T) {
 
 func TestChoice(t *testing.T) {
 	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := NewFullyPopulatedPrefixConfig(api)
 
 	f := config.F()
 	f.SetFA("a fa string")

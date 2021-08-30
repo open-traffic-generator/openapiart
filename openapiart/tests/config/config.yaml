@@ -76,6 +76,18 @@ components:
           $ref: '#/components/schemas/KObject'
         l:
           $ref: '#/components/schemas/LObject'
+        list_of_string_values:
+          description: |-
+            A list of string values
+          type: array
+          items:
+            type: string
+        list_of_integer_values:
+          description: |-
+            A list of integer values
+          type: array
+          items:
+            type: integer
         level:
           $ref: '../multilevel/multi.yaml#/components/schemas/Level.One'
         mandatory:

@@ -31,6 +31,7 @@ func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.Pref
 	l.SetIpv4("1.1.1.1")
 	l.SetIpv6("2000::1")
 	l.SetHex("0x12")
+	config.SetListOfStringValues([]string{"first string", "second string", "third string"})
 	level := config.Level()
 	level.L1P1().L2P1().SetL3P1("test")
 	level.L1P2().L4P1().L1P2().L4P1().L1P1().L2P1().SetL3P1("l3p1")
@@ -105,4 +106,36 @@ func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	c2 := api.NewPrefixConfig()
 	c2.FromPbText(pbString)
 	assert.Equal(t, c1.ToJson(), c2.ToJson())
+}
+
+func TestArrayOfStringsSetGet(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	values := config.ListOfStringValues()
+	assert.Equal(t, 0, len(values))
+	values = config.SetListOfStringValues([]string{"one", "two", "three"}).ListOfStringValues()
+	assert.Equal(t, 3, len(values))
+}
+
+func TestArrayOfEnumsSetGet(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	values := config.DValues()
+	assert.Equal(t, 0, len(values))
+	enums := []openapiart.PrefixConfigDValuesEnum{
+		openapiart.PrefixConfigDValues.A,
+		openapiart.PrefixConfigDValues.B,
+		openapiart.PrefixConfigDValues.C,
+	}
+	values = config.SetDValues(enums).DValues()
+	assert.Equal(t, 3, len(values))
+}
+
+func TestArrayOfIntegersSetGet(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	values := config.ListOfIntegerValues()
+	assert.Equal(t, 0, len(values))
+	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
+	assert.Equal(t, 4, len(values))
 }

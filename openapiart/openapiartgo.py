@@ -673,7 +673,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
-        elif field.isArray:
+        elif field.isArray and field.isEnum is False:
             if field.struct:
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
@@ -689,10 +689,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = make({type}, 0)
                     }}
-                    for _, item := range value {{
-                        obj.obj.{name} = append(obj.obj.{name}, item)
-                    }}
-                    return obj""".format(
+                    return obj.obj.{name}""".format(
                     name=field.name,
                     type=field.type,
                 )
@@ -751,16 +748,32 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     enum_values=",\n".join(enum_values),
                 )
             )
-            self._write(
-                """func (obj *{struct}) {fieldname}() {interface}{fieldname}Enum {{
-                return {interface}{fieldname}Enum(obj.obj.{fieldname}.Enum().String())
-            }}
-            """.format(
-                    struct=new.struct,
-                    interface=new.interface,
-                    fieldname=field.name,
+            if field.isArray:
+                self._write(
+                    """func (obj *{struct}) {fieldname}() []{interface}{fieldname}Enum {{
+                        items := []{interface}{fieldname}Enum{{}}
+                        for _, item := range obj.obj.{fieldname} {{
+                            items = append(items, {interface}{fieldname}Enum(item.String()))
+                        }}
+                    return items
+                }}
+                """.format(
+                        struct=new.struct,
+                        interface=new.interface,
+                        fieldname=field.name,
+                    )
                 )
-            )
+            else:
+                self._write(
+                    """func (obj *{struct}) {fieldname}() {interface}{fieldname}Enum {{
+                    return {interface}{fieldname}Enum(obj.obj.{fieldname}.Enum().String())
+                }}
+                """.format(
+                        struct=new.struct,
+                        interface=new.interface,
+                        fieldname=field.name,
+                    )
+                )
             return
         elif field.isPointer:
             body = """return *obj.obj.{fieldname}""".format(
@@ -789,19 +802,28 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_setter(self, new, field):
         if field.setter_method is None:
             return
-        if field.isArray:
+        if field.isArray and field.isEnum:
+            body = """items := []{pb_pkg_name}.{interface}_{fieldname}_Enum{{}}
+                for _, item:= range value {{
+                    intValue := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(item)]
+                    items = append(items, {pb_pkg_name}.{interface}_{fieldname}_Enum(intValue))
+                }}
+                obj.obj.{fieldname} = items""".format(
+                interface=new.interface,
+                struct=new.struct,
+                fieldname=field.name,
+                pb_pkg_name=self._protobuf_package_name,
+            )
+        elif field.isArray:
             body = """if obj.obj.{fieldname} == nil {{
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
                 for _, item := range value {{
-                    obj.obj.{field.name} = append(obj.obj.{field.name}, item)
-                }}
-            }}
-            """.format(
+                    obj.obj.{fieldname} = append(obj.obj.{fieldname}, item)
+                }}""".format(
                 fieldname=field.name,
                 fieldtype=field.type,
             )
-            return
         elif field.isEnum:
             if field.isPointer:
                 body = """enumValue := {pb_pkg_name}.{interface}_{fieldname}_Enum(intValue)
@@ -915,8 +937,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         choice_enums = self._get_parser("$..choice..enum").find(fluent_new.schema_object["properties"])
         for property_name, property_schema in fluent_new.schema_object["properties"].items():
-            if len(self._get_parser("$.items.enum").find(property_schema)) > 0:  # temporary
-                continue
             field = FluentField()
             field.schema = property_schema
             field.description = self._get_description(property_schema)
@@ -927,6 +947,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
+            field.isArray = "type" in property_schema and property_schema["type"] == "array"
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
                 if "unspecified" in field.enums:
@@ -939,7 +960,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
-            if field.isEnum:
+            if field.isArray and field.isEnum:
+                field.getter_method = "{fieldname}() []{interface}{fieldname}Enum".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+            elif field.isEnum:
                 field.getter_method = "{fieldname}() {interface}{fieldname}Enum".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
@@ -953,7 +979,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
                 field.external_struct = self._get_external_struct_name(schema_name)
-            if field.isEnum:
+            if field.isArray and field.isEnum:
+                field.setter_method = "Set{fieldname}(value []{interface}{fieldname}Enum) {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+            elif field.isEnum:
                 field.setter_method = "Set{fieldname}(value {interface}{fieldname}Enum) {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
@@ -964,7 +995,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     ftype=field.type,
                     interface=fluent_new.interface,
                 )
-            elif "type" in property_schema and property_schema["type"] == "array":
+            elif field.isArray:
                 field.isPointer = False
                 if "$ref" in property_schema["items"]:
                     schema_name = self._get_schema_object_name_from_ref(property_schema["items"]["$ref"])
