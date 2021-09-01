@@ -59,7 +59,11 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
 class HttpTransport(object):
     def __init__(self, **kwargs):
         """Use args from api() method to instantiate an HTTP transport"""
-        self.location = kwargs["location"] if "location" in kwargs else "https://localhost"
+        self.location = (
+            kwargs["location"]
+            if "location" in kwargs and kwargs["location"] is not None
+            else "https://localhost:443"
+        )
         self.verify = kwargs["verify"] if "verify" in kwargs else False
         self.logger = kwargs["logger"] if "logger" in kwargs else None
         self.loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
