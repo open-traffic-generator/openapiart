@@ -86,7 +86,7 @@ type Api interface {
 // NewGrpcTransport sets the underlying transport of the Api as grpc
 func (api *api) NewGrpcTransport() GrpcTransport {
 	api.grpc = &grpcTransport{
-		location:       "127.0.0.1:5050",
+		location:       "localhost:5050",
 		requestTimeout: 10 * time.Second,
 	}
 	api.http = nil
@@ -101,7 +101,7 @@ func (api *api) hasGrpcTransport() bool {
 // NewHttpTransport sets the underlying transport of the Api as http
 func (api *api) NewHttpTransport() HttpTransport {
 	api.http = &httpTransport{
-		location: "https://127.0.0.1:443",
+		location: "https://localhost:443",
 		verify:   false,
 	}
 	api.grpc = nil
@@ -121,7 +121,6 @@ type httpClient struct {
 	client httpRequestDoer
 	ctx    context.Context
 }
-
 
 // All methods that perform validation will add errors here
 // All api rpcs MUST call Validate
