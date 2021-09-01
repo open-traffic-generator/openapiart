@@ -139,3 +139,42 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
 	assert.Equal(t, 4, len(values))
 }
+
+func TestValidDecode(t *testing.T) {
+	// Valid FromJson
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.Nil(t, err)
+}
+
+func TestBadKeyDecode(t *testing.T) {
+	// Valid Wrong key
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unknown field "bz"`)
+}
+
+func TestBadDatatypeDecode(t *testing.T) {
+	// Valid Wrong data type. configure "b" with string
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "b" : "abc", "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+}
+
+func TestBadDatastructureDecode(t *testing.T) {
+	// Valid Wrong data structure. configure "a" with array
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+}
