@@ -318,6 +318,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     for status_code, response_object in ref.value.items():
                         response = FluentRpcResponse()
                         response.status_code = status_code
+                        response.request_return_type = """New{operation_name}Response_StatusCode{status_code}""".format(
+                            operation_name=rpc.operation_name,
+                            status_code=status_code,
+                        )
                         if "$ref" in response_object:
                             response.schema = response_object
                         else:
@@ -478,9 +482,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         for http in self._api.internal_http_methods:
             error_handling = ""
+            success_method = None
             for response in http.responses:
                 if response.status_code.startswith("2"):
-                    continue
+                    success_method = response.request_return_type
                 error_handling += """if rsp.StatusCode == {status_code} {{
                         return nil, fmt.Errorf(string(bodyBytes))
                     }}
@@ -491,13 +496,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil""".format(package_name=self._protobuf_package_name, operation_name=http.operation_name)
             else:
-                success_handling = """value := {pb_pkg_name}.{external_name}{{}}
-                    dest := {request_return_type}{{obj: &value}}
-                    if err := dest.FromJson(string(bodyBytes)); err != nil {{
+                success_handling = """resp := api.{success_method}()
+                    if err := resp.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    return &dest, nil""".format(
-                    request_return_type=self._get_internal_name(http.request_return_type),
+                    return resp.{external_name}(), nil""".format(
+                    success_method=success_method,
                     pb_pkg_name=self._protobuf_package_name,
                     external_name=http.request_return_type,
                 )
@@ -608,7 +612,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 opts := protojson.UnmarshalOptions{{
                     AllowPartial: true,
-                    DiscardUnknown: true,
+                    DiscardUnknown: false,
                 }}
                 return opts.Unmarshal([]byte(data), obj.msg())
             }}
@@ -630,7 +634,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) FromJson(value string) error {{
                 opts := protojson.UnmarshalOptions{{
                     AllowPartial: true,
-                    DiscardUnknown: true,
+                    DiscardUnknown: false,
                 }}
                 return opts.Unmarshal([]byte(value), obj.msg())
             }}

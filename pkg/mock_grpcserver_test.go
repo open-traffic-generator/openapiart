@@ -124,3 +124,14 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*san
 	}
 	return resp, nil
 }
+
+func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sanity.GetWarningsResponse, error) {
+	resp := &sanity.GetWarningsResponse{
+		StatusCode_200: &sanity.GetWarningsResponse_StatusCode200{
+			WarningDetails: &sanity.WarningDetails{
+				Warnings: []string{"Warning number 1", "Your last warning"},
+			},
+		},
+	}
+	return resp, nil
+}

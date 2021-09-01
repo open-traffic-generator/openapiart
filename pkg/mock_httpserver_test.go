@@ -32,11 +32,24 @@ func StartMockHttpServer() {
 		case http.MethodPost:
 			body, _ := ioutil.ReadAll(r.Body)
 			httpServer.Config.FromJson(string(body))
-			response := httpServer.Api.NewSetConfigResponse_StatusCode200()
-			response.SetBytes([]byte("Successful set config operation"))
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response.ToJson()))
+			switch httpServer.Config.Response() {
+			case PrefixConfigResponse.STATUS_200:
+				response := httpServer.Api.NewSetConfigResponse_StatusCode200()
+				response.SetBytes([]byte("Successful set config operation"))
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(response.ToJson()))
+			case PrefixConfigResponse.STATUS_400:
+				response := httpServer.Api.NewSetConfigResponse_StatusCode400()
+				response.ErrorDetails().SetErrors([]string{"A 400 error has occurred"})
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(response.ToJson()))
+			case PrefixConfigResponse.STATUS_500:
+				response := httpServer.Api.NewSetConfigResponse_StatusCode500()
+				response.Error().SetErrors([]string{"A 500 error has occurred"})
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(response.ToJson()))
+			}
 		case http.MethodPatch:
 			body, _ := ioutil.ReadAll(r.Body)
 			request := httpServer.Api.NewPrefixConfig()
@@ -61,6 +74,17 @@ func StartMockHttpServer() {
 			response := httpServer.Api.NewGetMetricsResponse_StatusCode200()
 			response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
 			response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(response.ToJson()))
+		}
+	})
+
+	http.HandleFunc("/warnings", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			response := httpServer.Api.NewGetWarningsResponse_StatusCode200()
+			response.WarningDetails().SetWarnings([]string{"Warning number 1", "Your last warning"})
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(response.ToJson()))
