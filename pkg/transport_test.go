@@ -32,6 +32,26 @@ func TestSetConfigSuccess(t *testing.T) {
 	}
 }
 
+func TestSetConfig400(t *testing.T) {
+	for _, api := range apis {
+		config := NewFullyPopulatedPrefixConfig(api)
+		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+		resp, err := api.SetConfig(config)
+		assert.Nil(t, resp)
+		assert.NotNil(t, err)
+	}
+}
+
+func TestSetConfig500(t *testing.T) {
+	for _, api := range apis {
+		config := NewFullyPopulatedPrefixConfig(api)
+		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+		resp, err := api.SetConfig(config)
+		assert.Nil(t, resp)
+		assert.NotNil(t, err)
+	}
+}
+
 func TestGetConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
@@ -64,5 +84,14 @@ func TestGetMetrics(t *testing.T) {
 		for _, row := range metrics.Ports().Items() {
 			log.Println(row.ToYaml())
 		}
+	}
+}
+
+func TestGetWarnings(t *testing.T) {
+	for _, api := range apis {
+		resp, err := api.GetWarnings()
+		assert.Nil(t, err)
+		assert.NotNil(t, resp)
+		log.Println(resp.ToYaml())
 	}
 }

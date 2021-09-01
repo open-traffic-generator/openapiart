@@ -31,6 +31,13 @@ components:
           type: array
           items:
             type: string
+    Warning.Details:
+      type: object
+      properties:
+        warnings:
+          type: array
+          items:
+            type: string
 
   responses:
     Success:
@@ -41,6 +48,13 @@ components:
             schema:
               type: string
               format: binary
+    Warnings:
+      '200':
+        description: 'Success warning payload'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Warning.Details'
     Error.400:
       '400':
         description: 'error 4xx'

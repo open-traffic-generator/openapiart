@@ -66,3 +66,15 @@ paths:
             application/json:
               schema:
                 $ref: '../config/config.yaml#/components/schemas/Metrics'
+
+  /warnings:
+    get:
+      tags: ['Metrics']
+      operationId: get_warnings
+      description: >-
+        Gets warnings.
+      responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Warnings'
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
