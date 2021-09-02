@@ -139,3 +139,103 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
 	assert.Equal(t, 4, len(values))
 }
+
+func TestValidJsonDecode(t *testing.T) {
+	// Valid FromJson
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.Nil(t, err)
+}
+
+func TestBadKeyJsonDecode(t *testing.T) {
+	// Valid Wrong key
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unknown field "bz"`)
+}
+
+func TestBadDatatypeJsonDecode(t *testing.T) {
+	// Valid Wrong data type. configure "b" with string
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "b" : "abc", "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+}
+
+func TestBadDatastructureJsonDecode(t *testing.T) {
+	// Valid Wrong data structure. configure "a" with array
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1 }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+}
+
+func TestWithoutValueJsonDecode(t *testing.T) {
+	// Valid without value
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a": "ixia", "b" : 8.8, "c" : }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for int32 type: }`)
+}
+
+func TestValidYamlDecode(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+b: 12.2
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.Nil(t, err)
+	assert.Equal(t, data, config.ToYaml())
+}
+
+func TestBadKeyYamlDecode(t *testing.T) {
+	// Valid Wrong key
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+bz: 12.2
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unknown field "bz"`)
+}
+
+func TestBadDatatypeYamlDecode(t *testing.T) {
+	// Valid Wrong data type. configure "b" with string
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+b: abc
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+}
+
+func TestBadDatastructureYamlDecode(t *testing.T) {
+	// Valid Wrong data structure. configure "a" with array
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: [Make It Easy]
+b: 9.9
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+}
