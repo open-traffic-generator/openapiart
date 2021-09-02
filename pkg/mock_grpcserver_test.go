@@ -58,26 +58,20 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	switch req.PrefixConfig.Response.Enum().Number() {
 	case sanity.PrefixConfig_Response_status_400.Enum().Number():
 		resp = &sanity.SetConfigResponse{
-			StatusCode_400: &sanity.SetConfigResponse_StatusCode400{
-				ErrorDetails: &sanity.ErrorDetails{
-					Errors: []string{"SetConfig has detected configuration errors"},
-				},
+			StatusCode_400: &sanity.ErrorDetails{
+				Errors: []string{"SetConfig has detected configuration errors"},
 			},
 		}
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
 		resp = &sanity.SetConfigResponse{
-			StatusCode_500: &sanity.SetConfigResponse_StatusCode500{
-				Error: &sanity.Error{
-					Errors: []string{"SetConfig has encountered a server error"},
-				},
+			StatusCode_500: &sanity.Error{
+				Errors: []string{"SetConfig has encountered a server error"},
 			},
 		}
 	case sanity.PrefixConfig_Response_status_200.Enum().Number():
 		s.Config = req.PrefixConfig
 		resp = &sanity.SetConfigResponse{
-			StatusCode_200: &sanity.SetConfigResponse_StatusCode200{
-				Bytes: []byte("SetConfig has completed successfully"),
-			},
+			StatusCode_200: []byte("SetConfig has completed successfully"),
 		}
 	}
 	return resp, nil
@@ -85,41 +79,33 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 
 func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {
 	resp := &sanity.GetConfigResponse{
-		StatusCode_200: &sanity.GetConfigResponse_StatusCode200{
-			PrefixConfig: s.Config,
-		},
+		StatusCode_200: s.Config,
 	}
 	return resp, nil
 }
 
 func (s *GrpcServer) UpdateConfig(ctx context.Context, req *sanity.UpdateConfigRequest) (*sanity.UpdateConfigResponse, error) {
 	resp := &sanity.UpdateConfigResponse{
-		StatusCode_200: &sanity.UpdateConfigResponse_StatusCode200{
-			PrefixConfig: s.Config,
-		},
+		StatusCode_200: s.Config,
 	}
 	return resp, nil
 }
 
 func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*sanity.GetMetricsResponse, error) {
-	metrics := sanity.Metrics{
-		Ports: []*sanity.PortMetric{},
-	}
-	p1 := sanity.PortMetric{
-		Name:     "P1",
-		TxFrames: 2323,
-		RxFrames: 2000,
-	}
-	p2 := sanity.PortMetric{
-		Name:     "P2",
-		TxFrames: 3000,
-		RxFrames: 2788,
-	}
-	metrics.Ports = append(metrics.Ports, &p1)
-	metrics.Ports = append(metrics.Ports, &p2)
 	resp := &sanity.GetMetricsResponse{
-		StatusCode_200: &sanity.GetMetricsResponse_StatusCode200{
-			Metrics: &metrics,
+		StatusCode_200: &sanity.Metrics{
+			Ports: []*sanity.PortMetric{
+				&sanity.PortMetric{
+					Name:     "P2",
+					TxFrames: 3000,
+					RxFrames: 2788,
+				},
+				&sanity.PortMetric{
+					Name:     "P1",
+					TxFrames: 2323,
+					RxFrames: 2000,
+				},
+			},
 		},
 	}
 	return resp, nil
@@ -127,10 +113,8 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*san
 
 func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sanity.GetWarningsResponse, error) {
 	resp := &sanity.GetWarningsResponse{
-		StatusCode_200: &sanity.GetWarningsResponse_StatusCode200{
-			WarningDetails: &sanity.WarningDetails{
-				Warnings: []string{"Warning number 1", "Your last warning"},
-			},
+		StatusCode_200: &sanity.WarningDetails{
+			Warnings: []string{"This is your first warning", "Your last warning"},
 		},
 	}
 	return resp, nil

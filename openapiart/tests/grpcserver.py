@@ -14,18 +14,14 @@ def grpc_server(pb2, pb2_grpc):
             response_400 = """
                 {
                     "status_code_400" : {
-                        "error_details" : {
-                            "errors" : ["invalid value"]
-                        }
+                        "errors" : ["invalid value"]
                     }
                 }
                 """
 
             response_200 = """
                 {
-                    "status_code_200" : {
-                        "bytes" : "%s"
-                    }
+                    "status_code_200" : "%s"
                 }
             """ % base64.b64encode(
                 b"success"

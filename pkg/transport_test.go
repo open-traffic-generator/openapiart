@@ -65,14 +65,15 @@ func TestGetConfigSuccess(t *testing.T) {
 
 func TestUpdateConfigSuccess(t *testing.T) {
 	for _, api := range apis {
-		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-		api.SetConfig(config)
-		c := api.NewUpdateConfig()
-		c.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
-		updatedConfig, err := api.UpdateConfig(c)
+		config1 := NewFullyPopulatedPrefixConfig(api)
+		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+		api.SetConfig(config1)
+		config2 := api.NewUpdateConfig()
+		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+		config3, err := api.UpdateConfig(config2)
 		assert.Nil(t, err)
-		assert.NotNil(t, updatedConfig)
+		assert.NotNil(t, config3)
+		log.Println(config3.ToYaml())
 	}
 }
 
