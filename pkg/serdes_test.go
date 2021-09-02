@@ -179,6 +179,16 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 	assert.Contains(t, err.Error(), `invalid value for string type: [`)
 }
 
+func TestWithoutValueJsonDecode(t *testing.T) {
+	// Valid without value
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a": "ixia", "b" : 8.8, "c" : }`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for int32 type: }`)
+}
+
 func TestValidYamlDecode(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
