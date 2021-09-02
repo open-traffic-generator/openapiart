@@ -49,12 +49,11 @@ components:
               type: string
               format: binary
     Warnings:
-      '200':
-        description: 'Success warning payload'
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Warning.Details'
+      description: 'Success warning payload similar to otg Success'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Warning.Details'
     Error.400:
       '400':
         description: 'error 4xx'

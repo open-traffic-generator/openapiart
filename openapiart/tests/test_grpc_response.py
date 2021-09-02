@@ -11,9 +11,7 @@ def test_grpc_response(utils, pb2, pb2_grpc):
     validate the response with expected response
     """
     expected_response = """{
-            "status_code_200": {
-                "bytes": "%s"
-            }
+            "status_code_200": "%s"
         }""" % base64.b64encode(b"success").decode('utf-8')
 
     # load the json from a file

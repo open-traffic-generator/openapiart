@@ -1,3 +1,10 @@
+/* Mock HTTP Server
+
+Response Note:
+- all returned responses must be <rpcmethod>Response.StatusCode<code>()
+- this differs from the grpc server that expects the <rpcmethod>Response
+  that is the composite of all status codes for the rpc method response
+*/
 package openapiart_test
 
 import (
@@ -33,61 +40,59 @@ func StartMockHttpServer() {
 			body, _ := ioutil.ReadAll(r.Body)
 			httpServer.Config.FromJson(string(body))
 			w.Header().Set("Content-Type", "application/json")
+			response := httpServer.Api.NewSetConfigResponse()
 			switch httpServer.Config.Response() {
 			case PrefixConfigResponse.STATUS_200:
-				response := httpServer.Api.NewSetConfigResponse_StatusCode200()
-				response.SetBytes([]byte("Successful set config operation"))
+				response.SetStatusCode200([]byte("Successful set config operation"))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(response.ToJson()))
+				w.Write([]byte(response.StatusCode200()))
 			case PrefixConfigResponse.STATUS_400:
-				response := httpServer.Api.NewSetConfigResponse_StatusCode400()
-				response.ErrorDetails().SetErrors([]string{"A 400 error has occurred"})
+				response.StatusCode400().SetErrors([]string{"A 400 error has occurred"})
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(response.ToJson()))
+				w.Write([]byte(response.StatusCode400().ToJson()))
 			case PrefixConfigResponse.STATUS_500:
-				response := httpServer.Api.NewSetConfigResponse_StatusCode500()
-				response.Error().SetErrors([]string{"A 500 error has occurred"})
+				response.StatusCode500().SetErrors([]string{"A 500 error has occurred"})
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(response.ToJson()))
+				w.Write([]byte(response.StatusCode500().ToJson()))
 			}
 		case http.MethodPatch:
 			body, _ := ioutil.ReadAll(r.Body)
 			request := httpServer.Api.NewPrefixConfig()
 			request.FromJson(string(body))
-			response := httpServer.Api.NewUpdateConfigResponse_StatusCode200()
+			response := httpServer.Api.NewUpdateConfigResponse()
+			response.StatusCode200().FromJson(httpServer.Config.ToJson())
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response.ToJson()))
+			w.Write([]byte(response.StatusCode200().ToJson()))
 		case http.MethodGet:
-			config := httpServer.Api.NewPrefixConfig()
-			response := httpServer.Api.NewGetConfigResponse_StatusCode200()
-			response.PrefixConfig().FromJson(config.ToJson())
+			response := httpServer.Api.NewGetConfigResponse()
+			response.StatusCode200().FromJson(httpServer.Config.ToJson())
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response.ToJson()))
+			w.Write([]byte(response.StatusCode200().ToJson()))
 		}
 	})
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			response := httpServer.Api.NewGetMetricsResponse_StatusCode200()
-			response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
-			response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
+			response := httpServer.Api.NewGetMetricsResponse()
+			response.StatusCode200().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
+			response.StatusCode200().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response.ToJson()))
+			w.Write([]byte(response.StatusCode200().ToJson()))
 		}
 	})
 
 	http.HandleFunc("/warnings", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			response := httpServer.Api.NewGetWarningsResponse_StatusCode200()
-			response.WarningDetails().SetWarnings([]string{"Warning number 1", "Your last warning"})
+			response := httpServer.Api.NewGetWarningsResponse()
+			response.StatusCode200().SetWarnings([]string{"This is your first warning", "Your last warning"})
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(response.ToJson()))
+			w.Write([]byte(response.StatusCode200().ToJson()))
 		}
 	})
 

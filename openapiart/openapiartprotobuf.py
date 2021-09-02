@@ -63,38 +63,43 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation = self._get_operation(path_item_object)
             if operation is None:
                 continue
-            self._write()
-            self._write("message {} {{".format(operation.response))
-            for ref in self._get_parser("$..responses").find(path_item_object):
-                detail_messages = []
-                for code, response in ref.value.items():
-                    detail_message = "StatusCode{}".format(code)
-                    detail_messages.append(detail_message)
-                    self._write("message {} {{".format(detail_message), indent=1)
-                    schema = self._get_parser("$..schema").find(response)
-                    if len(schema) == 0:
-                        if "$ref" in response:
-                            field_type = self._get_message_name(response["$ref"]).replace(".", "")
-                            self._write("{} {} = 1;".format(field_type, self._lowercase(field_type)), indent=2)
+            for response in self._get_parser("$..responses").find(path_item_object):
+                response_fields = []
+                for code, code_schema in response.value.items():
+                    response_field = lambda: None
+                    response_field.name = "status_code_{}".format(code)
+                    schema = self._get_parser("$..schema").find(code_schema)  # finds the first instance of schema in responses
+                    if len(schema) > 0:
+                        schema_ref = self._get_parser("$..'$ref'").find(schema[0].value)  # gets a ref
+                    else:
+                        schema_ref = self._get_parser("$..'$ref'").find(code_schema)  # gets a ref
+                    if len(schema_ref) > 0:
+                        schema = schema_ref[0].value
                     else:
                         schema = schema[0].value
-                        if "$ref" in schema:
-                            field_type = self._get_message_name(schema["$ref"]).replace(".", "")
-                            self._write("{} {} = 1;".format(field_type, self._lowercase(field_type)), indent=2)
-                        elif "type" in schema:
-                            field_type = self._get_message_name(schema["type"]).replace(".", "")
-                            if "format" in schema and schema["format"] == "binary":
-                                field_type = "bytes"
-                            self._write("{} {} = 1;".format(field_type, self._lowercase(field_type)), indent=2)
-                    self._write("}", indent=1)
-            self._write()
+                    if "#/components/responses" in schema:
+                        # lookup the response object and use the schema or ref in that object
+                        jsonpath = "$.{}..schema".format(schema[2:].replace("/", "."))
+                        schema = self._get_parser(jsonpath).find(self._openapi)[0].value
+                        ref = self._get_parser("$..'$ref'").find(schema)
+                        if len(ref) > 0:
+                            schema = ref[0].value
+                    if "$ref" in schema:
+                        response_field.type = self._get_message_name(schema["$ref"]).replace(".", "")
+                    elif "type" in schema:
+                        response_field.type = self._get_message_name(schema["type"]).replace(".", "")
+                        if "format" in schema and schema["format"] == "binary":
+                            response_field.type = "bytes"
+                    else:
+                        response_field.type = self._get_message_name(schema).replace(".", "")
+                    response_fields.append(response_field)
+            self._write("message {} {{".format(operation.response))
             id = 1
-            for detail_message in detail_messages:
-                field_type = detail_message.replace(".", "")
-                field_name = self._lowercase(field_type)
-                self._write("optional {} {} = {};".format(field_type, field_name, id), indent=1)
+            for response_field in response_fields:
+                self._write("optional {} {} = {};".format(response_field.type, response_field.name, id), indent=1)
                 id += 1
             self._write("}")
+            self._write()
 
     def _get_message_name(self, ref):
         return ref.split("/")[-1]
