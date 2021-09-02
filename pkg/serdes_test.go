@@ -140,7 +140,7 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 	assert.Equal(t, 4, len(values))
 }
 
-func TestValidDecode(t *testing.T) {
+func TestValidJsonDecode(t *testing.T) {
 	// Valid FromJson
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
@@ -149,7 +149,7 @@ func TestValidDecode(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestBadKeyDecode(t *testing.T) {
+func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
@@ -159,7 +159,7 @@ func TestBadKeyDecode(t *testing.T) {
 	assert.Contains(t, err.Error(), `unknown field "bz"`)
 }
 
-func TestBadDatatypeDecode(t *testing.T) {
+func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
@@ -169,12 +169,63 @@ func TestBadDatatypeDecode(t *testing.T) {
 	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
 }
 
-func TestBadDatastructureDecode(t *testing.T) {
+func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1 }`
 	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+}
+
+func TestValidYamlDecode(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+b: 12.2
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.Nil(t, err)
+	assert.Equal(t, data, config.ToYaml())
+}
+
+func TestBadKeyYamlDecode(t *testing.T) {
+	// Valid Wrong key
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+bz: 12.2
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unknown field "bz"`)
+}
+
+func TestBadDatatypeYamlDecode(t *testing.T) {
+	// Valid Wrong data type. configure "b" with string
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+b: abc
+c: 2
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+}
+
+func TestBadDatastructureYamlDecode(t *testing.T) {
+	// Valid Wrong data structure. configure "a" with array
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: [Make It Easy]
+b: 9.9
+c: 2
+`
+	err := config.FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `invalid value for string type: [`)
 }
