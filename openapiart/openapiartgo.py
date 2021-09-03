@@ -495,12 +495,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             for response in http.responses:
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
-                error_handling += """if resp.StatusCode == {status_code} {{
-                        return nil, fmt.Errorf(string(bodyBytes))
-                    }}
-                    """.format(
-                    status_code=response.status_code,
-                )
+                else:
+                    error_handling += """if resp.StatusCode == {status_code} {{
+                            return nil, fmt.Errorf(string(bodyBytes))
+                        }}
+                        """.format(
+                        status_code=response.status_code,
+                    )
             error_handling += 'return nil, fmt.Errorf("response not implemented")'
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil""".format(package_name=self._protobuf_package_name, operation_name=http.operation_name)
