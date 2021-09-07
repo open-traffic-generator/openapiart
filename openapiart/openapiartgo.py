@@ -84,6 +84,7 @@ class FluentField(object):
         self.setter_method = None
         self.getter_method = None
         self.adder_method = None
+        self.has_method = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -667,6 +668,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
                 interfaces.append(field.setter_method)
+            if field.has_method is not None:
+                interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
             """type {interface} interface {{
@@ -681,6 +684,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         for field in new.interface_fields:
             self._write_field_getter(new, field)
+            self._write_field_has(new, field)
             self._write_field_setter(new, field)
             self._write_field_adder(new, field)
 
@@ -945,6 +949,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
 
+    def _write_field_has(self, new, field):
+        if field.has_method is None:
+            return
+        self._write(
+            """
+            // {fieldname} returns a {fieldtype}\n{description}
+            func (obj *{struct}) Has{fieldname}() bool {{
+                return obj.obj.{internal_field_name} != nil
+            }}
+            """.format(
+                fieldname=self._get_external_struct_name(field.name),
+                struct=new.struct,
+                getter_method=field.getter_method,
+                description=field.description,
+                fieldtype=field.type,
+                internal_field_name=field.name,
+            )
+        )
+
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
         if "properties" not in fluent_new.schema_object:
@@ -1003,6 +1026,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
                 field.external_struct = self._get_external_struct_name(schema_name)
+            if field.isOptional and field.isPointer:
+                field.has_method = """Has{fieldname}() bool""".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                )
             if field.isArray and field.isEnum:
                 field.setter_method = "Set{fieldname}(value []{interface}{fieldname}Enum) {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),

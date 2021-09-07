@@ -211,3 +211,14 @@ func TestChoice(t *testing.T) {
 
 	fmt.Println(config.ToYaml())
 }
+
+func TestHas(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	assert.False(t, config.HasE())
+	assert.False(t, config.HasF())
+	assert.False(t, config.HasChecksumPattern())
+	assert.False(t, config.HasFullDuplex100Mb())
+	assert.False(t, config.HasIeee8021Qbb())
+	assert.False(t, config.HasOptionalObject())
+}
