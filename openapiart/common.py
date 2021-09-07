@@ -399,6 +399,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     child = self._get_child_class(property_name)
                     if "choice" in child[1]._TYPES and "_parent" in child[1].__slots__:
                         property_value = child[1](self, property_name)._decode(property_value)
+                    elif "_parent" in child[1].__slots__:
+                        property_value = child[1](self)._decode(property_value)
                     else:
                         property_value = child[1]()._decode(property_value)
                 elif isinstance(property_value, list) and property_name in self._TYPES and self._TYPES[property_name]["type"] not in dtypes:
