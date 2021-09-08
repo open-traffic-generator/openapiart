@@ -77,6 +77,7 @@ class Bundler(object):
         self._resolve_x_include()
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
+        self._resolve_x_status()
         self._remove_x_include()
         self._resolve_strings(self._content)
         with open(self._output_filename, "w") as fp:
@@ -307,6 +308,24 @@ class Bundler(object):
                     content = content[piece]
                 if pieces[-1] in content:
                     del content[pieces[-1]]
+
+    def _resolve_x_status(self):
+        """Find all instances of x-constraint in the openapi content
+        and merge the x-constraint content into the parent object description
+        """
+        import jsonpath_ng
+
+        for xstatus in self._get_parser("$..x-status").find(self._content):
+            if xstatus.value == "current":
+                continue
+            print("resolving %s..." % (str(xstatus.full_path)))
+            parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
+            if "description" not in parent_schema_object:
+                parent_schema_object["description"] = "TBD"
+            parent_schema_object["description"] = "Status: {status}\n{description}".format(
+                status=xstatus.value,
+                description=parent_schema_object["description"],
+            )
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content
