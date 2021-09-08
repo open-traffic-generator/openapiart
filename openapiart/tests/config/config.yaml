@@ -26,11 +26,13 @@ components:
           enum: [status_200, status_400, status_500]
           default: status_200
         a:
+          x-status: under-review
           description: |-
             Small single line description
           type: string
           default: asdf
         b:
+          x-status: deprecated
           description: |-
             Longer multi-line description
             Second line is here

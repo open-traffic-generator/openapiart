@@ -82,16 +82,24 @@ The build script will enforce the following keyword conventions.
         - the string value MUST be unique in the list of objects
   
 # Keyword Extensions
-- `x-status`: current | under-review | deprecated | obsolete
-  - If no status is specified, the default is "current".
-  - the `x-status` keyword takes as an argument one of the strings
-   "current", "deprecated", or "obsolete", "under-review.
-  - "current" means that the definition is current and valid.
-  - "deprecated" indicates an obsolete definition, but it permits new/
-      continued implementation in order to foster interoperability with
-      older/existing implementations.
-  - "obsolete" means the definition is obsolete and SHOULD NOT be
-      implemented and/or can be removed from implementations.
+- `x-status`
+```yaml
+components:
+  schemas:
+    Extensions:
+      properties:
+        x-status:
+          description: |-
+            An extension keyword to indicate the status of a schema object or property
+            - current means that the definition is current and valid.
+            - deprecated indicates an obsolete definition, but it permits new/ continued implementation in order to foster interoperability with older/existing implementations.
+            - `obsolete` means the definition is obsolete and SHOULD NOT be implemented and/or can be removed from implementations.
+            - `under-review` indicates that the object or property is subject to change at any time.
+          type: string
+          enum: [current, deprecated, obsolete, under_review]
+          default: current
+```
+
 
 - `x-include`
     - for object composition use the x-include keyword to merge schema objects 
