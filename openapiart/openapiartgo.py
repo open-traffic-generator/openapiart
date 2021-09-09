@@ -85,6 +85,7 @@ class FluentField(object):
         self.getter_method = None
         self.adder_method = None
         self.has_method = None
+        self.format = None # only for mac, ipv4, ipv6 and hex validation
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -668,6 +669,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromPbText(value string) error",
             "FromYaml(value string) error",
             "FromJson(value string) error",
+            "Validate()",
         ]
         for field in new.interface_fields:
             interfaces.append(field.getter_method)
@@ -693,6 +695,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_has(new, field)
             self._write_field_setter(new, field)
             self._write_field_adder(new, field)
+        self._write_validate_method(new)
 
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
@@ -881,6 +884,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
             body = """obj.obj.{fieldname} = value""".format(fieldname=field.name)
+        # if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"]:
+        #     body = """\n Validate{format}(value)\n""".format(format=field.format.capitalize()) + body
         set_choice = ""
         if field.setChoiceValue is not None:
             set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
@@ -994,7 +999,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.schema = property_schema
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
-            field.type = self._get_struct_field_type(property_schema)
+            field.type = self._get_struct_field_type(property_schema, field)
             if len(choice_enums) == 1 and property_name in choice_enums[0].value:
                 field.setChoiceValue = property_name.upper()
             else:
@@ -1077,6 +1082,86 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
             fluent_new.interface_fields.append(field)
 
+    def _write_validate_method(self, new):
+        # import pdb; pdb.set_trace()
+        statements = []
+        for field in new.interface_fields:
+            # validate required
+            if field.isOptional is False and field.type in ["string", "[]bytes"] and field.isEnum is False:
+                line = """
+                // {name} required
+                if obj.obj.{name} == {value} {{
+                    validation = append(validation, "{name} is required field on interface {interface}")
+                }}
+                """.format(
+                        name=field.name, interface=new.interface,
+                        value='""' if field.type == "string" else "nil",
+                    )
+                if field.format in ["mac", "ipv4", "ipv6", "hex"]:
+                    line = line + """else {{
+                        validate{format}(obj.obj.{name})
+                    }}
+                    """.format(format=field.format.capitalize())
+                statements.append(line)
+            # next level validate if field is an object
+            if field.type not in self._oapi_go_types.values() and field.isArray is False and field.isPointer is True:
+                statements.append(
+                    """
+                    // {name} required
+                    if obj.obj.{name} != nil {{
+                        obj.{name}().Validate()
+                    }}
+                    """.format(name=field.name)
+                )
+            if field.isEnum is True and field.isArray is False and field.isOptional is False:
+                statements.append(
+                    """
+                    // {name} required
+                    if obj.obj.{name}.Number() == 0 {{
+                        validation = append(validation, "{name} is required field on interface {interface}")
+                    }}
+                    """.format(name=field.name, interface=new.interface)
+                )
+
+            if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"] \
+                and field.isOptional is True:
+                statements.append(
+                    """
+                    if obj.obj.{name} != {value} {{
+                        validate{format}(obj.{name}())
+                    }}
+                    """.format(
+                        name=field.name,
+                        format=field.format.capitalize() if field.isArray is False else field.format.capitalize() + 'Slice',
+                        value="nil" if field.isPointer is True or field.isArray is True else '""'
+                    )
+                )
+            
+            # if field is an array
+            # if field.isArray:
+            #     interface_name = new.interface + field.external_struct + "Iter"
+            #     if interface_name not in self._api.components:
+            #         # TODO if the array is not an Iter interface
+            #         pass
+            #     else:
+            #         new_iter = self._api.components[interface_name]
+            #         statements.append(
+            #             """for _, item := range obj.{name}().Items() {{
+            #                 item.Validate()
+            #             }}
+            #             """.format(
+            #                 name=field.name
+            #             )
+            #         )
+            # TODO if isPointer is False
+        body = "\n".join(statements)
+        self._write(
+            """func (obj *{struct}) Validate() {{
+                {body}
+            }}
+            """.format(struct=new.struct, body=body)
+        )
+
     def _get_schema_object_name_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
         return final_piece.replace(".", "")
@@ -1087,7 +1172,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             leaf = leaf[attr]
         return leaf
 
-    def _get_struct_field_type(self, property_schema, field=None):
+    def _get_struct_field_type(self, property_schema, fluent_field=None):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
         if "type" in property_schema:
@@ -1100,6 +1185,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 format_type = (oapi_type + property_schema["format"]).lower()
                 if format_type.lower() in self._oapi_go_types:
                     go_type = "{oapi_go_type}".format(oapi_go_type=self._oapi_go_types[format_type.lower()])
+                else:
+                    fluent_field.format = property_schema["format"].lower()
         elif "$ref" in property_schema:
             ref = property_schema["$ref"]
             schema_object_name = self._get_schema_object_name_from_ref(ref)
