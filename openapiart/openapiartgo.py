@@ -1200,50 +1200,56 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _write_default_method(self, new):
         body = ""
-        for field in new.interface_fields:
+        interface_fields = new.interface_fields
+        for index, field in enumerate(interface_fields):
+            if field.name == "Choice":
+                body = """hasChoice := obj.obj.Choice{check}
+                """.format(check="" if field.isPointer else ".Number()")
+                interface_fields.append(interface_fields.pop(index))
+                break
+
+        for field in interface_fields:
             if field.default is None:
                 continue
             details = "Name: {} Type : {} Format: {}".format(field.name, field.type, field.format)
-            # if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"]:
-            # else:
             if field.isArray and field.isEnum:
                 print("111 TBD => if field.isArray and field.isEnum => ", details)
+                raise Exception("TBD for field.isArray and field.isEnum")
             elif field.isArray:
-                # print("22 => elif field.isArray => ", details)
                 body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({type}{{\"{value}\"}})
+                    obj.Set{external_name}({type}{{{value}}})
                 }}
                 """.format(
                     name=field.name,
                     external_name=self._get_external_field_name(field.name),
                     type=field.type,
-                    value=field.default[0]
+                    value="\"{}\"".format(field.default[0]) if "string" in field.type else field.default[0]
                 )
             elif field.isEnum:
-                # print("33 => elif field.isEnum => ", details)
                 enum_value = """{struct}{name}.{value}""".format(
                     struct=self._get_external_field_name(new.struct),
                     name=field.name,
                     value=field.default.upper()
                 )
-                body += """if obj.obj.{name}.Number() == 0 {{
+                if field.isPointer:
+                    if field.name == "Choice":
+                        cnd_check = "hasChoice == nil"
+                    else:
+                        cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
+                else:
+                    if field.name == "Choice":
+                        cnd_check = "hasChoice == 0"
+                    else:
+                        cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
+                body += """if {cnd_check} {{
                     obj.Set{external_name}({enum_value})
                 }}
                 """.format(
-                    name=field.name,
+                    cnd_check=cnd_check,
                     external_name=self._get_external_field_name(field.name),
                     enum_value=enum_value,
                 )
             elif field.isPointer:
-                # print("44 => elif field.isPointer => ", details)
-                # check_value = "0"
-                # if field.type == "string":
-                #     check_value = "\"\""
-                # elif field.type == "bool":
-                #     check_value = "false"
-                # elif field.type in ["mac", "ipv4", "ipv6", "hex"]:
-                #     check_value = "nil"
-
                 body += """if obj.obj.{name} == nil {{
                     obj.Set{external_name}({value})
                 }}
@@ -1253,7 +1259,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     value="\"{0}\"".format(field.default) if field.type == "string" else field.default,
                 )
             else:
-                # print("55 => else => ", details)
                 body += """if obj.obj.{name} == {check_value} {{
                     obj.Set{external_name}({value})
                 }}
