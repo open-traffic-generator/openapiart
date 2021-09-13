@@ -1186,6 +1186,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = "\n".join(statements)
         self._write(
             """func (obj *{struct}) Validate() {{
+                obj.setDefault()
                 {body}
             }}
             """.format(struct=new.struct, body=body)
@@ -1196,8 +1197,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         interface_fields = new.interface_fields
         for index, field in enumerate(interface_fields):
             if field.name == "Choice":
-                body = """hasChoice := obj.obj.Choice{check}
-                """.format(check="" if field.isPointer else ".Number()")
+                if field.isPointer:
+                    body = "hasChoice := obj.HasChoice()\n"
+                else:
+                    body = """hasChoice := true
+                    if obj.obj.Choice.Number() == 0 {
+                        hasChoice = false
+                    }
+                    """
                 interface_fields.append(interface_fields.pop(index))
                 break
 
@@ -1224,16 +1231,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     name=field.name,
                     value=field.default.upper()
                 )
-                if field.isPointer:
-                    if field.name == "Choice":
-                        cnd_check = "hasChoice == nil"
-                    else:
-                        cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
+                if field.name == "Choice":
+                    cnd_check = "hasChoice == false"
+                elif field.isPointer:
+                    cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
-                    if field.name == "Choice":
-                        cnd_check = "hasChoice == 0"
-                    else:
-                        cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
+                    cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
                 body += """if {cnd_check} {{
                     obj.Set{external_name}({enum_value})
                 }}
