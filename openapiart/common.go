@@ -1,6 +1,5 @@
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -143,13 +142,13 @@ func validationResult() {
 func validateMac(mac string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
-		return errors.New(fmt.Sprintf("Invalid Mac address %s", mac))
+		return fmt.Errorf(fmt.Sprintf("Invalid Mac address %s", mac))
 	}
 	octInd := []string{"0th", "1st", "2nd", "3rd", "4th", "5th"}
 	for ind, val := range macSlice {
 		num, err := strconv.ParseUint(val, 16, 32)
-		if err != nil || num < 0 || num > 255 {
-			return errors.New(fmt.Sprintf("Invalid Mac address at %s octet in %s mac", octInd[ind], mac))
+		if err != nil || num > 255 {
+			return fmt.Errorf(fmt.Sprintf("Invalid Mac address at %s octet in %s mac", octInd[ind], mac))
 		}
 	}
 	return nil
@@ -158,13 +157,13 @@ func validateMac(mac string) error {
 func validateIpv4(ip string) error {
 	ipSlice := strings.Split(ip, ".")
 	if len(ipSlice) != 4 {
-		return errors.New(fmt.Sprintf("Invalid Ipv4 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address %s", ip))
 	}
 	octInd := []string{"1st", "2nd", "3rd", "4th"}
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 10, 32)
-		if err != nil || num < 0 || num > 255 {
-			return errors.New(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
+		if err != nil || num > 255 {
+			return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
 		}
 	}
 	return nil
@@ -175,13 +174,13 @@ func validateIpv6(ip string) error {
 	if strings.Count(ip, " ") > 0 || strings.Count(ip, ":") > 7 ||
 		strings.Count(ip, "::") > 1 || strings.Count(ip, ":::") > 0 ||
 		strings.Count(ip, ":") == 0 {
-		return errors.New(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
 	}
 	if (string(ip[0]) == ":" && string(ip[:2]) != "::") || (string(ip[len(ip)-1]) == ":" && string(ip[len(ip)-2:]) != "::") {
-		return errors.New(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
 	}
 	if strings.Count(ip, "::") == 0 && strings.Count(ip, ":") != 7 {
-		return errors.New(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
 	}
 	if ip == "::" {
 		return nil
@@ -202,8 +201,8 @@ func validateIpv6(ip string) error {
 
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 16, 64)
-		if err != nil || num < 0 || num > 65535 {
-			return errors.New(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
+		if err != nil || num > 65535 {
+			return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
 		}
 	}
 
@@ -211,30 +210,54 @@ func validateIpv6(ip string) error {
 }
 
 func validateHex(hex string) error {
+	_, err := strconv.ParseUint(hex, 16, 64)
+	if err != nil {
+		return fmt.Errorf(fmt.Sprintf("Invalid hex value %s", hex))
+	}
 	return nil
 }
 
-func validateMacSlice(mac []string) error {
+func validateSlice(valSlice []string, sliceType string) error {
 	indices := []string{}
+	var err error
+	for i, val := range valSlice {
+		if sliceType == "mac" {
+			err = validateMac(val)
+		} else if sliceType == "ipv4" {
+			err = validateIpv4(val)
 
-	for i, m := range mac {
-		err := validateMac(m)
+		} else if sliceType == "ipv6" {
+			err = validateIpv6(val)
+		} else if sliceType == "hex" {
+			err = validateIpv6(val)
+		} else {
+			return fmt.Errorf(fmt.Sprintf("Invalid slice type received <%s>", sliceType))
+		}
+
 		if err != nil {
 			indices = append(indices, fmt.Sprintf("%d", i))
 		}
 	}
 	if len(indices) > 0 {
-		return errors.New(
-			fmt.Sprintf("Invalid Mac addresses at indices %s", strings.Join(indices, ",")),
+		return fmt.Errorf(
+			fmt.Sprintf("Invalid %s addresses at indices %s", sliceType, strings.Join(indices, ",")),
 		)
 	}
 	return nil
 }
 
+func validateMacSlice(mac []string) error {
+	return validateSlice(mac, "mac")
+}
+
 func validateIpv4Slice(ip []string) error {
-	return nil
+	return validateSlice(ip, "ipv4")
 }
 
 func validateIpv6Slice(ip []string) error {
-	return nil
+	return validateSlice(ip, "ipv6")
+}
+
+func validateHexSlice(hex []string) error {
+	return validateSlice(hex, "hex")
 }

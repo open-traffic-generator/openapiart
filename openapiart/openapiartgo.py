@@ -629,6 +629,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     EmitUnpopulated: false,
                 }}
                 data, err := opts.Marshal(obj.Msg())
+                if err != nil {{panic(err)}}
                 data, err = yaml.JSONToYAML(data)
                 if err != nil {{
                     panic(err)
@@ -1118,6 +1119,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_validate_method(self, new):
         statements = []
         for field in new.interface_fields:
+            valid = False
             if field.isArray:
                 if field.struct and field.isEnum is False:
                     statements.append(
@@ -1128,6 +1130,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         }}
                         """.format(name=field.name)
                     )
+                    valid = True
                 elif field.isEnum and field.isOptional is False:
                     statements.append(
                         """
@@ -1137,6 +1140,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         }}
                         """.format(name=field.name, interface=new.interface)
                     )
+                    valid = True
                 elif field.itemformat in ["mac", "ipv4", "ipv6", "hex"] and field.struct is False:
                     statements.append(
                         """if obj.obj.{name} != nil {{
@@ -1149,15 +1153,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         }}
                         """.format(name=field.name, format=field.itemformat)
                     )
-            elif field.isEnum and field.isOptional is False:
+                    valid = True
+            if field.isEnum and field.isOptional is False and field.isArray is False:
                 statements.append(
-                    """if obj.obj.{name}.Number() == 0 {{
+                    """
+                    // {name} required
+                    if obj.obj.{name}.Number() == 0 {{
                         validation = append(validation, "{name} is required field on {interface}")
                     }}
                     """.format(name=field.name, interface=new.interface)
                 )
+                valid = True
             # validate required attr which is not struct
-            elif field.isOptional is False and field.type in ["string", "[]bytes"] and field.isEnum is False:
+            if field.isOptional is False and field.type in ["string", "[]bytes"] and field.isEnum is False \
+                and field.isArray is False:
                 line = """
                 // {name} required
                 if obj.obj.{name} == {value} {{
@@ -1176,8 +1185,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     """.format(format=field.format.capitalize())
                 statements.append(line)
+                valid = True
             # next level validate if field is an object
-            elif field.type not in self._oapi_go_types.values() and field.isArray is False and field.isPointer is True:
+            if field.struct and field.isPointer is True and field.isArray is False:
                 statements.append(
                     """
                     // {name} required
@@ -1186,8 +1196,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     """.format(name=field.name, external_name=self._get_external_struct_name(field.name))
                 )
+                valid = True
+            if field.struct and field.isArray is False:
+                statements.append(
+                    """
+                    // {name} required
+                    if obj.obj.{name} != nil {{
+                        obj.{external_name}().Validate()
+                    }}
+                    """.format(name=field.name, external_name=self._get_external_struct_name(field.name))
+                )
+                valid = True
 
-            elif field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"]:
+            if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"] and field.isOptional:
                 statements.append(
                     """
                     if obj.obj.{name} != {value} {{
@@ -1202,6 +1223,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value="nil" if field.isPointer is True or field.isArray is True else '""'
                     )
                 )
+                valid = True
+            # TODO need more clarity
+            # if field.isEnum and field.isOptional:
+            #     statements.append(
+            #         """
+            #             if obj.HasChoice() 
+            #         """
+            #     )
+            if not valid:
+                print("{field} is not set for validation on interface {interface}".format(
+                    field=field.name, interface=new.interface
+                ))
         body = "\n".join(statements)
         self._write(
             """func (obj *{struct}) Validate() {{

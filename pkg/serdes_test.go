@@ -195,6 +195,8 @@ func TestValidYamlDecode(t *testing.T) {
 	var data = `a: Easy
 b: 12.2
 c: 2
+h: true
+response: status_200
 `
 	err := config.FromYaml(data)
 	assert.Nil(t, err)
