@@ -1,5 +1,10 @@
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -213,9 +218,9 @@ func validateMacSlice(mac []string) error {
 	indices := []string{}
 
 	for i, m := range mac {
-		err := ValidateMac(m)
+		err := validateMac(m)
 		if err != nil {
-			indices = append(indices, string(i))
+			indices = append(indices, fmt.Sprintf("%d", i))
 		}
 	}
 	if len(indices) > 0 {

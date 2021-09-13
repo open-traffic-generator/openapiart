@@ -1,7 +1,6 @@
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
-import shutil
 
 
 class FluentStructure(object):
@@ -209,9 +208,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "github.com/golang/protobuf/proto"')
+        go_pkg_fp = self._fp
+        go_pkg_filename = self._filename
+        self._filename = os.path.normpath(os.path.join(self._ux_path, "common.go"))
+        self._init_fp(self._filename)
+        self._write_package()
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
+        self._fp = go_pkg_fp
+        self._filename = go_pkg_filename
 
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
@@ -605,14 +611,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToPbText() string {{
+                obj.Validate()
                 return proto.MarshalTextString(obj.Msg())
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
-                return proto.UnmarshalText(value, obj.Msg())
+                retObj := proto.UnmarshalText(value, obj.Msg())
+                obj.Validate()
+                return retObj
             }}
 
             func (obj *{struct}) ToYaml() string {{
+                obj.Validate()
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
                     AllowPartial:    true,
@@ -635,10 +645,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                return opts.Unmarshal([]byte(data), obj.Msg())
+                retObj := opts.Unmarshal([]byte(data), obj.Msg())
+                obj.Validate()
+                return retObj
             }}
 
             func (obj *{struct}) ToJson() string {{
+                obj.Validate()
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
                     AllowPartial:    true,
@@ -657,7 +670,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                return opts.Unmarshal([]byte(value), obj.Msg())
+                retObj := opts.Unmarshal([]byte(value), obj.Msg())
+                return retObj
             }}
         """.format(
                 struct=new.struct,
@@ -1102,7 +1116,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             fluent_new.interface_fields.append(field)
 
     def _write_validate_method(self, new):
-        # import pdb; pdb.set_trace()
         statements = []
         for field in new.interface_fields:
             if field.isArray:
@@ -1169,9 +1182,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """
                     // {name} required
                     if obj.obj.{name} != nil {{
-                        obj.{name}().Validate()
+                        obj.{external_name}().Validate()
                     }}
-                    """.format(name=field.name)
+                    """.format(name=field.name, external_name=self._get_external_struct_name(field.name))
                 )
 
             elif field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"]:
