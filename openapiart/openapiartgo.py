@@ -86,8 +86,9 @@ class FluentField(object):
         self.adder_method = None
         self.has_method = None
         self.format = None # only for mac, ipv4, ipv6 and hex validation
-        self.itemformat = None  # only for mac, ipv4, ipv6 and hex validation
         self.default = None
+        self.itemformat = None # only for mac, ipv4, ipv6 and hex validation
+
 
 class OpenApiArtGo(OpenApiArtPlugin):
     """Generates a fluent interface go package that encapsulates protoc
@@ -292,7 +293,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.method = """New{interface}() {interface}""".format(interface=new.interface)
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
-                    rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
+                    rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.Msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
                         interface=new.interface,
@@ -594,16 +595,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj *{pb_pkg_name}.{interface}
             }}
             
-            func (obj *{struct}) msg() *{pb_pkg_name}.{interface} {{
+            func (obj *{struct}) Msg() *{pb_pkg_name}.{interface} {{
                 return obj.obj
             }}
 
+            func (obj *{struct}) SetMsg(msg *{pb_pkg_name}.{interface}) {interface} {{
+                obj.obj = msg
+                return obj
+            }}
+
             func (obj *{struct}) ToPbText() string {{
-                return proto.MarshalTextString(obj.msg())
+                return proto.MarshalTextString(obj.Msg())
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
-                return proto.UnmarshalText(value, obj.msg())
+                return proto.UnmarshalText(value, obj.Msg())
             }}
 
             func (obj *{struct}) ToYaml() string {{
@@ -612,7 +618,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial:    true,
                     EmitUnpopulated: false,
                 }}
-                data, err := opts.Marshal(obj.msg())
+                data, err := opts.Marshal(obj.Msg())
                 data, err = yaml.JSONToYAML(data)
                 if err != nil {{
                     panic(err)
@@ -629,7 +635,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                return opts.Unmarshal([]byte(data), obj.msg())
+                return opts.Unmarshal([]byte(data), obj.Msg())
             }}
 
             func (obj *{struct}) ToJson() string {{
@@ -639,7 +645,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     EmitUnpopulated: false,
                     Indent:          "  ",
                 }}
-                data, err := opts.Marshal(obj.msg())
+                data, err := opts.Marshal(obj.Msg())
                 if err != nil {{
                     panic(err)
                 }}
@@ -651,7 +657,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                return opts.Unmarshal([]byte(value), obj.msg())
+                return opts.Unmarshal([]byte(value), obj.Msg())
             }}
         """.format(
                 struct=new.struct,
@@ -679,7 +685,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         interface_signatures = "\n".join(interfaces)
         self._write(
             """type {interface} interface {{
-                msg() *{pb_pkg_name}.{interface}
+                Msg() *{pb_pkg_name}.{interface}
+                SetMsg(*{pb_pkg_name}.{interface}) {interface}
                 {interface_signatures}
             }}
         """.format(
@@ -700,7 +707,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if field.getter_method is None:
             return
         elif field.isArray and field.isEnum is False:
-            print("getter_method : ", field.getter_method)
             if field.struct:
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
@@ -1270,7 +1276,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {body}
             }}""".format(struct=new.struct, body=body)
         )
-
 
     def _get_schema_object_name_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
