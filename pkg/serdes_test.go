@@ -13,6 +13,7 @@ import (
 func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.PrefixConfig {
 	config := api.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.RequiredObject().SetEA(0.0)
 	config.SetIeee8021Qbb(true)
 	config.SetFullDuplex100Mb(2)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
@@ -40,8 +41,8 @@ func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.Pref
 	config.Ipv4Pattern().Ipv4().SetValues([]string{"10.10.10.10", "20.20.20.20"})
 	config.Ipv4Pattern().Ipv4().Increment().SetStart("1.1.1.1").SetStep("0.0.0.1").SetCount(100)
 	config.Ipv4Pattern().Ipv4().Decrement().SetStart("1.1.1.1").SetStep("0.0.0.1").SetCount(100)
-	config.Ipv6Pattern().Ipv6().SetValue("20001::1")
-	config.Ipv6Pattern().Ipv6().SetValues([]string{"20001::1", "2001::2"})
+	config.Ipv6Pattern().Ipv6().SetValue("2000::1")
+	config.Ipv6Pattern().Ipv6().SetValues([]string{"2000::1", "2001::2"})
 	config.Ipv6Pattern().Ipv6().Increment().SetStart("2000::1").SetStep("::1").SetCount(100)
 	config.Ipv6Pattern().Ipv6().Decrement().SetStart("3000::1").SetStep("::1").SetCount(100)
 	config.IntegerPattern().Integer().SetValue(1)
@@ -96,7 +97,8 @@ func TestPartialSerDes(t *testing.T) {
 	c2 := api.NewPrefixConfig()
 	c2.E().FromJson(string(data1))
 	c2.G().Add().FromJson(string(data2))
-	fmt.Println(c2.ToYaml())
+	fmt.Println(c2.E().ToYaml())
+	fmt.Println(c2.G().Add().ToYaml())
 }
 
 func TestPrefixConfigPbTextSerDes(t *testing.T) {
@@ -144,7 +146,7 @@ func TestValidJsonDecode(t *testing.T) {
 	// Valid FromJson
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
-	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1 }`
+	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {}}`
 	err := c1.FromJson(input_str)
 	assert.Nil(t, err)
 }
@@ -153,7 +155,7 @@ func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
-	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1 }`
+	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unknown field "bz"`)
@@ -163,7 +165,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
-	input_str := `{"a":"ixia", "b" : "abc", "c" : 1 }`
+	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
@@ -173,7 +175,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
-	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1 }`
+	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `invalid value for string type: [`)
@@ -183,10 +185,10 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 	// Valid without value
 	api := openapiart.NewApi()
 	c1 := api.NewPrefixConfig()
-	input_str := `{"a": "ixia", "b" : 8.8, "c" : }`
+	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for int32 type: }`)
+	assert.Contains(t, err.Error(), `invalid value for int32 type:`)
 }
 
 func TestValidYamlDecode(t *testing.T) {
@@ -196,6 +198,7 @@ func TestValidYamlDecode(t *testing.T) {
 b: 12.2
 c: 2
 h: true
+required_object: {}
 response: status_200
 `
 	err := config.FromYaml(data)
@@ -210,6 +213,8 @@ func TestBadKeyYamlDecode(t *testing.T) {
 	var data = `a: Easy
 bz: 12.2
 c: 2
+response: status_200
+required_object : {}
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)
@@ -223,6 +228,8 @@ func TestBadDatatypeYamlDecode(t *testing.T) {
 	var data = `a: Easy
 b: abc
 c: 2
+response: status_200
+required_object : {}
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)
@@ -236,6 +243,8 @@ func TestBadDatastructureYamlDecode(t *testing.T) {
 	var data = `a: [Make It Easy]
 b: 9.9
 c: 2
+response: status_200
+required_object : {}
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)

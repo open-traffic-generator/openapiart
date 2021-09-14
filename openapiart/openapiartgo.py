@@ -87,6 +87,9 @@ class FluentField(object):
         self.format = None # only for mac, ipv4, ipv6 and hex validation
         self.default = None
         self.itemformat = None # only for mac, ipv4, ipv6 and hex validation
+        self.hasminmax = False
+        self.min = None
+        self.max = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -312,6 +315,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         request_return_type=rpc.request_return_type,
                     )
+                    rpc.validate = """
+                        {struct}.Validate()
+                        err := validationResult()
+                        if err != nil {{
+                            return nil, err
+                        }}
+                    """.format(struct=new.struct)
                     rpc.http_call = """return api.http{operation_name}({struct})""".format(
                         operation_name=rpc.operation_name,
                         struct=new.struct,
@@ -404,7 +414,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if err != nil {{
                     return nil, err
                 }}
-                basePath := fmt.Sprintf(urlPath)
+                basePath := urlPath
                 queryUrl, _ = queryUrl.Parse(basePath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
@@ -470,6 +480,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    {validate}
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
@@ -498,6 +509,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     error_handling=error_handling,
                     return_value=return_value,
                     http_call=rpc.http_call,
+                    validate = getattr(rpc, "validate", "")
                 )
             )
 
@@ -520,6 +532,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 success_handling = """obj := api.{success_method}()
                     if err := obj.StatusCode200().FromJson(string(bodyBytes)); err != nil {{
+                        return nil, err
+                    }}
+                    obj.Validate()
+                    err := validationResult()
+                    if err != nil {{
                         return nil, err
                     }}
                     return obj.StatusCode200(), nil""".format(
@@ -612,17 +629,32 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             func (obj *{struct}) ToPbText() string {{
                 obj.Validate()
+                vErr := validationResult()
+                if vErr != nil {{
+                    panic(vErr)
+                }}
                 return proto.MarshalTextString(obj.Msg())
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
                 retObj := proto.UnmarshalText(value, obj.Msg())
+                if retObj != nil {{
+                    return retObj
+                }}
                 obj.Validate()
+                vErr := validationResult()
+                if vErr != nil {{
+                    return vErr
+                }}
                 return retObj
             }}
 
             func (obj *{struct}) ToYaml() string {{
                 obj.Validate()
+                vErr := validationResult()
+                if vErr != nil {{
+                    panic(vErr)
+                }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
                     AllowPartial:    true,
@@ -647,12 +679,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     DiscardUnknown: false,
                 }}
                 retObj := opts.Unmarshal([]byte(data), obj.Msg())
+                if retObj != nil {{
+                    return retObj
+                }}
                 obj.Validate()
+                vErr := validationResult()
+                if vErr != nil {{
+                    return vErr
+                }}
                 return retObj
             }}
 
             func (obj *{struct}) ToJson() string {{
                 obj.Validate()
+                vErr := validationResult()
+                if vErr != nil {{
+                    panic(vErr)
+                }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
                     AllowPartial:    true,
@@ -672,6 +715,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     DiscardUnknown: false,
                 }}
                 retObj := opts.Unmarshal([]byte(value), obj.Msg())
+                if retObj != nil {{
+                    return retObj
+                }}
+                obj.Validate()
+                err := validationResult()
+                if err != nil {{
+                    return err
+                }}
                 return retObj
             }}
         """.format(
@@ -870,9 +921,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{fieldname} == nil {{
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
-                for _, item := range value {{
-                    obj.obj.{fieldname} = append(obj.obj.{fieldname}, item)
-                }}""".format(
+                obj.obj.{fieldname} = append(obj.obj.{fieldname}, value...)
+                """.format(
                 fieldname=field.name,
                 fieldtype=field.type,
             )
@@ -892,7 +942,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
-                intValue := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
+                intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
+                if !ok {{
+                    validation = append(validation, fmt.Sprintf(
+                        "%s is not a valid choice on {interface}{fieldname}Enum", string(value)))
+                    return obj
+                }}
                 {body}
                 return obj
             }}
@@ -1032,11 +1087,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
+            field.hasminmax = "minimum" in property_schema or "maximum" in property_schema
             field.isArray = "type" in property_schema and property_schema["type"] == "array"
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
                 if "unspecified" in field.enums:
                     field.enums.remove("unspecified")
+            if field.hasminmax:
+                field.min = None if "minimum" not in property_schema else property_schema["minimum"]
+                field.max = None if "maximum" not in property_schema else property_schema["maximum"]
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1119,7 +1178,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_validate_method(self, new):
         statements = []
         for field in new.interface_fields:
-            valid = False
+            valid = 0
             if field.isArray:
                 if field.struct and field.isEnum is False:
                     statements.append(
@@ -1130,7 +1189,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         }}
                         """.format(name=field.name)
                     )
-                    valid = True
+                    valid += 1
                 elif field.isEnum and field.isOptional is False:
                     statements.append(
                         """
@@ -1140,33 +1199,36 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         }}
                         """.format(name=field.name, interface=new.interface)
                     )
-                    valid = True
+                    valid += 1
                 elif field.itemformat in ["mac", "ipv4", "ipv6", "hex"] and field.struct is False:
                     statements.append(
                         """if obj.obj.{name} != nil {{
                             for _, item := range obj.{name}() {{
                                 err := validate{format}(obj.{name}())
                                 if err != nil {{
-                                    validation = append(validation, err.Error())
+                                    validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
                                 }}
                             }}
                         }}
-                        """.format(name=field.name, format=field.itemformat)
+                        """.format(name=field.name, format=field.itemformat, interface=new.interface)
                     )
-                    valid = True
+                    valid += 1
             if field.isEnum and field.isOptional is False and field.isArray is False:
                 statements.append(
                     """
                     // {name} required
                     if obj.obj.{name}.Number() == 0 {{
-                        validation = append(validation, "{name} is required field on {interface}")
+                        validation = append(
+                            validation, fmt.Sprintf("{name} is required field on {interface} and got value %s", obj.obj.{name}.String()))
                     }}
                     """.format(name=field.name, interface=new.interface)
                 )
-                valid = True
+                valid += 1
             # validate required attr which is not struct
-            if field.isOptional is False and field.type in ["string", "[]bytes"] and field.isEnum is False \
-                and field.isArray is False:
+            if (field.isOptional is False and field.isEnum is False
+                and ((field.type.strip("[]") in self._oapi_go_types.items() and "[]" in field.type)
+                or field.type == "string")):
+
                 line = """
                 // {name} required
                 if obj.obj.{name} == {value} {{
@@ -1180,33 +1242,41 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line + """else {{
                         err := validate{format}(obj.{name}())
                         if err != nil {{
-                            validation = append(validation, err.Error())
+                            validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
                         }}
                     }}
-                    """.format(format=field.format.capitalize())
+                    """.format(format=field.format.capitalize(), name=field.name, interface=new.interface)
                 statements.append(line)
-                valid = True
+                valid += 1
             # next level validate if field is an object
-            if field.struct and field.isPointer is True and field.isArray is False:
-                statements.append(
-                    """
-                    // {name} required
-                    if obj.obj.{name} != nil {{
-                        obj.{external_name}().Validate()
-                    }}
-                    """.format(name=field.name, external_name=self._get_external_struct_name(field.name))
-                )
-                valid = True
             if field.struct and field.isArray is False:
-                statements.append(
-                    """
-                    // {name} required
+                line = """
                     if obj.obj.{name} != nil {{
                         obj.{external_name}().Validate()
+                    }} """
+                if field.isOptional is False:
+                    line = line + """else {{
+                        validation = append(validation, "{name} is required field on interface {interface}")
                     }}
-                    """.format(name=field.name, external_name=self._get_external_struct_name(field.name))
+                    """
+                statements.append(
+                    line.format(
+                        name=field.name, external_name=self._get_external_struct_name(field.name),
+                        interface=new.interface
+                    )
                 )
-                valid = True
+                valid += 1
+            # if field.struct and field.isArray is False and field.isPointer is False:
+            #     line = """
+            #         // {name} required
+            #         if obj.obj.{name} != nil {{
+            #             obj.{external_name}().Validate()
+            #         }} """
+            #     if field.isOptional is False:
+            #     statements.append(
+            #         line.format(name=field.name, external_name=self._get_external_struct_name(field.name))
+            #     )
+            #     valid += 1
 
             if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"] and field.isOptional:
                 statements.append(
@@ -1214,31 +1284,52 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if obj.obj.{name} != {value} {{
                         err := validate{format}(obj.{name}())
                         if err != nil {{
-                            validation = append(validation, err.Error())
+                            validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
                         }}
                     }}
                     """.format(
                         name=field.name,
                         format=field.format.capitalize() if field.isArray is False else field.format.capitalize() + 'Slice',
-                        value="nil" if field.isPointer is True or field.isArray is True else '""'
+                        value="nil" if field.isPointer is True or field.isArray is True else '""',
+                        interface=new.interface
                     )
                 )
-                valid = True
-            # TODO need more clarity
-            # if field.isEnum and field.isOptional:
-            #     statements.append(
-            #         """
-            #             if obj.HasChoice() 
-            #         """
-            #     )
-            if not valid:
-                print("{field} is not set for validation on interface {interface}".format(
-                    field=field.name, interface=new.interface
+                valid += 1
+            if field.hasminmax:
+                valid += 1
+                line = []
+                if field.min is not None:
+                    line.append("{pointer}{value} < {min}")
+                if field.max is not None:
+                    line.append("{pointer}{value} > {max}")
+                body = ("if " + " || ".join(line) + """ {{
+                    validation = append(
+                        validation, fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got %d", {pointer}{value}))
+                }}
+                """).format(
+                    name=field.name, interface=new.interface, max="any" if field.max is None else field.max,
+                    pointer="*" if field.isPointer else "", min=field.min if field.min is None else field.min,
+                    value = "item" if field.isArray else "obj.obj.{name}".format(name=field.name)
+                )
+                if field.isArray:
+                    body = """
+                        for _, item := range obj.obj.{name} {{
+                            {body}
+                        }}
+                    """.format(body=body, name=field.name)
+                statements.append(body)
+            if valid == 0:
+                print("{field} of type {ftype} and {req} is not set for validation on interface {interface}".format(
+                    field=field.name, interface=new.interface, ftype=field.type,
+                    req="Optional" if field.isOptional else "required"
+                ))
+            if valid > 1:
+                print("{field} hit {valid} times on interface {interface}".format(
+                    field=field.name, interface=new.interface, valid=valid
                 ))
         body = "\n".join(statements)
         self._write(
             """func (obj *{struct}) Validate() {{
-                obj.setDefault()
                 {body}
             }}
             """.format(struct=new.struct, body=body)
@@ -1284,7 +1375,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     value=field.default.upper()
                 )
                 if field.name == "Choice":
-                    cnd_check = "hasChoice == false"
+                    cnd_check = "!hasChoice"
                 elif field.isPointer:
                     cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
