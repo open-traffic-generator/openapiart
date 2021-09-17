@@ -134,11 +134,10 @@ var validation []string
 
 func validationResult() error {
 	if len(validation) > 0 {
-		for _, item := range validation {
-			fmt.Println(item)
-		}
+		validation = append(validation, "validation errors")
+		errors := strings.Join(validation, "\n")
 		validation = nil
-		return fmt.Errorf("validation errors")
+		return fmt.Errorf(errors)
 	}
 	return nil
 }

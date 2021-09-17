@@ -51,8 +51,8 @@ func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.Pref
 	config.IntegerPattern().Integer().Decrement().SetStart(1).SetStart(1).SetCount(100)
 	config.MacPattern().Mac().SetValue("00:00:00:00:00:0a")
 	config.MacPattern().Mac().SetValues([]string{"00:00:00:00:00:0a", "00:00:00:00:00:0b", "00:00:00:00:00:0c"})
-	config.MacPattern().Mac().Increment().SetStart("00:00:00:00:00:0a").SetStart("00:00:00:00:00:01").SetCount(100)
-	config.MacPattern().Mac().Decrement().SetStart("00:00:00:00:00:0a").SetStart("00:00:00:00:00:01").SetCount(100)
+	config.MacPattern().Mac().Increment().SetStart("00:00:00:00:00:0a").SetStep("00:00:00:00:00:01").SetCount(100)
+	config.MacPattern().Mac().Decrement().SetStart("00:00:00:00:00:0a").SetStep("00:00:00:00:00:01").SetCount(100)
 	config.ChecksumPattern().Checksum().SetCustom(64)
 	return config
 }

@@ -316,8 +316,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
-                        {struct}.Validate()
-                        err := validationResult()
+                        err := {struct}.Validate()
                         if err != nil {{
                             return nil, err
                         }}
@@ -534,8 +533,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err := obj.StatusCode200().FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    obj.Validate()
-                    err := validationResult()
+                    err := obj.Validate()
                     if err != nil {{
                         return nil, err
                     }}
@@ -628,8 +626,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToPbText() string {{
-                obj.Validate()
-                vErr := validationResult()
+                vErr := obj.Validate()
                 if vErr != nil {{
                     panic(vErr)
                 }}
@@ -641,8 +638,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                obj.Validate()
-                vErr := validationResult()
+                vErr := obj.Validate()
                 if vErr != nil {{
                     return vErr
                 }}
@@ -650,8 +646,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToYaml() string {{
-                obj.Validate()
-                vErr := validationResult()
+                vErr := obj.Validate()
                 if vErr != nil {{
                     panic(vErr)
                 }}
@@ -682,8 +677,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                obj.Validate()
-                vErr := validationResult()
+                vErr := obj.Validate()
                 if vErr != nil {{
                     return vErr
                 }}
@@ -691,8 +685,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToJson() string {{
-                obj.Validate()
-                vErr := validationResult()
+                vErr := obj.Validate()
                 if vErr != nil {{
                     panic(vErr)
                 }}
@@ -718,12 +711,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                obj.Validate()
-                err := validationResult()
+                err := obj.Validate()
                 if err != nil {{
                     return err
                 }}
                 return retObj
+            }}
+
+            func (obj *{struct}) Validate() error {{
+                obj.validateObj()
+                return validationResult()
             }}
         """.format(
                 struct=new.struct,
@@ -739,7 +736,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromPbText(value string) error",
             "FromYaml(value string) error",
             "FromJson(value string) error",
-            "Validate()",
+            "Validate() error",
+            "validateObj()",
             "setDefault()"
         ]
         for field in new.interface_fields:
@@ -1184,7 +1182,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     statements.append(
                         """if obj.obj.{name} != nil {{
                             for _, item := range obj.{name}().Items() {{
-                                item.Validate()
+                                item.validateObj()
                             }}
                         }}
                         """.format(name=field.name)
@@ -1252,7 +1250,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.struct and field.isArray is False:
                 line = """
                     if obj.obj.{name} != nil {{
-                        obj.{external_name}().Validate()
+                        obj.{external_name}().validateObj()
                     }} """
                 if field.isOptional is False:
                     line = line + """else {{
@@ -1266,17 +1264,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 valid += 1
-            # if field.struct and field.isArray is False and field.isPointer is False:
-            #     line = """
-            #         // {name} required
-            #         if obj.obj.{name} != nil {{
-            #             obj.{external_name}().Validate()
-            #         }} """
-            #     if field.isOptional is False:
-            #     statements.append(
-            #         line.format(name=field.name, external_name=self._get_external_struct_name(field.name))
-            #     )
-            #     valid += 1
 
             if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"] and field.isOptional:
                 statements.append(
@@ -1329,7 +1316,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 ))
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) Validate() {{
+            """func (obj *{struct}) validateObj() {{
                 {body}
             }}
             """.format(struct=new.struct, body=body)

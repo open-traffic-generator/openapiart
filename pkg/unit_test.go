@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -223,4 +224,188 @@ func TestHas(t *testing.T) {
 	assert.False(t, config.HasFullDuplex100Mb())
 	assert.False(t, config.HasIeee8021Qbb())
 	assert.False(t, config.HasOptionalObject())
+}
+
+var GoodMac = []string{"ab:ab:10:12:ff:ff"}
+var BadMac = []string{
+	"1", "2.2", "1.1.1.1", "::01", "00:00:00", "00:00:00:00:gg:00", "00:00:fa:ce:fa:ce:01", "255:255:255:255:255:255",
+}
+
+func TestGoodMacValidation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	mac := config.MacPattern().Mac().SetValue(GoodMac[0])
+	err := mac.Validate()
+	assert.Nil(t, err)
+}
+
+func TestBadMacValidation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	for _, mac := range BadMac {
+		macObj := config.MacPattern().Mac().SetValue(mac)
+		err := macObj.Validate()
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "Invalid Mac")
+		}
+	}
+}
+
+func TestGoodMacValues(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	mac := config.MacPattern().Mac().SetValues(GoodMac)
+	err := mac.Validate()
+	assert.Nil(t, err)
+}
+
+func TestBadMacValues(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	mac := config.MacPattern().Mac().SetValues(BadMac)
+	err := mac.Validate()
+	fmt.Println(err.Error())
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+	}
+}
+
+func TestBadMacIncrement(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	mac := config.MacPattern().Mac().Increment().SetStart(GoodMac[0])
+	mac.SetStep(BadMac[0])
+	mac.SetCount(10)
+	err := mac.Validate()
+	fmt.Println(err.Error())
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+	}
+}
+
+func TestBadMacDecrement(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	mac := config.MacPattern().Mac().Decrement().SetStart(BadMac[0])
+	mac.SetStep(GoodMac[0])
+	mac.SetCount(10)
+	err := mac.Validate()
+	fmt.Println(err.Error())
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+	}
+}
+
+var GoodIpv4 = []string{"1.1.1.1", "255.255.255.255"}
+var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"}
+
+func TestGoodIpv4Validation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv4 := config.Ipv4Pattern().Ipv4().SetValue(GoodIpv4[0])
+	err := ipv4.Validate()
+	assert.Nil(t, err)
+}
+
+func TestBadIpv4Validation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	for _, ip := range BadIpv4 {
+		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
+		err := ipv4.Validate()
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "Invalid Ipv4")
+		}
+	}
+}
+
+func TestBadIpv4Values(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
+	err := ipv4.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "Invalid ipv4 addresses")
+	}
+}
+
+func TestBadIpv4Increment(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv4 := config.Ipv4Pattern().Ipv4().Increment().SetStart(GoodIpv4[0])
+	ipv4.SetStep(BadIpv4[0])
+	ipv4.SetCount(10)
+	err := ipv4.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "Invalid Ipv4")
+	}
+}
+
+func TestBadIpv4Decrement(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv4 := config.Ipv4Pattern().Ipv4().Decrement().SetStart(GoodIpv4[0])
+	ipv4.SetStep(BadIpv4[0])
+	ipv4.SetCount(10)
+	err := ipv4.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "Invalid Ipv4")
+	}
+}
+
+var GoodIpv6 = []string{"::", "1::", ": :", "abcd::1234", "aa:00bd:a:b:c:d:f:abcd"}
+var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"}
+
+func TestGoodIpv6Validation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv6 := config.Ipv6Pattern().Ipv6().SetValue(GoodIpv6[0])
+	err := ipv6.Validate()
+	assert.Nil(t, err)
+}
+
+func TestBadIpv6Validation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	for _, ip := range BadIpv6 {
+		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
+		err := ipv6.Validate()
+		if assert.Error(t, err) {
+			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+		}
+	}
+}
+
+func TestBadIpv6Values(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv6 := config.Ipv6Pattern().Ipv6().SetValues(BadIpv6)
+	err := ipv6.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6 address")
+	}
+}
+
+func TestBadIpv6Increment(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv6 := config.Ipv6Pattern().Ipv6().Increment().SetStart(GoodIpv6[0])
+	ipv6.SetStep(BadIpv6[0])
+	ipv6.SetCount(10)
+	err := ipv6.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+	}
+}
+
+func TestBadIpv6Decrement(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	ipv6 := config.Ipv6Pattern().Ipv6().Decrement().SetStart(GoodIpv6[0])
+	ipv6.SetStep(BadIpv6[0])
+	ipv6.SetCount(10)
+	err := ipv6.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+	}
 }
