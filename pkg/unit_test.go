@@ -10,6 +10,7 @@ import (
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // JSONBytesEqual compares the JSON in two byte slices.
@@ -408,4 +409,50 @@ func TestBadIpv6Decrement(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 	}
+}
+
+func TestDefaultSimpleTypes(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.RequiredObject()
+	actual_result := config.ToJson()
+	expected_result := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,  
+		"h": true, 
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		}
+	}`
+	require.JSONEq(t, actual_result, expected_result)
+}
+
+func TestDefaultEObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.E()
+	actual_result := config.E().ToJson()
+	expected_result := `
+	{
+		"e_a":  1,
+		"e_b":  2
+	}`
+	require.JSONEq(t, actual_result, expected_result)
+}
+
+func TestDefaultFObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.F()
+	actual_result := config.F().ToJson()
+	expected_result := `
+	{
+		"choice": "f_a",
+		"f_a": "some string",
+		"f_b": 3
+	}`
+	require.JSONEq(t, actual_result, expected_result)
 }
