@@ -395,8 +395,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if err != nil {{
                     return nil, err
                 }}
-                basePath := fmt.Sprintf(urlPath)
-                queryUrl, _ = queryUrl.Parse(basePath)
+                queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
@@ -613,8 +612,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial:    true,
                     EmitUnpopulated: false,
                 }}
-                data, err := opts.Marshal(obj.Msg())
-                data, err = yaml.JSONToYAML(data)
+                json, _ := opts.Marshal(obj.Msg())
+                data, err := yaml.JSONToYAML(json)
                 if err != nil {{
                     panic(err)
                 }}
@@ -842,9 +841,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{fieldname} == nil {{
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
-                for _, item := range value {{
-                    obj.obj.{fieldname} = append(obj.obj.{fieldname}, item)
-                }}""".format(
+                obj.obj.{fieldname} = append(obj.obj.{fieldname}, value...)
+                """.format(
                 fieldname=field.name,
                 fieldtype=field.type,
             )
