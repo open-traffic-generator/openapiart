@@ -1367,9 +1367,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 continue
             details = "Name: {} Type : {} Format: {}".format(field.name, field.type, field.format)
             if field.isArray and field.isEnum:
-                print("111 TBD => if field.isArray and field.isEnum => ", details)
-                raise Exception("TBD for field.isArray and field.isEnum")
+                raise Exception("TBD for {}".format(details))
             elif field.isArray:
+                value = ""
+                if len(field.default) > 0:
+                    value = "\"{}\"".format(field.default[0]) if "string" in field.type else field.default[0]
                 body += """if obj.obj.{name} == nil {{
                     obj.Set{external_name}({type}{{{value}}})
                 }}
@@ -1377,7 +1379,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     name=field.name,
                     external_name=self._get_external_field_name(field.name),
                     type=field.type,
-                    value='"{}"'.format(field.default[0]) if "string" in field.type else field.default[0],
+                    value=value
                 )
             elif field.isEnum:
                 enum_value = """{struct}{name}.{value}""".format(struct=self._get_external_field_name(new.struct), name=field.name, value=field.default.upper())
