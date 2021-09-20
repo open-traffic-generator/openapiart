@@ -456,3 +456,20 @@ func TestDefaultFObject(t *testing.T) {
 	}`
 	require.JSONEq(t, actual_result, expected_result)
 }
+
+func TestRequiredValidation(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.RequiredObject()
+	config.MObject().
+		SetString("asdf").
+		SetInteger(63).
+		SetDouble(55.4).
+		SetFloat(33.2).
+		SetHex("00AABB").
+		SetMac("00:AA:BB:CC:DD:EE").
+		SetIpv6("2001::1").
+		SetIpv4("1.1.1.1")
+	err := config.Validate()
+	assert.Nil(t, err)
+}

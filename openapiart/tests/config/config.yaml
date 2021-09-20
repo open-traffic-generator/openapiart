@@ -106,7 +106,9 @@ components:
           $ref: '../pattern/pattern.yaml#/components/schemas/ChecksumPattern'
         case:
           $ref: '#/components/schemas/Layer1Ieee802x'
-        
+        m_object:
+          $ref: '#/components/schemas/MObject'
+
     Layer1Ieee802x:
       type: object
       properties:
@@ -198,6 +200,37 @@ components:
       description: |-
         Format validation object
       type: object
+      properties:
+        string:
+          type: string
+        integer:
+          type: integer
+          minimum: 10
+          maximum: 90
+        float:
+          type: number
+          format: float
+        double:
+          type: number
+          format: double
+        mac:
+          type: string
+          format: mac
+        ipv4:
+          type: string
+          format: ipv4
+        ipv6:
+          type: string
+          format: ipv6
+        hex:
+          type: string
+          format: hex
+
+    MObject:
+      description: |-
+        Required format validation object
+      type: object
+      required: [string, integer, float, double, mac, ipv4, ipv6, hex]
       properties:
         string:
           type: string
