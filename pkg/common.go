@@ -1,3 +1,5 @@
+package openapiart
+
 import (
 	"context"
 	"fmt"
@@ -263,3 +265,4 @@ func validateIpv6Slice(ip []string) error {
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
 }
+
