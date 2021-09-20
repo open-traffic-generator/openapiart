@@ -145,6 +145,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "string": "string",
             "boolean": "bool",
             "integer": "int32",
+            "int64": "int64",
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
@@ -1095,6 +1096,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.hasminmax:
                 field.min = None if "minimum" not in property_schema else property_schema["minimum"]
                 field.max = None if "maximum" not in property_schema else property_schema["maximum"]
+                if (field.min is not None and field.min > 2147483647) or \
+                    (field.max is not None and field.max > 2147483647) and "int" in field.type:
+                    field.type = field.type.replace("32", "64")
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1242,11 +1246,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 // {name} required
                 if obj.obj.{name} == {value} {{
                     validation = append(validation, "{name} is required field on interface {interface}")
-                }}""".format(
-                    name=field.name,
-                    interface=new.interface,
-                    value='""' if field.type == "string" else "nil",
-                )
+                }} """.format(
+                        name=field.name, interface=new.interface,
+                        value='""' if field.type == "string" else "nil",
+                    )
                 if field.format in ["mac", "ipv4", "ipv6", "hex"]:
                     line = (
                         line
@@ -1296,7 +1299,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 valid += 1
-            if field.hasminmax:
+            if field.hasminmax and "int" in field.type:
                 valid += 1
                 line = []
                 if field.min is not None:
@@ -1377,12 +1380,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     name=field.name,
-                    external_name=self._get_external_field_name(field.name),
+                    external_name=self._get_external_struct_name(field.name),
                     type=field.type,
                     value=value
                 )
             elif field.isEnum:
-                enum_value = """{struct}{name}.{value}""".format(struct=self._get_external_field_name(new.struct), name=field.name, value=field.default.upper())
+                enum_value = """{struct}{name}.{value}""".format(
+                    struct=self._get_external_struct_name(new.struct),
+                    name=field.name,
+                    value=field.default.upper()
+                )
                 if field.name == "Choice":
                     cnd_check = "!hasChoice"
                 elif field.isPointer:
@@ -1394,7 +1401,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     cnd_check=cnd_check,
-                    external_name=self._get_external_field_name(field.name),
+                    external_name=self._get_external_struct_name(field.name),
                     enum_value=enum_value,
                 )
             elif field.isPointer:
@@ -1403,8 +1410,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     name=field.name,
-                    external_name=self._get_external_field_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    external_name=self._get_external_struct_name(field.name),
+                    value="\"{0}\"".format(field.default) if field.type == "string" else field.default,
                 )
             else:
                 body += """if obj.obj.{name} == {check_value} {{
@@ -1412,9 +1419,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     name=field.name,
-                    check_value='""' if field.type == "string" else "0",
-                    external_name=self._get_external_field_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    check_value="\"\"" if field.type == "string" else "0",
+                    external_name=self._get_external_struct_name(field.name),
+                    value="\"{0}\"".format(field.default )if field.type == "string" else field.default,
                 )
 
         self._write(
@@ -1450,6 +1457,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 format_type = (oapi_type + property_schema["format"]).lower()
                 if format_type.lower() in self._oapi_go_types:
                     go_type = "{oapi_go_type}".format(oapi_go_type=self._oapi_go_types[format_type.lower()])
+                elif property_schema["format"].lower() in self._oapi_go_types:
+                    go_type = "{oapi_go_type}".format(
+                        oapi_go_type=self._oapi_go_types[property_schema["format"].lower()]
+                    )
                 else:
                     fluent_field.format = property_schema["format"].lower()
         elif "$ref" in property_schema:
