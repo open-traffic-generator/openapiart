@@ -1242,8 +1242,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 // {name} required
                 if obj.obj.{name} == {value} {{
                     validation = append(validation, "{name} is required field on interface {interface}")
-                }}
-                """.format(
+                }}""".format(
                     name=field.name,
                     interface=new.interface,
                     value='""' if field.type == "string" else "nil",

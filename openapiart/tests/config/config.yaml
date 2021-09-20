@@ -198,6 +198,7 @@ components:
       description: |-
         Format validation object
       type: object
+      required: [ipv4]
       properties:
         string:
           type: string
