@@ -1375,17 +1375,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.isArray and field.isEnum:
                 raise Exception("TBD for {}".format(details))
             elif field.isArray:
-                value = ""
-                if len(field.default) > 0:
-                    value = "\"{}\"".format(field.default[0]) if "string" in field.type else field.default[0]
+                if "string" in field.type:
+                    values = '"{0}"'.format('", "'.join(field.default))
+                else:
+                    values = str(field.default)[1:-1]
                 body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({type}{{{value}}})
+                    obj.Set{external_name}({type}{{{values}}})
                 }}
                 """.format(
                     name=field.name,
                     external_name=self._get_external_struct_name(field.name),
                     type=field.type,
-                    value=value
+                    values=values
                 )
             elif field.isEnum:
                 enum_value = """{struct}{name}.{value}""".format(
