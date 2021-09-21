@@ -640,7 +640,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                vErr := obj.Validate()
+                vErr := obj.Validate(true)
                 if vErr != nil {{
                     return vErr
                 }}
@@ -679,7 +679,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                vErr := obj.Validate()
+                vErr := obj.Validate(true)
                 if vErr != nil {{
                     return vErr
                 }}
@@ -713,14 +713,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                err := obj.Validate()
+                err := obj.Validate(true)
                 if err != nil {{
                     return err
                 }}
                 return retObj
             }}
 
-            func (obj *{struct}) Validate() error {{
+            func (obj *{struct}) Validate(defaults ...bool) error {{
+                if len(defaults) > 0 {{
+                    if defaults[0] == true {{
+                        obj.setDefault()
+                    }}
+                }}
                 obj.validateObj()
                 return validationResult()
             }}
@@ -738,7 +743,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromPbText(value string) error",
             "FromYaml(value string) error",
             "FromJson(value string) error",
-            "Validate() error",
+            "Validate(defaults ...bool) error",
             "validateObj()",
             "setDefault()",
         ]
