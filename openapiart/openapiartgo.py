@@ -921,7 +921,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{fieldname} == nil {{
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
-                obj.obj.{fieldname} = append(obj.obj.{fieldname}, value...)
+                obj.obj.{fieldname} = value
                 """.format(
                 fieldname=field.name,
                 fieldtype=field.type,
@@ -1330,6 +1330,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         body=body, name=field.name
                     )
+                if field.isPointer:
+                    body = """
+                        if obj.obj.{name} != nil {{
+                            {body}
+                        }}
+                    """.format(body=body, name=field.name)
                 statements.append(body)
             if valid == 0:
                 print(
