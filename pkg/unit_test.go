@@ -451,8 +451,7 @@ func TestDefaultFObject(t *testing.T) {
 	expected_result := `
 	{
 		"choice": "f_a",
-		"f_a": "some string",
-		"f_b": 3
+		"f_a": "some string"
 	}`
 	require.JSONEq(t, actual_result, expected_result)
 }

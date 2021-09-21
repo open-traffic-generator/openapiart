@@ -1352,22 +1352,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_default_method(self, new):
         body = ""
         interface_fields = new.interface_fields
+        hasChoiceConfig = None
         for index, field in enumerate(interface_fields):
             if field.name == "Choice":
-                if field.isPointer:
-                    body = "hasChoice := obj.HasChoice()\n"
-                else:
-                    body = """hasChoice := true
-                    if obj.obj.Choice.Number() == 0 {
-                        hasChoice = false
-                    }
-                    """
+                hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
                 interface_fields.append(interface_fields.pop(index))
                 break
 
         for field in interface_fields:
             if field.default is None:
                 continue
+            if hasChoiceConfig is not None and field.name not in hasChoiceConfig:
+                continue
+
             details = "Name: {} Type : {} Format: {}".format(field.name, field.type, field.format)
             if field.isArray and field.isEnum:
                 raise Exception("TBD for {}".format(details))
@@ -1390,9 +1387,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     name=field.name,
                     value=field.default.upper()
                 )
-                if field.name == "Choice":
-                    cnd_check = "!hasChoice"
-                elif field.isPointer:
+                if field.isPointer:
                     cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
                     cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
