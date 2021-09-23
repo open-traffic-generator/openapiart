@@ -721,12 +721,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) Validate(defaults ...bool) error {{
+                var set_default bool = false
                 if len(defaults) > 0 {{
-                    if defaults[0] == true {{
-                        obj.setDefault()
-                    }}
+                    set_default = defaults[0]
                 }}
-                obj.validateObj()
+                obj.validateObj(set_default)
                 return validationResult()
             }}
         """.format(
@@ -744,7 +743,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromYaml(value string) error",
             "FromJson(value string) error",
             "Validate(defaults ...bool) error",
-            "validateObj()",
+            "validateObj(set_default bool)",
             "setDefault()",
         ]
         for field in new.interface_fields:
@@ -1192,7 +1191,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     statements.append(
                         """if obj.obj.{name} != nil {{
                             for _, item := range obj.{name}().Items() {{
-                                item.validateObj()
+                                item.validateObj(set_default)
                             }}
                         }}
                         """.format(
@@ -1274,7 +1273,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.struct and field.isArray is False:
                 line = """
                     if obj.obj.{name} != nil {{
-                        obj.{external_name}().validateObj()
+                        obj.{external_name}().validateObj(set_default)
                     }} """
                 if field.isOptional is False:
                     line = (
@@ -1352,7 +1351,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 print("{field} hit {valid} times on interface {interface}".format(field=field.name, interface=new.interface, valid=valid))
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) validateObj() {{
+            """func (obj *{struct}) validateObj(set_default bool) {{
+                if set_default {{
+                    obj.setDefault()
+                }}
                 {body}
             }}
             """.format(
