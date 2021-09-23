@@ -179,6 +179,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
+                format = openapi_object.get("format")
+                min = openapi_object.get("minimum")
+                max = openapi_object.get("maximum")
+                if (min is not None and min > 2147483647) or (max is not None and max > 2147483647):
+                    return "int64"
+                if format is not None and "int64" in format:
+                    return "int64"
                 return "int32"
             if type == "number":
                 if "format" in openapi_object:
@@ -188,7 +195,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         return "float"
                 return "float"
             if type == "array":
-                return "repeated " + self._get_field_type(property_name, openapi_object["items"])
+                item_type = self._get_field_type(property_name, openapi_object["items"])
+                format = openapi_object.get("format")
+                min = openapi_object.get("minimum")
+                max = openapi_object.get("maximum")
+                if (min is not None and min > 2147483647) or (max is not None and max > 2147483647):
+                    item_type = item_type.replace("32", "64")
+                if format is not None and "int64" in format:
+                    item_type = item_type.replace("32", "64")
+                return "repeated " + item_type
         elif "$ref" in openapi_object:
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
 

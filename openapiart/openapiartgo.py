@@ -145,6 +145,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "string": "string",
             "boolean": "bool",
             "integer": "int32",
+            "int64": "int64",
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
@@ -639,7 +640,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                vErr := obj.Validate()
+                vErr := obj.Validate(true)
                 if vErr != nil {{
                     return vErr
                 }}
@@ -678,7 +679,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                vErr := obj.Validate()
+                vErr := obj.Validate(true)
                 if vErr != nil {{
                     return vErr
                 }}
@@ -712,15 +713,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                err := obj.Validate()
+                err := obj.Validate(true)
                 if err != nil {{
                     return err
                 }}
                 return retObj
             }}
 
-            func (obj *{struct}) Validate() error {{
-                obj.validateObj()
+            func (obj *{struct}) Validate(defaults ...bool) error {{
+                var set_default bool = false
+                if len(defaults) > 0 {{
+                    set_default = defaults[0]
+                }}
+                obj.validateObj(set_default)
                 return validationResult()
             }}
         """.format(
@@ -737,8 +742,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromPbText(value string) error",
             "FromYaml(value string) error",
             "FromJson(value string) error",
-            "Validate() error",
-            "validateObj()",
+            "Validate(defaults ...bool) error",
+            "validateObj(set_default bool)",
             "setDefault()",
         ]
         for field in new.interface_fields:
@@ -920,7 +925,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{fieldname} == nil {{
                     obj.obj.{fieldname} = make({fieldtype}, 0)
                 }}
-                obj.obj.{fieldname} = append(obj.obj.{fieldname}, value...)
+                obj.obj.{fieldname} = value
                 """.format(
                 fieldname=field.name,
                 fieldtype=field.type,
@@ -1095,6 +1100,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.hasminmax:
                 field.min = None if "minimum" not in property_schema else property_schema["minimum"]
                 field.max = None if "maximum" not in property_schema else property_schema["maximum"]
+                if (field.min is not None and field.min > 2147483647) or \
+                    (field.max is not None and field.max > 2147483647) and "int" in field.type:
+                    field.type = field.type.replace("32", "64")
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1183,7 +1191,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     statements.append(
                         """if obj.obj.{name} != nil {{
                             for _, item := range obj.{name}().Items() {{
-                                item.validateObj()
+                                item.validateObj(set_default)
                             }}
                         }}
                         """.format(
@@ -1242,11 +1250,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 // {name} required
                 if obj.obj.{name} == {value} {{
                     validation = append(validation, "{name} is required field on interface {interface}")
-                }}""".format(
-                    name=field.name,
-                    interface=new.interface,
-                    value='""' if field.type == "string" else "nil",
-                )
+                }} """.format(
+                        name=field.name, interface=new.interface,
+                        value='""' if field.type == "string" else "nil",
+                    )
                 if field.format in ["mac", "ipv4", "ipv6", "hex"]:
                     line = (
                         line
@@ -1266,7 +1273,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.struct and field.isArray is False:
                 line = """
                     if obj.obj.{name} != nil {{
-                        obj.{external_name}().validateObj()
+                        obj.{external_name}().validateObj(set_default)
                     }} """
                 if field.isOptional is False:
                     line = (
@@ -1296,7 +1303,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 valid += 1
-            if field.hasminmax:
+            if field.hasminmax and "int" in field.type:
                 valid += 1
                 line = []
                 if field.min is not None:
@@ -1327,6 +1334,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         body=body, name=field.name
                     )
+                if field.isPointer:
+                    body = """
+                        if obj.obj.{name} != nil {{
+                            {body}
+                        }}
+                    """.format(body=body, name=field.name)
                 statements.append(body)
             if valid == 0:
                 print(
@@ -1338,7 +1351,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 print("{field} hit {valid} times on interface {interface}".format(field=field.name, interface=new.interface, valid=valid))
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) validateObj() {{
+            """func (obj *{struct}) validateObj(set_default bool) {{
+                if set_default {{
+                    obj.setDefault()
+                }}
                 {body}
             }}
             """.format(
@@ -1349,41 +1365,43 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_default_method(self, new):
         body = ""
         interface_fields = new.interface_fields
+        hasChoiceConfig = None
         for index, field in enumerate(interface_fields):
             if field.name == "Choice":
-                if field.isPointer:
-                    body = "hasChoice := obj.HasChoice()\n"
-                else:
-                    body = """hasChoice := true
-                    if obj.obj.Choice.Number() == 0 {
-                        hasChoice = false
-                    }
-                    """
+                hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
                 interface_fields.append(interface_fields.pop(index))
                 break
 
         for field in interface_fields:
             if field.default is None:
                 continue
+            if hasChoiceConfig is not None and field.name not in hasChoiceConfig:
+                continue
+
             details = "Name: {} Type : {} Format: {}".format(field.name, field.type, field.format)
             if field.isArray and field.isEnum:
-                print("111 TBD => if field.isArray and field.isEnum => ", details)
-                raise Exception("TBD for field.isArray and field.isEnum")
+                raise Exception("TBD for {}".format(details))
             elif field.isArray:
+                if "string" in field.type:
+                    values = '"{0}"'.format('", "'.join(field.default))
+                else:
+                    values = str(field.default)[1:-1]
                 body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({type}{{{value}}})
+                    obj.Set{external_name}({type}{{{values}}})
                 }}
                 """.format(
                     name=field.name,
-                    external_name=self._get_external_field_name(field.name),
+                    external_name=self._get_external_struct_name(field.name),
                     type=field.type,
-                    value='"{}"'.format(field.default[0]) if "string" in field.type else field.default[0],
+                    values=values
                 )
             elif field.isEnum:
-                enum_value = """{struct}{name}.{value}""".format(struct=self._get_external_field_name(new.struct), name=field.name, value=field.default.upper())
-                if field.name == "Choice":
-                    cnd_check = "!hasChoice"
-                elif field.isPointer:
+                enum_value = """{struct}{name}.{value}""".format(
+                    struct=self._get_external_struct_name(new.struct),
+                    name=field.name,
+                    value=field.default.upper()
+                )
+                if field.isPointer:
                     cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
                     cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
@@ -1392,7 +1410,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     cnd_check=cnd_check,
-                    external_name=self._get_external_field_name(field.name),
+                    external_name=self._get_external_struct_name(field.name),
                     enum_value=enum_value,
                 )
             elif field.isPointer:
@@ -1401,8 +1419,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     name=field.name,
-                    external_name=self._get_external_field_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    external_name=self._get_external_struct_name(field.name),
+                    value="\"{0}\"".format(field.default) if field.type == "string" else field.default,
                 )
             else:
                 body += """if obj.obj.{name} == {check_value} {{
@@ -1410,9 +1428,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 """.format(
                     name=field.name,
-                    check_value='""' if field.type == "string" else "0",
-                    external_name=self._get_external_field_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    check_value="\"\"" if field.type == "string" else "0",
+                    external_name=self._get_external_struct_name(field.name),
+                    value="\"{0}\"".format(field.default )if field.type == "string" else field.default,
                 )
 
         self._write(
@@ -1448,6 +1466,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 format_type = (oapi_type + property_schema["format"]).lower()
                 if format_type.lower() in self._oapi_go_types:
                     go_type = "{oapi_go_type}".format(oapi_go_type=self._oapi_go_types[format_type.lower()])
+                elif property_schema["format"].lower() in self._oapi_go_types:
+                    go_type = "{oapi_go_type}".format(
+                        oapi_go_type=self._oapi_go_types[property_schema["format"].lower()]
+                    )
                 else:
                     fluent_field.format = property_schema["format"].lower()
         elif "$ref" in property_schema:
