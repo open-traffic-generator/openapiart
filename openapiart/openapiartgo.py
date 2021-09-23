@@ -1367,6 +1367,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         interface_fields = new.interface_fields
         hasChoiceConfig = None
         for index, field in enumerate(interface_fields):
+            if field.default is None:
+                continue
             if field.name == "Choice":
                 hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
                 interface_fields.append(interface_fields.pop(index))
@@ -1459,7 +1461,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if oapi_type.lower() in self._oapi_go_types:
                 go_type = "{oapi_go_types}".format(oapi_go_types=self._oapi_go_types[oapi_type.lower()])
             if oapi_type == "array":
-                go_type += "[]" + self._get_struct_field_type(property_schema["items"]).replace("*", "")
+                go_type += "[]" + self._get_struct_field_type(property_schema["items"], fluent_field).replace("*", "")
                 if "format" in property_schema["items"]:
                     fluent_field.itemformat = property_schema["items"]["format"]
             if "format" in property_schema:
