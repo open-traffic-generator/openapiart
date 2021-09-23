@@ -1175,7 +1175,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
             default = property_schema.get("default")
             if default is not None:
-                if field.setter_method == None:
+                if field.setter_method is None:
                     print("Warnning: Default should not accept for this property ", property_name)
                 else:
                     if field.type == "number":
