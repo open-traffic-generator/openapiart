@@ -1175,11 +1175,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
             default = property_schema.get("default")
             if default is not None:
-                if field.type == "number":
-                    default = float(default)
-                if field.type == "bool":
-                    default = str(default).lower()
-                field.default = default
+                if field.setter_method == None:
+                    print("Warnning: Default should not accept for this property ", property_name)
+                else:
+                    if field.type == "number":
+                        default = float(default)
+                    if field.type == "bool":
+                        default = str(default).lower()
+                    field.default = default
             fluent_new.interface_fields.append(field)
 
     def _write_validate_method(self, new):
