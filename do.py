@@ -150,7 +150,7 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"])
+    run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"], False)
     os.chdir("..")
 
     with open("pkg/coverage.out") as fp:
