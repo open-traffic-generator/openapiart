@@ -293,7 +293,7 @@ def py():
         return py.path
 
 
-def run(commands):
+def run(commands, ignore_errors=True):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
@@ -306,7 +306,10 @@ def run(commands):
             subprocess.check_call(cmd, shell=True)
     except Exception as e:
         print(e)
-        sys.exit(1)
+        if ignore_errors:
+            sys.exit(1)
+        else:
+            raise Exception(e)
 
 
 def main():
