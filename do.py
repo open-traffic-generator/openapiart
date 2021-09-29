@@ -158,21 +158,15 @@ def test():
     if b'FAIL' in ret.stdout:
         raise Exception("Go Tests Failed")
     os.chdir("..")
-    cmd = "mv"
-    if "win" in sys.platform:
-        cmd = "move"
-    run([f"{cmd} coverage.txt coverage.out"])
-    with open("pkg/coverage.out") as fp:
-        out = fp.read()
-        result = re.findall(r"coverage:.*\s(\d+)", out)[0]
-        if int(result) < go_coverage_threshold:
-            raise Exception(
-                "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
-                    go_coverage_threshold, result))
-        else:
-            print(
-                "Go tests achieved {1}% ,Coverage thresold {0}%".format(
-                    go_coverage_threshold, result))
+    result = re.findall(r"coverage:.*\s(\d+)", ret.stdout.decode("utf-8"))[0]
+    if int(result) < go_coverage_threshold:
+        raise Exception(
+            "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
+                go_coverage_threshold, result))
+    else:
+        print(
+            "Go tests achieved {1}% ,Coverage thresold {0}%".format(
+                go_coverage_threshold, result))
 
 
 def dist():
