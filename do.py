@@ -153,7 +153,7 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    ret = subprocess.run("go test ./... -v -coverprofile coverage.txt | tee coverage.out", capture_output=True)
+    ret = subprocess.run("go test ./... -v -coverprofile coverage.txt | tee coverage.out".split(), capture_output=True)
     print(ret.stdout.decode("utf-8"))
     if b'FAIL' in ret.stdout:
         raise Exception("Go Tests Failed")
