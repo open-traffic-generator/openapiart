@@ -153,7 +153,10 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"], False)
+    ret = subprocess.run("go test ./... -v -coverprofile coverage.txt | tee coverage.out", capture_output=True)
+    print(ret.stdout.decode("utf-8"))
+    if b'FAIL' in ret.stdout:
+        raise Exception("Go Tests Failed")
     os.chdir("..")
 
     with open("pkg/coverage.out") as fp:
@@ -285,6 +288,7 @@ def py():
     Returns path to python executable to be used.
     """
     try:
+        print(py.path)
         return py.path
     except AttributeError:
         py.path = os.path.join(".env", "bin", "python")
@@ -293,26 +297,22 @@ def py():
 
         # since some paths may contain spaces
         py.path = '"' + py.path + '"'
+        print(py.path)
         return py.path
 
 
-def run(commands, ignore_errors=True):
+def run(commands):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
     try:
         for cmd in commands:
-            print(cmd)
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True)
-    except Exception as e:
-        print(e)
-        if ignore_errors:
-            sys.exit(1)
-        else:
-            raise Exception(e)
+    except Exception:
+        sys.exit(1)
 
 
 def main():
