@@ -39,6 +39,11 @@ class Bundler(object):
     def literal_representer(dumper, data):
         return dumper.represent_scalar(u"tag:yaml.org,2002:str", data, style="|")
 
+    @staticmethod
+    def yaml_key_mapping(self, node, deep=False):
+        data = self.construct_mapping_org(node, deep)
+        return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
+
     def __init__(self, api_files, output_dir="./"):
         self._parsers = {}
         self._api_files = api_files
@@ -50,6 +55,8 @@ class Bundler(object):
         self._includes = {}
         self._resolved = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
+        yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
+        yaml.SafeLoader.construct_mapping = Bundler.yaml_key_mapping
 
     def _get_parser(self, pattern):
         if pattern not in self._parsers:
@@ -82,9 +89,9 @@ class Bundler(object):
         self._resolve_strings(self._content)
         with open(self._output_filename, "w") as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
-        self._validate_file()
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
+        self._validate_file()
 
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
@@ -200,9 +207,24 @@ class Bundler(object):
             "type": "object",
             "required": ["choice"],
             "properties": {
-                "choice": {"description": "The type of checksum", "type": "string", "enum": ["generated", "custom"], "default": "generated"},
-                "generated": {"description": "A system generated checksum value", "type": "string", "enum": ["good", "bad"], "default": "good"},
-                "custom": {"description": "A custom checksum value", "type": "integer", "minimum": 0, "maximum": 2 ** int(xpattern.get("length", 8)) - 1},
+                "choice": {
+                    "description": "The type of checksum",
+                    "type": "string",
+                    "enum": ["generated", "custom"],
+                    "default": "generated",
+                },
+                "generated": {
+                    "description": "A system generated checksum value",
+                    "type": "string",
+                    "enum": ["good", "bad"],
+                    "default": "good",
+                },
+                "custom": {
+                    "description": "A custom checksum value",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
+                },
             },
         }
         self._content["components"]["schemas"][schema_name] = schema
@@ -250,8 +272,12 @@ class Bundler(object):
             }
             if "features" in xpattern and "count" in xpattern["features"]:
                 counter_schema["properties"]["count"] = {"type": "integer", "default": 1}
-            self._apply_common_x_field_pattern_properties(counter_schema["properties"]["start"], xpattern, format, property_name="start")
-            self._apply_common_x_field_pattern_properties(counter_schema["properties"]["step"], xpattern, format, property_name="step")
+            self._apply_common_x_field_pattern_properties(
+                counter_schema["properties"]["start"], xpattern, format, property_name="start"
+            )
+            self._apply_common_x_field_pattern_properties(
+                counter_schema["properties"]["step"], xpattern, format, property_name="step"
+            )
             if xconstants is not None:
                 counter_schema["x-constants"] = copy.deepcopy(xconstants)
             self._content["components"]["schemas"][counter_pattern_name] = counter_schema

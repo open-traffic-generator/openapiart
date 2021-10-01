@@ -41,7 +41,7 @@ components:
 
   responses:
     Success:
-      '200':
+      200:
         description: 'Standard success binary payload'
         content:
           application/octet-stream:
