@@ -258,6 +258,16 @@ class OpenApiValidator(object):
         if max is not None and value > max:
             return False
         return True
+    
+    def validate_int64(self, value, min, max):
+        try:
+            return self.validate_integer(
+                int(value), 
+                int(min) if min is not None else min,
+                int(max) if max is not None else max
+            )
+        except Exception as e:
+            return False
 
     def validate_float(self, value):
         return isinstance(value, (int, float))
@@ -282,7 +292,7 @@ class OpenApiValidator(object):
         return all([True if int(bin) == 0 or int(bin) == 1 else False for bin in value])
 
     def types_validation(self, value, type_, err_msg, itemtype=None, min=None, max=None):
-        type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "integer", "int32": "integer", "double": "float"}
+        type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "int64", "int32": "integer", "double": "float"}
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
