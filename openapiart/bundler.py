@@ -39,6 +39,11 @@ class Bundler(object):
     def literal_representer(dumper, data):
         return dumper.represent_scalar(u"tag:yaml.org,2002:str", data, style="|")
 
+    @staticmethod
+    def yaml_key_mapping(self, node, deep=False):
+        data = self.construct_mapping_org(node, deep)
+        return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
+
     def __init__(self, api_files, output_dir="./"):
         self._parsers = {}
         self._api_files = api_files
@@ -50,6 +55,8 @@ class Bundler(object):
         self._includes = {}
         self._resolved = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
+        yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
+        yaml.SafeLoader.construct_mapping = Bundler.yaml_key_mapping
 
     def _get_parser(self, pattern):
         if pattern not in self._parsers:
@@ -87,9 +94,9 @@ class Bundler(object):
         self._validate_file()
 
     def _validate_file(self):
-        print("validating {}...".format(self._json_filename))
-        with open(self._json_filename) as fid:
-            yobject = json.load(fid)
+        print("validating {}...".format(self._output_filename))
+        with open(self._output_filename) as fid:
+            yobject = yaml.safe_load(fid)
             openapi_spec_validator.validate_v3_spec(yobject)
         print("validating complete")
 
