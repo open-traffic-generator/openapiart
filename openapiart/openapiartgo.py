@@ -287,7 +287,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     self._api.external_rpc_methods.append(rpc)
                 if len([m for m in self._api.internal_http_methods if m.operation_name == http.operation_name]) == 0:
                     self._api.internal_http_methods.append(http)
-                rpc.request_return_type = "{operation_response_name}Response_StatusCode200".format(
+                rpc.request_return_type = "{operation_response_name}Response".format(
                     operation_response_name=self._get_external_struct_name(rpc.operation_name),
                 )
                 binary_type = self._get_parser("$..responses..'200'..schema..format").find(path_item_object)
@@ -297,6 +297,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 elif len(ref_type) == 1:
                     request_return_type = self._get_schema_object_name_from_ref(self._resolve_response(ref_type)[0].value)
                     rpc.request_return_type = self._get_external_struct_name(request_return_type)
+                else:
+                    rpc.request_return_type = "*string"
 
                 http.request_return_type = rpc.request_return_type
                 ref = self._get_parser("$..requestBody..'$ref'").find(path_item_object)
@@ -486,11 +488,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                     status_code=response.status_code,
                 )
-            error_handling += 'return nil, fmt.Errorf("response not implemented")'
+            error_handling += 'return nil, fmt.Errorf("A response of 200, 400, 500 has not been implemented")'
             if rpc.request_return_type == "[]byte":
-                return_value = "resp.GetStatusCode_200()"
+                return_value = """if resp.GetStatusCode_200() != nil {
+                        return resp.GetStatusCode_200(), nil
+                    }"""
+            elif rpc.request_return_type == "*string":
+                return_value = """if resp.GetStatusCode_200() != "" {
+                        status_code_value := resp.GetStatusCode_200()
+                        return &status_code_value, nil
+                    }"""
             else:
-                return_value = "&{struct}{{obj: resp.GetStatusCode_200()}}".format(
+                return_value = """if resp.GetStatusCode_200() != nil {{
+                        return &{struct}{{obj: resp.GetStatusCode_200()}}, nil
+                    }}""".format(
                     struct=self._get_internal_name(rpc.request_return_type),
                     request_return_type=rpc.request_return_type,
                 )
@@ -511,9 +522,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{
                         return nil, err
                     }}
-                    if resp.GetStatusCode_200() != nil {{
-                        return {return_value}, nil
-                    }}
+                    {return_value}
                     {error_handling}
                 }}
                 """.format(
@@ -544,9 +553,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
             error_handling += 'return nil, fmt.Errorf("response not implemented")'
             if http.request_return_type == "[]byte":
-                success_handling = """return bodyBytes, nil""".format(
-                    package_name=self._protobuf_package_name, operation_name=http.operation_name
-                )
+                success_handling = """return bodyBytes, nil"""
+            elif http.request_return_type == "*string":
+                success_handling = """bodyString := string(bodyBytes)
+                return &bodyString, nil"""
             else:
                 success_handling = """obj := api.{success_method}()
                     if err := obj.StatusCode200().FromJson(string(bodyBytes)); err != nil {{

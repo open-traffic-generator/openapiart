@@ -91,10 +91,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         response_field.type = self._get_message_name(schema["type"]).replace(".", "")
                         if "format" in schema and schema["format"] == "binary":
                             response_field.type = "bytes"
-                    elif response_field.type is None:
-                        response_field.type = "string"
-                    else:
+                    elif len(schema) > 0:
                         response_field.type = self._get_message_name(schema).replace(".", "")
+                    else:
+                        response_field.type = "string"
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             id = 1
