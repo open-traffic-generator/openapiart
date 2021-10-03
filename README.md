@@ -47,7 +47,7 @@ import openapiart
 # bundle api files
 # validate the bundled file
 # generate the documentation file
-art = openapiart.OpenapiArt(
+art = openapiart.OpenApiArt(
     api_files=[
         "./openapiart/tests/api/info.yaml",
         "./openapiart/tests/common/common.yaml",
