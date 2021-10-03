@@ -67,6 +67,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 response_fields = []
                 for code, code_schema in response.value.items():
                     response_field = lambda: None
+                    response_field.type = None
                     response_field.name = "status_code_{}".format(code)
                     schema = self._get_parser("$..schema").find(code_schema)  # finds the first instance of schema in responses
                     if len(schema) > 0:
@@ -75,7 +76,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         schema_ref = self._get_parser("$..'$ref'").find(code_schema)  # gets a ref
                     if len(schema_ref) > 0:
                         schema = schema_ref[0].value
-                    else:
+                    elif len(schema) > 0:
                         schema = schema[0].value
                     if "#/components/responses" in schema:
                         # lookup the response object and use the schema or ref in that object
@@ -90,8 +91,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         response_field.type = self._get_message_name(schema["type"]).replace(".", "")
                         if "format" in schema and schema["format"] == "binary":
                             response_field.type = "bytes"
-                    else:
+                    elif len(schema) > 0:
                         response_field.type = self._get_message_name(schema).replace(".", "")
+                    else:
+                        response_field.type = "string"
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             id = 1
