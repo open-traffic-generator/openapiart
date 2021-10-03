@@ -76,3 +76,11 @@ paths:
       responses:
         '200':
           $ref: '../common/common.yaml#/components/responses/Warnings'
+    delete:
+      tags: ['Metrics']
+      operationId: clear_warnings
+      description: >-
+        Clears warnings.
+      responses:
+        '200':
+          description: 'OK'
