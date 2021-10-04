@@ -12,6 +12,7 @@ import pytest
 app = Flask(__name__)
 app.CONFIG = None
 app.PACKAGE = None
+app.PORT = 18080
 
 
 @app.route("/config", methods=["POST"])
@@ -20,7 +21,9 @@ def set_config():
     config.deserialize(request.data.decode("utf-8"))
     test = config.h
     if test is not None and isinstance(test, bool) is False:
-        return Response(status=590, response=json.dumps({"detail": "invalid data type"}), headers={"Content-Type": "application/json"})
+        return Response(
+            status=590, response=json.dumps({"detail": "invalid data type"}), headers={"Content-Type": "application/json"}
+        )
     else:
         app.CONFIG = config
         return Response(status=200)
@@ -39,7 +42,7 @@ def after_request(resp):
 
 
 def web_server():
-    app.run(port=80, debug=True, use_reloader=False)
+    app.run(port=app.PORT, debug=True, use_reloader=False)
 
 
 class OpenApiServer(object):
@@ -59,7 +62,7 @@ class OpenApiServer(object):
         return self
 
     def _wait_until_ready(self):
-        api = app.PACKAGE.api(location="http://127.0.0.1:80")
+        api = app.PACKAGE.api(location="http://127.0.0.1:{}".format(app.PORT))
         while True:
             try:
                 api.get_config()
