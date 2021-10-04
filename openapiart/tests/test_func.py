@@ -168,3 +168,19 @@ def test_x_pattern_bad_inc_dec(default_config, index, direction):
         pytest.fail("%s with %s got serialized" % (enum, direction))
     except TypeError as e:
         print(e)
+
+
+def test_int_64_format(api, default_config):
+    default_config.integer64 = 1000
+    dt = default_config.serialize(default_config.DICT)
+    assert isinstance(dt["integer64"], str)
+    conf = api.prefix_config()
+    conf.deserialize(dt)
+    assert isinstance(conf.integer64, int)
+    conf.integer64 = 2000
+    conf.validate()
+    conf.integer64 = "2000"
+    try:
+        conf.validate()
+    except TypeError as e:
+        print(e)
