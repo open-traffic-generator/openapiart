@@ -38,22 +38,20 @@ class OpenApiArt(object):
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         self._bundle()
-        self._get_license()
         self._get_info()
+        self._get_license()
         self._document()
 
     def _get_license(self):
-        try:
-            license_name = self._bundler._content["info"]["license"]["name"]
-            self._license = "License: {}".format(license_name)
-        except:
-            raise Exception("The /info/license/name is a REQUIRED property and must be present in the schema.")
+        license_name = self._bundler._content["info"]["license"]["name"]
+        self._license = "License: {}".format(license_name)
 
     def _get_info(self):
         try:
             self._info = "{} {}".format(self._bundler._content["info"]["title"], self._bundler._content["info"]["version"])
         except Exception as e:
-            self._info = "OpenAPI info error [{}]".format(e)
+            ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(e))
+            raise ex
 
     def _bundle(self):
         # bundle the yaml files

@@ -90,15 +90,27 @@ class Generator(object):
 
     def generate(self):
         self._api_filename = os.path.join(self._output_dir, self._output_file + ".py")
+        with open(self._api_filename, "w") as self._fid:
+            self._fid.write(
+                "# {} {}\n".format(
+                    self._openapi["info"]["title"],
+                    self._openapi_version,
+                )
+            )
+            self._fid.write(
+                "# License: {}\n".format(self._openapi["info"]["license"]["name"]),
+            )
+            self._fid.write("\n")
         with open(os.path.join(os.path.dirname(__file__), "common.py"), "r") as fp:
             common_content = fp.read()
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
                 common_content = common_content.replace(
-                    r'"{}_{}".format(__name__, ext)', r'"' + self._extension_prefix + r"_{}." + self._package_name + r'_api".format(ext)'
+                    r'"{}_{}".format(__name__, ext)',
+                    r'"' + self._extension_prefix + r"_{}." + self._package_name + r'_api".format(ext)',
                 )
-        with open(self._api_filename, "w") as self._fid:
+        with open(self._api_filename, "a") as self._fid:
             self._fid.write(common_content)
         methods, factories = self._get_methods_and_factories()
         self._write_api_class(methods, factories)
@@ -235,7 +247,9 @@ class Generator(object):
                 self._write(3, '"%s",' % method["http_method"])
                 self._write(3, '"%s",' % method["url"])
                 self._write(3, "payload=%s," % (method["args"][1] if len(method["args"]) > 1 else "None"))
-                self._write(3, "return_object=%s," % ("self." + method["response_type"] + "()" if method["response_type"] else "None"))
+                self._write(
+                    3, "return_object=%s," % ("self." + method["response_type"] + "()" if method["response_type"] else "None")
+                )
                 self._write(2, ")")
 
     def _write_api_class(self, methods, factories):
@@ -710,7 +724,15 @@ class Generator(object):
         # return doc_string
 
     def _get_data_types(self, yproperty):
-        data_type_map = {"integer": "int", "string": "str", "boolean": "bool", "array": "list", "number": "float", "float": "float", "double": "float"}
+        data_type_map = {
+            "integer": "int",
+            "string": "str",
+            "boolean": "bool",
+            "array": "list",
+            "number": "float",
+            "float": "float",
+            "double": "float",
+        }
         if yproperty["type"] in data_type_map:
             return data_type_map[yproperty["type"]]
         else:
@@ -728,17 +750,17 @@ class Generator(object):
                     pt.update({"enum": yproperty["enum"]}) if "enum" in yproperty else None
                     pt.update({"format": "'%s'" % yproperty["format"]}) if "format" in yproperty else None
                 if len(ref) > 0:
-                    object_name = ref[0].value.split('/')[-1]
-                    class_name = object_name.replace('.', '')
-                    if 'type' in yproperty and yproperty['type'] == 'array':
-                        class_name += 'Iter'
-                    pt.update({'type': "\'%s\'" % class_name})
-                if len(ref) == 0 and 'items' in yproperty and 'type' in yproperty['items']:
-                    pt.update({'itemtype': self._get_data_types(yproperty['items'])})
-                if len(ref) == 0 and 'minimum' in yproperty:
-                    pt.update({"minimum": yproperty['minimum']})
-                if len(ref) == 0 and 'maximum' in yproperty:
-                    pt.update({"maximum": yproperty['maximum']})
+                    object_name = ref[0].value.split("/")[-1]
+                    class_name = object_name.replace(".", "")
+                    if "type" in yproperty and yproperty["type"] == "array":
+                        class_name += "Iter"
+                    pt.update({"type": "'%s'" % class_name})
+                if len(ref) == 0 and "items" in yproperty and "type" in yproperty["items"]:
+                    pt.update({"itemtype": self._get_data_types(yproperty["items"])})
+                if len(ref) == 0 and "minimum" in yproperty:
+                    pt.update({"minimum": yproperty["minimum"]})
+                if len(ref) == 0 and "maximum" in yproperty:
+                    pt.update({"maximum": yproperty["maximum"]})
                 if len(pt) > 0:
                     types.append((name, pt))
 

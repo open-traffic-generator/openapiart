@@ -10,12 +10,6 @@ info:
       Any feedback such as bugs/enhancements/questions regarding OpenApiArt is 
       welcomed by using the contact url.      
     url: https://github.com/open-traffic-generator/openapiart/issues
-  license:
-    x-info: |-
-      The license url will be used by OpenApiArt to add that content into 
-      generated artifacts.
-    name: MIT
-    url: https://raw.githubusercontent.com/open-traffic-generator/openapiart/main/LICENSE
 
 servers: 
   - url: /

@@ -6,6 +6,8 @@ import logging
 from .utils import common as utl
 from .server import OpenApiServer
 from .grpcserver import grpc_server
+from .server import app
+
 
 # TBD: fix this hardcoding
 # artifacts should not be generated from here as these tests are run as sudo
@@ -23,7 +25,19 @@ pytest.grpc_server = grpc_server(pytest.pb2_module, pytest.pb2_grpc_module).star
 def api():
     """Return an instance of the top level Api class from the generated package"""
     module = importlib.import_module(pytest.module_name)
-    return module.api(location="http://127.0.0.1:80", verify=False, logger=None, loglevel=logging.DEBUG)
+    return module.api(
+        location="http://127.0.0.1:{}".format(app.PORT),
+        verify=False,
+        logger=None,
+        loglevel=logging.DEBUG,
+    )
+
+
+@pytest.fixture(scope="session")
+def proto_file_name():
+    art_dir = os.path.join(os.path.dirname(__file__), "..", "..", "art")
+    proto_file = os.path.join(art_dir, "{}.proto".format(pytest.module_name))
+    return proto_file
 
 
 @pytest.fixture
