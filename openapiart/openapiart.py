@@ -43,17 +43,14 @@ class OpenApiArt(object):
         self._document()
 
     def _get_license(self):
-        try:
-            license_name = self._bundler._content["info"]["license"]["name"]
-            self._license = "License: {}".format(license_name)
-        except:
-            self._license = "NO-LICENSE-PRESENT"
+        license_name = self._bundler._content["info"]["license"]["name"]
+        self._license = "License: {}".format(license_name)
 
     def _get_info(self):
         try:
             self._info = "{} {}".format(self._bundler._content["info"]["title"], self._bundler._content["info"]["version"])
         except Exception as e:
-            ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version. [{}]".format(e))
+            ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(e))
             raise ex
 
     def _bundle(self):

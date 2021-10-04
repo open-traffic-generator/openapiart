@@ -86,6 +86,7 @@ class Bundler(object):
         self._resolve_x_constraint()
         self._resolve_x_status()
         self._remove_x_include()
+        self._resolve_license()
         self._resolve_strings(self._content)
         with open(self._output_filename, "w") as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
@@ -418,6 +419,15 @@ class Bundler(object):
             elif key == "description":
                 descr = copy.deepcopy(value)
                 content[key] = Bundler.description(descr)
+
+    def _resolve_license(self):
+        """License object is not required by the OpenAPI spec.
+        If the license object is provided then name is a required property.
+        """
+        if "license" not in self._content["info"]:
+            self._content["info"]["license"] = {"name": "NO-LICENSE-PRESENT"}
+        elif "name" not in self._content["info"]["license"]:
+            raise Exception("The following properties are REQUIRED: license.name")
 
 
 if __name__ == "__main__":
