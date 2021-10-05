@@ -13,18 +13,21 @@ os.environ["GOPATH"] = os.path.join(
 os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
 
 
+def arch():
+    return getattr(platform.uname(), "machine", platform.uname()[-1]).lower()
+
+
 def on_arm():
-    arch = platform.uname().machine.lower()
-    return arch == "arm64" or arch == "aarch64"
+    return arch() in ["arm64", "aarch64"]
 
 
 def on_x86():
-    arch = platform.uname().machine.lower()
-    return arch == "x86_64"
+    return arch() == "x86_64"
 
 
 def on_linux():
-    return sys.platform == "linux"
+    print("The platform is {}".format(sys.platform))
+    return "linux" in sys.platform
 
 
 def get_go():
@@ -150,22 +153,20 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    try:
-        run(["go test ./... -v -coverprofile coverage.txt | tee coverage.out"])
-    finally:
-        os.chdir("..")
-
-    with open("pkg/coverage.out") as fp:
-        out = fp.read()
-        result = re.findall(r"coverage:.*\s(\d+)", out)[0]
-        if int(result) < go_coverage_threshold:
-            raise Exception(
-                "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
-                    go_coverage_threshold, result))
-        else:
-            print(
-                "Go tests achieved {1}% ,Coverage thresold {0}%".format(
-                    go_coverage_threshold, result))
+    ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
+    print(ret)
+    os.chdir("..")
+    result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
+    if int(result) < go_coverage_threshold:
+        raise Exception(
+            "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
+                go_coverage_threshold, result))
+    else:
+        print(
+            "Go tests achieved {1}% ,Coverage thresold {0}%".format(
+                go_coverage_threshold, result))
+    if 'FAIL' in ret:
+        raise Exception("Go Tests Failed")
 
 
 def dist():
@@ -284,6 +285,7 @@ def py():
     Returns path to python executable to be used.
     """
     try:
+        print(py.path)
         return py.path
     except AttributeError:
         py.path = os.path.join(".env", "bin", "python")
@@ -292,22 +294,33 @@ def py():
 
         # since some paths may contain spaces
         py.path = '"' + py.path + '"'
+        print(py.path)
         return py.path
 
 
-def run(commands):
+def run(commands, capture_output=False):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
+    fd = None
+    if capture_output:
+        fd = open("log.txt", "w+")
     try:
         for cmd in commands:
-            print(cmd)
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
-            subprocess.check_call(cmd, shell=True)
-    except Exception as e:
-        print(e)
+            subprocess.check_call(cmd, shell=True, stdout=fd)
+        if capture_output:
+            fd.flush()
+            fd.seek(0)
+            ret = fd.read()
+            fd.close()
+            os.remove("log.txt")
+            return ret
+    except Exception:
+        if capture_output:
+            fd.close()
         sys.exit(1)
 
 
