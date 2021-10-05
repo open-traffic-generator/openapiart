@@ -153,12 +153,10 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    ret = subprocess.run("go test ./... -v -coverprofile coverage.txt".split(), capture_output=True)
-    print(ret.stdout.decode("utf-8"))
-    if b'FAIL' in ret.stdout:
-        raise Exception("Go Tests Failed")
+    ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
+    print(ret)
     os.chdir("..")
-    result = re.findall(r"coverage:.*\s(\d+)", ret.stdout.decode("utf-8"))[0]
+    result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
     if int(result) < go_coverage_threshold:
         raise Exception(
             "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
@@ -167,6 +165,8 @@ def test():
         print(
             "Go tests achieved {1}% ,Coverage thresold {0}%".format(
                 go_coverage_threshold, result))
+    if 'FAIL' in ret:
+        raise Exception("Go Tests Failed")
 
 
 def dist():
@@ -298,17 +298,29 @@ def py():
         return py.path
 
 
-def run(commands):
+def run(commands, capture_output=False):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
+    fd = None
+    if capture_output:
+        fd = open("log.txt", "w+")
     try:
         for cmd in commands:
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True, stdout=fd)
+        if capture_output:
+            fd.flush()
+            fd.seek(0)
+            ret = fd.read()
+            fd.close()
+            os.remove("log.txt")
+            return ret
     except Exception:
+        if capture_output:
+            fd.close()
         sys.exit(1)
 
 
