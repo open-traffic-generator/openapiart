@@ -258,3 +258,21 @@ required_object:
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `invalid value for string type: [`)
 }
+
+func TestSetMsg(t *testing.T) {
+	api := openapiart.NewApi()
+	config := NewFullyPopulatedPrefixConfig(api)
+	copy := openapiart.NewApi().NewPrefixConfig()
+	copy.SetMsg(config.Msg())
+	assert.Equal(t, config.ToYaml(), copy.ToYaml())
+}
+
+func TestNestedSetMsg(t *testing.T) {
+	api := openapiart.NewApi()
+	eObject := openapiart.NewApi().NewPrefixConfig().K().EObject()
+	eObject.SetEA(23423.22)
+	eObject.SetName("asdfasdf")
+	config := api.NewPrefixConfig()
+	config.K().EObject().SetMsg(eObject.Msg())
+	assert.Equal(t, config.K().EObject().ToYaml(), eObject.ToYaml())
+}

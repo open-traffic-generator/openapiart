@@ -650,7 +650,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) SetMsg(msg *{pb_pkg_name}.{interface}) {interface} {{
-                obj.obj = msg
+                proto.Merge(obj.obj, msg)
                 return obj
             }}
 
