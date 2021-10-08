@@ -29,7 +29,6 @@ func TestJsonSerialization(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
-	config.RequiredObject()
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	config.F().SetFB(3.0)
@@ -82,6 +81,13 @@ func TestJsonSerialization(t *testing.T) {
 	// assert.Equal(t, eq, true)
 	yaml := config.ToYaml()
 	log.Print(yaml)
+}
+
+func TestNewAndSet(t *testing.T) {
+	c := openapiart.NewPrefixConfig()
+	c.SetE(openapiart.NewEObject().SetEA(123.456))
+	c.SetF(openapiart.NewFObject().SetFA("fa string"))
+	log.Println(c.ToYaml())
 }
 
 func TestSimpleTypes(t *testing.T) {

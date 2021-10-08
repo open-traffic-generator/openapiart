@@ -645,6 +645,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj *{pb_pkg_name}.{interface}
             }}
             
+            func New{interface}() {interface} {{
+                obj := {struct}{{obj: &{pb_pkg_name}.{interface}{{}}}}
+                obj.setDefault()
+                return &obj
+            }}
+
             func (obj *{struct}) Msg() *{pb_pkg_name}.{interface} {{
                 return obj.obj
             }}
@@ -826,25 +832,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif field.struct is not None:
             # at this time proto generation ignores the optional keyword
             # if the type is an object
-            set_choice = ""
+            body = ""
             if field.setChoiceValue is not None:
-                set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
+                body = """obj.SetChoice({interface}Choice.{enum})
+                """.format(
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
-            body = """{set_choice}
-                if obj.obj.{name} == nil {{
-                    obj.obj.{name} = &{pb_pkg_name}.{pb_struct}{{}}
-                    newObj := &{struct}{{obj: obj.obj.{name}}}
-                    newObj.setDefault()
-                    return newObj
+            body += """if obj.obj.{name} == nil {{
+                    obj.obj.{name} = New{pb_struct}().Msg()
                 }}
                 return &{struct}{{obj: obj.obj.{name}}}""".format(
                 name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 pb_struct=field.external_struct,
                 struct=field.struct,
-                set_choice=set_choice,
             )
         elif field.isEnum:
             enum_types = []
@@ -991,6 +993,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             )
             return
+        elif field.struct is not None:
+            body = """obj.obj.{fieldname} = value.Msg()""".format(fieldname=field.name)
         elif field.isPointer:
             body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
@@ -1160,6 +1164,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
                 field.external_struct = self._get_external_struct_name(schema_name)
+                field.setter_method = "Set{fieldname}(value {fieldstruct}) {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    fieldstruct=self._get_external_struct_name(field.struct),
+                    interface=fluent_new.interface,
+                )
             if field.isOptional and field.isPointer:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
@@ -1424,14 +1433,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 break
 
         for field in interface_fields:
-            if field.default is None:
-                continue
             if hasChoiceConfig is not None and field.name not in hasChoiceConfig:
                 continue
 
-            details = "Name: {} Type : {} Format: {}".format(field.name, field.type, field.format)
-            if field.isArray and field.isEnum:
-                raise Exception("TBD for {}".format(details))
+            if field.struct is not None and field.isOptional is False:
+                body += """if obj.obj.{name} == nil {{
+                    obj.{external_name}()
+                }}
+                """.format(
+                    name=field.name,
+                    external_name=self._get_external_struct_name(field.name),
+                )
+            elif field.default is None:
+                continue
             elif field.isArray:
                 if "string" in field.type:
                     values = '"{0}"'.format('", "'.join(field.default))
