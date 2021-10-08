@@ -994,7 +994,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             return
         elif field.struct is not None:
-            body = """obj.obj.{fieldname} = value.Msg()""".format(fieldname=field.name)
+            body = """obj.{fieldname}().SetMsg(value.Msg())""".format(
+                fieldname=self._get_external_struct_name(field.name),
+            )
         elif field.isPointer:
             body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
