@@ -23,7 +23,12 @@ paths:
 
 components:
   schemas:
+    ComponentWithNoProperties:
+      type: object
+      description: Component with no properties
+
     RootComponentWithNested:
+      type: object
       description: |-
         Nested Component is not supported and should throw a meaningful exception
         Only root level components are checked for nested
