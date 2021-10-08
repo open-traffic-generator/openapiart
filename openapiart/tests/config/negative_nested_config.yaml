@@ -1,0 +1,42 @@
+openapi: 3.0.3
+
+info:
+  title: yaml definition used for testing validation
+  description: A Sample Service in Go.
+  version: 0.0.0
+
+servers:
+- url: https://0.0.0.0
+
+paths:
+  /:
+    get:
+      tags: [AnythingGoes]
+      operationId: getTest
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RootComponentWithNested'
+
+components:
+  schemas:
+    RootComponentWithNested:
+      description: |-
+        Nested Component is not supported and should throw a meaningful exception
+        Only root level components are checked for nested
+      properties:
+        name:
+          type: string
+        nested_component_1:
+          type: object
+          properties:
+            name:
+              type: string
+        nested_component_2:
+          type: object
+          properties:
+            name:
+              type: string

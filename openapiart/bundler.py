@@ -123,6 +123,7 @@ class Bundler(object):
                     self._content[key] = {"responses": {}, "schemas": {}}
                 self._validate_names("^[+a-zA-Z0-9_]+$", "schemas", value)
                 self._validate_names("^[+a-zA-Z0-9_]+$", "responses", value)
+                self._check_nested_components(value)
         self._resolve_refs(base_dir, yobject)
 
     def _validate_names(self, regex, components_key, components):
@@ -135,6 +136,20 @@ class Bundler(object):
                     if re.match(regex, name) is None:
                         raise NameError("%s property name `%s` contains invalid characters" % (key, name))
             self._content["components"][components_key][key] = value
+
+    def _check_nested_components(self, components):
+        objects = components["schemas"]
+        errors = []
+        for component_name, component_value in objects.items():
+            component_properties = component_value["properties"]
+            for property_name in component_properties:
+                property_obj = component_properties[property_name]
+                if "type" in property_obj:
+                    proprty_type = property_obj["type"]
+                    if proprty_type == "object":
+                        errors.append(f" \n*** Unsupported. Property '{component_name}'.'{property_name}' is a nested component ***")
+        if len(errors) > 0:
+            raise TypeError(''.join(errors))
 
     def _resolve_refs(self, base_dir, yobject):
         """Resolving references is relative to the current file location"""
