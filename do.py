@@ -7,9 +7,7 @@ import subprocess
 import platform
 
 
-os.environ["GOPATH"] = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), ".local"
-)
+os.environ["GOPATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".local")
 os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
 
 
@@ -58,7 +56,7 @@ def get_go_deps():
         [
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports"
+            cmd + " golang.org/x/tools/cmd/goimports",
         ]
     )
 
@@ -79,8 +77,8 @@ def get_protoc():
     cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
     cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
     cmd += version + "/" + zipfile
-    cmd += ' && unzip ./protoc.zip -d ' + os.environ["GOPATH"]
-    cmd += ' && rm -rf ./protoc.zip )'
+    cmd += " && unzip ./protoc.zip -d " + os.environ["GOPATH"]
+    cmd += " && rm -rf ./protoc.zip )"
     run([cmd])
 
 
@@ -158,19 +156,14 @@ def test():
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
     if int(result) < go_coverage_threshold:
-        raise Exception(
-            "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
-                go_coverage_threshold, result))
+        raise Exception("Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(go_coverage_threshold, result))
     else:
-        print(
-            "Go tests achieved {1}% ,Coverage thresold {0}%".format(
-                go_coverage_threshold, result))
-    if 'FAIL' in ret:
+        print("Go tests achieved {1}% ,Coverage thresold {0}%".format(go_coverage_threshold, result))
+    if "FAIL" in ret:
         raise Exception("Go Tests Failed")
 
 
 def dist():
-    clean()
     run(
         [
             py() + " setup.py sdist bdist_wheel --universal",
