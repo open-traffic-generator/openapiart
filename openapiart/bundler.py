@@ -148,9 +148,14 @@ class Bundler(object):
                     if "type" in property_obj:
                         proprty_type = property_obj["type"]
                         if proprty_type == "object":
-                            errors.append(f" \n*** Unsupported. Property '{component_name}'.'{property_name}' is a nested component ***")
+                            errors.append(
+                                "\n*** Unsupported. Property '{}'.'{}' is a nested component ***".format(
+                                    component_name,
+                                    property_name,
+                                )
+                            )
         if len(errors) > 0:
-            raise TypeError(''.join(errors))
+            raise TypeError("".join(errors))
 
     def _resolve_refs(self, base_dir, yobject):
         """Resolving references is relative to the current file location"""
