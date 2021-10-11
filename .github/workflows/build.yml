@@ -11,7 +11,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [2.7, 3.9]
+        python-version: [3.9]
 
     steps:
       - name: Checkout source
@@ -29,36 +29,30 @@ jobs:
         run: |
           python do.py setup
           python do.py init
-      - name: Run artifact generation
-        run: |
-          python do.py generate
-      - name: Run tests
-        if: matrix.python-version == '3.9'
-        run: |
-          sudo python do.py test
       - name: Build distribution
-        if: matrix.python-version == '3.9'
         run: |
           python do.py dist
       - name: Install package on clean env
-        if: matrix.python-version == '3.9'
         run: |
           rm -rf .env
           python do.py setup
           python do.py install
+      - name: Run artifact generation
+        run: |
+          python do.py generate
+      - name: Run tests
+        run: |
+          sudo python do.py test
       - name: Archive generated artifacts
-        if: matrix.python-version == '3.9'
         uses: actions/upload-artifact@v2
         with:
           name: generated-artifacts
           path: art
       - name: Get package version
-        if: matrix.python-version == '3.9'
         id: get_version
         run: |
           echo "::set-output name=version::v$(python do.py version)"
       - name: Check tag for current version
-        if: matrix.python-version == '3.9'
         uses: mukunku/tag-exists-action@v1.0.0
         id: check_tag
         with:
@@ -66,11 +60,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish package
-        if: steps.check_tag.outputs.exists == 'false' && matrix.python-version == '3.9'
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
           PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
       - name: Create release and publish artifacts
-        if: steps.check_tag.outputs.exists == 'false' && matrix.python-version == '3.9'
+        if: steps.check_tag.outputs.exists == 'false'
         uses: ncipollo/release-action@v1
         with:
           artifacts: "dist/*"
