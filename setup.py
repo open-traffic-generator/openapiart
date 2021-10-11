@@ -49,6 +49,7 @@ setuptools.setup(
             "pytest",
             "flake8",
             "flask",
+            "black",
         ]
     },
     test_suite="tests",

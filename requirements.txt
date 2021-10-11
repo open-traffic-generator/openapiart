@@ -9,3 +9,4 @@ typing
 setuptools
 wheel
 twine
+flask
