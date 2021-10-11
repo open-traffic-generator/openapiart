@@ -1,0 +1,17 @@
+openapi: 3.0.3
+
+info:
+  title: openapiart go server generation
+  description: A Sample Service in Go.
+  version: 0.0.0
+
+servers:
+- url: https://{hostname}:{port}/{basePath}
+  variables:
+    hostname:
+      default: 0.0.0.0
+    port:
+      default: "8080"
+    basePath:
+      default: api
+

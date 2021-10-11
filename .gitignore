@@ -12,6 +12,7 @@ __pycache__
 /scratch
 /cov_report
 /**/art
+/**/art_go_tbd
 .local
 /pkg/coverage.txt
 /pkg/coverage.out
