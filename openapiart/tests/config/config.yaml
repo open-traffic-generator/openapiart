@@ -4,6 +4,8 @@ components:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [response, a, b, c, required_object]
+      description: |-
+        Container which retains the configuration
       properties:
         required_object:
           description: |-
