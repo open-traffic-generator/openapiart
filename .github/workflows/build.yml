@@ -29,20 +29,23 @@ jobs:
         run: |
           python do.py setup
           python do.py init
-      - name: Build distribution
-        run: |
-          python do.py dist
-      - name: Install package on clean env
-        run: |
-          rm -rf .env
-          python do.py setup
-          python do.py install
       - name: Run artifact generation
         run: |
           python do.py generate
       - name: Run tests
+        if: matrix.python-version == '3.9'
         run: |
           sudo python do.py test
+      - name: Build distribution
+        if: matrix.python-version == '3.9'
+        run: |
+          python do.py dist
+      - name: Install package on clean env
+        if: matrix.python-version == '3.9'
+        run: |
+          rm -rf .env
+          python do.py setup
+          python do.py install
       - name: Archive generated artifacts
         if: matrix.python-version == '3.9'
         uses: actions/upload-artifact@v2
