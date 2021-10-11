@@ -44,6 +44,12 @@ setuptools.setup(
         "jsonpath-ng",
         "typing",
     ],
-    extras_require={"testing": ["pytest", "flake8", "black", "flask"]},
+    extras_require={
+        "testing": [
+            "pytest",
+            "flake8",
+            "flask",
+        ]
+    },
     test_suite="tests",
 )
