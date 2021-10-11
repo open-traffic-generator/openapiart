@@ -24,7 +24,7 @@ jobs:
       - name: Generate only for 2.7
         run: |
           python do.py setup
-          python do.py install
+          python do.py init
           python do.py generate
 
   build:
