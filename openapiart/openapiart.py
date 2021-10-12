@@ -211,7 +211,7 @@ class OpenApiArt(object):
         servergen = getattr(module, "GoServerGenerator")(
             **{
                 "openapi": self._openapi,
-                "output_root_path": self._output_dir,
+                "output_root_path": go_server_output_dir
             }
         )
         servergen.generate()

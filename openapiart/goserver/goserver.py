@@ -7,56 +7,9 @@ import yaml
 import subprocess
 import requests
 import platform
-
-class Component(object):
-    def __init__(
-        self,
-        yamlname: str,
-        componentobj
-        ):
-        self._yamlname = yamlname
-        self._obj = componentobj
-        pass
-
-class ControllerRoute(object):
-    def __init__(
-        self,
-        url: str,
-        method: str,
-        methodobj
-        ):
-        self._url = url
-        self._method = method
-        self._obj = methodobj
-        pass
-
-class Controller(object):
-    routes: [ControllerRoute] = []
-    @property
-    def yamlname(self) -> str:
-        return self._yamlname
-
-    def __init__(self, yamlname: str):
-        self._yamlname = yamlname
-
-    def add_route(self, url: str, method: str, methodobj):
-        self.routes.append(ControllerRoute(url, method, methodobj))
-        pass
-
-class GeneratorContext(object):
-    components: [Component] = []
-    controllers: [Controller] = []
-    def find_controller(self, yamlname: str) -> Controller:
-        ctrl: Controller = None
-        for c in self.controllers:
-            if c.yamlname == yamlname:
-                ctrl = c
-                break
-        if ctrl == None:
-            ctrl = Controller(yamlname)
-            self.controllers.append(ctrl)
-        return ctrl
-
+import shutil
+import openapiart.goserver.generator_context as ctx
+import openapiart.goserver.go_interface_generator as intf
 
 class GoServerGenerator(object):
     def __init__(
@@ -65,12 +18,14 @@ class GoServerGenerator(object):
         output_root_path: str
         ):
         self._openapi = openapi
-        self.output_path = os.path.join(output_root_path, 'internal')
-        self._context = GeneratorContext()
-        print(f'GoServer output directory: {self.output_path}')
+        self._context = ctx.GeneratorContext()
+        self._context.output_path = os.path.join(output_root_path, 'httpapi')
+        print(f'GoServer output directory: {self._context.output_path}')
 
     def generate(self):
         self._loadyaml()
+        self._copy_static_files()
+        intf.GoServerInterfaceGenerator(self._context).generate()
 
     def _loadyaml(self):
         # load components
@@ -86,10 +41,10 @@ class GoServerGenerator(object):
     
     def _load_components(self, components):
         for componentname, componentobj in components.items():
-            c = Component(componentname, componentobj)
+            c = ctx.Component(componentname, componentobj)
             self._context.components.append(c)
         pass
-    
+
     def _loadroute(self, url: str, pathobj):
         for methodname, methodobj in pathobj.items():
             if "tags" not in methodobj:
@@ -98,6 +53,17 @@ class GoServerGenerator(object):
             ctrl = self._context.find_controller(controllername)
             ctrl.add_route(url, methodname, methodobj)
         pass
+
+    def _copy_static_files(self):
+        output_path = self._context.output_path
+        if os.path.exists(output_path) is False:
+            os.makedirs(output_path)
+        srcfolder = os.path.dirname(__file__)
+        name = 'http_setup.go'
+        shutil.copyfile(os.path.join(srcfolder, name), os.path.join(output_path, name))
+        name = 'response.go'
+        shutil.copyfile(os.path.join(srcfolder, name), os.path.join(output_path, name))
+
 
 
 
