@@ -14,3 +14,9 @@ components:
       properties:
         message:
           type: string
+
+    Common.ResponseError:
+      type: object
+      properties:
+        message:
+          type: string

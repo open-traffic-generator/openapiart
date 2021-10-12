@@ -1,36 +1,13 @@
 import os
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
-
-class Writer(object):
-    _indents: [str] = []
-
-    @property
-    def strings(self) -> [str]:
-        return self._strings
-
-    def __init__(self, indent: str):
-        self._indent = indent
-        self._strings: [str] = []
-
-    def write_line(self, *txt: str) -> "Writer":
-        for t in txt:
-            self._strings.append( ''.join(self._indents) + t)
-        return self
-
-    def push_indent(self) -> "Writer":
-        self._indents.append(self._indent)
-        return self
-
-    def pop_indent(self) -> "Writer":
-        self._indents.pop()
-        return self
+from openapiart.goserver.writer import Writer
 
 class GoServerInterfaceGenerator(object):
 
     def __init__(self, ctx: ctx.GeneratorContext):
         self._indent = '\t'
-        self._root_package = "TBD"
+        self._root_package = ctx.module_path
         self._package_name = "interfaces"
         self._ctx = ctx
         self._output_path = os.path.join(ctx.output_path, 'interfaces')
@@ -90,7 +67,7 @@ class GoServerInterfaceGenerator(object):
             w.write_line("const (")
             w.push_indent()
             for param in params:
-                w.write_line(f"{util.camel_case(ctrl.yamlname)}{util.camel_case(param)} = \"{param}\"")
+                w.write_line(f"{util.pascal_case(ctrl.yamlname)}{util.pascal_case(param)} = \"{param}\"")
             w.pop_indent()
             w.write_line(")", "")
         pass
@@ -104,10 +81,10 @@ class GoServerInterfaceGenerator(object):
             "Routes() []httpapi.HttpRoute",
         )
         for r in ctrl.routes:
-            w.write_line("/**")
+            w.write_line("/*")
             w.write_line(f"{r.operation_name}: {r.method} {r.url}")
             w.write_line("Description: " + r.description)
-            w.write_line("**/")
+            w.write_line("*/")
             w.write_line(
                 f"{r.operation_name}(w http.ResponseWriter, r *http.Request)",
             )
@@ -127,7 +104,7 @@ class GoServerInterfaceGenerator(object):
             f"GetController() {ctrl.controller_name}",
         )
         for r in ctrl.routes:
-            response_model_name = r.operation_name + 'Response'
+            response_model_name = r.operation_name_pascal_case + 'Response'
             w.write_line(
                 f"{r.operation_name}(r *http.Request) models.{response_model_name}",
             )

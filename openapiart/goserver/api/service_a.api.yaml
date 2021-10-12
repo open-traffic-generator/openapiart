@@ -15,7 +15,7 @@ paths:
   /apitest:
     get:
       tags: [ApiTest]
-      operationId: getRootResponse
+      operationId: GetRootResponse
       description: simple GET api with single return type
       responses:
         200:
@@ -26,7 +26,7 @@ paths:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
     post:
       tags: [ApiTest]
-      operationId: postRootResponse
+      operationId: PostRootResponse
       description: simple POST api with single return type
       requestBody:
         content:

@@ -10,7 +10,7 @@ paths:
   /serviceb/:
     get:
       tags: [ServiceB]
-      operationId: getAllItems
+      operationId: GetAllItems
       description: return list of some items
       responses:
         200:
@@ -25,7 +25,7 @@ paths:
   /serviceb/{item_id}:
     get:
       tags: [ServiceB]
-      operationId: getSingleItem
+      operationId: GetSingleItem
       description: return single item
       parameters:
         - in: path
@@ -40,6 +40,12 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
 
   /serviceb/{item_id}/{level_2}:
     get:

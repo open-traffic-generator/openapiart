@@ -24,7 +24,11 @@ class ControllerRoute(object):
         return self._method
     @property
     def operation_name(self) -> str:
-        name = util.camel_case(self._obj['operationId'])
+        name = self._obj['operationId']
+        return name
+    @property
+    def operation_name_pascal_case(self) -> str:
+        name = util.pascal_case(self.operation_name)
         return name
     @property
     def route_parameters(self) -> [str]:
@@ -51,12 +55,12 @@ class ControllerRoute(object):
 class Controller(object):
     @property
     def controller_name(self) -> str:
-        name = util.camel_case(self.yamlname) + 'Controller'
+        name = util.pascal_case(self.yamlname) + 'Controller'
         return name
 
     @property
     def service_handler_name(self) -> str:
-        name = util.camel_case(self.yamlname) + 'ServiceHandler'
+        name = util.pascal_case(self.yamlname) + 'ServiceHandler'
         return name
 
     @property
@@ -72,6 +76,7 @@ class Controller(object):
         pass
 
 class GeneratorContext(object):
+    module_path: str
     output_path: str
     components: [Component] = []
     controllers: [Controller] = []

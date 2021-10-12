@@ -9,23 +9,27 @@ import requests
 import platform
 import shutil
 import openapiart.goserver.generator_context as ctx
-import openapiart.goserver.go_interface_generator as intf
+from openapiart.goserver.go_interface_generator import GoServerInterfaceGenerator
+from openapiart.goserver.go_controller_generator import GoServerControllerGenerator
 
 class GoServerGenerator(object):
     def __init__(
         self, 
         openapi, # openapi.yaml.yaml
-        output_root_path: str
+        output_root_path: str,
+        module_path: str
         ):
         self._openapi = openapi
         self._context = ctx.GeneratorContext()
         self._context.output_path = os.path.join(output_root_path, 'httpapi')
+        self._context.module_path = module_path
         print(f'GoServer output directory: {self._context.output_path}')
 
     def generate(self):
         self._loadyaml()
         self._copy_static_files()
-        intf.GoServerInterfaceGenerator(self._context).generate()
+        GoServerInterfaceGenerator(self._context).generate()
+        GoServerControllerGenerator(self._context).generate()
 
     def _loadyaml(self):
         # load components

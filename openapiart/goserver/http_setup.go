@@ -15,6 +15,14 @@ type HttpRoute struct {
 	Handler http.HandlerFunc
 }
 
+func NewHttpRoute(path string, handler http.HandlerFunc, method string) HttpRoute {
+	return HttpRoute{
+		Path:    path,
+		Handler: handler,
+		Method:  method,
+	}
+}
+
 // Controller creates a set of HTTP routes.
 type HttpController interface {
 	Routes() []HttpRoute
