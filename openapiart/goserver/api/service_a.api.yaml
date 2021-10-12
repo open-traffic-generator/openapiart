@@ -24,3 +24,19 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+    post:
+      tags: [ApiTest]
+      operationId: postRootResponse
+      description: simple POST api with single return type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './service_a.yaml#/components/schemas/ApiTest.InputBody'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'

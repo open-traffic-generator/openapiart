@@ -205,6 +205,18 @@ class OpenApiArt(object):
             go_ux.generate(self._openapi)
         return self
 
+    def GenerateGoServer(self):
+        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", "internal"))
+        module = importlib.import_module("openapiart.goserver.goserver")
+        servergen = getattr(module, "GoServerGenerator")(
+            **{
+                "openapi": self._openapi,
+                "output_root_path": self._output_dir,
+            }
+        )
+        servergen.generate()
+        return self
+
     def _generate_proto_file(self):
         if self._protobuf_package_name is None:
             self._protobuf_package_name = "default"

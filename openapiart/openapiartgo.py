@@ -641,7 +641,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         else:
             new.generated = True
         self._write(
-            """type {struct} struct {{
+            """
+            // ***** {interface} *****
+            type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
             }}
             
