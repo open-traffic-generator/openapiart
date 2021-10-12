@@ -50,6 +50,7 @@ paths:
   /serviceb/{item_id}/{level_2}:
     get:
       tags: [ServiceB]
+      # operationId will be CamelCased, it is not possible to define a private method in an interface
       operationId: getSingleItemLevel2
       description: return single item
       parameters:

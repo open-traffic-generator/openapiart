@@ -52,7 +52,7 @@ class GoServerControllerGenerator(object):
             '"net/http"',
             f'"{self._root_package}/internal/httpapi"',
             f'"{self._root_package}/internal/httpapi/interfaces"',
-            f'"{self._root_package}/models"',
+            # f'"{self._root_package}/models"',
         ).pop_indent(
         ).write_line(
             ")",
@@ -79,10 +79,10 @@ class GoServerControllerGenerator(object):
 
     def _write_newcontroller(self, w: Writer, ctrl: ctx.Controller):
         w.write_line(
-            f"type NewHttp{ctrl.controller_name}(handler interfaces.{ctrl.service_handler_name}) interfaces.{ctrl.controller_name} {{",
+            f"func NewHttp{ctrl.controller_name}(handler interfaces.{ctrl.service_handler_name}) interfaces.{ctrl.controller_name} {{",
         ).push_indent()
         w.write_line(
-            f"return &{self._struct_name(ctrl)}(handler)",
+            f"return &{self._struct_name(ctrl)}{{handler}}",
         ).pop_indent()
         w.write_line(
             "}",

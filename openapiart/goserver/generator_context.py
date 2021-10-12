@@ -25,10 +25,7 @@ class ControllerRoute(object):
     @property
     def operation_name(self) -> str:
         name = self._obj['operationId']
-        return name
-    @property
-    def operation_name_pascal_case(self) -> str:
-        name = util.pascal_case(self.operation_name)
+        name = util.pascal_case(name)
         return name
     @property
     def route_parameters(self) -> [str]:

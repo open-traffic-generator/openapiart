@@ -104,7 +104,7 @@ class GoServerInterfaceGenerator(object):
             f"GetController() {ctrl.controller_name}",
         )
         for r in ctrl.routes:
-            response_model_name = r.operation_name_pascal_case + 'Response'
+            response_model_name = r.operation_name + 'Response'
             w.write_line(
                 f"{r.operation_name}(r *http.Request) models.{response_model_name}",
             )
