@@ -17,12 +17,14 @@ class GoServerGenerator(object):
         self, 
         openapi, # openapi.yaml.yaml
         output_root_path: str,
-        module_path: str
+        module_path: str,
+        models_path: str
         ):
         self._openapi = openapi
         self._context = ctx.GeneratorContext()
         self._context.output_path = os.path.join(output_root_path, 'httpapi')
         self._context.module_path = module_path
+        self._context.models_path = models_path
         print(f'GoServer output directory: {self._context.output_path}')
 
     def generate(self):

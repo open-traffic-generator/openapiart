@@ -49,8 +49,8 @@ class GoServerInterfaceGenerator(object):
         ).push_indent(
         ).write_line(
             '"net/http"',
-            f'"{self._root_package}/internal/httpapi"',
-            f'"{self._root_package}/models"',
+            f'"{self._root_package}/httpapi"',
+            f'"{self._ctx.models_path}"',
         ).pop_indent(
         ).write_line(
             ")",

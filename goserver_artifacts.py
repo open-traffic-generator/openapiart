@@ -16,9 +16,11 @@ def create_go_server_artifacts(openapiart_class):
         protobuf_name="models_pb"
     ).GenerateGoSdk(
         # package_dir="github.com/open-traffic-generator/openapiart/arg_go/models",
-        package_dir="jklocal/art_go/models",
+        package_dir="localdev/art_go/models",
         package_name="models"
     ).GenerateGoServer(
+        module_path="localdev/art_go/pkg",
+        models_path="localdev/art_go/models"
     )
     models_folder = os.path.join(os.path.dirname(__file__), "art_go/models")
     os.remove(os.path.join(models_folder, 'go.mod'))

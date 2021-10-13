@@ -50,8 +50,8 @@ class GoServerControllerGenerator(object):
         ).push_indent(
         ).write_line(
             '"net/http"',
-            f'"{self._root_package}/internal/httpapi"',
-            f'"{self._root_package}/internal/httpapi/interfaces"',
+            f'"{self._root_package}/httpapi"',
+            f'"{self._root_package}/httpapi/interfaces"',
             # f'"{self._root_package}/models"',
         ).pop_indent(
         ).write_line(

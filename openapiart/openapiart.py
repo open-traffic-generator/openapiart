@@ -205,14 +205,16 @@ class OpenApiArt(object):
             go_ux.generate(self._openapi)
         return self
 
-    def GenerateGoServer(self, module_path):
-        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", "internal"))
+    def GenerateGoServer(self, module_path, models_path):
+        outputfolder = module_path.split("/")[-1]
+        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", outputfolder))
         module = importlib.import_module("openapiart.goserver.goserver")
         servergen = getattr(module, "GoServerGenerator")(
             **{
                 "openapi": self._openapi,
                 "output_root_path": go_server_output_dir,
-                "module_path": module_path
+                "module_path": module_path,
+                "models_path": models_path
             }
         )
         servergen.generate()

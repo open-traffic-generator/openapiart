@@ -74,6 +74,7 @@ class Controller(object):
 
 class GeneratorContext(object):
     module_path: str
+    models_path: str
     output_path: str
     components: [Component] = []
     controllers: [Controller] = []
