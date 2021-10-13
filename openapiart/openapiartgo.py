@@ -1182,7 +1182,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldstruct=self._get_external_struct_name(field.struct),
                     interface=fluent_new.interface,
                 )
-            if field.isOptional and field.isPointer:
+            if field.isOptional and field.isPointer or "StatusCode" in field.name:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
                 )
