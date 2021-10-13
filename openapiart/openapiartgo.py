@@ -219,7 +219,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "common.go"))
         self._init_fp(self._filename)
         self._write_package()
-        with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
+        with open(os.path.join(os.path.dirname(__file__), "common.go.tmp")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
         self._fp = go_pkg_fp
