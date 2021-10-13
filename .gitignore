@@ -21,3 +21,4 @@ __pycache__
 /pkg/go.sum
 /pkg/openapiart.go
 /pkg/httpapi
+_debug_bin
