@@ -78,7 +78,7 @@ class GoServerInterfaceGenerator(object):
         )
         w.push_indent()
         w.write_line(
-            "Routes() []httpapi.HttpRoute",
+            "Routes() []httpapi.Route",
         )
         for r in ctrl.routes:
             w.write_line("/*")

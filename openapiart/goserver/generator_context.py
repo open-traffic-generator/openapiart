@@ -57,7 +57,7 @@ class Controller(object):
 
     @property
     def service_handler_name(self) -> str:
-        name = util.pascal_case(self.yamlname) + 'ServiceHandler'
+        name = util.pascal_case(self.yamlname) + 'Handler'
         return name
 
     @property

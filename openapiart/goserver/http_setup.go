@@ -8,24 +8,16 @@ import (
 )
 
 // Route defines the parameters for an api endpoint.
-type HttpRoute struct {
+type Route struct {
 	Name    string
 	Method  string
 	Path    string
 	Handler http.HandlerFunc
 }
 
-func NewHttpRoute(path string, handler http.HandlerFunc, method string) HttpRoute {
-	return HttpRoute{
-		Path:    path,
-		Handler: handler,
-		Method:  method,
-	}
-}
-
 // Controller creates a set of HTTP routes.
 type HttpController interface {
-	Routes() []HttpRoute
+	Routes() []Route
 }
 
 // AppendRoutes appends the routes of one or more Controllers to a mux.Router.

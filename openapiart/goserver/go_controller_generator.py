@@ -60,7 +60,7 @@ class GoServerControllerGenerator(object):
         )
 
     def _struct_name(self, ctrl: ctx.Controller) -> str:
-        return 'http' + ctrl.controller_name
+        return util.camel_case(ctrl.controller_name)
     
     def _write_controller_struct(self, w: Writer, ctrl: ctx.Controller):
         w.write_line(
@@ -92,10 +92,10 @@ class GoServerControllerGenerator(object):
 
     def _write_routes(self, w: Writer, ctrl: ctx.Controller):
         w.write_line(
-            f"func (ctrl *{self._struct_name(ctrl)}) Routes() []httpapi.HttpRoute {{",
+            f"func (ctrl *{self._struct_name(ctrl)}) Routes() []httpapi.Route {{",
         ).push_indent()
         w.write_line(
-            "return [] httpapi.HttpRoute {",
+            "return [] httpapi.Route {",
         ).push_indent()
         for r in ctrl.routes:
             w.write_line(
@@ -142,7 +142,7 @@ class GoServerControllerGenerator(object):
         # w.push_indent()
         # for r in ctrl.routes:
         #     w.write_line(
-        #         f"httpapi.HttpRoute(\"{r.url}\", ctrl.{r.operation_name}, \"{r.method}\"),",
+        #         f"httpapi.Route(\"{r.url}\", ctrl.{r.operation_name}, \"{r.method}\"),",
         #     )
         # w.pop_indent()
         w.write_line("httpapi.WriteDefaultResponse(w, http.StatusInternalServerError)")
