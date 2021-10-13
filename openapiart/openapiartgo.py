@@ -1050,8 +1050,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             type {interface} interface {{
+                Append(items ...{field_external_struct}) []{field_external_struct}
                 Add() {field_external_struct}
                 Items() {field_type}
+            }}
+
+            func (obj *{internal_struct}) Append(items ...{field_external_struct}) []{field_external_struct} {{
+                for _, item := range items {{
+                    newObj := item.Msg()
+                    obj.obj.obj.Items = append(obj.obj.obj.Items, newObj)
+                }}
+                return items
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
