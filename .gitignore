@@ -20,4 +20,4 @@ __pycache__
 /pkg/go.mod
 /pkg/go.sum
 /pkg/openapiart.go
-/pkg/httapi
+/pkg/httpapi
