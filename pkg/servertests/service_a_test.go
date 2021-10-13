@@ -8,8 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"localdev/art_go/models"
-
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +20,7 @@ func TestGetRootResponse(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
-	r := models.NewCommonResponseSuccess()
+	r := openapiart.NewCommonResponseSuccess()
 	r.FromJson(string(jsonResponse))
 	assert.Equal(t, "from GetRootResponse", r.Message())
 }
@@ -33,7 +32,7 @@ func TestPostRootResponse(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusInternalServerError, wr.Code)
 
-	inputbody := models.NewApiTestInputBody().SetSomeString("this is the input body")
+	inputbody := openapiart.NewApiTestInputBody().SetSomeString("this is the input body")
 	inputbuffer := bytes.NewBuffer([]byte(inputbody.ToJson()))
 
 	req, _ = http.NewRequest(http.MethodPost, "/apitest", inputbuffer)
@@ -42,7 +41,7 @@ func TestPostRootResponse(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
-	r := models.NewCommonResponseSuccess()
+	r := openapiart.NewCommonResponseSuccess()
 	r.FromJson(string(jsonResponse))
 	assert.Equal(t, "this is the input body", r.Message())
 }

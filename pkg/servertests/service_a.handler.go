@@ -2,10 +2,11 @@ package test
 
 import (
 	"io/ioutil"
-	"localdev/art_go/models"
-	"localdev/art_go/pkg/httpapi/controllers"
-	"localdev/art_go/pkg/httpapi/interfaces"
 	"net/http"
+
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	"github.com/open-traffic-generator/openapiart/pkg/httpapi/controllers"
+	"github.com/open-traffic-generator/openapiart/pkg/httpapi/interfaces"
 )
 
 type apiTestHandler struct {
@@ -21,21 +22,21 @@ func NewApiTestHandler() interfaces.ApiTestHandler {
 func (h *apiTestHandler) GetController() interfaces.ApiTestController {
 	return h.controller
 }
-func (h *apiTestHandler) GetRootResponse(r *http.Request) models.GetRootResponseResponse {
-	result := models.NewGetRootResponseResponse()
+func (h *apiTestHandler) GetRootResponse(r *http.Request) openapiart.GetRootResponseResponse {
+	result := openapiart.NewGetRootResponseResponse()
 	result.StatusCode200().SetMessage("from GetRootResponse")
 	return result
 }
-func (h *apiTestHandler) PostRootResponse(r *http.Request) models.PostRootResponseResponse {
-	var item models.ApiTestInputBody = nil
+func (h *apiTestHandler) PostRootResponse(r *http.Request) openapiart.PostRootResponseResponse {
+	var item openapiart.ApiTestInputBody = nil
 	if r.Body != nil {
 		body, _ := ioutil.ReadAll(r.Body)
 		if body != nil {
-			item = models.NewApiTestInputBody()
+			item = openapiart.NewApiTestInputBody()
 			item.FromJson(string(body))
 		}
 	}
-	result := models.NewPostRootResponseResponse()
+	result := openapiart.NewPostRootResponseResponse()
 	if item != nil {
 		result.StatusCode200().SetMessage(item.SomeString())
 		return result

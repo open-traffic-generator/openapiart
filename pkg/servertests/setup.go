@@ -1,7 +1,7 @@
 package test
 
 import (
-	"localdev/art_go/pkg/httpapi"
+	"github.com/open-traffic-generator/openapiart/pkg/httpapi"
 
 	"github.com/gorilla/mux"
 )

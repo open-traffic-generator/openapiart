@@ -2,12 +2,12 @@ package test
 
 import (
 	"fmt"
-	"localdev/art_go/models"
-	"localdev/art_go/pkg/httpapi/controllers"
-	"localdev/art_go/pkg/httpapi/interfaces"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	"github.com/open-traffic-generator/openapiart/pkg/httpapi/controllers"
+	"github.com/open-traffic-generator/openapiart/pkg/httpapi/interfaces"
 )
 
 type serviceBHandler struct {
@@ -23,24 +23,24 @@ func NewServiceBHandler() interfaces.ServiceBHandler {
 func (h *serviceBHandler) GetController() interfaces.ServiceBController {
 	return h.controller
 }
-func (h *serviceBHandler) GetAllItems(r *http.Request) models.GetAllItemsResponse {
+func (h *serviceBHandler) GetAllItems(r *http.Request) openapiart.GetAllItemsResponse {
 	items := h.getItems()
-	result := models.NewGetAllItemsResponse()
+	result := openapiart.NewGetAllItemsResponse()
 	result.StatusCode200().Items().Append(items...)
 	return result
 }
-func (h *serviceBHandler) GetSingleItem(r *http.Request) models.GetSingleItemResponse {
+func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleItemResponse {
 	vars := mux.Vars(r)
 	id := vars[interfaces.ServiceBItemId]
 	items := h.getItems()
-	var item models.ServiceBItem
+	var item openapiart.ServiceBItem
 	for _, i := range items {
 		if i.SomeId() == id {
 			item = i
 			break
 		}
 	}
-	result := models.NewGetSingleItemResponse()
+	result := openapiart.NewGetSingleItemResponse()
 	if item != nil {
 		result.SetStatusCode200(item)
 	} else {
@@ -48,23 +48,23 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) models.GetSingleItemRes
 	}
 	return result
 }
-func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) models.GetSingleItemLevel2Response {
+func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) openapiart.GetSingleItemLevel2Response {
 	vars := mux.Vars(r)
 	id1 := vars[interfaces.ServiceBItemId]
 	id2 := vars[interfaces.ServiceBLevel2]
-	result := models.NewGetSingleItemLevel2Response()
+	result := openapiart.NewGetSingleItemLevel2Response()
 	result.StatusCode200().SetPathId(id1).SetLevel2(id2)
 	return result
 }
 
-func (h *serviceBHandler) getItems() []models.ServiceBItem {
-	item1 := models.NewServiceBItem()
+func (h *serviceBHandler) getItems() []openapiart.ServiceBItem {
+	item1 := openapiart.NewServiceBItem()
 	item1.SetSomeId("1")
 	item1.SetSomeString("item 1")
-	item2 := models.NewServiceBItem()
+	item2 := openapiart.NewServiceBItem()
 	item2.SetSomeId("2")
 	item2.SetSomeString("item 2")
-	return []models.ServiceBItem{
+	return []openapiart.ServiceBItem{
 		item1,
 		item2,
 	}
