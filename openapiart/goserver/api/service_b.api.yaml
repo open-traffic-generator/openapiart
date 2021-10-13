@@ -7,7 +7,7 @@ info:
 
 paths:
 
-  /serviceb/:
+  /serviceb:
     get:
       tags: [ServiceB]
       operationId: GetAllItems
@@ -20,7 +20,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+                  $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
 
   /serviceb/{item_id}:
     get:

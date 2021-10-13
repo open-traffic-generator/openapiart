@@ -14,3 +14,15 @@ components:
           type: string
         some_string:
           type: string
+        path_id:
+          type: string
+        level_2:
+          type: string
+
+    ServiceB.ItemList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceB.Item'

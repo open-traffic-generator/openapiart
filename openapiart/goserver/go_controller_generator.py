@@ -132,7 +132,7 @@ class GoServerControllerGenerator(object):
                 f"if result.HasStatusCode{response_value}() {{",
             ).push_indent()
             w.write_line(
-                f"httpapi.WriteJSONResponse(w, http.StatusOK, result.StatusCode{response_value}())",
+                f"httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())",
                 "return"
             ).pop_indent()
             w.write_line(

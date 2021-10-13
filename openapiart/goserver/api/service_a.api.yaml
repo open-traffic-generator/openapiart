@@ -40,3 +40,9 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+        '500':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
