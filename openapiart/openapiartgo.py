@@ -1058,7 +1058,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{internal_struct}) Append(items ...{field_external_struct}) []{field_external_struct} {{
                 for _, item := range items {{
                     newObj := item.Msg()
-                    obj.obj.obj.Items = append(obj.obj.obj.Items, newObj)
+                    obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 }}
                 return items
             }}
