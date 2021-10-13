@@ -7,6 +7,7 @@ class GoServerInterfaceGenerator(object):
 
     def __init__(self, ctx: ctx.GeneratorContext):
         self._indent = '\t'
+        self._models_prefix = ctx.models_prefix
         self._root_package = ctx.module_path
         self._package_name = "interfaces"
         self._ctx = ctx
@@ -106,7 +107,7 @@ class GoServerInterfaceGenerator(object):
         for r in ctrl.routes:
             response_model_name = r.operation_name + 'Response'
             w.write_line(
-                f"{r.operation_name}(r *http.Request) models.{response_model_name}",
+                f"{r.operation_name}(r *http.Request) {self._models_prefix}{response_model_name}",
             )
         w.pop_indent()
         w.write_line(

@@ -18,9 +18,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
+                $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
 
   /serviceb/{item_id}:
     get:
