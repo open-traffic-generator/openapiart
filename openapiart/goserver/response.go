@@ -2,6 +2,7 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -16,6 +17,14 @@ func WriteJSONResponse(w http.ResponseWriter, statuscode int, data JSONWriter) (
 	w.WriteHeader(statuscode)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	return w.Write([]byte(data.ToJson()))
+}
+
+// WriteTextResponse sets an HTTP response with the provided status-code and string.
+func WriteAnyResponse(w http.ResponseWriter, statuscode int, data interface{}) (int, error) {
+	w.WriteHeader(statuscode)
+	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+	var dataBytes, _ = json.Marshal(data)
+	return w.Write(dataBytes)
 }
 
 // YAMLWriter offers conversion to YAML.

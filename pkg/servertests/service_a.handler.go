@@ -44,3 +44,8 @@ func (h *apiTestHandler) PostRootResponse(r *http.Request) openapiart.PostRootRe
 	result.StatusCode500().SetMessage("missing input")
 	return result
 }
+func (h *apiTestHandler) DummyResponseTest(r *http.Request) openapiart.DummyResponseTestResponse {
+	result := openapiart.NewDummyResponseTestResponse()
+	result.SetStatusCode200("this is a string response")
+	return result
+}

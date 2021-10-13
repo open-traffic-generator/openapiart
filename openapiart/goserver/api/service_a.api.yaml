@@ -24,6 +24,18 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+    delete:
+      tags: [ApiTest]
+      operationId: dummyResponseTest
+      responses:
+        '200':
+          description: |-
+            OK
+          content:
+            text/plain:
+              schema:
+                type: string
+
     post:
       tags: [ApiTest]
       operationId: PostRootResponse

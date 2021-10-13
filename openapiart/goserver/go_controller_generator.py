@@ -131,10 +131,19 @@ class GoServerControllerGenerator(object):
             w.write_line(
                 f"if result.HasStatusCode{response_value}() {{",
             ).push_indent()
-            w.write_line(
-                f"httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())",
-                "return"
-            ).pop_indent()
+            # print(response_obj)
+            # no response content defined, return as 'any'
+            if "content" not in response_obj:
+                w.write_line(f"httpapi.WriteAnyResponse(w, {response_value}, result.StatusCode{response_value}())")
+            if "content" in response_obj:
+                content = response_obj["content"]
+                if 'application/json' in content:
+                    w.write_line(f"httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())")
+                else:
+                    w.write_line(f"httpapi.WriteAnyResponse(w, {response_value}, result.StatusCode{response_value}())")
+                
+            w.write_line("return")
+            w.pop_indent()
             w.write_line(
                 "}",
             )

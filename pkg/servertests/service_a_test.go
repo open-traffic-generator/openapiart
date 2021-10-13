@@ -45,3 +45,16 @@ func TestPostRootResponse(t *testing.T) {
 	r.FromJson(string(jsonResponse))
 	assert.Equal(t, "this is the input body", r.Message())
 }
+
+func TestDummyResponseTest(t *testing.T) {
+	router := setup()
+	req, _ := http.NewRequest(http.MethodDelete, "/apitest", nil)
+	wr := httptest.NewRecorder()
+	router.ServeHTTP(wr, req)
+	assert.Equal(t, http.StatusOK, wr.Code)
+
+	response, _ := ioutil.ReadAll(wr.Body)
+	assert.Equal(t, "text/plain; charset=UTF-8", wr.Header().Get("Content-Type"))
+	assert.Equal(t, "\"this is a string response\"", string(response))
+
+}

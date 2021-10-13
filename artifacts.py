@@ -24,6 +24,8 @@ def create_openapi_artifacts(openapiart_class):
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/common/common.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"),
+
+        # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_a.api.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_b.api.yaml"),
     ],
