@@ -12,6 +12,7 @@ import (
 var apis []openapiart.OpenapiartApi
 
 func init() {
+	StartHttpServer()
 	StartMockGrpcServer()
 	StartMockHttpServer()
 	grpcApi := openapiart.NewApi()
