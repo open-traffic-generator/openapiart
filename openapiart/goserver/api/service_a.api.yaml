@@ -35,7 +35,6 @@ paths:
             text/plain:
               schema:
                 type: string
-
     post:
       tags: [ApiTest]
       operationId: PostRootResponse

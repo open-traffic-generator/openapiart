@@ -1,4 +1,4 @@
-import os
+import os, re
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
 from openapiart.goserver.writer import Writer
@@ -32,6 +32,7 @@ class GoServerControllerGenerator(object):
         self._write_routes(w, ctrl)
         self._write_methods(w, ctrl)
         with open(fullname, 'w') as file:
+            print(f"Controller: {fullname}")
             for line in w.strings:
                 file.write(line + '\n')
             pass
@@ -49,9 +50,12 @@ class GoServerControllerGenerator(object):
             "import ("
         ).push_indent(
         ).write_line(
+            '"io/ioutil"',
             '"net/http"',
             f'"{self._root_package}/httpapi"',
             f'"{self._root_package}/httpapi/interfaces"',
+            f'{re.sub("[.]", "", self._ctx.models_prefix)} "{self._ctx.models_path}"',
+
             # f'"{self._root_package}/models"',
         ).pop_indent(
         ).write_line(
@@ -124,9 +128,32 @@ class GoServerControllerGenerator(object):
             f"func (ctrl *{self._struct_name(ctrl)}) {route.operation_name}(w http.ResponseWriter, r *http.Request) {{",
         )
         w.push_indent()
-        w.write_line(
-            f"result := ctrl.handler.{route.operation_name}(r)",
-        )
+        request_body: Component = route.requestBody(self._ctx)
+        if request_body != None:
+            modelname = request_body.model_name
+            full_modelname = request_body.full_model_name(self._ctx)
+            new_modelname = f"{self._ctx.models_prefix}New{modelname}"
+
+            w.write_line(
+                f"var item {full_modelname}",
+                "if r.Body != nil {",
+                "   body, _ := ioutil.ReadAll(r.Body)",
+                "    if body != nil {",
+                f"        item = {new_modelname}()",
+                "        err := item.FromJson(string(body))",
+                "        if err != nil {",
+                "            item = nil",
+                "        }",
+                "    }",
+                "}",
+                f"result := ctrl.handler.{route.operation_name}(item, r)",
+            )
+        else:
+            w.write_line(
+                f"result := ctrl.handler.{route.operation_name}(r)",
+            )
+
+
         for response_value, response_obj in route._obj["responses"].items():
             w.write_line(
                 f"if result.HasStatusCode{response_value}() {{",

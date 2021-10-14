@@ -39,7 +39,6 @@ class GoServerGenerator(object):
         self._copy_static_files()
         GoServerInterfaceGenerator(self._context).generate()
         GoServerControllerGenerator(self._context).generate()
-        self._tidy_mod_file()
 
     def _loadyaml(self):
         # load components
@@ -75,24 +74,7 @@ class GoServerGenerator(object):
         srcfolder = os.path.dirname(__file__)
         name = 'http_setup.go'
         shutil.copyfile(os.path.join(srcfolder, name), os.path.join(output_path, name))
+        print("copy: " + os.path.join(output_path, name))
         name = 'response.go'
         shutil.copyfile(os.path.join(srcfolder, name), os.path.join(output_path, name))
-
-    def _tidy_mod_file(self):
-        """Tidy the mod file"""
-
-        try:
-            process_args = [
-                "go",
-                "mod",
-                "tidy",
-            ]
-            os.environ["GO111MODULE"] = "on"
-            print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._output_root_path, shell=False, env=os.environ)
-            process.wait()
-        except Exception as e:
-            print("Bypassed tidying the generated mod file: {}".format(e))
-
-
-
+        print("copy: " + os.path.join(output_path, name))

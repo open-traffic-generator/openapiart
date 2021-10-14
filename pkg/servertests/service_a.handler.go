@@ -1,7 +1,6 @@
 package test
 
 import (
-	"io/ioutil"
 	"net/http"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -27,18 +26,11 @@ func (h *apiTestHandler) GetRootResponse(r *http.Request) openapiart.GetRootResp
 	result.StatusCode200().SetMessage("from GetRootResponse")
 	return result
 }
-func (h *apiTestHandler) PostRootResponse(r *http.Request) openapiart.PostRootResponseResponse {
-	var item openapiart.ApiTestInputBody = nil
-	if r.Body != nil {
-		body, _ := ioutil.ReadAll(r.Body)
-		if body != nil {
-			item = openapiart.NewApiTestInputBody()
-			item.FromJson(string(body))
-		}
-	}
+
+func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBody, r *http.Request) openapiart.PostRootResponseResponse {
 	result := openapiart.NewPostRootResponseResponse()
-	if item != nil {
-		result.StatusCode200().SetMessage(item.SomeString())
+	if requestbody != nil {
+		result.StatusCode200().SetMessage(requestbody.SomeString())
 		return result
 	}
 	result.StatusCode500().SetMessage("missing input")

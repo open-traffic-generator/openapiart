@@ -1,4 +1,4 @@
-import os
+import os, re
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
 from openapiart.goserver.writer import Writer
@@ -32,6 +32,7 @@ class GoServerInterfaceGenerator(object):
         self._write_controller_interface(w, ctrl)
         self._write_servicehandler_interface(w, ctrl)
         with open(fullname, 'w') as file:
+            print(f"Interface: {fullname}")
             for line in w.strings:
                 file.write(line + '\n')
             pass
@@ -52,6 +53,7 @@ class GoServerInterfaceGenerator(object):
             '"net/http"',
             f'"{self._root_package}/httpapi"',
             f'"{self._ctx.models_path}"',
+            f'{re.sub("[.]", "", self._ctx.models_prefix)} "{self._ctx.models_path}"',
         ).pop_indent(
         ).write_line(
             ")",
@@ -105,10 +107,18 @@ class GoServerInterfaceGenerator(object):
             f"GetController() {ctrl.controller_name}",
         )
         for r in ctrl.routes:
-            response_model_name = r.operation_name + 'Response'
-            w.write_line(
-                f"{r.operation_name}(r *http.Request) {self._models_prefix}{response_model_name}",
-            )
+            full_responsename = r.full_responsename(self._ctx)
+            request_body: Component = r.requestBody(self._ctx)
+            if request_body != None:
+                full_requestname = request_body.full_model_name(self._ctx)
+                w.write_line(
+                    f"{r.operation_name}(rbody {full_requestname}, r *http.Request) {full_responsename}"
+                )
+                pass
+            else:
+                w.write_line(
+                    f"{r.operation_name}(r *http.Request) {full_responsename}"
+                )
         w.pop_indent()
         w.write_line(
             "}",
