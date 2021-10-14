@@ -1235,7 +1235,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         default = str(default).lower()
                     field.default = default
                 else:
-                    print("Warnning: Default should not accept for this property ", property_name)
+                    print("Warning: Default should not accept for this property ", property_name)
 
             fluent_new.interface_fields.append(field)
 
@@ -1403,21 +1403,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         body=body, name=field.name
                     )
                 statements.append(body)
-            if valid == 0:
-                print(
-                    "{field} of type {ftype} and {req} is not set for validation on interface {interface}".format(
-                        field=field.name,
-                        interface=new.interface,
-                        ftype=field.type,
-                        req="Optional" if field.isOptional else "required",
-                    )
-                )
-            if valid > 1:
-                print(
-                    "{field} hit {valid} times on interface {interface}".format(
-                        field=field.name, interface=new.interface, valid=valid
-                    )
-                )
         body = "\n".join(statements)
         self._write(
             """func (obj *{struct}) validateObj(set_default bool) {{
