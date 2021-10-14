@@ -163,8 +163,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._structs = {}
         self._write_mod_file()
         self._write_go_file()
-        self._format_go_file()
-        self._tidy_mod_file()
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
@@ -1571,33 +1569,3 @@ class OpenApiArtGo(OpenApiArtPlugin):
             for line in openapi_object["description"].split("\n"):
                 description += "//  {line}\n".format(line=line.strip())
         return description.strip("\n")
-
-    def _format_go_file(self):
-        """Format the generated go code"""
-        try:
-            process_args = [
-                "goimports",
-                "-w",
-                self._filename,
-            ]
-            cmd = " ".join(process_args)
-            print("Formatting generated go ux file: {}".format(cmd))
-            process = subprocess.Popen(cmd, cwd=self._ux_path, shell=True)
-            process.wait()
-        except Exception as e:
-            print("Bypassed formatting of generated go ux file: {}".format(e))
-
-    def _tidy_mod_file(self):
-        """Tidy the mod file"""
-        try:
-            process_args = [
-                "go",
-                "mod",
-                "tidy",
-            ]
-            os.environ["GO111MODULE"] = "on"
-            print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=False, env=os.environ)
-            process.wait()
-        except Exception as e:
-            print("Bypassed tidying the generated mod file: {}".format(e))

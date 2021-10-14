@@ -34,11 +34,14 @@ def create_openapi_artifacts(openapiart_class):
     ).GeneratePythonSdk(
         package_name="sanity"
     ).GenerateGoSdk(
-        package_dir="github.com/open-traffic-generator/openapiart/pkg", package_name="openapiart"
+        package_dir="github.com/open-traffic-generator/openapiart/pkg",
+        package_name="openapiart"
     ).GenerateGoServer(
         module_path="github.com/open-traffic-generator/openapiart/pkg",
         models_prefix="openapiart",
         models_path="github.com/open-traffic-generator/openapiart/pkg"
+    ).GoTidy(
+        relative_package_dir="pkg",
     )
 
 

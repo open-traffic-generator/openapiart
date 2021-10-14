@@ -221,6 +221,18 @@ class OpenApiArt(object):
         servergen.generate()
         return self
 
+    def GoTidy(self, relative_package_dir):
+        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", relative_package_dir))
+        module = importlib.import_module("openapiart.gotidy")
+        tidy = getattr(module, "GoTidy")(
+            **{
+                "output_root_path": go_server_output_dir,
+            }
+        )
+        tidy.goTidy()
+        return self
+
+
     def _generate_proto_file(self):
         if self._protobuf_package_name is None:
             self._protobuf_package_name = "default"

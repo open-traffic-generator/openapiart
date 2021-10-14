@@ -13,10 +13,7 @@ import (
 func StartHttpServer() {
 	handler := bundlerHandler{}
 	handler.controller = controllers.NewHttpBundlerController(&handler)
-	controllers := []httpapi.HttpController{
-		handler.GetController(),
-	}
-	router := httpapi.AppendRoutes(nil, controllers...)
+	router := httpapi.AppendRoutes(nil, handler.controller)
 	go func() {
 		log.Println("Generated Http Server serving incoming HTTP requests on 127.0.0.1:50071.")
 		if err := http.ListenAndServe("127.0.0.1:50071", router); err != nil {
@@ -33,13 +30,13 @@ func (h *bundlerHandler) GetController() interfaces.BundlerController {
 	return h.controller
 }
 
-func (h *bundlerHandler) SetConfig(r *http.Request) openapiart.SetConfigResponse {
+func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Request) openapiart.SetConfigResponse {
 	result := openapiart.NewSetConfigResponse()
 	result.SetStatusCode200([]byte("set config was a success"))
 	return result
 }
 
-func (h *bundlerHandler) UpdateConfig(r *http.Request) openapiart.UpdateConfigResponse {
+func (h *bundlerHandler) UpdateConfig(rbody openapiart.UpdateConfig, r *http.Request) openapiart.UpdateConfigResponse {
 	result := openapiart.NewUpdateConfigResponse()
 	result.SetStatusCode200(openapiart.NewPrefixConfig())
 	return result
