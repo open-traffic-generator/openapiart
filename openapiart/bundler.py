@@ -39,11 +39,6 @@ class Bundler(object):
     def literal_representer(dumper, data):
         return dumper.represent_scalar(u"tag:yaml.org,2002:str", data, style="|")
 
-    @staticmethod
-    def yaml_key_mapping(self, node, deep=False):
-        data = self.construct_mapping_org(node, deep)
-        return {(str(key) if isinstance(key, int) else key): data[key] for key in data}
-
     def __init__(self, api_files, output_dir="./"):
         self._parsers = {}
         self._api_files = api_files
@@ -55,8 +50,6 @@ class Bundler(object):
         self._includes = {}
         self._resolved = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
-        yaml.SafeLoader.construct_mapping_org = yaml.SafeLoader.construct_mapping
-        yaml.SafeLoader.construct_mapping = Bundler.yaml_key_mapping
 
     def _get_parser(self, pattern):
         if pattern not in self._parsers:
@@ -88,6 +81,7 @@ class Bundler(object):
         self._remove_x_include()
         self._resolve_license()
         self._resolve_strings(self._content)
+        self._resolve_keys(self._content)
         with open(self._output_filename, "w") as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
         with open(self._json_filename, "w") as fp:
@@ -449,6 +443,17 @@ class Bundler(object):
             self._content["info"]["license"] = {"name": "NO-LICENSE-PRESENT"}
         elif "name" not in self._content["info"]["license"]:
             raise Exception("The following properties are REQUIRED: license.name")
+
+    def _resolve_keys(self, content):
+        changes = {}
+        for key, value in content.items():
+            if isinstance(key, int):
+                changes[key] = value
+            if isinstance(value, dict):
+                self._resolve_keys(value)
+        for key, value in changes.items():
+            content[str(key)] = value
+            del content[key]
 
 
 if __name__ == "__main__":
