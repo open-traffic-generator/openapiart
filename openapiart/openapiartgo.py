@@ -850,11 +850,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         method_desc.extend(desc)
-        intf = "\n// (*{}).".format(new.interface)
+        intf = "\n//\t(*{}).".format(new.interface)
         self._write(
             """
             {description}
-            // {method_des}
+            //\t{method_des}
             type {interface} interface {{
                 Msg() *{pb_pkg_name}.{interface}
                 SetMsg(*{pb_pkg_name}.{interface}) {interface}
@@ -865,7 +865,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 pb_pkg_name=self._protobuf_package_name,
                 interface_signatures=interface_signatures,
                 description="" if new.description is None else new.description,
-                method_des = intf + intf.join(method_desc)
+                method_des = intf.join(method_desc)
             )
         )
         for field in new.interface_fields:
