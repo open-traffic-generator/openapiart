@@ -13,7 +13,7 @@ import (
 
 func TestGetAllItems(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodGet, "/serviceb", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/serviceb", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
@@ -29,7 +29,7 @@ func TestGetAllItems(t *testing.T) {
 
 func TestGetSingleItem(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodGet, "/serviceb/1", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/serviceb/1", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
@@ -39,7 +39,7 @@ func TestGetSingleItem(t *testing.T) {
 	r.FromJson(string(jsonResponse))
 	assert.Equal(t, "1", r.SomeId())
 
-	req, _ = http.NewRequest(http.MethodGet, "/serviceb/3", nil)
+	req, _ = http.NewRequest(http.MethodGet, "/api/serviceb/3", nil)
 	wr = httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusBadRequest, wr.Code) // missing support for 404
@@ -52,7 +52,7 @@ func TestGetSingleItem(t *testing.T) {
 
 func TestGetSingleItemLevel2(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodGet, "/serviceb/aa/bb", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/serviceb/aa/bb", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)

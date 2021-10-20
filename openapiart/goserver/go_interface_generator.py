@@ -5,13 +5,13 @@ from openapiart.goserver.writer import Writer
 
 class GoServerInterfaceGenerator(object):
 
-    def __init__(self, ctx: ctx.GeneratorContext):
+    def __init__(self, context: ctx.GeneratorContext):
         self._indent = '\t'
-        self._models_prefix = ctx.models_prefix
-        self._root_package = ctx.module_path
+        self._models_prefix = context.models_prefix
+        self._root_package = context.module_path
         self._package_name = "interfaces"
-        self._ctx = ctx
-        self._output_path = os.path.join(ctx.output_path, 'interfaces')
+        self._ctx = context
+        self._output_path = os.path.join(context.output_path, 'interfaces')
     
     def generate(self):
         self._write_interfaces()
@@ -23,7 +23,7 @@ class GoServerInterfaceGenerator(object):
             self._write_interface(ctrl)
 
     def _write_interface(self, ctrl: ctx.Controller):
-        filename = ctrl.yamlname.lower() + ".interface.go"
+        filename = ctrl.yamlname.lower() + "_interface.go"
         fullname = os.path.join(self._output_path, filename)
         w = Writer(self._indent)
         self._write_header(w)
@@ -52,7 +52,6 @@ class GoServerInterfaceGenerator(object):
         ).write_line(
             '"net/http"',
             f'"{self._root_package}/httpapi"',
-            f'"{self._ctx.models_path}"',
             f'{re.sub("[.]", "", self._ctx.models_prefix)} "{self._ctx.models_path}"',
         ).pop_indent(
         ).write_line(
@@ -75,6 +74,12 @@ class GoServerInterfaceGenerator(object):
             w.write_line(")", "")
         pass
 
+    def _write_route_description(self, w: Writer, r: ctx.ControllerRoute):
+        w.write_line("/*")
+        w.write_line(f"{r.operation_name}: {r.method} {r.url}")
+        w.write_line("Description: " + r.description)
+        w.write_line("*/")
+
     def _write_controller_interface(self, w: Writer, ctrl: ctx.Controller):
         w.write_line(
             f"type {ctrl.controller_name} interface {{",
@@ -84,10 +89,7 @@ class GoServerInterfaceGenerator(object):
             "Routes() []httpapi.Route",
         )
         for r in ctrl.routes:
-            w.write_line("/*")
-            w.write_line(f"{r.operation_name}: {r.method} {r.url}")
-            w.write_line("Description: " + r.description)
-            w.write_line("*/")
+            # self._write_route_description(w, r)
             w.write_line(
                 f"{r.operation_name}(w http.ResponseWriter, r *http.Request)",
             )
@@ -107,10 +109,11 @@ class GoServerInterfaceGenerator(object):
             f"GetController() {ctrl.controller_name}",
         )
         for r in ctrl.routes:
-            full_responsename = r.full_responsename(self._ctx)
-            request_body: Component = r.requestBody(self._ctx)
+            self._write_route_description(w, r)
+            full_responsename = r.full_responsename
+            request_body: Component = r.requestBody()
             if request_body != None:
-                full_requestname = request_body.full_model_name(self._ctx)
+                full_requestname = request_body.full_model_name
                 w.write_line(
                     f"{r.operation_name}(rbody {full_requestname}, r *http.Request) {full_responsename}"
                 )

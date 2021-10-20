@@ -41,6 +41,10 @@ class GoServerGenerator(object):
         GoServerControllerGenerator(self._context).generate()
 
     def _loadyaml(self):
+        # load servers
+        if "servers" in self._openapi:
+            servers = self._openapi["servers"]
+            self._load_servers(servers)
         # load components
         if "components" in self._openapi:
             components = self._openapi["components"]
@@ -52,9 +56,15 @@ class GoServerGenerator(object):
                 self._loadroute(url, pathobj)
         pass
     
+    def _load_servers(self, servers):
+        for server in servers:
+            s = ctx.Server(server)
+            self._context.servers.append(s)
+        pass
+
     def _load_components(self, components):
         for componentname, componentobj in components.items():
-            c = ctx.Component(componentname, componentobj)
+            c = ctx.Component(componentname, componentobj, self._context)
             self._context.components.append(c)
         pass
 

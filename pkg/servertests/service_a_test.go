@@ -14,7 +14,7 @@ import (
 
 func TestGetRootResponse(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodGet, "/apitest", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/apitest", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
@@ -27,7 +27,7 @@ func TestGetRootResponse(t *testing.T) {
 
 func TestPostRootResponse(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodPost, "/apitest", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/api/apitest", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusInternalServerError, wr.Code)
@@ -35,7 +35,7 @@ func TestPostRootResponse(t *testing.T) {
 	inputbody := openapiart.NewApiTestInputBody().SetSomeString("this is the input body")
 	inputbuffer := bytes.NewBuffer([]byte(inputbody.ToJson()))
 
-	req, _ = http.NewRequest(http.MethodPost, "/apitest", inputbuffer)
+	req, _ = http.NewRequest(http.MethodPost, "/api/apitest", inputbuffer)
 	wr = httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
@@ -48,7 +48,7 @@ func TestPostRootResponse(t *testing.T) {
 
 func TestDummyResponseTest(t *testing.T) {
 	router := setup()
-	req, _ := http.NewRequest(http.MethodDelete, "/apitest", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/api/apitest", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)

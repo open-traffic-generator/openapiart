@@ -22,7 +22,7 @@ class GoServerControllerGenerator(object):
             self._write_controller(ctrl)
 
     def _write_controller(self, ctrl: ctx.Controller):
-        filename = ctrl.yamlname.lower() + ".controller.go"
+        filename = ctrl.yamlname.lower() + "_controller.go"
         fullname = os.path.join(self._output_path, filename)
         w = Writer(self._indent)
         self._write_header(w)
@@ -128,10 +128,10 @@ class GoServerControllerGenerator(object):
             f"func (ctrl *{self._struct_name(ctrl)}) {route.operation_name}(w http.ResponseWriter, r *http.Request) {{",
         )
         w.push_indent()
-        request_body: Component = route.requestBody(self._ctx)
+        request_body: Component = route.requestBody()
         if request_body != None:
             modelname = request_body.model_name
-            full_modelname = request_body.full_model_name(self._ctx)
+            full_modelname = request_body.full_model_name
             new_modelname = f"{self._ctx.models_prefix}New{modelname}"
 
             w.write_line(

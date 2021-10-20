@@ -1,6 +1,22 @@
 import re
 import openapiart.goserver.string_util as util
 
+class Server(object):
+    
+    @property
+    def basepath(self) -> [str]:
+        return self._basepath
+
+    def __init__(self, serverobj):
+        self._obj = serverobj
+        self._basepath = ''
+        try:
+            self._basepath = self._obj['variables']['basePath']['default']
+            if self._basepath.startswith("/") == False:
+                self._basepath = "/" + self._basepath
+        except:
+            pass
+
 class Component(object):
     @property
     def yaml_name(self) -> [str]:
@@ -10,18 +26,21 @@ class Component(object):
     def model_name(self) -> str:
         return re.sub('[.]', '', self._yamlname)
 
+    @property
+    def full_model_name(self) -> str:
+        _ctx: GeneratorContext = self._ctx
+        return f"{_ctx.models_prefix}{self.model_name}"
+
     def __init__(
         self,
         yamlname: str,
-        componentobj
+        componentobj,
+        ctx
         ):
+        self._ctx: GeneratorContext = ctx
         self._yamlname = yamlname
         self._obj = componentobj
-        pass
 
-    def full_model_name(self, ctx) -> str:
-        _ctx: GeneratorContext = ctx
-        return f"{_ctx.models_prefix}{self.model_name}"
 
 class ControllerRoute(object):
     @property
@@ -31,7 +50,7 @@ class ControllerRoute(object):
         return ""
     @property
     def url(self) -> str:
-        return self._url
+        return self.full_url()
     @property
     def method(self) -> str:
         return self._method
@@ -48,21 +67,27 @@ class ControllerRoute(object):
     def response_model_name(self) -> str:
         return self.operation_name + 'Response'
 
+    @property
+    def full_responsename(self) -> Component:
+        _ctx: GeneratorContext = self._ctx
+        return f"{_ctx.models_prefix}{self.response_model_name}"
+
     def __init__(
         self,
         url: str,
         method: str,
-        methodobj
+        methodobj,
+        ctx
         ):
+        self._ctx: GeneratorContext = ctx
         self._url = url
         self._method = method.upper()
         self._obj = methodobj
         self._parameters: [str] = []
         self._extract_parameters()
-        pass
 
-    def requestBody(self, ctx) -> Component:
-        _ctx: GeneratorContext = ctx
+    def requestBody(self) -> Component:
+        _ctx: GeneratorContext = self._ctx
         try:
             ref = self._obj['requestBody']['content']['application/json']['schema']['$ref']
             yamlname = ref.split('/')[-1]
@@ -72,10 +97,12 @@ class ControllerRoute(object):
             return None
         except:
             return None
-
-    def full_responsename(self, ctx) -> Component:
-        _ctx: GeneratorContext = ctx
-        return f"{_ctx.models_prefix}{self.response_model_name}"
+    def full_url(self):
+        _ctx: GeneratorContext = self._ctx
+        server = _ctx.servers[0]
+        if server == None:
+            return self._url
+        return server.basepath + self._url
 
     def _extract_parameters(self):
         if "parameters" in self._obj:
@@ -97,21 +124,25 @@ class Controller(object):
     def yamlname(self) -> str:
         return self._yamlname
 
-    def __init__(self, yamlname: str):
+    def __init__(self, yamlname: str, ctx):
+        self._ctx = ctx
         self.routes: [ControllerRoute] = []
         self._yamlname = yamlname
 
     def add_route(self, url: str, method: str, methodobj):
-        self.routes.append(ControllerRoute(url, method, methodobj))
+        self.routes.append(ControllerRoute(url, method, methodobj, self._ctx))
         pass
 
 class GeneratorContext(object):
-    module_path: str
-    models_prefix: str
-    models_path: str
-    output_path: str
-    components: [Component] = []
-    controllers: [Controller] = []
+    def __init__(self):
+        self.module_path: str
+        self.models_prefix: str
+        self.models_path: str
+        self.output_path: str
+        self.servers: [Server] = []
+        self.components: [Component] = []
+        self.controllers: [Controller] = []
+
     def find_controller(self, yamlname: str) -> Controller:
         ctrl: Controller = None
         for c in self.controllers:
@@ -119,7 +150,7 @@ class GeneratorContext(object):
                 ctrl = c
                 break
         if ctrl == None:
-            ctrl = Controller(yamlname)
+            ctrl = Controller(yamlname, self)
             self.controllers.append(ctrl)
         return ctrl
 
