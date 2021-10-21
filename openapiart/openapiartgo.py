@@ -1465,15 +1465,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_default_method(self, new):
         body = ""
         interface_fields = new.interface_fields
-        # if "HeaderChecksum" in new.interface:
-            # import pdb; pdb.set_trace()
         hasChoiceConfig = []
         choice_enums = []
         for index, field in enumerate(interface_fields):
             if field.default is None:
                 continue
             if field.name == "Choice":
-                # import pdb; pdb.set_trace()
                 choice_enums = [self._get_external_struct_name(e) for e in field.enums if e != field.default]
                 hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
                 interface_fields.insert(0, interface_fields.pop(index))
@@ -1586,7 +1583,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                     )
         if choice_body is not None:
-            # import pdb; pdb.set_trace()
             body = choice_body.replace(
                 "<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else ""
             ) + body
