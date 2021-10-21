@@ -506,13 +506,13 @@ func TestChoice1(t *testing.T) {
 	g := config.F().FromJson(json)
 	assert.Nil(t, g)
 	fmt.Println(config.F().ToJson())
-	assert.Contains(t, config.F().ToJson(), `"choice": "f_b"`)
+	require.JSONEq(t, config.F().ToJson(), json)
 	json2 := `{
 		"choice": "f_a",
 		"f_a": "this is f string"
 	}`
 	f := config.F().FromJson(json2)
 	assert.Nil(t, f)
-	assert.Contains(t, config.F().ToJson(), `"choice": "f_a"`)
+	require.JSONEq(t, config.F().ToJson(), json2)
 	fmt.Println(config.F().ToJson())
 }
