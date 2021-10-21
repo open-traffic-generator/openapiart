@@ -214,8 +214,28 @@ func validateIpv6(ip string) error {
 
 func validateHex(hex string) error {
 	hex = strings.Replace(hex, "0x", "", -1)
-	_, err := strconv.ParseUint(hex, 16, 64)
-	if err != nil {
+	hex_vals := []string{}
+	if len(hex) > 16 {
+		start := 0
+		for i := 16; i < len(hex); i += 16 {
+			hex_vals = append(hex_vals, hex[start:i])
+			start = i
+		}
+		if start < len(hex) {
+			hex_vals = append(hex_vals, hex[start:])
+		}
+	} else {
+		hex_vals = append(hex_vals, hex)
+	}
+	raise := false
+	for _, val := range hex_vals {
+		_, err := strconv.ParseUint(val, 16, 64)
+		if err != nil {
+			raise = true
+			break
+		}
+	}
+	if raise {
 		return fmt.Errorf(fmt.Sprintf("Invalid hex value %s", hex))
 	}
 	return nil
