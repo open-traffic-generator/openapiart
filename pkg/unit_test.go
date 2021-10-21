@@ -28,6 +28,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 func TestJsonSerialization(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
+	config.RequiredObject()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
@@ -87,7 +88,8 @@ func TestNewAndSet(t *testing.T) {
 	c := openapiart.NewPrefixConfig()
 	c.SetE(openapiart.NewEObject().SetEA(123.456))
 	c.SetF(openapiart.NewFObject().SetFA("fa string"))
-	log.Println(c.ToYaml())
+	log.Println(c.E().ToYaml())
+	log.Println(c.F().ToYaml())
 }
 
 func TestSimpleTypes(t *testing.T) {
@@ -210,6 +212,7 @@ func TestChoice(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 
 	f := config.F()
+	fmt.Println(f.ToJson())
 	f.SetFA("a fa string")
 	assert.Equal(t, f.Choice(), openapiart.FObjectChoice.F_A)
 
@@ -477,4 +480,39 @@ func TestRequiredValidation(t *testing.T) {
 		SetIpv4("1.1.1.1")
 	err := config.Validate()
 	assert.Nil(t, err)
+}
+
+func TestHexPattern(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	l := config.L()
+	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
+	err := l.Validate()
+	fmt.Println(err)
+	assert.Nil(t, err)
+	l.SetHex("")
+	err1 := l.Validate()
+	assert.NotNil(t, err1)
+	fmt.Println(err1)
+}
+
+func TestChoice1(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	json := `{
+		"choice": "f_b",
+		"f_b": 30.0
+	}`
+	g := config.F().FromJson(json)
+	assert.Nil(t, g)
+	fmt.Println(config.F().ToJson())
+	assert.Contains(t, config.F().ToJson(), `"choice": "f_b"`)
+	json2 := `{
+		"choice": "f_a",
+		"f_a": "this is f string"
+	}`
+	f := config.F().FromJson(json2)
+	assert.Nil(t, f)
+	assert.Contains(t, config.F().ToJson(), `"choice": "f_a"`)
+	fmt.Println(config.F().ToJson())
 }

@@ -507,7 +507,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                     status_code=response.status_code,
                 )
-            error_handling += 'return nil, fmt.Errorf("A response of 200, 400, 500 has not been implemented")'
+            error_handling += 'return nil, fmt.Errorf("response of 200, 400, 500 has not been implemented")'
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
                         return resp.GetStatusCode_200(), nil
@@ -930,12 +930,33 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             return
         elif field.isPointer:
-            body = """return *obj.obj.{fieldname}""".format(
+            default = ""
+            if field.default is not None:
+                default = """
+                    if obj.obj.{fieldname} == nil {{
+                        *obj.obj.{fieldname} = {value}
+                    }}
+                """.format(fieldname=field.name, value="\"{}\"".format(field.default) if "string" in field.type else field.default)
+            body = """{default}
+                return *obj.obj.{fieldname}
+                """.format(
                 fieldname=field.name,
+                default=default
             )
         else:
-            body = """return obj.obj.{fieldname}""".format(
+            default = ""
+            if field.default is not None:
+                default = """
+                    if obj.obj.{fieldname} == {check} {{
+                        obj.obj.{fieldname} = {value}
+                    }}
+                """.format(
+                    fieldname=field.name, value="\"{}\"".format(field.default) if "string" in field.type else field.default,
+                    check="\"\"" if "string" in field.type else 0
+                )
+            body = """{default}\n return obj.obj.{fieldname}""".format(
                 fieldname=field.name,
+                default=default
             )
         self._write(
             """
@@ -1245,7 +1266,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         default = str(default).lower()
                     field.default = default
                 else:
-                    print("Warnning: Default should not accept for this property ", property_name)
+                    print("Warning: Default should not accept for this property ", property_name)
 
             fluent_new.interface_fields.append(field)
 
@@ -1444,40 +1465,66 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_default_method(self, new):
         body = ""
         interface_fields = new.interface_fields
-        hasChoiceConfig = None
+        # if "HeaderChecksum" in new.interface:
+            # import pdb; pdb.set_trace()
+        hasChoiceConfig = []
+        choice_enums = []
         for index, field in enumerate(interface_fields):
             if field.default is None:
                 continue
             if field.name == "Choice":
+                # import pdb; pdb.set_trace()
+                choice_enums = [self._get_external_struct_name(e) for e in field.enums if e != field.default]
                 hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
-                interface_fields.append(interface_fields.pop(index))
+                interface_fields.insert(0, interface_fields.pop(index))
                 break
 
-        for field in interface_fields:
-            if hasChoiceConfig is not None and field.name not in hasChoiceConfig:
-                continue
+        choice_body = None
+        enum_fields = []
+        # enum_check = None
 
-            if field.struct is not None and field.isOptional is False:
-                body += """if obj.obj.{name} == nil {{
-                    obj.{external_name}()
-                }}
-                """.format(
-                    name=field.name,
-                    external_name=self._get_external_struct_name(field.name),
-                )
-            elif field.default is None:
+        for field in interface_fields:
+            # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
+            #     continue
+            if field.default is None:
                 continue
+            if field.struct is not None and field.isOptional is False:
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.{external_name}()".format(external_name=self._get_external_struct_name(field.name))
+                    )
+                elif field.name in choice_enums:
+                    continue
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.{external_name}()
+                    }}
+                    """.format(
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        # enum_check="&& {}".format(enum_check) if enum_check is not None and field.name in choice_enums
+                                    # else ""
+                    )
             elif field.isArray:
                 if "string" in field.type:
                     values = '"{0}"'.format('", "'.join(field.default))
                 else:
                     values = str(field.default)[1:-1]
-                body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({type}{{{values}}})
-                }}
-                """.format(
-                    name=field.name, external_name=self._get_external_struct_name(field.name), type=field.type, values=values
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({type}{{{values}}})".format(
+                            external_name=self._get_external_struct_name(field.name), type=field.type, values=values
+                        )
+                    )
+                elif field.name in choice_enums:
+                    continue
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.Set{external_name}({type}{{{values}}})
+                    }}
+                    """.format(
+                        name=field.name, external_name=self._get_external_struct_name(field.name), type=field.type, values=values,
+                    )
             elif field.isEnum:
                 enum_value = """{struct}{name}.{value}""".format(
                     struct=self._get_external_struct_name(new.struct), name=field.name, value=field.default.upper()
@@ -1486,33 +1533,63 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
                     cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
-                body += """if {cnd_check} {{
+                body1 = """if {cnd_check} {{
                     obj.Set{external_name}({enum_value})
+                    <choice_fields>
                 }}
                 """.format(
                     cnd_check=cnd_check,
                     external_name=self._get_external_struct_name(field.name),
                     enum_value=enum_value,
                 )
+                if field.name in hasChoiceConfig:
+                    choice_body = body1 if choice_body is None else choice_body.replace("<choice_fields>", body1)
+                else:
+                    body = body + body1.replace("<choice_fields>", "")
             elif field.isPointer:
-                body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({value})
-                }}
-                """.format(
-                    name=field.name,
-                    external_name=self._get_external_struct_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({value})".format(
+                            external_name=self._get_external_struct_name(field.name),
+                            value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                        )
+                    )
+                elif field.name in choice_enums:
+                    continue
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.Set{external_name}({value})
+                    }}
+                    """.format(
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    )
             else:
-                body += """if obj.obj.{name} == {check_value} {{
-                    obj.Set{external_name}({value})
-                }}
-                """.format(
-                    name=field.name,
-                    check_value='""' if field.type == "string" else "0",
-                    external_name=self._get_external_struct_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({value})".format(
+                            external_name=self._get_external_struct_name(field.name),
+                            value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                        )
+                    )
+                elif field.name in choice_enums:
+                    continue
+                else:
+                    body += """if obj.obj.{name} == {check_value} {{
+                        obj.Set{external_name}({value})
+                    }}
+                    """.format(
+                        name=field.name,
+                        check_value='""' if field.type == "string" else "0",
+                        external_name=self._get_external_struct_name(field.name),
+                        value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    )
+        if choice_body is not None:
+            # import pdb; pdb.set_trace()
+            body = choice_body.replace(
+                "<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else ""
+            ) + body
 
         self._write(
             """func (obj *{struct}) setDefault() {{
