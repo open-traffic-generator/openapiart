@@ -154,7 +154,6 @@ def test():
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
-    print(ret)
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
     if int(result) < go_coverage_threshold:
@@ -308,6 +307,7 @@ def run(commands, capture_output=False):
             fd.flush()
             fd.seek(0)
             ret = fd.read()
+            print(ret)
             fd.close()
             os.remove("log.txt")
             return ret
