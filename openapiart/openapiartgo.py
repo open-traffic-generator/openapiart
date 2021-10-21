@@ -239,23 +239,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return name
 
     def _get_external_field_name(self, openapi_name):
-        external_name = ""
-        for piece in openapi_name.replace(".", "").split("_"):
-            for i in range(len(piece)):
-                if i == 0 and piece[i].isdigit() is False:
-                    external_name += piece[i].upper()
-                elif piece[i].isdigit():
-                    if "_" + piece[i] in openapi_name:
-                        external_name += "_" + piece[i]
-                    else:
-                        external_name += piece[i]
-                elif external_name[-1].isdigit():
-                    external_name += piece[i].upper()
+        """convert openapi fieldname to protobuf fieldname
+
+        - reference: https://developers.google.com/protocol-buffers/docs/reference/go-generated#fields
+
+        Note that the generated Go field names always use camel-case naming,
+        even if the field name in the .proto file uses lower-case with underscores (as it should).
+        The case-conversion works as follows:
+        - The first letter is capitalized for export.
+        - NOTE: this is ignored as OpenAPIArt doesn't allow fieldnames to start with an underscore
+            - If the first character is an underscore, it is removed and a capital X is prepended.
+        - If an interior underscore is followed by a lower-case letter, the underscore is removed, and the following letter is capitalized.
+        - NOTE: This isn't documented, if a number is followed by a lower-case letter the following letter is capitalized.
+        - Thus, the proto field foo_bar_baz becomes FooBarBaz in Go, and _my_field_name_2 becomes XMyFieldName_2.
+        """
+        external = ""
+        name = openapi_name.replace(".", "")
+        for i in range(len(name)):
+            if i == 0:
+                if name[i] == "_":
+                    pass
                 else:
-                    external_name += piece[i]
-        if external_name in ["String"]:
-            external_name += "_"
-        return external_name
+                    external += name[i].upper()
+            elif name[i] == "_":
+                pass
+            elif name[i - 1] == "_":
+                if name[i].isdigit() or name[i].isupper():
+                    external += "_" + name[i]
+                else:
+                    external += name[i].upper()
+            elif name[i - 1].isdigit() and name[i].islower():
+                external += name[i].upper()
+            else:
+                external += name[i]
+        if external in ["String"]:
+            external += "_"
+        return external
 
     def _get_external_struct_name(self, openapi_name):
         return self._get_external_field_name(openapi_name).replace("_", "")
