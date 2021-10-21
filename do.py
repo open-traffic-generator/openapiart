@@ -303,6 +303,14 @@ def run(commands, capture_output=False):
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
+    def flush_output():
+        if capture_output:
+            fd.flush()
+            fd.seek(0)
+            ret = fd.read()
+            fd.close()
+            os.remove("log.txt")
+            return ret
     fd = None
     if capture_output:
         fd = open("log.txt", "w+")
@@ -311,16 +319,9 @@ def run(commands, capture_output=False):
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True, stdout=fd)
-        if capture_output:
-            fd.flush()
-            fd.seek(0)
-            ret = fd.read()
-            fd.close()
-            os.remove("log.txt")
-            return ret
+        return flush_output()
     except Exception:
-        if capture_output:
-            fd.close()
+        flush_output()
         sys.exit(1)
 
 
