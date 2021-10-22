@@ -838,13 +838,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "setDefault()",
         ]
         for field in new.interface_fields:
-            interfaces.append("//{}".format(field.getter_method_description))
+            interfaces.append("// Get {}".format(field.getter_method_description.lstrip("// ")))
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
-                interfaces.append("//{} ".format(field.setter_method_description))
+                interfaces.append("// Set {} ".format(field.setter_method_description.lstrip("// ")))
                 interfaces.append(field.setter_method)
             if field.has_method is not None:
-                interfaces.append("//{} ".format(field.has_method_description))
+                interfaces.append("// {} ".format(field.has_method_description.lstrip("// ")))
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         intf = "\n//\t(*{}).".format(new.interface)
@@ -1242,8 +1242,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
-            field.getter_method_description = "getter" + self._get_description(property_schema)
-            field.setter_method_description = "setter" + self._get_description(property_schema)
+            field.getter_method_description = self._get_description(property_schema)
+            field.setter_method_description = self._get_description(property_schema)
             if field.isArray and field.isEnum:
                 field.getter_method = "{fieldname}() []{interface}{fieldname}Enum".format(
                     fieldname=self._get_external_struct_name(field.name),
