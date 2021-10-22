@@ -490,10 +490,14 @@ func TestHexPattern(t *testing.T) {
 	err := l.Validate()
 	fmt.Println(err)
 	assert.Nil(t, err)
-	l.SetHex("")
+	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
 	err1 := l.Validate()
-	assert.NotNil(t, err1)
 	fmt.Println(err1)
+	assert.Nil(t, err1)
+	l.SetHex("")
+	err2 := l.Validate()
+	assert.NotNil(t, err2)
+	fmt.Println(err2)
 }
 
 func TestChoice1(t *testing.T) {

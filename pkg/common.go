@@ -213,7 +213,7 @@ func validateIpv6(ip string) error {
 }
 
 func validateHex(hex string) error {
-	hex = strings.Replace(hex, "0x", "", -1)
+	hex = strings.TrimLeft(hex, "0x")
 	hex_vals := []string{}
 	if len(hex) > 16 {
 		start := 0
@@ -285,4 +285,3 @@ func validateIpv6Slice(ip []string) error {
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
 }
-
