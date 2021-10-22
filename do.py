@@ -297,31 +297,38 @@ def py():
         return py.path
 
 
+def flush_output(fd, filename):
+    """
+    Flush the log file and print to console
+    """
+    if fd is None:
+        return
+    fd.flush()
+    fd.seek(0)
+    ret = fd.read()
+    print(ret)
+    fd.close()
+    os.remove(filename)
+    return ret
+
+
 def run(commands, capture_output=False):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
-    def flush_output():
-        if capture_output:
-            fd.flush()
-            fd.seek(0)
-            ret = fd.read()
-            print(ret)
-            fd.close()
-            os.remove("log.txt")
-            return ret
     fd = None
+    logfile = "log.txt"
     if capture_output:
-        fd = open("log.txt", "w+")
+        fd = open(logfile, "w+")
     try:
         for cmd in commands:
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True, stdout=fd)
-        return flush_output()
+        return flush_output(fd, logfile)
     except Exception:
-        flush_output()
+        flush_output(fd, logfile)
         sys.exit(1)
 
 

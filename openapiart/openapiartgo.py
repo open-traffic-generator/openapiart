@@ -931,7 +931,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         elif field.isPointer:
             default = ""
-            if field.default is not None:
+            if field.default is not None and field.isOptional:
                 default = """
                     if obj.obj.{fieldname} == nil {{
                         *obj.obj.{fieldname} = {value}
@@ -945,7 +945,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         else:
             default = ""
-            if field.default is not None:
+            if field.default is not None and field.isOptional:
                 default = """
                     if obj.obj.{fieldname} == {check} {{
                         obj.obj.{fieldname} = {value}
