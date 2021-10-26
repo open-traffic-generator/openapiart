@@ -154,7 +154,6 @@ def test():
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
-    print(ret)
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
     if int(result) < go_coverage_threshold:
@@ -298,29 +297,38 @@ def py():
         return py.path
 
 
+def flush_output(fd, filename):
+    """
+    Flush the log file and print to console
+    """
+    if fd is None:
+        return
+    fd.flush()
+    fd.seek(0)
+    ret = fd.read()
+    print(ret)
+    fd.close()
+    os.remove(filename)
+    return ret
+
+
 def run(commands, capture_output=False):
     """
     Executes a list of commands in a native shell and raises exception upon
     failure.
     """
     fd = None
+    logfile = "log.txt"
     if capture_output:
-        fd = open("log.txt", "w+")
+        fd = open(logfile, "w+")
     try:
         for cmd in commands:
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True, stdout=fd)
-        if capture_output:
-            fd.flush()
-            fd.seek(0)
-            ret = fd.read()
-            fd.close()
-            os.remove("log.txt")
-            return ret
+        return flush_output(fd, logfile)
     except Exception:
-        if capture_output:
-            fd.close()
+        flush_output(fd, logfile)
         sys.exit(1)
 
 

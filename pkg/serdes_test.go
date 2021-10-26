@@ -271,6 +271,7 @@ func TestNestedSetMsg(t *testing.T) {
 	api := openapiart.NewApi()
 	eObject := openapiart.NewApi().NewPrefixConfig().K().EObject()
 	eObject.SetEA(23423.22)
+	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
 	config := api.NewPrefixConfig()
 	config.K().EObject().SetMsg(eObject.Msg())
