@@ -1,6 +1,8 @@
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
+import random
+import re
 
 
 class FluentStructure(object):
@@ -155,6 +157,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
+        self.interface_dict = {}
+        self.enum_dict = {}
 
     def generate(self, openapi):
         self._openapi = openapi
@@ -165,6 +169,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
+        if self._generate_go_unit_test:
+            self._generate_interface_info()
+            self._generate_go_unit_test()
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
@@ -1590,3 +1597,235 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
+
+    def _generate_interface_info(self):
+        for interface in self._api.components.keys():
+            if interface == "LevelFour":
+                continue
+            method_and_type = []
+            enum_and_type = []
+            has_and_type = []
+            for field in self._api.components[interface].interface_fields:
+                if field.has_method:
+                    has, type = field.has_method.split()
+                    has_and_type.append(tuple([has, type]))
+                if field.isEnum:
+                    if field.default:
+                        enum = interface + field.name + 'Enum'
+                        type = field.default
+                    else:
+                        enum = interface + field.name + 'Enum'
+                        type = field.enums[0]
+                    enum_and_type.append(tuple([enum, type]))
+                if field.setter_method is not None:
+                    x = re.search("(.+?)\(.+?\s(.+?)\)", field.setter_method)
+                    if x:
+                        if field.format in ["mac", "ipv4", "ipv6", "hex"]:
+                            if field.isArray:
+                                method = x.groups()[0]
+                                type = (field.format + "_array")
+                            else:
+                                method, type = x.groups()[0], field.format
+                        elif field.hasminmax:
+                            method = x.groups()[0]
+                            type = "min"+str(field.min)+"max"+str(field.max)
+                        else:
+                            method, type = x.groups()[0], x.groups()[1]
+                if 'Iter' in field.getter_method:
+                    method = field.getter_method.split("()")[0]
+                    type = field.getter_method.split("()")[1]
+                if type != "LevelFour":
+                    method_and_type.append(tuple([method, type]))
+            if has_and_type:
+                method_and_type.extend(has_and_type)
+            if method_and_type:
+                self.interface_dict[interface] = method_and_type
+            if enum_and_type:
+                self.enum_dict[interface] = enum_and_type
+
+    def _write_in_go_test(self, fp, line="", indent=0, newline=True):
+        default_indent = "    "
+        line = "{}{}{}".format(
+            default_indent * indent, line, "\n" if newline else "")
+        fp.write(line.encode())
+
+    def _generate_go_unit_test(self):
+        # TODO: Have to add a more dynamic way of picking the entry interface
+        if self._go_sdk_package_name == "openapiart":
+            entry_int = "PrefixConfig"
+        elif self._go_sdk_package_name == "gosnappi":
+            entry_int = "Config"
+
+        filename = os.path.normpath(
+            os.path.join(self._ux_path, "generated_test.go"))
+        fp = open(filename, "wb")
+
+        self._write_in_go_test(fp,
+                               "package {go_sdk_package_name}_test".format(
+                                go_sdk_package_name=self._go_sdk_package_name))
+        line = 'import {go_sdk_package_name} "{go_sdk_pkg_dir}"'.format(
+            go_sdk_package_name=self._go_sdk_package_name,
+            go_sdk_pkg_dir=self._go_sdk_package_dir
+        )
+        self._write_in_go_test(fp, line)
+        self._write_in_go_test(fp, 'import "testing"')
+        initial_fill = """func TestConfigGenerated(t *testing.T) {{
+        api := {}.NewApi()
+        config := api.New{}()""".format(self._go_sdk_package_name, entry_int)
+        self._write_in_go_test(fp, initial_fill)
+
+        lines = self._add_method("config",
+                                 self.interface_dict,
+                                 entry_int,
+                                 1,
+                                 [])
+        if "." in lines[0]:
+            first_level = lines[0]
+        else:
+            first_level = ""
+        recur_level = [value for value in lines[1] if "." in value]
+        self._write_in_go_test(fp, first_level)
+        self._write_in_go_test(fp, "\n".join(recur_level))
+        self._write_in_go_test(fp, "\n".join(lines[2]))
+        self._write_in_go_test(fp, """config.ToJson()
+        config.ToYaml()
+        config.ToPbText()
+        config.FromJson(config.ToJson())
+        config.FromYaml(config.ToYaml())
+        config.FromPbText(config.ToPbText())""")
+        self._write_in_go_test(fp, "}")
+
+    def _add_method(self, main_interface, interface_dict, key, var, var_lst):
+        type_dict = {
+            'string': '"abc"',
+            'int32': 1,
+            'int64': 10000000000000000,
+            'float32': 100.11,
+            'float64': 1.7976931348623157e+308,
+            '[]int32': "[]int32{1, 2, 3}",
+            '[]int64': "[]int64{1, 2, 3}",
+            '[]string': """[]string{"a","b","c"}""",
+            'bool': "true",
+            'ipv4': '"1.1.1.1"',
+            'ipv6': '"2000::1"',
+            'mac': '"00:00:00:00:00:0a"',
+            'hex': '"0x12"',
+            '[]byte': "[]byte{1, 0, 0, 1, 0, 0, 1, 1}",
+            'ipv4_array': '[]string{"1.1.1.1"}',
+            'ipv6_array': '[]string{"2000::1"}',
+            'mac_array': '[]string{"00:00:00:00:00:0a"}',
+            'hex_array': '[]string{"0x12"}',
+        }
+        first_level = main_interface
+        first_level_get = []
+        recur_level = []
+        for interface_field in interface_dict[key]:
+            if 'Iter' in interface_field[1]:
+                type = (interface_field[1]
+                        .replace('Iter', "")
+                        .replace(key, "", 1).strip())
+                if var in var_lst:
+                    var = max(var_lst) + 1
+                var_lst.append(var)
+                new_var = ("v{}:={}.{}().Add()".format(str(var),
+                                                       main_interface,
+                                                       interface_field[0]))
+                recur_level.append(new_var)
+                updated_interface = "v{}".format(str(var))
+                lines = self._add_method(updated_interface,
+                                         interface_dict,
+                                         type,
+                                         var,
+                                         var_lst)
+                recur_level.append(lines[0])
+                recur_level.extend(lines[1])
+                recur_level.extend(self._process_recur_list(
+                                   "{}".format(updated_interface),
+                                   ["ToJson()", "ToYaml()", "ToPbText()"]))
+                from_json = "FromJson({}.ToJson())".format(updated_interface)
+                from_yaml = "FromYaml({}.ToYaml())".format(updated_interface)
+                from_pb = "FromPbText({}.ToPbText())".format(updated_interface)
+                recur_level.extend(self._process_recur_list(
+                                   "{}".format(updated_interface),
+                                   [from_json, from_yaml, from_pb]))
+            else:
+                # TODO: Skipping Layer1 for now
+                if 'Layer1Ieee' in interface_field[1]:
+                    continue
+                if interface_field[1] not in interface_dict.keys():
+                    if 'Has' in interface_field[0]:
+                        recur_level.append(
+                            "{}.{}".format(main_interface, interface_field[0]))
+                    else:
+                        if 'Enum' in interface_field[1]:
+                            val = [ele[1]
+                                   for ele in self.enum_dict[key]
+                                   if ele[0] == interface_field[1] and ele[1]]
+                            if val:
+                                val = '"{}"'.format(str(val[0]))
+                        else:
+                            if 'max' in interface_field[1]:
+                                if 'maxNone' in interface_field[1]:
+                                    minimum = interface_field[1].split("max")[0]
+                                    val = int(minimum.split("min")[1])
+                                else:
+                                    minimum = (interface_field[1]
+                                               .split("max")[0]
+                                               .split("min")[1])
+                                    maximum = interface_field[1].split("max")[1]
+                                    val = random.randint(
+                                          int(minimum), int(maximum))
+                            else:
+                                val = type_dict[interface_field[1]]
+                            if (interface_field[0] == 'SetValues'
+                                    and "max" in interface_field[1]):
+                                max_value = int(
+                                    interface_field[1].split("max")[1])
+                                if max_value > 2147483647:
+                                    val = "[]int64" + "{"+str(val)+"}"
+                                else:
+                                    val = "[]int32" + "{"+str(val)+"}"
+                        if val:
+                            first_level = "{}.{}({})".format(
+                                first_level, interface_field[0], str(val))
+                            first_level_get.append("{}.{}()".format(
+                                main_interface,
+                                interface_field[0].replace("Set", "", 1)))
+                else:
+                    method = interface_field[0].split("Set", 1)[1]
+                    if var in var_lst:
+                        var = max(var_lst) + 1
+                    updated_interface = "v{}".format(str(var))
+                    new_var = "v{}:={}.{}()".format(str(var),
+                                                    main_interface,
+                                                    method)
+                    recur_level.append(new_var)
+                    var_lst.append(var)
+                    lines = self._add_method(
+                             updated_interface,
+                             interface_dict,
+                             interface_field[1],
+                             var,
+                             var_lst)
+                    recur_level.append(lines[0])
+                    recur_level.extend(lines[1])
+                    recur_level.extend(lines[2])
+                    recur_level.extend(self._process_recur_list(
+                                       "{}".format(updated_interface),
+                                       ["ToJson()", "ToYaml()", "ToPbText()"]))
+                    from_json = "FromJson({}.ToJson())".format(
+                        updated_interface)
+                    from_yaml = "FromYaml({}.ToYaml())".format(
+                        updated_interface)
+                    from_pb = "FromPbText({}.ToPbText())".format(
+                        updated_interface)
+                    recur_level.extend(self._process_recur_list(
+                                       "{}".format(updated_interface),
+                                       [from_json, from_yaml, from_pb]))
+        return first_level, recur_level, first_level_get
+
+    def _process_recur_list(self, obj, recur_list):
+        ret = []
+        for r in recur_list:
+            ret.append("{}.{}".format(obj, r))
+        return ret

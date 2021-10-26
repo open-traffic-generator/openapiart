@@ -30,7 +30,8 @@ def create_openapi_artifacts(openapiart_class):
     ).GeneratePythonSdk(
         package_name="sanity"
     ).GenerateGoSdk(
-        package_dir="github.com/open-traffic-generator/openapiart/pkg", package_name="openapiart"
+        package_dir="github.com/open-traffic-generator/openapiart/pkg", package_name="openapiart",
+        generate_unit_test = False
     )
 
 
