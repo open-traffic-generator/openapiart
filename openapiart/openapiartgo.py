@@ -1017,7 +1017,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if string(value) != "{name}" {{
                     obj.obj.{external_name} = nil
                 }}
-            """.format(name=name, external_name=self._get_external_struct_name(name)) for name in field.enums]
+            """.format(
+                name=name,
+                external_name=self._get_external_field_name(name)
+                ) for name in field.enums
+            ]
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
@@ -1490,20 +1494,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         choice_body = None
         enum_fields = []
-        # enum_check = None
-
         for field in interface_fields:
             # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
             #     continue
-            if field.default is None or (field.isOptional is not True and field.name != "Choice"):
-                continue
+            if field.default is None or field.isOptional is False or field.name in choice_enums:
+                if field.name not in hasChoiceConfig:
+                    continue
             if field.struct is not None:
                 if field.name in hasChoiceConfig:
                     enum_fields.append(
                         "obj.{external_name}()".format(external_name=self._get_external_struct_name(field.name))
                     )
-                elif field.name in choice_enums:
-                    continue
                 else:
                     body += """if obj.obj.{name} == nil {{
                         obj.{external_name}()
@@ -1516,7 +1517,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
             elif field.isArray:
                 if "string" in field.type:
-                    values = '"{0}"'.format('", "'.join(field.default))
+                    values = '"{0}"'.format('", "'.join(field.default)) if field.default != [] else ""
                 else:
                     values = str(field.default)[1:-1]
                 if field.name in hasChoiceConfig:
@@ -1525,8 +1526,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             external_name=self._get_external_struct_name(field.name), type=field.type, values=values
                         )
                     )
-                elif field.name in choice_enums:
-                    continue
                 else:
                     body += """if obj.obj.{name} == nil {{
                         obj.Set{external_name}({type}{{{values}}})
@@ -1563,8 +1562,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                         )
                     )
-                elif field.name in choice_enums:
-                    continue
                 else:
                     body += """if obj.obj.{name} == nil {{
                         obj.Set{external_name}({value})
@@ -1582,8 +1579,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                         )
                     )
-                elif field.name in choice_enums:
-                    continue
                 else:
                     body += """if obj.obj.{name} == {check_value} {{
                         obj.Set{external_name}({value})
