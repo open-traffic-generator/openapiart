@@ -727,15 +727,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                retObj := opts.Unmarshal([]byte(data), obj.Msg())
-                if retObj != nil {{
-                    return retObj
-                }}
+                uError := opts.Unmarshal([]byte(data), obj.Msg())
+                if uError != nil {{
+                    return fmt.Errorf("unmarshal error %s", strings.Replace(
+                        uError.Error(), "\\u00a0", " ", -1)[7:])
+                }}                
                 vErr := obj.Validate(true)
                 if vErr != nil {{
                     return vErr
                 }}
-                return retObj
+                return nil
             }}
 
             func (obj *{struct}) ToJson() string {{
@@ -761,15 +762,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                retObj := opts.Unmarshal([]byte(value), obj.Msg())
-                if retObj != nil {{
-                    return retObj
-                }}
+                uError := opts.Unmarshal([]byte(value), obj.Msg())
+                if uError != nil {{
+                    return fmt.Errorf("unmarshal error %s", strings.Replace(
+                        uError.Error(), "\\u00a0", " ", -1)[7:])
+                }}                
                 err := obj.Validate(true)
                 if err != nil {{
                     return err
                 }}
-                return retObj
+                return nil
             }}
 
             func (obj *{struct}) Validate(defaults ...bool) error {{
