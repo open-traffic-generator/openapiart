@@ -340,7 +340,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.schema_object = self._get_schema_object_from_ref(ref[0].value)
                     new.interface = self._get_external_struct_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
-                    new.description = self._get_description(new.schema_object)
+                    new.description = self._get_description(new.schema_object, True)
                     new.method_description = """// New{interface} returns a new instance of {interface}.
                     """.format(
                         interface=new.interface) + "// {} is {}".format(
@@ -522,7 +522,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """.format(
                 external_interface_name=self._api.external_interface_name,
                 method_signatures=method_signatures,
-                description=self._get_description(self._openapi["info"])
+                description="// {} {}".format(
+                    self._api.external_interface_name, 
+                    self._get_description(self._openapi["info"], True).lstrip("// "))
             )
         )
         for new in self._api.external_new_methods:
@@ -691,7 +693,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             new.method = "New{interface}() {interface}".format(
                 interface=new.interface,
             )
-            new.description = self._get_description(new.schema_object)
+            new.description = self._get_description(new.schema_object, True)
             new.method_description = """// New{interface} returns a new instance of {interface}.
             """.format(
                 interface=new.interface
@@ -879,7 +881,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
                 pb_pkg_name=self._protobuf_package_name,
                 interface_signatures=interface_signatures.format(interface=new.interface),
-                description="" if new.description is None else new.description,
+                description="" if new.description is None else "// {} is {}".format(
+                    new.interface, new.description.strip("// ")),
             )
         )
         for field in new.interface_fields:
@@ -1782,7 +1785,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new.schema_name = schema_object_name
                 new.struct = self._get_internal_name(schema_object_name)
                 new.interface = self._get_external_struct_name(schema_object_name)
-                new.description = self._get_description(schema_object)
+                new.description = self._get_description(schema_object, True)
                 self._api.components[new.schema_name] = new
             go_type = new.interface
         else:
