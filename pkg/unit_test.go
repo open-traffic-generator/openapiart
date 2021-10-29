@@ -671,3 +671,56 @@ func TestChoiceStale(t *testing.T) {
 	fmt.Println(fObject.ToJson())
 	require.JSONEq(t, expected_json1, fObject.ToJson())
 }
+
+func TestChoice2(t *testing.T) {
+	expected_json := `{
+		"required_object": {
+		  "e_a": 1,
+		  "e_b": 2
+		},
+		"response": "status_200",
+		"a": "asdf",
+		"b": 12.2,
+		"c": 1,
+		"e": {
+		  "e_a": 1.1,
+		  "e_b": 1.2,
+		  "m_param1": "Mparam1",
+		  "m_param2": "Mparam2"
+		},
+		"h": true,
+		"j": [
+		  {
+			"choice": "j_a",
+			"j_a": {
+			  "e_a": 1,
+			  "e_b": 2
+			}
+		  },
+		  {
+			"choice": "j_b",
+			"j_b": {
+			  "choice": "f_a",
+			  "f_a": "asf"
+			}
+		  }
+		],
+		"k": {
+		  "f_object": {
+			"choice": "f_a",
+			"f_a": "asf"
+		  }
+		}
+	  }`
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.K().FObject().SetFA("asf")
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
+	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
+	config.J().Add().JB().SetFA("asf")
+	log.Print(config.ToJson())
+	require.JSONEq(t, expected_json, config.ToJson())
+}
