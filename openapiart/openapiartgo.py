@@ -312,7 +312,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 rpc = FluentRpc()
                 http = FluentHttp()
                 rpc.operation_name = self._get_external_struct_name(operation_id.value)
-                rpc.description = self._get_description(path_item_object)
+                rpc.description = self._get_description(path_item_object, True)
                 http.operation_name = self._get_external_struct_name(operation_id.value)
                 http.description = self._get_description(path_item_object)
                 if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
@@ -341,7 +341,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.interface = self._get_external_struct_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
                     new.description = self._get_description(new.schema_object)
-                    new.method_description = """Returns a new {interface} object""".format(interface=new.interface)
+                    new.method_description = """// New{interface} returns a clean {interface}.
+                    """.format(
+                        interface=new.interface) + "// {} is {}".format(
+                            new.interface, self._get_description(new.schema_object, True).lstrip("// ")
+                        )
                     new.method = """New{interface}() {interface}""".format(interface=new.interface)
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
@@ -351,7 +355,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         struct=new.struct,
                     )
-                    rpc.method_description = self._get_description(path_object)
+                    rpc.description = "// {} {}.".format(rpc.operation_name, rpc.description.lstrip("// ")) 
+                    # """
+                    #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
+                    #     // or returns error on failure
+                    #     """.format(
+                    #     operation_name=rpc.operation_name,
+                    #     operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                    #     struct=new.struct,
+                    #     interface=new.interface,
+                    #     request_return_type=rpc.request_return_type,
+                    # )
                     rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         operation_response_name=self._get_external_struct_name(rpc.operation_name),
@@ -381,7 +395,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 else:
-                    # rpc.method_description = """{operation_name}() -> ({request_return_type}, error)""".format(
+                    rpc.description = "// {} {}.".format(rpc.operation_name, rpc.description.lstrip("// "))
+                    # """
+                    # // Perform {operation_name} and returns {request_return_type} on success
+                    # // or error on failure
+                    # """.format(
                     #     operation_name=rpc.operation_name,
                     #     operation_response_name=self._get_external_struct_name(rpc.operation_name),
                     #     request_return_type=rpc.request_return_type,
@@ -486,9 +504,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
         methods = []
-        descriptions = []
         for new in self._api.external_new_methods:
-            methods.append(new.description)
+            methods.append(new.method_description)
             methods.append(new.method)
         for rpc in self._api.external_rpc_methods:
             methods.append(rpc.description)
@@ -674,10 +691,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             new.method = "New{interface}() {interface}".format(
                 interface=new.interface,
             )
-            new.method_description = """New{interface} -> {interface}""".format(
-                interface=new.interface
-            )
             new.description = self._get_description(new.schema_object)
+            new.method_description = """// New{interface} returns a clean {interface}.
+            """.format(
+                interface=new.interface
+            ) + "// {} is {}".format(
+                new.interface, self._get_description(new.schema_object, True).lstrip("// "))
             new.schema_name = self._get_external_struct_name(new.interface)
             # new.isRpcResponse = True
             self._api.external_new_methods.append(new)
@@ -820,31 +839,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         self._build_setters_getters(new)
         interfaces = [
-            "// Serialize to protobuf text",
+            "// ToPbText marshals {interface} to protobuf text",
             "ToPbText() string",
-            "// Serialize to Yaml formatted text",
+            "// ToYaml marshals {interface} to YAML text",
             "ToYaml() string",
-            "// Serialize to Json string",
+            "// ToJson marshals {interface} to JSON text",
             "ToJson() string",
-            "// Deserialize from protobuf text",
+            "// FromPbText unmarshals {interface} from protobuf text",
             "FromPbText(value string) error",
-            "// Deserialize from YAML text",
+            "// FromYaml unmarshals {interface} from YAML text",
             "FromYaml(value string) error",
-            "// Deserialize from Json string",
+            "// FromJson unmarshals {interface} from JSON text",
             "FromJson(value string) error",
-            "// Validate the interface",
+            "// Validate validates {interface}",
             "Validate(defaults ...bool) error",
             "validateObj(set_default bool)",
             "setDefault()",
         ]
         for field in new.interface_fields:
-            interfaces.append("// Get {}".format(field.getter_method_description.lstrip("// ")))
+            interfaces.append("// {}".format(field.getter_method_description))
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
-                interfaces.append("// Set {} ".format(field.setter_method_description.lstrip("// ")))
+                interfaces.append("// {}".format(field.setter_method_description))
                 interfaces.append(field.setter_method)
             if field.has_method is not None:
-                interfaces.append("// {} ".format(field.has_method_description.lstrip("// ")))
+                interfaces.append("// {}".format(field.has_method_description))
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         intf = "\n//\t(*{}).".format(new.interface)
@@ -859,7 +878,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """.format(
                 interface=new.interface,
                 pb_pkg_name=self._protobuf_package_name,
-                interface_signatures=interface_signatures,
+                interface_signatures=interface_signatures.format(interface=new.interface),
                 description="" if new.description is None else new.description,
             )
         )
@@ -1242,10 +1261,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = False if field.type.startswith("[") else field.isOptional
-            field.getter_method_description = self._get_description(property_schema)
-            field.setter_method_description = self._get_description(property_schema)
             if field.isArray and field.isEnum:
                 field.getter_method = "{fieldname}() []{interface}{fieldname}Enum".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+                field.getter_method_description = "{fieldname} returns []{interface}{fieldname}Enum, set in {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
@@ -1254,11 +1275,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
+                field.getter_method_description = "{fieldname} returns {interface}{fieldname}Enum, set in {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
             else:
                 field.getter_method = "{name}() {ftype}".format(
                     name=self._get_external_struct_name(field.name),
                     ftype=field.type,
                 )
+                field.getter_method_description = "{name} returns {ftype}, set in {interface}.".format(
+                    name=self._get_external_struct_name(field.name),
+                    ftype=field.type,
+                    interface=fluent_new.interface
+                )
+                if field.type in self._api.components:
+                    field.getter_method_description = field.getter_method_description + \
+                        """\n// {ftype} is {desc}""".format(
+                            ftype=field.type,
+                            desc=self._api.components[field.type].description.lstrip("// ")
+                        )
+
             if "$ref" in property_schema:
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
@@ -1268,13 +1305,32 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldstruct=self._get_external_struct_name(field.struct),
                     interface=fluent_new.interface,
                 )
+                field.setter_method_description = "Set{fieldname} assigns {fieldstruct} provided by user to {interface}.".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    fieldstruct=self._get_external_struct_name(field.struct),
+                    interface=fluent_new.interface,
+                )
+                fieldstruct = self._get_external_struct_name(field.struct)
+                if fieldstruct in self._api.components:
+                    field.setter_method_description = field.setter_method_description + \
+                        """\n // {fieldstruct} is {desc}""".format(
+                            fieldstruct=fieldstruct,
+                            desc=self._api.components[fieldstruct].description.lstrip("// ")
+                        )
             if field.isOptional and field.isPointer:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
                 )
-                field.has_method_description = "Has method" + self._get_description(property_schema)
+                field.has_method_description = """Has{fieldname} checks if {fieldname} has been set in {interface}""".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface
+                )
             if field.isArray and field.isEnum:
                 field.setter_method = "Set{fieldname}(value []{interface}{fieldname}Enum) {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+                field.setter_method_description = "Set{fieldname} assigns []{interface}{fieldname}Enum provided by user to {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
@@ -1284,8 +1340,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
+                field.setter_method_description = "Set{fieldname} assigns {interface}{fieldname}Enum provided by user to {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
             elif field.type in self._oapi_go_types.values():
                 field.setter_method = "Set{name}(value {ftype}) {interface}".format(
+                    name=self._get_external_struct_name(field.name),
+                    ftype=field.type,
+                    interface=fluent_new.interface,
+                )
+                field.setter_method_description = "Set{name} assigns {ftype} provided by user to {interface}".format(
                     name=self._get_external_struct_name(field.name),
                     ftype=field.type,
                     interface=fluent_new.interface,
@@ -1307,12 +1372,35 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
+                    field.getter_method_description = "{name} returns {parent}{external_struct}Iter, set in {parent}".format(
+                        name=self._get_external_struct_name(field.name),
+                        parent=fluent_new.interface,
+                        external_struct=field.external_struct,
+                    )
                 else:
                     field.setter_method = "Set{name}(value {ftype}) {interface}".format(
                         name=self._get_external_struct_name(field.name),
                         ftype=field.type,
                         interface=fluent_new.interface,
                     )
+                    field.setter_method_description = "Set{name} assigns {ftype} provided by user to {interface}".format(
+                        name=self._get_external_struct_name(field.name),
+                        ftype=field.type,
+                        interface=fluent_new.interface,
+                    )
+            # field.getter_method_description = "{}\n {}".format(
+            #     field.getter_method_description, 
+            #     "// {name} is {des}".format(
+            #         name=self._get_external_struct_name(field.name),
+            #         des=self._get_description(property_schema).lstrip("// ")
+            #     )
+            # )
+            # field.setter_method_description = "{}\n{}".format(
+            #     field.setter_method_description, "// Set{name} is {des}".format(
+            #         name=self._get_external_struct_name(field.name),
+            #         des=self._get_description(property_schema).lstrip("// ")
+            #     )
+            # )
             default = property_schema.get("default")
             if default is not None:
                 type = field.type
@@ -1703,12 +1791,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         return go_type
 
-    def _get_description(self, openapi_object):
-        description = "//  description is TBD"
+    def _get_description(self, openapi_object, noCap=False):
+        description = "// description is TBD"
         if "description" in openapi_object:
             description = ""
-            for line in openapi_object["description"].split("\n"):
-                description += "//  {line}\n".format(line=line.strip())
+            for ind, line in enumerate(openapi_object["description"].split("\n")):
+                if noCap and ind == 0 and line != "":
+                    line = line[0].lower() + line[1:]
+                description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
 
     def _format_go_file(self):
