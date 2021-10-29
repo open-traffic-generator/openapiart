@@ -108,6 +108,34 @@ func TestSimpleTypes(t *testing.T) {
 	assert.Equal(t, i, config.I())
 }
 
+func TestIterAdd(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.G().Add()
+	config.G().Add()
+	assert.Equal(t, len(config.G().Items()), 2)
+}
+
+func TestIterAppend(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.G().Add()
+	g := config.G().Append(openapiart.NewGObject())
+
+	assert.Equal(t, len(g.Items()), 2)
+}
+
+func TestIterSet(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	name := "new name set on slice"
+	config.G().Add().SetName("original name set on add")
+	config.G().Add()
+	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
+
+	assert.Equal(t, name, g.Items()[1].Name())
+}
+
 func TestEObject(t *testing.T) {
 	var ea float32 = 1.1
 	eb := 1.2

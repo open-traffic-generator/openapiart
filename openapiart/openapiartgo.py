@@ -938,12 +938,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if obj.obj.{fieldname} == nil {{
                         *obj.obj.{fieldname} = {value}
                     }}
-                """.format(fieldname=field.name, value="\"{}\"".format(field.default) if "string" in field.type else field.default)
+                """.format(
+                    fieldname=field.name, value='"{}"'.format(field.default) if "string" in field.type else field.default
+                )
             body = """{default}
                 return *obj.obj.{fieldname}
                 """.format(
-                fieldname=field.name,
-                default=default
+                fieldname=field.name, default=default
             )
         else:
             default = ""
@@ -956,10 +957,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             #         fieldname=field.name, value="\"{}\"".format(field.default) if "string" in field.type else field.default,
             #         check="\"\"" if "string" in field.type else 0
             #     )
-            body = """{default}\n return obj.obj.{fieldname}""".format(
-                fieldname=field.name,
-                default=default
-            )
+            body = """{default}\n return obj.obj.{fieldname}""".format(fieldname=field.name, default=default)
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
@@ -1015,14 +1013,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     fieldname=field.name,
                 )
-            enum_set = ["""
+            enum_set = [
+                """
                 if string(value) != "{name}" {{
                     obj.obj.{external_name} = nil
                 }}
             """.format(
-                name=name,
-                external_name=self._get_external_field_name(name)
-                ) for name in field.enums
+                    name=name, external_name=self._get_external_field_name(name)
+                )
+                for name in field.enums
             ]
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
@@ -1042,7 +1041,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     struct=new.struct,
                     fieldname=field.name,
                     body=body,
-                    enum_set="\n".join(enum_set) if field.name == "Choice" else ""
+                    enum_set="\n".join(enum_set) if field.name == "Choice" else "",
                 )
             )
             return
@@ -1099,8 +1098,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             type {interface} interface {{
-                Add() {field_external_struct}
                 Items() {field_type}
+                Add() {field_external_struct}
+                Append(newObj {field_external_struct}) {interface}
+                Set(index int, newObj {field_external_struct}) {interface}
+            }}
+
+            func (obj *{internal_struct}) Items() {field_type} {{
+                slice := {field_type}{{}}
+                for _, item := range obj.obj.obj.{field_name} {{
+                    slice = append(slice, &{field_internal_struct}{{obj: item}})
+                }}
+                return slice
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
@@ -1111,12 +1120,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return newLibObj
             }}
 
-            func (obj *{internal_struct}) Items() {field_type} {{
-                slice := {field_type}{{}}
-                for _, item := range obj.obj.obj.{field_name} {{
-                    slice = append(slice, &{field_internal_struct}{{obj: item}})
-                }}
-                return slice
+            func (obj *{internal_struct}) Append(newObj {field_external_struct}) {interface} {{
+                obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj.Msg())
+                return obj
+            }}
+
+            func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
+                obj.obj.obj.{field_name}[index] = newObj.Msg()
+                return obj
             }}
             """.format(
                 internal_struct=new_iter.internal_struct,
@@ -1357,9 +1368,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if obj.obj.{name} == {value} {{
                     validation = append(validation, "{name} is required field on interface {interface}")
                 }} """.format(
-                    name=field.name,
-                    interface=new.interface,
-                    value=value
+                    name=field.name, interface=new.interface, value=value
                 )
                 if field.format in ["mac", "ipv4", "ipv6", "hex"]:
                     line = (
@@ -1504,9 +1513,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     continue
             if field.struct is not None:
                 if field.name in hasChoiceConfig:
-                    enum_fields.append(
-                        "obj.{external_name}()".format(external_name=self._get_external_struct_name(field.name))
-                    )
+                    enum_fields.append("obj.{external_name}()".format(external_name=self._get_external_struct_name(field.name)))
                 else:
                     body += """if obj.obj.{name} == nil {{
                         obj.{external_name}()
@@ -1515,7 +1522,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         name=field.name,
                         external_name=self._get_external_struct_name(field.name),
                         # enum_check="&& {}".format(enum_check) if enum_check is not None and field.name in choice_enums
-                                    # else ""
+                        # else ""
                     )
             elif field.isArray:
                 if "string" in field.type:
@@ -1533,7 +1540,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         obj.Set{external_name}({type}{{{values}}})
                     }}
                     """.format(
-                        name=field.name, external_name=self._get_external_struct_name(field.name), type=field.type, values=values,
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        type=field.type,
+                        values=values,
                     )
             elif field.isEnum:
                 enum_value = """{struct}{name}.{value}""".format(
@@ -1592,9 +1602,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                     )
         if choice_body is not None:
-            body = choice_body.replace(
-                "<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else ""
-            ) + body
+            body = choice_body.replace("<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else "") + body
 
         self._write(
             """func (obj *{struct}) setDefault() {{
