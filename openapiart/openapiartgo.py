@@ -341,7 +341,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.interface = self._get_external_struct_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
                     new.description = self._get_description(new.schema_object)
-                    new.method_description = """// New{interface} returns a clean {interface}.
+                    new.method_description = """// New{interface} returns a new instance of {interface}.
                     """.format(
                         interface=new.interface) + "// {} is {}".format(
                             new.interface, self._get_description(new.schema_object, True).lstrip("// ")
@@ -355,7 +355,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         struct=new.struct,
                     )
-                    rpc.description = "// {} {}.".format(rpc.operation_name, rpc.description.lstrip("// ")) 
+                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// ")) 
                     # """
                     #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
                     #     // or returns error on failure
@@ -395,7 +395,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 else:
-                    rpc.description = "// {} {}.".format(rpc.operation_name, rpc.description.lstrip("// "))
+                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// "))
                     # """
                     # // Perform {operation_name} and returns {request_return_type} on success
                     # // or error on failure
@@ -692,7 +692,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
             )
             new.description = self._get_description(new.schema_object)
-            new.method_description = """// New{interface} returns a clean {interface}.
+            new.method_description = """// New{interface} returns a new instance of {interface}.
             """.format(
                 interface=new.interface
             ) + "// {} is {}".format(
