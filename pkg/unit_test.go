@@ -724,3 +724,52 @@ func TestChoice2(t *testing.T) {
 	log.Print(config.ToJson())
 	require.JSONEq(t, expected_json, config.ToJson())
 }
+
+func TestGetter(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	fObject.FA()
+	expected_json := `{
+		"choice": "f_a",
+		"f_a": "some string"
+	}`
+	fmt.Println(fObject.ToJson())
+	require.JSONEq(t, expected_json, fObject.ToJson())
+
+	fObject1 := openapiart.NewFObject()
+	fObject1.Choice()
+	fmt.Println(fObject1.ToJson())
+	require.JSONEq(t, expected_json, fObject1.ToJson())
+
+	pattern := openapiart.NewIpv4Pattern()
+	pattern.Ipv4()
+	exp_ipv4 := `{
+		"ipv4":  {
+			"choice":  "value",
+			"value":  "0.0.0.0"
+		}
+	}`
+	fmt.Println(pattern.ToJson())
+	require.JSONEq(t, exp_ipv4, pattern.ToJson())
+	pattern.Ipv4().SetValue("10.1.1.1")
+	assert.Equal(t, "10.1.1.1", pattern.Ipv4().Value())
+	pattern.Ipv4().Values()
+	exp_ipv41 := `{
+		"ipv4": {
+			"choice": "values",
+			"values": [
+				"0.0.0.0"
+			]
+		}
+	}`
+	fmt.Println(pattern.ToJson())
+	require.JSONEq(t, exp_ipv41, pattern.ToJson())
+	pattern.Ipv4().SetValues([]string{"20.1.1.1"})
+	assert.Equal(t, []string{"20.1.1.1"}, pattern.Ipv4().Values())
+	checksum := openapiart.NewChecksumPattern().Checksum()
+	ch_json := `{
+		"choice": "generated",
+		"generated": "good"
+	}`
+	require.JSONEq(t, ch_json, checksum.ToJson())
+	fmt.Println(checksum.ToJson())
+}
