@@ -712,9 +712,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         else:
             new.generated = True
+
+        self._build_setters_getters(new)
+        internal_items = []
+        for field in new.interface_fields:
+            if field.adder_method is not None and field.isArray is True:
+                internal_items.append("{}s {}".format(
+                    field.struct, field.type
+                ))
         self._write(
             """type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
+                {internal_items}
             }}
             
             func New{interface}() {interface} {{
@@ -839,9 +848,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
                 interface=new.interface,
+                internal_items="" if len(internal_items) == 0 else "\n".join(internal_items)
             )
         )
-        self._build_setters_getters(new)
+
         interfaces = [
             "// ToPbText marshals {interface} to protobuf text",
             "ToPbText() string",
@@ -1173,11 +1183,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{internal_struct}) Items() {field_type} {{
-                slice := {field_type}{{}}
-                for _, item := range obj.obj.obj.{field_name} {{
-                    slice = append(slice, &{field_internal_struct}{{obj: item}})
+                if len(obj.obj.{internal_items_name}) != len(obj.obj.obj.{field_name}) {{
+                    obj.obj.{internal_items_name} = {field_type}{{}}
+                    for _, item := range obj.obj.obj.{field_name} {{
+                        obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
+                    }}
                 }}
-                return slice
+                return obj.obj.{internal_items_name}
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
@@ -1206,6 +1218,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
+                internal_items_name="{}s".format(field.struct)
             )
         )
 
