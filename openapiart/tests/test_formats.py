@@ -106,5 +106,15 @@ def test_formats_bad_hex(config, value):
         pass
 
 
+@pytest.mark.parametrize("value", ["1234567", "12"])
+def test_string_length(config, value):
+    config.str_len = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+        pytest.fail(f"Value {value} was successfully validated")
+    except TypeError:
+        pass
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

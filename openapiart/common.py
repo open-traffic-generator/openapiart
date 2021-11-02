@@ -262,8 +262,14 @@ class OpenApiValidator(object):
     def validate_float(self, value):
         return isinstance(value, (int, float))
 
-    def validate_string(self, value):
-        return isinstance(value, (str, unicode))
+    def validate_string(self, value, min_length, max_length):
+        if value is None or not isinstance(value, (str, unicode)):
+            return False
+        if min_length is not None and len(value) < min_length:
+            return False
+        if max_length is not None and len(value) > max_length:
+            return False
+        return True
 
     def validate_bool(self, value):
         return isinstance(value, bool)
@@ -281,7 +287,7 @@ class OpenApiValidator(object):
             return False
         return all([True if int(bin) == 0 or int(bin) == 1 else False for bin in value])
 
-    def types_validation(self, value, type_, err_msg, itemtype=None, min=None, max=None):
+    def types_validation(self, value, type_, err_msg, itemtype=None, min=None, max=None, min_length=None, max_length=None):
         type_map = {int: "integer", str: "string", float: "float", bool: "bool", list: "list", "int64": "integer", "int32": "integer", "double": "float"}
         if type_ in type_map:
             type_ = type_map[type_]
@@ -307,6 +313,16 @@ class OpenApiValidator(object):
             if max is not None:
                 min_max = min_max + ", expected max {}".format(max)
             err_msg = "{} \n got {} of type {} {}".format(err_msg, value, type(value), min_max)
+        elif type_ == "string":
+            verdict = v_obj(value, min_length, max_length)
+            if verdict is True:
+                return
+            msg = ""
+            if min_length is not None:
+                msg = ", expected min {}".format(min_length)
+            if max_length is not None:
+                msg = msg + ", expected max {}".format(max_length)
+            err_msg = "{} \n got {} of type {} {}".format(err_msg, value, type(value), msg)
         else:
             verdict = v_obj(value)
         if verdict is False:
@@ -478,7 +494,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
         if details["type"] in common_data_types and "format" not in details:
             msg = "property {} shall be of type {} at {}".format(property_name, details["type"], self.__class__)
-            self.types_validation(property_value, details["type"], msg, details.get("itemtype"), details.get("minimum"), details.get("maximum"))
+            self.types_validation(property_value, details["type"], msg, details.get("itemtype"), details.get("minimum"), details.get("maximum"),
+                                  details.get("minLength"), details.get("maxLength"))
 
         if details["type"] not in common_data_types:
             class_name = details["type"]
@@ -491,7 +508,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if "format" in details:
             msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
             _type = details["type"] if details["type"] is list else details["format"]
-            self.types_validation(property_value, _type, msg, details["format"], details.get("minimum"), details.get("maximum"))
+            self.types_validation(property_value, _type, msg, details["format"], details.get("minimum"), details.get("maximum"),
+                                  details.get("minLength"), details.get("maxLength"))
 
     def validate(self):
         self._validate_required()
