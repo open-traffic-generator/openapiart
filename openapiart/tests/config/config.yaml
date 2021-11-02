@@ -4,6 +4,8 @@ components:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [response, a, b, c, required_object]
+      description: |-
+        Container which retains the configuration
       properties:
         required_object:
           description: |-
@@ -112,6 +114,12 @@ components:
           description: int64 type
           type: integer
           format: int64
+        header_checksum:
+          x-field-pattern:
+            description: >-
+              Header checksum
+            format: checksum
+            length: 16
 
     Layer1Ieee802x:
       type: object

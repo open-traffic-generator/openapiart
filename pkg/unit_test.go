@@ -28,6 +28,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 func TestJsonSerialization(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
@@ -85,9 +86,10 @@ func TestJsonSerialization(t *testing.T) {
 
 func TestNewAndSet(t *testing.T) {
 	c := openapiart.NewPrefixConfig()
-	c.SetE(openapiart.NewEObject().SetEA(123.456))
+	c.SetE(openapiart.NewEObject().SetEA(123.456).SetEB(453.123))
 	c.SetF(openapiart.NewFObject().SetFA("fa string"))
-	log.Println(c.ToYaml())
+	log.Println(c.E().ToYaml())
+	log.Println(c.F().ToYaml())
 }
 
 func TestSimpleTypes(t *testing.T) {
@@ -104,6 +106,34 @@ func TestSimpleTypes(t *testing.T) {
 	assert.Equal(t, c, config.C())
 	assert.Equal(t, h, config.H())
 	assert.Equal(t, i, config.I())
+}
+
+func TestIterAdd(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.G().Add()
+	config.G().Add()
+	assert.Equal(t, len(config.G().Items()), 2)
+}
+
+func TestIterAppend(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.G().Add()
+	g := config.G().Append(openapiart.NewGObject())
+
+	assert.Equal(t, len(g.Items()), 2)
+}
+
+func TestIterSet(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	name := "new name set on slice"
+	config.G().Add().SetName("original name set on add")
+	config.G().Add()
+	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
+
+	assert.Equal(t, name, g.Items()[1].Name())
 }
 
 func TestEObject(t *testing.T) {
@@ -210,11 +240,12 @@ func TestChoice(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 
 	f := config.F()
+	fmt.Println(f.ToJson())
 	f.SetFA("a fa string")
 	assert.Equal(t, f.Choice(), openapiart.FObjectChoice.F_A)
 
 	j := config.J().Add()
-	j.JA().SetEA(22.2)
+	j.JA().SetEA(22.2).SetEB(44.32)
 	assert.Equal(t, j.Choice(), openapiart.JObjectChoice.J_A)
 	j.JB()
 	assert.Equal(t, j.Choice(), openapiart.JObjectChoice.J_B)
@@ -420,7 +451,11 @@ func TestBadIpv6Decrement(t *testing.T) {
 func TestDefaultSimpleTypes(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.RequiredObject()
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetA("asdf")
+	config.SetB(65)
+	config.SetC(33)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	actual_result := config.ToJson()
 	expected_result := `{
 		"a":"asdf", 
@@ -439,7 +474,7 @@ func TestDefaultSimpleTypes(t *testing.T) {
 func TestDefaultEObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.E()
+	config.E().SetEA(1).SetEB(2)
 	actual_result := config.E().ToJson()
 	expected_result := `
 	{
@@ -465,7 +500,10 @@ func TestDefaultFObject(t *testing.T) {
 func TestRequiredValidation(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.RequiredObject()
+	config.RequiredObject().SetEA(10.2).SetEB(20)
+	config.SetA("abc")
+	config.SetB(10.32)
+	config.SetC(20)
 	config.MObject().
 		SetString("asdf").
 		SetInteger(63).
@@ -475,6 +513,161 @@ func TestRequiredValidation(t *testing.T) {
 		SetMac("00:AA:BB:CC:DD:EE").
 		SetIpv6("2001::1").
 		SetIpv4("1.1.1.1")
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
 	err := config.Validate()
 	assert.Nil(t, err)
+}
+
+func TestHexPattern(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	l := config.L()
+	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
+	err := l.Validate()
+	assert.Nil(t, err)
+	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
+	err1 := l.Validate()
+	assert.Nil(t, err1)
+	l.SetHex("")
+	err2 := l.Validate()
+	assert.NotNil(t, err2)
+	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b0000000x0")
+	err3 := l.Validate()
+	assert.NotNil(t, err3)
+	l.SetHex("0x00")
+	err4 := l.Validate()
+	assert.Nil(t, err4)
+	l.SetHex("0XAF12")
+	err5 := l.Validate()
+	assert.Nil(t, err5)
+}
+
+func TestChoice1(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	json := `{
+		"choice": "f_b",
+		"f_b": 30.0
+	}`
+	g := config.F().FromJson(json)
+	assert.Nil(t, g)
+	fmt.Println(config.F().ToJson())
+	require.JSONEq(t, config.F().ToJson(), json)
+	json2 := `{
+		"choice": "f_a",
+		"f_a": "this is f string"
+	}`
+	f := config.F().FromJson(json2)
+	assert.Nil(t, f)
+	require.JSONEq(t, config.F().ToJson(), json2)
+	fmt.Println(config.F().ToJson())
+}
+
+func TestRequiredField(t *testing.T) {
+	mandate := openapiart.NewMandate()
+	err := mandate.Validate()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "RequiredParam is required field")
+}
+
+func TestOptionalDefault(t *testing.T) {
+	gObject := openapiart.NewGObject()
+	gJson := `{
+		"g_a":  "asdf",
+		"g_b":  6,
+		"g_c":  77.7,
+		"choice":  "g_d",
+		"g_d":  "some string",
+		"g_f":  "a"
+	  }`
+
+	require.JSONEq(t, gObject.ToJson(), gJson)
+}
+
+func TestInterger64(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	int_64 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"integer64": 100
+	}`
+	err := config.FromJson(int_64)
+	fmt.Println(config.Integer64())
+	assert.Nil(t, err)
+	int_64_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"integer64": "100"
+	}`
+	err1 := config.FromJson(int_64_str)
+	fmt.Println(config.Integer64())
+	assert.Nil(t, err1)
+}
+
+func TestFromJsonToCleanObject(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	config.SetA("abcd")
+	config.SetB(100)
+	config.SetC(4000)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	config.SetRequiredObject(openapiart.NewEObject().SetEA(10.1).SetEB(30.234))
+	config.SetInteger64(200645)
+	config.Validate()
+	new_json := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"h": false
+	}`
+	err := config.FromJson(new_json)
+	assert.Nil(t, err)
+	require.JSONEq(t, new_json, config.ToJson())
+	new_json1 := `{
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"h": false
+	}`
+	err1 := config.FromJson(new_json1)
+	assert.NotNil(t, err1)
+	assert.Contains(t, err1.Error(), "A is required field")
+}
+
+func TestChoiceStale(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	fObject.SetFA("This is A Value")
+	expected_json := `{
+		"choice": "f_a",
+		"f_a": "This is A Value"
+	}`
+	fmt.Println(fObject.ToJson())
+	require.JSONEq(t, expected_json, fObject.ToJson())
+	fObject.SetFB(30.245)
+	expected_json1 := `{
+		"choice": "f_b",
+		"f_b": 30.245
+	}`
+	fmt.Println(fObject.ToJson())
+	require.JSONEq(t, expected_json1, fObject.ToJson())
 }
