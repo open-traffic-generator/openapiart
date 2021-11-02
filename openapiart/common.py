@@ -274,13 +274,21 @@ class OpenApiValidator(object):
     def validate_bool(self, value):
         return isinstance(value, bool)
 
-    def validate_list(self, value, itemtype, min, max):
+    def validate_list(self, value, itemtype, min, max, min_length, max_length):
         if value is None or not isinstance(value, list):
             return False
         v_obj = getattr(self, "validate_{}".format(itemtype), None)
         if v_obj is None:
             raise AttributeError("{} is not a valid attribute".format(itemtype))
-        return [v_obj(item, min, max) if itemtype == "integer" else v_obj(item) for item in value]
+        v_obj_lst = []
+        for item in value:
+            if itemtype == "integer":
+                v_obj_lst.append(v_obj(item, min, max))
+            elif itemtype == "string":
+                v_obj_lst.append(v_obj(item, min_length, max_length))
+            else:
+                v_obj_lst.append(v_obj(item))
+        return v_obj_lst
 
     def validate_binary(self, value):
         if value is None or not isinstance(value, (str, unicode)):
@@ -298,7 +306,7 @@ class OpenApiValidator(object):
             msg = "{} is not a valid or unsupported format".format(type_)
             raise TypeError(msg)
         if type_ == "list":
-            verdict = v_obj(value, itemtype, min, max)
+            verdict = v_obj(value, itemtype, min, max, min_length, max_length)
             if all(verdict) is True:
                 return
             err_msg = "{} \n {} are not valid".format(err_msg, [value[index] for index, item in enumerate(verdict) if item is False])
