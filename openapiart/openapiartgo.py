@@ -1197,16 +1197,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 newLibObj := &{field_internal_struct}{{obj: newObj}}
                 newLibObj.setDefault()
+                obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, newLibObj)
                 return newLibObj
             }}
 
             func (obj *{internal_struct}) Append(newObj {field_external_struct}) {interface} {{
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj.Msg())
+                obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, newObj)
                 return obj
             }}
 
             func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
                 obj.obj.obj.{field_name}[index] = newObj.Msg()
+                obj.obj.{internal_items_name}[index] = newObj
                 return obj
             }}
             """.format(
