@@ -96,3 +96,10 @@ func TestGetWarnings(t *testing.T) {
 		log.Println(resp.ToYaml())
 	}
 }
+
+func TestGetGrpcClient(t *testing.T) {
+	api := apis[0]
+	api.GrpcConnect()
+	grpcClient := api.GetGrpcClient()
+	assert.NotNil(t, grpcClient)
+}

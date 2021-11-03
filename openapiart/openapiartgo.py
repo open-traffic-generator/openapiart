@@ -496,7 +496,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
                 return httpClient.client.Do(req)
-            }}            
+            }}
+
+            func (api *{internal_struct_name}) GetGrpcClient() {pb_pkg_name}.OpenapiClient {{
+                return api.grpcClient
+            }}
+
+            func (api *{internal_struct_name}) GrpcConnect() error {{
+                return api.grpcConnect()
+            }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
                 interface=self._api.external_interface_name,
@@ -517,11 +525,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             {description}
             type {external_interface_name} interface {{
                 Api
+                GetGrpcClient() {pb_pkg_name}.OpenapiClient
+                GrpcConnect() error
                 {method_signatures}
             }}
             """.format(
                 external_interface_name=self._api.external_interface_name,
                 method_signatures=method_signatures,
+                pb_pkg_name=self._protobuf_package_name,
                 description="// {} {}".format(
                     self._api.external_interface_name, 
                     self._get_description(self._openapi["info"], True).lstrip("// "))
