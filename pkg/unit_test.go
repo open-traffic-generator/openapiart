@@ -773,15 +773,3 @@ func TestGetter(t *testing.T) {
 	require.JSONEq(t, ch_json, checksum.ToJson())
 	fmt.Println(checksum.ToJson())
 }
-
-func TestStringLength(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
-	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
-	config.RequiredObject().SetEA(1).SetEB(2)
-	config.SetIeee8021Qbb(true)
-	config.SetFullDuplex100Mb(2)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-	config.SetStrLen("123456")
-	log.Print(config.ToJson())
-}
