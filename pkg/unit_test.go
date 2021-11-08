@@ -672,7 +672,6 @@ func TestChoiceStale(t *testing.T) {
 	require.JSONEq(t, expected_json1, fObject.ToJson())
 }
 
-<<<<<<< HEAD
 func TestChoice2(t *testing.T) {
 	expected_json := `{
 		"required_object": {
@@ -773,6 +772,7 @@ func TestGetter(t *testing.T) {
 	}`
 	require.JSONEq(t, ch_json, checksum.ToJson())
 	fmt.Println(checksum.ToJson())
+}
 
 func TestStringLength(t *testing.T) {
 	api := openapiart.NewApi()
@@ -784,5 +784,4 @@ func TestStringLength(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.SetStrLen("123456")
 	log.Print(config.ToJson())
-
 }
