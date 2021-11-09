@@ -120,6 +120,13 @@ components:
               Header checksum
             format: checksum
             length: 16
+        str_len:
+          x-status: under-review
+          description: |-
+            string minimum&maximum Length
+          type: string
+          minLength: 3
+          maxLength: 6
 
     Layer1Ieee802x:
       type: object

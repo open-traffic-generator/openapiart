@@ -761,6 +761,10 @@ class Generator(object):
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:
                     pt.update({"maximum": yproperty["maximum"]})
+                if len(ref) == 0 and "minLength" in yproperty:
+                    pt.update({"minLength": yproperty["minLength"]})
+                if len(ref) == 0 and "maxLength" in yproperty:
+                    pt.update({"maxLength": yproperty["maxLength"]})
                 if len(pt) > 0:
                     types.append((name, pt))
 

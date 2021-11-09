@@ -101,6 +101,9 @@ class FluentField(object):
         self.hasminmax = False
         self.min = None
         self.max = None
+        self.hasminmaxlength = False
+        self.min_length = None
+        self.max_length = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1307,6 +1310,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             field.hasminmax = "minimum" in property_schema or "maximum" in property_schema
+            field.hasminmaxlength = "minLength" in property_schema or "maxLength" in property_schema
             field.isArray = "type" in property_schema and property_schema["type"] == "array"
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
@@ -1321,6 +1325,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     and "int" in field.type
                 ):
                     field.type = field.type.replace("32", "64")
+            if field.hasminmaxlength:
+                field.min_length = None if "minLength" not in property_schema else property_schema["minLength"]
+                field.max_length = None if "maxLength" not in property_schema else property_schema["maxLength"]
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1635,6 +1642,46 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     max="any" if field.max is None else field.max,
                     pointer="*" if field.isPointer else "",
                     min=field.min if field.min is None else field.min,
+                    value="item" if field.isArray else "obj.obj.{name}".format(name=field.name),
+                )
+                if field.isArray:
+                    body = """
+                        for _, item := range obj.obj.{name} {{
+                            {body}
+                        }}
+                    """.format(
+                        body=body, name=field.name
+                    )
+                if field.isPointer:
+                    body = """
+                        if obj.obj.{name} != nil {{
+                            {body}
+                        }}
+                    """.format(
+                        body=body, name=field.name
+                    )
+                statements.append(body)
+            if field.hasminmaxlength and "string" in field.type:
+                valid += 1
+                line = []
+                if field.min_length is not None:
+                    line.append("len({pointer}{value}) < {min_length}")
+                if field.max_length is not None:
+                    line.append("len({pointer}{value}) > {max_length}")
+                body = (
+                    "if "
+                    + " || ".join(line)
+                    + """ {{
+                    validation = append(
+                        validation, fmt.Sprintf("{min_length} <= length of {interface}.{name} <= {max_length} but Got %d", len({pointer}{value})))
+                }}
+                """
+                ).format(
+                    name=field.name,
+                    interface=new.interface,
+                    max_length="any" if field.max_length is None else field.max_length,
+                    pointer="*" if field.isPointer else "",
+                    min_length=field.min_length if field.min_length is None else field.min_length,
                     value="item" if field.isArray else "obj.obj.{name}".format(name=field.name),
                 )
                 if field.isArray:
