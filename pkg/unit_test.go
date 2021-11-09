@@ -108,24 +108,45 @@ func TestSimpleTypes(t *testing.T) {
 	assert.Equal(t, i, config.I())
 }
 
+var gaValues = []string{"1111", "2222"}
+var gbValues = []int32{11, 22}
+var gcValues = []float32{11.11, 22.22}
+
 func TestIterAdd(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	config.G().Add()
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	config.G().Add().SetGA("2222").SetGB(22).SetGC(22.22)
+
 	assert.Equal(t, len(config.G().Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterAppend(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	g := config.G().Append(openapiart.NewGObject())
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	g := config.G().Append(openapiart.NewGObject().SetGA("2222").SetGB(22).SetGC(22.22))
 
 	assert.Equal(t, len(g.Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterSet(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			errValue := "runtime error: index out of range [3] with length 2"
+			assert.Equal(t, errValue, fmt.Sprintf("%v", err))
+		}
+	}()
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	name := "new name set on slice"
@@ -134,6 +155,9 @@ func TestIterSet(t *testing.T) {
 	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
 
 	assert.Equal(t, name, g.Items()[1].Name())
+	assert.Equal(t, len(g.Items()), 2)
+
+	config.G().Set(3, openapiart.NewGObject().SetName(name))
 }
 
 func TestEObject(t *testing.T) {
@@ -458,13 +482,13 @@ func TestDefaultSimpleTypes(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	actual_result := config.ToJson()
 	expected_result := `{
-		"a":"asdf", 
-		"b" : 65, 
-		"c" : 33,  
-		"h": true, 
-		"response" : "status_200", 
+		"a":"asdf",
+		"b" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
 		"required_object" : {
-			"e_a" : 1, 
+			"e_a" : 1,
 			"e_b" : 2
 		}
 	}`
@@ -587,12 +611,12 @@ func TestOptionalDefault(t *testing.T) {
 func TestInterger64(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	int_64 := `{
-		"a":"asdf", 
-		"b" : 65, 
+		"a":"asdf",
+		"b" : 65,
 		"c" : 33,
-		"response" : "status_200", 
+		"response" : "status_200",
 		"required_object" : {
-			"e_a" : 1, 
+			"e_a" : 1,
 			"e_b" : 2
 		},
 		"integer64": 100
@@ -601,12 +625,12 @@ func TestInterger64(t *testing.T) {
 	fmt.Println(config.Integer64())
 	assert.Nil(t, err)
 	int_64_str := `{
-		"a":"asdf", 
-		"b" : 65, 
+		"a":"asdf",
+		"b" : 65,
 		"c" : 33,
-		"response" : "status_200", 
+		"response" : "status_200",
 		"required_object" : {
-			"e_a" : 1, 
+			"e_a" : 1,
 			"e_b" : 2
 		},
 		"integer64": "100"
@@ -626,12 +650,12 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetInteger64(200645)
 	config.Validate()
 	new_json := `{
-		"a":"asdf", 
-		"b" : 65, 
+		"a":"asdf",
+		"b" : 65,
 		"c" : 33,
-		"response" : "status_200", 
+		"response" : "status_200",
 		"required_object" : {
-			"e_a" : 1, 
+			"e_a" : 1,
 			"e_b" : 2
 		},
 		"h": false
@@ -640,11 +664,11 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, new_json, config.ToJson())
 	new_json1 := `{
-		"b" : 65, 
+		"b" : 65,
 		"c" : 33,
-		"response" : "status_200", 
+		"response" : "status_200",
 		"required_object" : {
-			"e_a" : 1, 
+			"e_a" : 1,
 			"e_b" : 2
 		},
 		"h": false
