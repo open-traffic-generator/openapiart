@@ -103,6 +103,9 @@ class FluentField(object):
         self.hasminmax = False
         self.min = None
         self.max = None
+        self.hasminmaxlength = False
+        self.min_length = None
+        self.max_length = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -877,7 +880,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interfaces.append("// {}".format(field.has_method_description))
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
-        intf = "\n//\t(*{}).".format(new.interface)
         self._write(
             """
             {description}
@@ -905,7 +907,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
-        elif field.isArray and field.isEnum is False:
+        if field.isArray and field.isEnum is False:
             if field.struct:
                 body = """if obj.obj.{name} == nil {{
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
@@ -918,31 +920,55 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     parent=new.struct,
                 )
             else:
+                block = "obj.obj.{name} = make({type}, 0)".format(
+                    name=field.name, type=field.type
+                )
+                if field.setChoiceValue is not None:
+                    if field.default is not None and field.default != "":
+                        if field.type == "[]string":
+                            value = '"{}"'.format('", "'.join(field.default))
+                        else:
+                            value = ",".join([str(i) for i in field.default])
+                        block = """obj.Set{name}({type}{{{default}}})""".format(
+                            name=field.name,
+                            type=field.type,
+                            default=value
+                        )
+                    else:
+                        block = """
+                            obj.SetChoice({interface}Choice.{enum})
+                            obj.obj.{name} = make({type}, 0)
+                        """.format(
+                            interface=new.interface,
+                            enum=field.setChoiceValue,
+                            name=field.name,
+                            type=field.type,
+                        )
                 body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = make({type}, 0)
+                        {block}
                     }}
                     return obj.obj.{name}""".format(
                     name=field.name,
-                    type=field.type,
+                    block=block
                 )
         elif field.struct is not None:
             # at this time proto generation ignores the optional keyword
             # if the type is an object
-            body = ""
+            set_enum_choice = None
             if field.setChoiceValue is not None:
-                body = """obj.SetChoice({interface}Choice.{enum})
-                """.format(
+                set_enum_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
-            body += """if obj.obj.{name} == nil {{
+            body = """if obj.obj.{name} == nil {{
+                    {set_enum_choice}
                     obj.obj.{name} = New{pb_struct}().Msg()
                 }}
                 return &{struct}{{obj: obj.obj.{name}}}""".format(
                 name=field.name,
-                pb_pkg_name=self._protobuf_package_name,
                 pb_struct=field.external_struct,
                 struct=field.struct,
+                set_enum_choice=set_enum_choice if set_enum_choice else ""
             )
         elif field.isEnum:
             enum_types = []
@@ -1007,32 +1033,57 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             return
         elif field.isPointer:
-            default = ""
-            if field.default is not None and field.isOptional:
-                default = """
+            set_enum_choice = None
+            default = None
+            if field.setChoiceValue is not None:
+                if field.default is not None:
+                    if field.type == "string":
+                        value = '"{}"'.format(field.default)
+                    elif field.type in ["int32", "int64", "float32", "float64"]:
+                        value = "{fieldtype}({value})".format(fieldtype=field.type, value=field.default)
+                    else:
+                        value = field.default
+                    default = """value := {value}
+                            obj.obj.{fieldname} = &value""".format(value=value, fieldname=field.name)
+                set_enum_choice = """
                     if obj.obj.{fieldname} == nil {{
-                        *obj.obj.{fieldname} = {value}
+                        obj.SetChoice({interface}Choice.{enum})
+                        {default}
                     }}
                 """.format(
-                    fieldname=field.name, value='"{}"'.format(field.default) if "string" in field.type else field.default
+                    fieldname=field.name,
+                    default=default if default else "",
+                    interface=new.interface, enum=field.setChoiceValue
                 )
-            body = """{default}
+            body = """{set_enum_choice}
                 return *obj.obj.{fieldname}
                 """.format(
-                fieldname=field.name, default=default
+                fieldname=field.name,
+                set_enum_choice=set_enum_choice if set_enum_choice is not None else ""
             )
         else:
-            default = ""
-            # if field.default is not None and field.isOptional:
-            #     default = """
-            #         if obj.obj.{fieldname} == {check} {{
-            #             obj.obj.{fieldname} = {value}
-            #         }}
-            #     """.format(
-            #         fieldname=field.name, value="\"{}\"".format(field.default) if "string" in field.type else field.default,
-            #         check="\"\"" if "string" in field.type else 0
-            #     )
-            body = """{default}\n return obj.obj.{fieldname}""".format(fieldname=field.name, default=default)
+            set_enum_choice = None
+            default = None
+            if field.setChoiceValue is not None:
+                if field.default is not None:
+                    default = "obj.obj.{fieldname} = {value}".format(
+                        value='"{}"'.format(field.default) if "string" in field.type else field.default,
+                        fieldname=field.name
+                    )
+                set_enum_choice = """
+                    if obj.obj.{fieldname} == nil {{
+                        obj.SetChoice({interface}Choice.{enum})
+                        {default}
+                    }}
+                """.format(
+                    fieldname=field.name,
+                    interface=new.interface, enum=field.setChoiceValue,
+                    default=default if default else ""
+                )
+            body = """{set_enum_choice}\n return obj.obj.{fieldname}""".format(
+                fieldname=field.name,
+                set_enum_choice=set_enum_choice if set_enum_choice is not None else ""
+            )
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
@@ -1088,16 +1139,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     fieldname=field.name,
                 )
-            enum_set = [
-                """
-                if string(value) != "{name}" {{
-                    obj.obj.{external_name} = nil
-                }}
-            """.format(
-                    name=name, external_name=self._get_external_field_name(name)
-                )
-                for name in field.enums
-            ]
+            enum_set = [self._get_external_field_name(name) for name in field.enums]
+            enum_body = []
+            for enum_field in new.interface_fields:
+                if enum_field.name not in enum_set:
+                    continue
+                if enum_field.isEnum:
+                    enum_body.append(
+                        "obj.obj.{name} = {pb_pkg_name}.{interface}_{name}_unspecified.Enum()".format(
+                            name=enum_field.name, pb_pkg_name=self._protobuf_package_name,
+                            interface=new.interface, fieldname=enum_field.name
+                        )
+                    )
+                    continue
+                enum_body.append("obj.obj.{name} = nil".format(name=enum_field.name))
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
@@ -1116,7 +1171,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     struct=new.struct,
                     fieldname=field.name,
                     body=body,
-                    enum_set="\n".join(enum_set) if field.name == "Choice" else "",
+                    enum_set="\n".join(enum_body) if field.name == "Choice" else "",
                 )
             )
             return
@@ -1138,8 +1193,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
-                {body}
                 {set_choice}
+                {body}
                 return obj
             }}
             """.format(
@@ -1262,6 +1317,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             field.hasminmax = "minimum" in property_schema or "maximum" in property_schema
+            field.hasminmaxlength = "minLength" in property_schema or "maxLength" in property_schema
             field.isArray = "type" in property_schema and property_schema["type"] == "array"
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
@@ -1276,6 +1332,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     and "int" in field.type
                 ):
                     field.type = field.type.replace("32", "64")
+            if field.hasminmaxlength:
+                field.min_length = None if "minLength" not in property_schema else property_schema["minLength"]
+                field.max_length = None if "maxLength" not in property_schema else property_schema["maxLength"]
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1609,6 +1668,46 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         body=body, name=field.name
                     )
                 statements.append(body)
+            if field.hasminmaxlength and "string" in field.type:
+                valid += 1
+                line = []
+                if field.min_length is not None:
+                    line.append("len({pointer}{value}) < {min_length}")
+                if field.max_length is not None:
+                    line.append("len({pointer}{value}) > {max_length}")
+                body = (
+                    "if "
+                    + " || ".join(line)
+                    + """ {{
+                    validation = append(
+                        validation, fmt.Sprintf("{min_length} <= length of {interface}.{name} <= {max_length} but Got %d", len({pointer}{value})))
+                }}
+                """
+                ).format(
+                    name=field.name,
+                    interface=new.interface,
+                    max_length="any" if field.max_length is None else field.max_length,
+                    pointer="*" if field.isPointer else "",
+                    min_length=field.min_length if field.min_length is None else field.min_length,
+                    value="item" if field.isArray else "obj.obj.{name}".format(name=field.name),
+                )
+                if field.isArray:
+                    body = """
+                        for _, item := range obj.obj.{name} {{
+                            {body}
+                        }}
+                    """.format(
+                        body=body, name=field.name
+                    )
+                if field.isPointer:
+                    body = """
+                        if obj.obj.{name} != nil {{
+                            {body}
+                        }}
+                    """.format(
+                        body=body, name=field.name
+                    )
+                statements.append(body)
             if valid == 0:
                 print(
                     "{field} of type {ftype} and {req} is not set for validation on interface {interface}".format(
@@ -1711,6 +1810,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     enum_value=enum_value,
                 )
                 if field.name in hasChoiceConfig:
+                    if choice_body is not None:
+                        body1 = body1.replace(" == nil", ".Number() == 0")
                     choice_body = body1 if choice_body is None else choice_body.replace("<choice_fields>", body1)
                 else:
                     body = body + body1.replace("<choice_fields>", "")
