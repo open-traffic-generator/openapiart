@@ -170,6 +170,19 @@ func TestGObject(t *testing.T) {
 	}
 	log.Print(g1.ToJson(), g1.ToYaml())
 }
+func TestGObjectAppendMultiple(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	items := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("g_1"),
+		openapiart.NewGObject().SetGA("g_2"),
+		openapiart.NewGObject().SetGA("g_3"),
+	}
+	config.G().Append(items...)
+	assert.Len(t, config.G().Items(), 3)
+	item := config.G().Items()[1]
+	assert.Equal(t, item.GA(), "g_2")
+}
 
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80

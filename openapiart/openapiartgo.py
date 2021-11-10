@@ -1223,7 +1223,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             type {interface} interface {{
                 Items() {field_type}
                 Add() {field_external_struct}
-                Append(newObj {field_external_struct}) {interface}
+                Append(items ...{field_external_struct}) {interface}
                 Set(index int, newObj {field_external_struct}) {interface}
                 Clear()
             }}
@@ -1244,8 +1244,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return newLibObj
             }}
 
-            func (obj *{internal_struct}) Append(newObj {field_external_struct}) {interface} {{
-                obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj.Msg())
+            func (obj *{internal_struct}) Append(items ...{field_external_struct}) {interface} {{
+                for _, item := range items {{
+                    newObj := item.Msg()
+                    obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
+                }}
                 return obj
             }}
 
