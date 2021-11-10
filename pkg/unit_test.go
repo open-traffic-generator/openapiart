@@ -785,3 +785,19 @@ func TestStringLength(t *testing.T) {
 	config.SetStrLen("123456")
 	log.Print(config.ToJson())
 }
+
+func TestListClear(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGA("a1"))
+	list.Append(openapiart.NewGObject().SetGA("a2"))
+	list.Append(openapiart.NewGObject().SetGA("a3"))
+	assert.Len(t, list.Items(), 3)
+	list.Clear()
+	assert.Len(t, list.Items(), 0)
+	list.Append(openapiart.NewGObject().SetGA("b1"))
+	list.Append(openapiart.NewGObject().SetGA("b2"))
+	assert.Len(t, list.Items(), 2)
+	assert.Equal(t, list.Items()[1].GA(), "b2")
+}
