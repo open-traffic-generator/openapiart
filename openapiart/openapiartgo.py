@@ -1183,12 +1183,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{internal_struct}) Items() {field_type} {{
-                if len(obj.obj.{internal_items_name}) != len(obj.obj.obj.{field_name}) {{
-                    obj.obj.{internal_items_name} = {field_type}{{}}
-                    for _, item := range obj.obj.obj.{field_name} {{
-                        obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
-                    }}
-                }}
                 return obj.obj.{internal_items_name}
             }}
 
@@ -1457,12 +1451,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.struct and field.isEnum is False:
                     statements.append(
                         """if obj.obj.{name} != nil {{
+                            if set_default {{
+                                obj.{internal_items_name} = {field_type}{{}}
+                                for _, item := range obj.obj.{name} {{
+                                    obj.{internal_items_name} = append(obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
+                                }}
+                            }}
                             for _, item := range obj.{name}().Items() {{
                                 item.validateObj(set_default)
                             }}
                         }}
                         """.format(
-                            name=field.name
+                            name=field.name,
+                            field_type=field.type,
+                            internal_items_name="{}s".format(field.struct),
+                            field_internal_struct=field.struct
                         )
                     )
                     valid += 1
