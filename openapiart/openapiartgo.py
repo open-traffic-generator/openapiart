@@ -1225,7 +1225,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 Add() {field_external_struct}
                 Append(items ...{field_external_struct}) {interface}
                 Set(index int, newObj {field_external_struct}) {interface}
-                Clear()
+                Clear() {interface}
             }}
 
             func (obj *{internal_struct}) Items() {field_type} {{
@@ -1256,10 +1256,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.obj.obj.{field_name}[index] = newObj.Msg()
                 return obj
             }}
-            func (obj *{internal_struct}) Clear() {{
+            func (obj *{internal_struct}) Clear()  {interface} {{
                 if obj.obj.obj.{field_name} != nil {{
                     obj.obj.obj.{field_name} = nil
                 }}
+                return obj
             }}
             """.format(
                 internal_struct=new_iter.internal_struct,

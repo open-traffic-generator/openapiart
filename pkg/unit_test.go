@@ -813,4 +813,18 @@ func TestListClear(t *testing.T) {
 	list.Append(openapiart.NewGObject().SetGA("b2"))
 	assert.Len(t, list.Items(), 2)
 	assert.Equal(t, list.Items()[1].GA(), "b2")
+
+	list1 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("c_1"),
+		openapiart.NewGObject().SetGA("c_2"),
+		openapiart.NewGObject().SetGA("c_3"),
+	}
+	list.Clear().Append(list1...)
+	assert.Len(t, list.Items(), 3)
+	list2 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("d_1"),
+		openapiart.NewGObject().SetGA("d_1"),
+	}
+	list.Clear().Append(list2...)
+	assert.Len(t, list.Items(), 2)
 }
