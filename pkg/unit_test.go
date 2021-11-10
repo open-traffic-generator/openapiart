@@ -160,6 +160,34 @@ func TestIterSet(t *testing.T) {
 	config.G().Set(3, openapiart.NewGObject().SetName(name))
 }
 
+func TestListWrapFromJson(t *testing.T) {
+	var listWrap = `{
+		"required_object":  {
+		  "e_a":  3,
+		  "e_b":  47.234
+		},
+		"response":  "status_200",
+		"a":  "asdfg",
+		"b":  12.2,
+		"c":  1,
+		"g":  [
+		  {
+			"g_a":  "1111",
+			"g_b":  11,
+			"g_c":  11.11,
+			"choice":  "g_d",
+			"g_d":  "some string",
+			"g_f":  "a"
+		  }
+		],
+		"h":  true
+	  }`
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.FromJson(listWrap)
+	assert.Equal(t, len(config.G().Items()), 1)
+}
+
 func TestEObject(t *testing.T) {
 	var ea float32 = 1.1
 	eb := 1.2
