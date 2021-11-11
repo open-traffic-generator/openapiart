@@ -170,6 +170,19 @@ func TestGObject(t *testing.T) {
 	}
 	log.Print(g1.ToJson(), g1.ToYaml())
 }
+func TestGObjectAppendMultiple(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	items := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("g_1"),
+		openapiart.NewGObject().SetGA("g_2"),
+		openapiart.NewGObject().SetGA("g_3"),
+	}
+	config.G().Append(items...)
+	assert.Len(t, config.G().Items(), 3)
+	item := config.G().Items()[1]
+	assert.Equal(t, item.GA(), "g_2")
+}
 
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
@@ -784,4 +797,34 @@ func TestStringLength(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.SetStrLen("123456")
 	log.Print(config.ToJson())
+}
+
+func TestListClear(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGA("a1"))
+	list.Append(openapiart.NewGObject().SetGA("a2"))
+	list.Append(openapiart.NewGObject().SetGA("a3"))
+	assert.Len(t, list.Items(), 3)
+	list.Clear()
+	assert.Len(t, list.Items(), 0)
+	list.Append(openapiart.NewGObject().SetGA("b1"))
+	list.Append(openapiart.NewGObject().SetGA("b2"))
+	assert.Len(t, list.Items(), 2)
+	assert.Equal(t, list.Items()[1].GA(), "b2")
+
+	list1 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("c_1"),
+		openapiart.NewGObject().SetGA("c_2"),
+		openapiart.NewGObject().SetGA("c_3"),
+	}
+	list.Clear().Append(list1...)
+	assert.Len(t, list.Items(), 3)
+	list2 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("d_1"),
+		openapiart.NewGObject().SetGA("d_1"),
+	}
+	list.Clear().Append(list2...)
+	assert.Len(t, list.Items(), 2)
 }
