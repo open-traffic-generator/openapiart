@@ -222,6 +222,19 @@ func TestGObject(t *testing.T) {
 	}
 	log.Print(g1.ToJson(), g1.ToYaml())
 }
+func TestGObjectAppendMultiple(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	items := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("g_1"),
+		openapiart.NewGObject().SetGA("g_2"),
+		openapiart.NewGObject().SetGA("g_3"),
+	}
+	config.G().Append(items...)
+	assert.Len(t, config.G().Items(), 3)
+	item := config.G().Items()[1]
+	assert.Equal(t, item.GA(), "g_2")
+}
 
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
@@ -510,13 +523,13 @@ func TestDefaultSimpleTypes(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	actual_result := config.ToJson()
 	expected_result := `{
-		"a":"asdf",
-		"b" : 65,
-		"c" : 33,
-		"h": true,
-		"response" : "status_200",
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,  
+		"h": true, 
+		"response" : "status_200", 
 		"required_object" : {
-			"e_a" : 1,
+			"e_a" : 1, 
 			"e_b" : 2
 		}
 	}`
@@ -639,12 +652,12 @@ func TestOptionalDefault(t *testing.T) {
 func TestInterger64(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	int_64 := `{
-		"a":"asdf",
-		"b" : 65,
+		"a":"asdf", 
+		"b" : 65, 
 		"c" : 33,
-		"response" : "status_200",
+		"response" : "status_200", 
 		"required_object" : {
-			"e_a" : 1,
+			"e_a" : 1, 
 			"e_b" : 2
 		},
 		"integer64": 100
@@ -653,12 +666,12 @@ func TestInterger64(t *testing.T) {
 	fmt.Println(config.Integer64())
 	assert.Nil(t, err)
 	int_64_str := `{
-		"a":"asdf",
-		"b" : 65,
+		"a":"asdf", 
+		"b" : 65, 
 		"c" : 33,
-		"response" : "status_200",
+		"response" : "status_200", 
 		"required_object" : {
-			"e_a" : 1,
+			"e_a" : 1, 
 			"e_b" : 2
 		},
 		"integer64": "100"
@@ -678,12 +691,12 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetInteger64(200645)
 	config.Validate()
 	new_json := `{
-		"a":"asdf",
-		"b" : 65,
+		"a":"asdf", 
+		"b" : 65, 
 		"c" : 33,
-		"response" : "status_200",
+		"response" : "status_200", 
 		"required_object" : {
-			"e_a" : 1,
+			"e_a" : 1, 
 			"e_b" : 2
 		},
 		"h": false
@@ -692,11 +705,11 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, new_json, config.ToJson())
 	new_json1 := `{
-		"b" : 65,
+		"b" : 65, 
 		"c" : 33,
-		"response" : "status_200",
+		"response" : "status_200", 
 		"required_object" : {
-			"e_a" : 1,
+			"e_a" : 1, 
 			"e_b" : 2
 		},
 		"h": false
@@ -722,4 +735,148 @@ func TestChoiceStale(t *testing.T) {
 	}`
 	fmt.Println(fObject.ToJson())
 	require.JSONEq(t, expected_json1, fObject.ToJson())
+}
+
+func TestChoice2(t *testing.T) {
+	expected_json := `{
+		"required_object": {
+		  "e_a": 1,
+		  "e_b": 2
+		},
+		"response": "status_200",
+		"a": "asdf",
+		"b": 12.2,
+		"c": 1,
+		"e": {
+		  "e_a": 1.1,
+		  "e_b": 1.2,
+		  "m_param1": "Mparam1",
+		  "m_param2": "Mparam2"
+		},
+		"h": true,
+		"j": [
+		  {
+			"choice": "j_a",
+			"j_a": {
+			  "e_a": 1,
+			  "e_b": 2
+			}
+		  },
+		  {
+			"choice": "j_b",
+			"j_b": {
+			  "choice": "f_a",
+			  "f_a": "asf"
+			}
+		  }
+		],
+		"k": {
+		  "f_object": {
+			"choice": "f_a",
+			"f_a": "asf"
+		  }
+		}
+	  }`
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.K().FObject().SetFA("asf")
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
+	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
+	config.J().Add().JB().SetFA("asf")
+	log.Print(config.ToJson())
+	require.JSONEq(t, expected_json, config.ToJson())
+}
+
+func TestGetter(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	fObject.FA()
+	expected_json := `{
+		"choice": "f_a",
+		"f_a": "some string"
+	}`
+	fmt.Println(fObject.ToJson())
+	require.JSONEq(t, expected_json, fObject.ToJson())
+
+	fObject1 := openapiart.NewFObject()
+	fObject1.Choice()
+	fmt.Println(fObject1.ToJson())
+	require.JSONEq(t, expected_json, fObject1.ToJson())
+
+	pattern := openapiart.NewIpv4Pattern()
+	pattern.Ipv4()
+	exp_ipv4 := `{
+		"ipv4":  {
+			"choice":  "value",
+			"value":  "0.0.0.0"
+		}
+	}`
+	fmt.Println(pattern.ToJson())
+	require.JSONEq(t, exp_ipv4, pattern.ToJson())
+	pattern.Ipv4().SetValue("10.1.1.1")
+	assert.Equal(t, "10.1.1.1", pattern.Ipv4().Value())
+	pattern.Ipv4().Values()
+	exp_ipv41 := `{
+		"ipv4": {
+			"choice": "values",
+			"values": [
+				"0.0.0.0"
+			]
+		}
+	}`
+	fmt.Println(pattern.ToJson())
+	require.JSONEq(t, exp_ipv41, pattern.ToJson())
+	pattern.Ipv4().SetValues([]string{"20.1.1.1"})
+	assert.Equal(t, []string{"20.1.1.1"}, pattern.Ipv4().Values())
+	checksum := openapiart.NewChecksumPattern().Checksum()
+	ch_json := `{
+		"choice": "generated",
+		"generated": "good"
+	}`
+	require.JSONEq(t, ch_json, checksum.ToJson())
+	fmt.Println(checksum.ToJson())
+}
+
+func TestStringLength(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetStrLen("123456")
+	log.Print(config.ToJson())
+}
+
+func TestListClear(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGA("a1"))
+	list.Append(openapiart.NewGObject().SetGA("a2"))
+	list.Append(openapiart.NewGObject().SetGA("a3"))
+	assert.Len(t, list.Items(), 3)
+	list.Clear()
+	assert.Len(t, list.Items(), 0)
+	list.Append(openapiart.NewGObject().SetGA("b1"))
+	list.Append(openapiart.NewGObject().SetGA("b2"))
+	assert.Len(t, list.Items(), 2)
+	assert.Equal(t, list.Items()[1].GA(), "b2")
+
+	list1 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("c_1"),
+		openapiart.NewGObject().SetGA("c_2"),
+		openapiart.NewGObject().SetGA("c_3"),
+	}
+	list.Clear().Append(list1...)
+	assert.Len(t, list.Items(), 3)
+	list2 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("d_1"),
+		openapiart.NewGObject().SetGA("d_1"),
+	}
+	list.Clear().Append(list2...)
+	assert.Len(t, list.Items(), 2)
 }
