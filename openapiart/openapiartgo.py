@@ -715,9 +715,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         else:
             new.generated = True
+
+        self._build_setters_getters(new)
+        internal_items = []
+        for field in new.interface_fields:
+            if field.adder_method is not None and field.isArray is True:
+                internal_items.append("{}s {}".format(
+                    field.struct, field.type
+                ))
         self._write(
             """type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
+                {internal_items}
             }}
             
             func New{interface}() {interface} {{
@@ -842,9 +851,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
                 interface=new.interface,
+                internal_items="" if len(internal_items) == 0 else "\n".join(internal_items)
             )
         )
-        self._build_setters_getters(new)
+
         interfaces = [
             "// ToPbText marshals {interface} to protobuf text",
             "ToPbText() string",
@@ -1229,11 +1239,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{internal_struct}) Items() {field_type} {{
-                slice := {field_type}{{}}
-                for _, item := range obj.obj.obj.{field_name} {{
-                    slice = append(slice, &{field_internal_struct}{{obj: item}})
-                }}
-                return slice
+                return obj.obj.{internal_items_name}
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
@@ -1241,6 +1247,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 newLibObj := &{field_internal_struct}{{obj: newObj}}
                 newLibObj.setDefault()
+                obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, newLibObj)
                 return newLibObj
             }}
 
@@ -1248,17 +1255,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range items {{
                     newObj := item.Msg()
                     obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
+                    obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, item)
                 }}
                 return obj
             }}
 
             func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
                 obj.obj.obj.{field_name}[index] = newObj.Msg()
+                obj.obj.{internal_items_name}[index] = newObj
                 return obj
             }}
             func (obj *{internal_struct}) Clear()  {interface} {{
                 if obj.obj.obj.{field_name} != nil {{
                     obj.obj.obj.{field_name} = nil
+                    obj.obj.{internal_items_name} = {field_type}{{}}
                 }}
                 return obj
             }}
@@ -1271,6 +1281,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
+                internal_items_name="{}s".format(field.struct)
             )
         )
 
@@ -1510,12 +1521,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.struct and field.isEnum is False:
                     statements.append(
                         """if obj.obj.{name} != nil {{
+                            if set_default {{
+                                obj.{internal_items_name} = {field_type}{{}}
+                                for _, item := range obj.obj.{name} {{
+                                    obj.{internal_items_name} = append(obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
+                                }}
+                            }}
                             for _, item := range obj.{name}().Items() {{
                                 item.validateObj(set_default)
                             }}
                         }}
                         """.format(
-                            name=field.name
+                            name=field.name,
+                            field_type=field.type,
+                            internal_items_name="{}s".format(field.struct),
+                            field_internal_struct=field.struct
                         )
                     )
                     valid += 1
