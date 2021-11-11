@@ -1402,7 +1402,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             fieldstruct=fieldstruct,
                             desc=self._api.components[fieldstruct].description.lstrip("// ")
                         )
-            if field.isOptional and field.isPointer:
+            if field.isOptional and field.isPointer or "StatusCode" in field.name:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
                 )
