@@ -887,3 +887,27 @@ func TestConfigHas200Result(t *testing.T) {
 	cfg.SetStatusCode200([]byte("anything"))
 	assert.True(t, cfg.HasStatusCode200())
 }
+
+func TestFromJsonErrors(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	json := `{
+		"abc": "test"
+	}`
+	err := config.FromJson(json)
+	assert.Contains(t, err.Error(), "unmarshal error")
+	json1 := `{
+		"choice": "g_e",
+		"g_e": "10",
+		"g_b": "20"
+	}`
+	gObj := openapiart.NewGObject()
+	err1 := gObj.FromJson(json1)
+	assert.Nil(t, err1)
+	json2 := `{
+		"choice": "f_t"
+	}`
+	fObj := openapiart.NewFObject()
+	err2 := fObj.FromJson(json2)
+	assert.Contains(t, err2.Error(), "unmarshal error")
+}
