@@ -828,3 +828,10 @@ func TestListClear(t *testing.T) {
 	list.Clear().Append(list2...)
 	assert.Len(t, list.Items(), 2)
 }
+
+func TestConfigHas200Result(t *testing.T) {
+	// https://github.com/open-traffic-generator/openapiart/issues/242
+	cfg := openapiart.NewSetConfigResponse()
+	cfg.SetStatusCode200([]byte("anything"))
+	assert.True(t, cfg.HasStatusCode200())
+}
