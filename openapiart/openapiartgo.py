@@ -1,4 +1,3 @@
-import enum
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
