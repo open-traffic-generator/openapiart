@@ -108,24 +108,45 @@ func TestSimpleTypes(t *testing.T) {
 	assert.Equal(t, i, config.I())
 }
 
+var gaValues = []string{"1111", "2222"}
+var gbValues = []int32{11, 22}
+var gcValues = []float32{11.11, 22.22}
+
 func TestIterAdd(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	config.G().Add()
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	config.G().Add().SetGA("2222").SetGB(22).SetGC(22.22)
+
 	assert.Equal(t, len(config.G().Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterAppend(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	g := config.G().Append(openapiart.NewGObject())
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	g := config.G().Append(openapiart.NewGObject().SetGA("2222").SetGB(22).SetGC(22.22))
 
 	assert.Equal(t, len(g.Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterSet(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			errValue := "runtime error: index out of range [3] with length 2"
+			assert.Equal(t, errValue, fmt.Sprintf("%v", err))
+		}
+	}()
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	name := "new name set on slice"
@@ -134,6 +155,37 @@ func TestIterSet(t *testing.T) {
 	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
 
 	assert.Equal(t, name, g.Items()[1].Name())
+	assert.Equal(t, len(g.Items()), 2)
+
+	config.G().Set(3, openapiart.NewGObject().SetName(name))
+}
+
+func TestListWrapFromJson(t *testing.T) {
+	var listWrap = `{
+		"required_object":  {
+		  "e_a":  3,
+		  "e_b":  47.234
+		},
+		"response":  "status_200",
+		"a":  "asdfg",
+		"b":  12.2,
+		"c":  1,
+		"g":  [
+		  {
+			"g_a":  "1111",
+			"g_b":  11,
+			"g_c":  11.11,
+			"choice":  "g_d",
+			"g_d":  "some string",
+			"g_f":  "a"
+		  }
+		],
+		"h":  true
+	  }`
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.FromJson(listWrap)
+	assert.Equal(t, len(config.G().Items()), 1)
 }
 
 func TestEObject(t *testing.T) {
