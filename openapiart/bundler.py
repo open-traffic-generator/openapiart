@@ -49,6 +49,7 @@ class Bundler(object):
         self._content = {}
         self._includes = {}
         self._resolved = []
+        self._errors = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
 
     def _get_parser(self, pattern):
@@ -64,6 +65,7 @@ class Bundler(object):
         return self._output_filename
 
     def bundle(self):
+        self._errors = []
         self._output_filename = os.path.join(self._output_dir, "openapi.yaml")
         self._json_filename = os.path.join(self._output_dir, "openapi.json")
         self._content = {}
@@ -87,6 +89,11 @@ class Bundler(object):
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
+        self._validate_errors()
+
+    def _validate_errors(self):
+        if len(self._errors) > 0:
+            raise TypeError("\n".join(self._errors))
 
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
@@ -316,8 +323,13 @@ class Bundler(object):
         if format is not None:
             schema["format"] = format
         if "length" in xpattern:
-            schema["minimum"] = 0
-            schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+            if "format" in xpattern and xpattern["format"] in ["ipv4", "ipv6", "mac"]:
+                self._errors.append("property %s should not contain length as format set to %s" %(
+                    property_name, xpattern["format"]
+                ))
+            else:
+                schema["minimum"] = 0
+                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_x_include(self):
         """Find all instances of x-include in the openapi content
