@@ -1639,7 +1639,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range obj.{name}().Items() {{
                     item.validateObj(set_default)
                 }}
-            """.format(name=field.name)
+            """.format(
+                name=field.name,
+                field_type=field.type,
+                internal_items_name="{}s".format(field.struct),
+                field_internal_struct=field.struct
+            )
         body += """
             if obj.obj.{name} != nil {{
                 {body}
