@@ -84,12 +84,12 @@ class Bundler(object):
         self._resolve_license()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
+        self._validate_errors()
         with open(self._output_filename, "w") as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
-        self._validate_errors()
 
     def _validate_errors(self):
         if len(self._errors) > 0:
@@ -181,10 +181,19 @@ class Bundler(object):
                             self._resolve_refs(base_dir, include)
                             self._includes[include_ref] = include
                 else:
+                    self._length_restriction(key, value)
                     self._resolve_refs(base_dir, value)
         elif isinstance(yobject, list):
             for item in yobject:
                 self._resolve_refs(base_dir, item)
+
+    def _length_restriction(self, key, value):
+        if isinstance(value, dict) and \
+                {"length", "format"}.issubset(set(value.keys())) and \
+                value["format"] in ["ipv4", "ipv6", "mac"]:
+            self._errors.append("property %s should not contain length as format set to %s" % (
+                key, value["format"]
+            ))
 
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content
@@ -311,6 +320,7 @@ class Bundler(object):
     def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, property_name):
         # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
         step_defaults = {"mac": "00:00:00:00:00:01", "ipv4": "0.0.0.1", "ipv6": "::1"}
+
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
@@ -323,13 +333,8 @@ class Bundler(object):
         if format is not None:
             schema["format"] = format
         if "length" in xpattern:
-            if "format" in xpattern and xpattern["format"] in ["ipv4", "ipv6", "mac"]:
-                self._errors.append("property %s should not contain length as format set to %s" %(
-                    property_name, xpattern["format"]
-                ))
-            else:
-                schema["minimum"] = 0
-                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+            schema["minimum"] = 0
+            schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_x_include(self):
         """Find all instances of x-include in the openapi content
