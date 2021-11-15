@@ -914,7 +914,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         if field.isArray and field.isEnum is False:
             if field.struct:
+                block = ""
+                if field.setChoiceValue is not None:
+                    block = "obj.SetChoice({interface}Choice.{enum})".format(
+                        interface=new.interface, enum=field.setChoiceValue
+                    )
                 body = """if obj.obj.{name} == nil {{
+                        {block}
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
                     return &{parent}{interface}Iter{{obj: obj}}""".format(
@@ -923,6 +929,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     pb_struct=field.external_struct,
                     interface=field.external_struct,
                     parent=new.struct,
+                    block=block
                 )
             else:
                 block = "obj.obj.{name} = make({type}, 0)".format(
@@ -1514,7 +1521,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                validation = append(validation, "{interface}.{name} is a required field")
+                validation = append(validation, "{name} is required field on {interface}")
             }} """.format(
                 name=field.name, interface=new.interface,
                 value=0 if field.isEnum and field.isArray is False else value,
@@ -1538,8 +1545,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 + """ {{
                     validation = append(
                         validation,
-                        fmt.Sprintf("{interface}.{name} shall be in the range of [{min}, {max}] but Got {form}",
-                         {pointer}{value}))
+                        fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
                     }}
                 """
             ).format(
@@ -1573,8 +1579,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     validation = append(
                         validation,
                         fmt.Sprintf(
-                            "length of {interface}.{name} shall be in the range of [{min_length}, {max_length}] but Got %d",
-                             len({pointer}{value})))
+                            "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
+                            len({pointer}{value})))
                 }}
                 """
                 ).format(

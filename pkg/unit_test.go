@@ -632,7 +632,7 @@ func TestRequiredField(t *testing.T) {
 	mandate := openapiart.NewMandate()
 	err := mandate.Validate()
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Mandate.RequiredParam is a required field")
+	assert.Contains(t, err.Error(), "RequiredParam is required field")
 }
 
 func TestOptionalDefault(t *testing.T) {
@@ -716,7 +716,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	}`
 	err1 := config.FromJson(new_json1)
 	assert.NotNil(t, err1)
-	assert.Contains(t, err1.Error(), "PrefixConfig.A is a required field")
+	assert.Contains(t, err1.Error(), "A is required field")
 }
 
 func TestChoiceStale(t *testing.T) {
