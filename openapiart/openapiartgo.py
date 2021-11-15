@@ -627,15 +627,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 success_handling = """bodyString := string(bodyBytes)
                 return &bodyString, nil"""
             else:
-                success_handling = """obj := api.{success_method}()
-                    if err := obj.StatusCode200().FromJson(string(bodyBytes)); err != nil {{
+                success_handling = """obj := api.{success_method}().StatusCode200()
+                    if err := obj.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    err := obj.Validate()
                     if err != nil {{
                         return nil, err
                     }}
-                    return obj.StatusCode200(), nil""".format(
+                    return obj, nil""".format(
                     success_method=success_method,
                     pb_pkg_name=self._protobuf_package_name,
                 )
