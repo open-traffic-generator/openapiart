@@ -96,3 +96,12 @@ func TestGetWarnings(t *testing.T) {
 		log.Println(resp.ToYaml())
 	}
 }
+
+func TestClearWarnings(t *testing.T) {
+	for _, api := range apis {
+		api.NewClearWarningsResponse()
+		resp, err := api.ClearWarnings()
+		assert.Nil(t, err)
+		assert.NotNil(t, resp)
+	}
+}

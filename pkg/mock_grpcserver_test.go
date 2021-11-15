@@ -119,3 +119,11 @@ func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sani
 	}
 	return resp, nil
 }
+
+func (s *GrpcServer) ClearWarnings(ctx context.Context, empty *empty.Empty) (*sanity.ClearWarningsResponse, error) {
+	value := "warnings cleared"
+	resp := &sanity.ClearWarningsResponse{
+		StatusCode_200: &value,
+	}
+	return resp, nil
+}

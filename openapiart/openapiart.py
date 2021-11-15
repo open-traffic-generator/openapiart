@@ -41,6 +41,7 @@ class OpenApiArt(object):
         self._get_info()
         self._get_license()
         self._document()
+        self._go_generate_unit_test = False
 
     def _get_license(self):
         license_name = self._bundler._content["info"]["license"]["name"]
@@ -203,7 +204,7 @@ class OpenApiArt(object):
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
-            go_ux.generate(self._openapi)
+            go_ux.generate(self._openapi, self._go_generate_unit_test)
         return self
 
     def _generate_proto_file(self):
