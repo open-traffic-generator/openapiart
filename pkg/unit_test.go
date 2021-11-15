@@ -108,24 +108,45 @@ func TestSimpleTypes(t *testing.T) {
 	assert.Equal(t, i, config.I())
 }
 
+var gaValues = []string{"1111", "2222"}
+var gbValues = []int32{11, 22}
+var gcValues = []float32{11.11, 22.22}
+
 func TestIterAdd(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	config.G().Add()
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	config.G().Add().SetGA("2222").SetGB(22).SetGC(22.22)
+
 	assert.Equal(t, len(config.G().Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterAppend(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.G().Add()
-	g := config.G().Append(openapiart.NewGObject())
+	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
+	g := config.G().Append(openapiart.NewGObject().SetGA("2222").SetGB(22).SetGC(22.22))
 
 	assert.Equal(t, len(g.Items()), 2)
+	for idx, gObj := range config.G().Items() {
+		assert.Equal(t, gaValues[idx], gObj.GA())
+		assert.Equal(t, gbValues[idx], gObj.GB())
+		assert.Equal(t, gcValues[idx], gObj.GC())
+	}
 }
 
 func TestIterSet(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			errValue := "runtime error: index out of range [3] with length 2"
+			assert.Equal(t, errValue, fmt.Sprintf("%v", err))
+		}
+	}()
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	name := "new name set on slice"
@@ -134,6 +155,37 @@ func TestIterSet(t *testing.T) {
 	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
 
 	assert.Equal(t, name, g.Items()[1].Name())
+	assert.Equal(t, len(g.Items()), 2)
+
+	config.G().Set(3, openapiart.NewGObject().SetName(name))
+}
+
+func TestListWrapFromJson(t *testing.T) {
+	var listWrap = `{
+		"required_object":  {
+		  "e_a":  3,
+		  "e_b":  47.234
+		},
+		"response":  "status_200",
+		"a":  "asdfg",
+		"b":  12.2,
+		"c":  1,
+		"g":  [
+		  {
+			"g_a":  "1111",
+			"g_b":  11,
+			"g_c":  11.11,
+			"choice":  "g_d",
+			"g_d":  "some string",
+			"g_f":  "a"
+		  }
+		],
+		"h":  true
+	  }`
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.FromJson(listWrap)
+	assert.Equal(t, len(config.G().Items()), 1)
 }
 
 func TestEObject(t *testing.T) {
@@ -169,6 +221,19 @@ func TestGObject(t *testing.T) {
 		assert.Equal(t, ge[i], G.GE())
 	}
 	log.Print(g1.ToJson(), g1.ToYaml())
+}
+func TestGObjectAppendMultiple(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	items := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("g_1"),
+		openapiart.NewGObject().SetGA("g_2"),
+		openapiart.NewGObject().SetGA("g_3"),
+	}
+	config.G().Append(items...)
+	assert.Len(t, config.G().Items(), 3)
+	item := config.G().Items()[1]
+	assert.Equal(t, item.GA(), "g_2")
 }
 
 func TestLObject(t *testing.T) {
@@ -784,4 +849,65 @@ func TestStringLength(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.SetStrLen("123456")
 	log.Print(config.ToJson())
+}
+
+func TestListClear(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGA("a1"))
+	list.Append(openapiart.NewGObject().SetGA("a2"))
+	list.Append(openapiart.NewGObject().SetGA("a3"))
+	assert.Len(t, list.Items(), 3)
+	list.Clear()
+	assert.Len(t, list.Items(), 0)
+	list.Append(openapiart.NewGObject().SetGA("b1"))
+	list.Append(openapiart.NewGObject().SetGA("b2"))
+	assert.Len(t, list.Items(), 2)
+	assert.Equal(t, list.Items()[1].GA(), "b2")
+
+	list1 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("c_1"),
+		openapiart.NewGObject().SetGA("c_2"),
+		openapiart.NewGObject().SetGA("c_3"),
+	}
+	list.Clear().Append(list1...)
+	assert.Len(t, list.Items(), 3)
+	list2 := []openapiart.GObject{
+		openapiart.NewGObject().SetGA("d_1"),
+		openapiart.NewGObject().SetGA("d_1"),
+	}
+	list.Clear().Append(list2...)
+	assert.Len(t, list.Items(), 2)
+}
+
+func TestConfigHas200Result(t *testing.T) {
+	// https://github.com/open-traffic-generator/openapiart/issues/242
+	cfg := openapiart.NewSetConfigResponse()
+	cfg.SetStatusCode200([]byte("anything"))
+	assert.True(t, cfg.HasStatusCode200())
+}
+
+func TestFromJsonErrors(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	json := `{
+		"abc": "test"
+	}`
+	err := config.FromJson(json)
+	assert.Contains(t, err.Error(), "unmarshal error")
+	json1 := `{
+		"choice": "g_e",
+		"g_e": "10",
+		"g_b": "20"
+	}`
+	gObj := openapiart.NewGObject()
+	err1 := gObj.FromJson(json1)
+	assert.Nil(t, err1)
+	json2 := `{
+		"choice": "f_t"
+	}`
+	fObj := openapiart.NewFObject()
+	err2 := fObj.FromJson(json2)
+	assert.Contains(t, err2.Error(), "unmarshal error")
 }
