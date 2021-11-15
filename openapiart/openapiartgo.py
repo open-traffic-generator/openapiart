@@ -1521,7 +1521,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                validation = append(validation, "{name} is required field on {interface}")
+                validation = append(validation, "{name} is required field on interface {interface}")
             }} """.format(
                 name=field.name, interface=new.interface,
                 value=0 if field.isEnum and field.isArray is False else value,
@@ -1628,7 +1628,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
-                    validation = append(validation, "{interface}.{name} is a required field")
+                    validation = append(validation, "{name} is required field on interface {interface}")
                 }}
             """.format(name=field.name, interface=new.interface)
 
