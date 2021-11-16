@@ -42,6 +42,16 @@ func TestSetConfig400(t *testing.T) {
 	}
 }
 
+func TestSetConfig404(t *testing.T) {
+	for _, api := range apis {
+		config := NewFullyPopulatedPrefixConfig(api)
+		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+		resp, err := api.SetConfig(config)
+		assert.Nil(t, resp)
+		assert.NotNil(t, err)
+	}
+}
+
 func TestSetConfig500(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)

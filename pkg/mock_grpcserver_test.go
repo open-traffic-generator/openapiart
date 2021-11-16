@@ -73,6 +73,13 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		resp = &sanity.SetConfigResponse{
 			StatusCode_200: []byte("SetConfig has completed successfully"),
 		}
+	case sanity.PrefixConfig_Response_status_404.Enum().Number():
+		s.Config = req.PrefixConfig
+		resp = &sanity.SetConfigResponse{
+			StatusCode_404: &sanity.ErrorDetails{
+				Errors: []string{"Not found error"},
+			},
+		}
 	}
 	return resp, nil
 }

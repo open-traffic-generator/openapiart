@@ -54,6 +54,10 @@ func StartMockHttpServer() {
 				response.StatusCode500().SetErrors([]string{"A 500 error has occurred"})
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(response.StatusCode500().ToJson()))
+			case PrefixConfigResponse.STATUS_404:
+				response.StatusCode404().SetErrors([]string{"Not found error"})
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(response.StatusCode404().ToJson()))
 			}
 		case http.MethodPatch:
 			body, _ := ioutil.ReadAll(r.Body)

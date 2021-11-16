@@ -1239,13 +1239,9 @@ func TestNewSetConfigResponse(t *testing.T) {
 func TestNewUpdateConfigResponse(t *testing.T) {
 	api := openapiart.NewApi()
 	new_resp := api.NewUpdateConfigResponse()
-	new_resp.SetStatusCode400(new_resp.StatusCode400())
-	new_resp.SetStatusCode500(new_resp.StatusCode500())
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
-	new_resp.HasStatusCode400()
-	new_resp.HasStatusCode500()
 	new_resp.ToJson()
 	new_resp.ToYaml()
 	new_resp.ToPbText()
