@@ -1985,6 +1985,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_go_unit_test(interface_dict, enum_dict)
         self._write_go_validate_test(interface_dict)
         self._write_go_required_test()
+        self._write_go_invalid_format_test()
+        self._write_go_invalid_key_test()
 
     def _write_go_unit_test(self, interface_dict, enum_dict):
         # TODO: Have to add a more dynamic way of picking up the entry interface
@@ -2172,7 +2174,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_in_go_test(fp, line)
         self._write_in_go_test(fp, 'import "testing"')
         self._write_in_go_test(fp, 'import "github.com/stretchr/testify/assert"')
+        self._write_in_go_test(fp, 'import "google.golang.org/protobuf/encoding/protojson"')
+        self._write_in_go_test(fp, 'import "github.com/golang/protobuf/proto"')
         initial_fill = """func TestConfigGeneratedValidate(t *testing.T) {{
+            opts := protojson.MarshalOptions{{
+            UseProtoNames:   true,
+            AllowPartial:    true,
+            EmitUnpopulated: false,
+            Indent:          "  ",
+            }}
         api := {}.NewApi()
         config := api.New{}()""".format(self._go_sdk_package_name, entry_int)
         self._write_in_go_test(fp, initial_fill)
@@ -2227,9 +2237,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 recur_level.append(lines[0])
                 recur_level.extend(lines[1])
                 if "Set" in lines[0]:
-                    validate = "assert.NotNil(t, {inter}.Validate())".format(inter=updated_interface)
+                    validate = """data{var}, _ := opts.Marshal({inter}.Msg())
+                    assert.NotNil(t, {inter}.FromJson(string(data{var})))
+                    assert.NotNil(t, {inter}.FromYaml(string(data{var})))
+                    assert.NotNil(t, {inter}.FromPbText(proto.MarshalTextString({inter}.Msg())))""".format(var=var, inter=updated_interface)
                 else:
-                    validate = "{inter}.Validate()".format(inter=updated_interface)
+                    validate = "_ = {inter}.Validate()".format(inter=updated_interface)
                 recur_level.append(validate)
             else:
                 # TODO: Skipping Layer1 & SetDvalues for now
@@ -2283,9 +2296,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     recur_level.append(lines[0])
                     recur_level.extend(lines[1] + lines[2])
                     if "Set" in lines[0]:
-                        validate = "assert.NotNil(t, {inter}.Validate())".format(inter=updated_interface)
+                        validate = """data{var}, _ := opts.Marshal({inter}.Msg())
+                        assert.NotNil(t, {inter}.FromJson(string(data{var})))
+                        assert.NotNil(t, {inter}.FromYaml(string(data{var})))
+                        assert.NotNil(t, {inter}.FromPbText(proto.MarshalTextString({inter}.Msg())))""".format(var=var, inter=updated_interface)
                     else:
-                        validate = "{inter}.Validate()".format(inter=updated_interface)
+                        validate = "_ = {inter}.Validate()".format(inter=updated_interface)
                     recur_level.append(validate)
         return first_level, recur_level, first_level_get
 
@@ -2304,6 +2320,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write_in_go_test(fp, line)
         self._write_in_go_test(fp, 'import "testing"')
         self._write_in_go_test(fp, 'import "github.com/stretchr/testify/assert"')
+        self._write_in_go_test(fp, 'import "google.golang.org/protobuf/encoding/protojson"')
+        self._write_in_go_test(fp, 'import "github.com/golang/protobuf/proto"')
         for component in self._api.components:
             new = self._api.components[component]
             if 'Iter' in new.interface:
@@ -2319,9 +2337,99 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     required_fields.append(interface_field.name)
         if len(required_fields) > 0:
             initial_fill = """func Test{x}Required(t *testing.T) {{
-            object := {pkg}.New{x}()""".format(pkg=self._go_sdk_package_name, x=new.interface)
+            object := {pkg}.New{x}()
+            opts := protojson.MarshalOptions{{
+            UseProtoNames:   true,
+            AllowPartial:    true,
+            EmitUnpopulated: false,
+            Indent:          "  ",
+            }}
+            data, _ := opts.Marshal(object.Msg())
+            err := object.FromJson(string(data))
+            err1 := object.FromYaml(string(data))
+            err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))""".format(pkg=self._go_sdk_package_name, x=new.interface)
             self._write_in_go_test(fp, initial_fill)
-            self._write_in_go_test(fp, "err := object.Validate()")
             required_fields = ', '.join('"{0}"'.format(w) for w in required_fields)
             self._write_in_go_test(fp, "assert.Contains(t, err.Error(),{})".format(required_fields))
+            self._write_in_go_test(fp, "assert.Contains(t, err1.Error(),{})".format(required_fields))
+            self._write_in_go_test(fp, "assert.Contains(t, err2.Error(),{})".format(required_fields))
             self._write_in_go_test(fp, "}")
+
+    def _write_go_invalid_format_test(self):
+        var = """incorrect_format := `{
+		"a":"asdf",
+		"b" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"required_object" :
+			"e_a" : 1,
+			"e_b" : 2
+	    }`
+        """
+        filename = os.path.normpath(
+            os.path.join(self._ux_path, "generated_invalid_format_test.go"))
+        fp = open(filename, "wb")
+
+        self._write_in_go_test(fp,
+                               "package {go_sdk_package_name}_test".format(
+                                   go_sdk_package_name=self._go_sdk_package_name))
+        line = 'import {go_sdk_package_name} "{go_sdk_pkg_dir}"'.format(
+            go_sdk_package_name=self._go_sdk_package_name,
+            go_sdk_pkg_dir=self._go_sdk_package_dir
+        )
+        self._write_in_go_test(fp, line)
+        self._write_in_go_test(fp, 'import "testing"')
+        self._write_in_go_test(fp, 'import "github.com/stretchr/testify/assert"')
+        for component in self._api.components:
+            new = self._api.components[component]
+            if 'Iter' in new.interface:
+                continue
+            else:
+                initial_fill = """func Test{x}IncorrectFormat(t *testing.T) {{\n{var}\n
+                object := {pkg}.New{x}()""".format(pkg=self._go_sdk_package_name, x=new.interface, var=var)
+                self._write_in_go_test(fp, initial_fill)
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromYaml(incorrect_format))")
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromJson(incorrect_format))")
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromPbText(incorrect_format))")
+                self._write_in_go_test(fp, "}")
+
+    def _write_go_invalid_key_test(self):
+        var = """incorrect_key := `{
+            "a":"asdf",
+            "zxnvh" : 65,
+            "c" : 33,
+            "h": true,
+            "response" : "status_200",
+            "required_object" : {
+                "e_a" : 1,
+                "e_b" : 2
+            }
+        }`
+        """
+        filename = os.path.normpath(
+            os.path.join(self._ux_path, "generated_invalid_key_test.go"))
+        fp = open(filename, "wb")
+
+        self._write_in_go_test(fp,
+                               "package {go_sdk_package_name}_test".format(
+                                   go_sdk_package_name=self._go_sdk_package_name))
+        line = 'import {go_sdk_package_name} "{go_sdk_pkg_dir}"'.format(
+            go_sdk_package_name=self._go_sdk_package_name,
+            go_sdk_pkg_dir=self._go_sdk_package_dir
+        )
+        self._write_in_go_test(fp, line)
+        self._write_in_go_test(fp, 'import "testing"')
+        self._write_in_go_test(fp, 'import "github.com/stretchr/testify/assert"')
+        for component in self._api.components:
+            new = self._api.components[component]
+            if 'Iter' in new.interface:
+                continue
+            else:
+                initial_fill = """func Test{x}IncorrectKey(t *testing.T) {{\n{var}\n
+                object := {pkg}.New{x}()""".format(pkg=self._go_sdk_package_name, x=new.interface, var=var)
+                self._write_in_go_test(fp, initial_fill)
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromYaml(incorrect_key))")
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromJson(incorrect_key))")
+                self._write_in_go_test(fp, "assert.NotNil(t, object.FromPbText(incorrect_key))")
+                self._write_in_go_test(fp, "}")

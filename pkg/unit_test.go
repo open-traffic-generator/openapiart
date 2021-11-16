@@ -184,7 +184,7 @@ func TestListWrapFromJson(t *testing.T) {
 	  }`
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.FromJson(listWrap)
+	assert.Nil(t, config.FromJson(listWrap))
 	assert.Equal(t, len(config.G().Items()), 1)
 }
 
@@ -689,7 +689,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 	config.SetRequiredObject(openapiart.NewEObject().SetEA(10.1).SetEB(30.234))
 	config.SetInteger64(200645)
-	config.Validate()
+	assert.Nil(t, config.Validate())
 	new_json := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -1198,15 +1198,16 @@ func TestUpdateConfig(t *testing.T) {
 	for _, api := range apis {
 		config1 := NewFullyPopulatedPrefixConfig(api)
 		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-		api.SetConfig(config1)
+		_, set_err := api.SetConfig(config1)
+		assert.Nil(t, set_err)
 		config2 := api.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 		config2.ToPbText()
 		config2.ToJson()
 		config2.ToYaml()
-		config2.FromJson(config2.ToJson())
-		config2.FromYaml(config2.ToYaml())
-		config2.FromPbText(config2.ToPbText())
+		assert.Nil(t, config2.FromJson(config2.ToJson()))
+		assert.Nil(t, config2.FromYaml(config2.ToYaml()))
+		assert.Nil(t, config2.FromPbText(config2.ToPbText()))
 		config2.SetMsg(config2.Msg())
 		config3, err := api.UpdateConfig(config2)
 		assert.Nil(t, err)
@@ -1375,5 +1376,5 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.Name()
 	new_port_metric.RxFrames()
 	new_port_metric.TxFrames()
-	new_port_metric.Validate()
+	assert.Nil(t, new_port_metric.Validate())
 }
