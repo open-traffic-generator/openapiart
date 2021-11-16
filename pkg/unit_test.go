@@ -1066,6 +1066,9 @@ func TestIterSetJObject(t *testing.T) {
 	j := config.J().Set(1, openapiart.NewJObject().SetChoice("j_b"))
 
 	assert.Contains(t, j.Items()[1].Choice(), "j_b")
+	assert.Len(t, config.J().Items(), 2)
+	config.J().Clear()
+	assert.Len(t, config.J().Items(), 0)
 }
 
 func TestIterAppendGObject(t *testing.T) {
@@ -1084,6 +1087,10 @@ func TestIterSetGObject(t *testing.T) {
 	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
 
 	assert.Equal(t, name, g.Items()[1].Name())
+	assert.Len(t, g.Items(), 2)
+	g.Clear()
+	assert.Len(t, g.Items(), 0)
+
 }
 
 func TestIterAppendPortMetrics(t *testing.T) {
@@ -1102,6 +1109,9 @@ func TestIterSetPortMetrics(t *testing.T) {
 	p := config.Ports().Set(1, openapiart.NewPortMetric().SetName(name))
 
 	assert.Equal(t, name, p.Items()[1].Name())
+	assert.Len(t, p.Items(), 2)
+	p.Clear()
+	assert.Len(t, p.Items(), 0)
 }
 
 func panicValue(fn func()) (recovered interface{}) {
