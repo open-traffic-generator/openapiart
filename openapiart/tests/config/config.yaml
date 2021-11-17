@@ -169,7 +169,6 @@ components:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       - '../common/common.yaml#/components/schemas/MultiParamObject'
-      required: [e_b]
       properties:
         e_a:
           type: number
@@ -178,6 +177,7 @@ components:
         e_b:
           type: number
           format: double
+          default: 2.0
 
     FObject:
       type: object
