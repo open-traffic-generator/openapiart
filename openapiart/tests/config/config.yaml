@@ -3,7 +3,7 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [response, a, b, c, required_object]
+      required: [required_object]
       description: |-
         Container which retains the configuration
       properties:
@@ -169,7 +169,7 @@ components:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       - '../common/common.yaml#/components/schemas/MultiParamObject'
-      required: [e_a, e_b]
+      required: [e_b]
       properties:
         e_a:
           type: number
@@ -178,7 +178,6 @@ components:
         e_b:
           type: number
           format: double
-          default: 2.0
 
     FObject:
       type: object
