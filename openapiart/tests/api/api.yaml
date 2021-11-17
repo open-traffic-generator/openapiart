@@ -30,6 +30,9 @@ paths:
             schema:
               $ref: '../config/config.yaml#/components/schemas/Update.Config'
       responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: |-
             success 2xx
