@@ -79,6 +79,7 @@ class FluentNew(object):
 class FluentField(object):
     def __init__(self):
         self.name = None
+        self.schema_name = None
         self.description = None
         self.getter_method_description = None
         self.setter_method_description = None
@@ -958,7 +959,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return retObj
                 }}
                 {nil_call}
-                vErr := obj.validateFromText()
+                vErr := obj.validateFromText("{struct}.FromPbText()")
                 if vErr != nil {{
                     return vErr
                 }}
@@ -1000,7 +1001,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
                 {nil_call}
-                vErr := obj.validateFromText()
+                vErr := obj.validateFromText("{struct}.FromYaml()")
                 if vErr != nil {{
                     return vErr
                 }}
@@ -1037,20 +1038,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
                 {nil_call}
-                err := obj.validateFromText()
+                err := obj.validateFromText("{struct}.FromJson()")
                 if err != nil {{
                     return err
                 }}
                 return nil
             }}
 
-            func (obj *{struct}) validateFromText() error {{
-                obj.validateObj(true)
+            func (obj *{struct}) validateFromText(path string) error {{
+                obj.validateObj(true, path)
                 return validationResult()
             }}
 
             func (obj *{struct}) Validate() error {{
-                obj.validateObj(false)
+                obj.validateObj(false, "{struct}.Validate()")
                 return validationResult()
             }}
 
@@ -1112,8 +1113,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "String() string",
             "// Clones the object",
             "Clone() ({interface}, error)",
-            "validateFromText() error",
-            "validateObj(set_default bool)",
+            "validateFromText(path string) error",
+            "validateObj(set_default bool, path string)",
             "setDefault()",
         ]
         for field in new.interface_fields:
@@ -1714,6 +1715,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.schema = property_schema
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
+            field.schema_name = property_name
             field.type = self._get_struct_field_type(property_schema, field)
             if (
                 len(choice_enums) == 1
@@ -1774,9 +1776,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.type == "[]byte":
                     field.name = "Bytes"
                 elif "$ref" in property_schema:
-                    schema_name = self._get_schema_object_name_from_ref(
-                        property_schema["$ref"]
-                    )
+                    schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
+                    field.schema_name = schema_name
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = (
@@ -1978,10 +1979,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                validation = append(validation, "{name} is required field on interface {interface}")
+                validation = append(validation,
+                fmt.Sprintf("{intf_name}.{field_name} is a required field from path %s", path))
             }} """.format(
-                name=field.name,
-                interface=new.interface,
+                name=field.name, intf_name=new.schema_name,
+                field_name=field.schema_name,
                 value=0 if field.isEnum and field.isArray is False else value,
                 enum=".Number()"
                 if field.isEnum and field.isArray is False
@@ -2005,15 +2007,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 + """ {{
                     validation = append(
                         validation,
-                        fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
+                        fmt.Sprintf(
+                            "{interface}.{name} shall be in the range of [{min}, {max}] but Got {form} from path %s", {pointer}{value}, path))
                     }}
                 """
             ).format(
-                name=field.name,
-                interface=new.interface,
-                max="max({})".format(field.type.lstrip("[]"))
-                if field.max is None
-                else field.max,
+                name=field.schema_name,
+                interface=new.schema_name,
+                max="max({})".format(field.type.lstrip("[]")) if field.max is None else field.max,
                 pointer="*" if field.isPointer else "",
                 min="min({})".format(field.type.lstrip("[]"))
                 if field.min is None
@@ -2045,16 +2046,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     validation = append(
                         validation,
                         fmt.Sprintf(
-                            "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
-                            len({pointer}{value})))
+                            "length of {interface}.{name} shall be in the range of [{min_length}, {max_length}] but Got %d from path %s",
+                            len({pointer}{value}), path))
                 }}
                 """
                 ).format(
-                    name=field.name,
-                    interface=new.interface,
-                    max_length="any"
-                    if field.max_length is None
-                    else field.max_length,
+                    name=field.schema_name,
+                    interface=new.schema_name,
+                    max_length="any" if field.max_length is None else field.max_length,
                     pointer="*" if field.isPointer else "",
                     min_length=field.min_length
                     if field.min_length is None
@@ -2082,15 +2081,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 inner_body = """
                     err := validate{format}(obj.{name}())
                     if err != nil {{
-                        validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
+                        validation = append(validation,
+                        fmt.Sprintf("%s %s from path %s", err.Error(), "on {interface}.{field_name}", path))
                     }}
                 """.format(
-                    name=field.name,
-                    interface=new.interface,
-                    format=field.format.capitalize()
-                    if field.isArray is False
-                    else field.format.capitalize() + "Slice",
-                )
+                        name=field.name, interface=new.schema_name,
+                        field_name=field.schema_name,
+                        format=field.format.capitalize() if field.isArray is False
+                        else field.format.capitalize() + "Slice",
+                    )
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2109,13 +2108,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
-                    validation = append(validation, "{name} is required field on interface {interface}")
+                    validation = append(
+                        validation,
+                        fmt.Sprintf("{interface}.{field_name} is a required field from path %s", path))
                 }}
-            """.format(
-                name=field.name, interface=new.interface
-            )
+            """.format(name=field.name, interface=new.schema_name, field_name=field.schema_name)
 
-        inner_body = "obj.{external_name}().validateObj(set_default)".format(
+        inner_body = """obj.{external_name}().validateObj(
+            set_default, fmt.Sprintf("%s.{external_name}", path))""".format(
             external_name=self._get_external_struct_name(field.name)
         )
         if field.isArray:
@@ -2125,9 +2125,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     for _, item := range obj.obj.{name} {{
                         obj.{name}().appendHolderSlice(&{field_internal_struct}{{obj: item}})
                     }}
-                 }}
-                for _, item := range obj.{name}().Items() {{
-                    item.validateObj(set_default)
+                }}
+                for ind, item := range obj.{name}().Items() {{
+                    item.validateObj(set_default, fmt.Sprintf("%s.{name}[%d]", path, ind))
                 }}
             """.format(
                 name=field.name,
@@ -2178,7 +2178,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             p()
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) validateObj(set_default bool) {{
+            """func (obj *{struct}) validateObj(set_default bool, path string) {{
                 if set_default {{
                     obj.setDefault()
                 }}
