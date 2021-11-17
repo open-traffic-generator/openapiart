@@ -718,9 +718,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_setters_getters(new)
         internal_items = []
         for field in new.interface_fields:
-            if field.adder_method is not None and field.isArray is True:
-                internal_items.append("{}s {}".format(
-                    field.struct, field.type
+            # if field.adder_method is not None and field.isArray is True:
+            #     internal_items.append("{}s {}".format(
+            #         field.struct, field.type
+            #     ))
+            if field.struct and field.isArray is False:
+                internal_items.append("{}Holder {}".format(
+                    field.name[0].lower() + field.name[1:], field.type
+                ))
+            if field.adder_method is not None and field.isArray:
+                internal_items.append("{}Holder {}".format(
+                    field.name[0].lower() + field.name[1:], new.interface + field.external_struct + "Iter"
                 ))
         self._write(
             """type {struct} struct {{
@@ -922,13 +930,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         {block}
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
-                    return &{parent}{interface}Iter{{obj: obj}}""".format(
+                    if obj.obj.{name} != nil && obj.{internal_name}Holder == nil {{
+                        obj.{internal_name}Holder = &{parent}{interface}Iter{{obj: obj}}
+                    }}
+                    return obj.{internal_name}Holder""".format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
                     pb_struct=field.external_struct,
                     interface=field.external_struct,
                     parent=new.struct,
-                    block=block
+                    block=block,
+                    internal_name=field.name[0].lower() + field.name[1:]
                 )
             else:
                 block = "obj.obj.{name} = make({type}, 0)".format(
@@ -975,11 +987,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     {set_enum_choice}
                     obj.obj.{name} = New{pb_struct}().Msg()
                 }}
-                return &{struct}{{obj: obj.obj.{name}}}""".format(
+                if obj.{internal_name}Holder == nil {{
+                    obj.{internal_name}Holder = &{struct}{{obj: obj.obj.{name}}}
+                }} else if obj.obj.{name} != obj.{internal_name}Holder.Msg() {{
+                    obj.{internal_name}Holder = &{struct}{{obj: obj.obj.{name}}}
+                }}
+                return obj.{internal_name}Holder""".format(
                 name=field.name,
                 pb_struct=field.external_struct,
                 struct=field.struct,
-                set_enum_choice=set_enum_choice if set_enum_choice else ""
+                set_enum_choice=set_enum_choice if set_enum_choice else "",
+                internal_name=field.name[0].lower() + field.name[1:]
             )
         elif field.isEnum:
             enum_types = []
@@ -1236,6 +1254,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             type {internal_struct} struct {{
                 obj *{parent_internal_struct}
+                {internal_items_name} {field_type}
             }}
 
             type {interface} interface {{
@@ -1244,10 +1263,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 Append(items ...{field_external_struct}) {interface}
                 Set(index int, newObj {field_external_struct}) {interface}
                 Clear() {interface}
+                clearHolderSlice() {interface}
+                appendHolderSlice(item {field_external_struct}) {interface}
             }}
 
             func (obj *{internal_struct}) Items() {field_type} {{
-                return obj.obj.{internal_items_name}
+                if obj.{internal_items_name} == nil && obj.obj.obj.{field_name} != nil {{
+                    for _, item := range obj.obj.obj.{field_name} {{
+                        obj.appendHolderSlice(&{field_internal_struct}{{obj: item}})
+                    }}
+                }}
+                return obj.{internal_items_name}
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
@@ -1255,7 +1281,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 newLibObj := &{field_internal_struct}{{obj: newObj}}
                 newLibObj.setDefault()
-                obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, newLibObj)
+                obj.{internal_items_name} = append(obj.{internal_items_name}, newLibObj)
                 return newLibObj
             }}
 
@@ -1263,21 +1289,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range items {{
                     newObj := item.Msg()
                     obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
-                    obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, item)
+                    obj.{internal_items_name} = append(obj.{internal_items_name}, item)
                 }}
                 return obj
             }}
 
             func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
                 obj.obj.obj.{field_name}[index] = newObj.Msg()
-                obj.obj.{internal_items_name}[index] = newObj
+                obj.{internal_items_name}[index] = newObj
                 return obj
             }}
             func (obj *{internal_struct}) Clear()  {interface} {{
                 if obj.obj.obj.{field_name} != nil {{
                     obj.obj.obj.{field_name} = nil
-                    obj.obj.{internal_items_name} = {field_type}{{}}
+                    obj.{internal_items_name} = {field_type}{{}}
                 }}
+                return obj
+            }}
+            func (obj *{internal_struct}) clearHolderSlice() {interface} {{
+                if obj.{internal_items_name} != nil {{
+                    obj.{internal_items_name} = {field_type}{{}}
+                }}
+                return obj
+            }}
+            func (obj *{internal_struct}) appendHolderSlice(item {field_external_struct}) {interface} {{
+                obj.{internal_items_name} = append(obj.{internal_items_name}, item)
                 return obj
             }}
             """.format(
@@ -1289,7 +1325,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
-                internal_items_name="{}s".format(field.struct)
+                internal_items_name="{}Slice".format(field.struct)
             )
         )
 
@@ -1635,19 +1671,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
             external_name=self._get_external_struct_name(field.name)
         )
         if field.isArray:
-            inner_body = """if set_default {{
-                    obj.{internal_items_name} = {field_type}{{}}
+            inner_body = """
+                 if set_default {{
+                    obj.{name}().clearHolderSlice()
                     for _, item := range obj.obj.{name} {{
-                        obj.{internal_items_name} = append(obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
+                        obj.{name}().appendHolderSlice(&{field_internal_struct}{{obj: item}})
                     }}
-                }}
+                 }}
                 for _, item := range obj.{name}().Items() {{
                     item.validateObj(set_default)
                 }}
             """.format(
                 name=field.name,
                 field_type=field.type,
-                internal_items_name="{}s".format(field.struct),
+                internal_items_name="{}Slice".format(field.struct),
                 field_internal_struct=field.struct
             )
         body += """

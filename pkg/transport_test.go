@@ -92,6 +92,7 @@ func TestGetMetrics(t *testing.T) {
 		metrics, err := api.GetMetrics()
 		assert.Nil(t, err)
 		assert.NotNil(t, metrics)
+		assert.Len(t, metrics.Ports().Items(), 2)
 		for _, row := range metrics.Ports().Items() {
 			log.Println(row.ToYaml())
 		}

@@ -214,6 +214,7 @@ func TestGObject(t *testing.T) {
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := config.G().Add()
 	g2.SetGA("g_2").SetGB(2).SetGC(22.2).SetGE(2.0)
+	assert.Len(t, config.G().Items(), 2)
 	for i, G := range config.G().Items() {
 		assert.Equal(t, ga[i], G.GA())
 		assert.Equal(t, gb[i], G.GB())
