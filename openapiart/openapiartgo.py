@@ -2118,7 +2118,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                 }}
                 for ind, item := range obj.{name}().Items() {{
-                    item.validateObj(set_default, fmt.Sprintf("%s.{name}[%d]", path, ind))
+                    item.validateObj(set_default, fmt.Sprintf("%s.{name}().Items()[%d]", path, ind))
                 }}
             """.format(
                 name=field.name,
