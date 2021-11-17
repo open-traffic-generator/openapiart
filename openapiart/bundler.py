@@ -9,6 +9,7 @@ import json
 import yaml
 import openapi_spec_validator
 import jsonpath_ng
+import inspect
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -181,19 +182,40 @@ class Bundler(object):
                             self._resolve_refs(base_dir, include)
                             self._includes[include_ref] = include
                 else:
-                    self._length_restriction(key, value)
+                    self._length_restriction(value)
+                    self._required_restriction(key, value)
                     self._resolve_refs(base_dir, value)
         elif isinstance(yobject, list):
             for item in yobject:
                 self._resolve_refs(base_dir, item)
 
-    def _length_restriction(self, key, value):
-        if isinstance(value, dict) and \
-                {"length", "format"}.issubset(set(value.keys())) and \
-                value["format"] in ["ipv4", "ipv6", "mac"]:
-            self._errors.append("property %s should not contain length as format set to %s" % (
-                key, value["format"]
-            ))
+    def _length_restriction(self, value):
+        restricted_keys = {
+            "length", "minimum", "maximum", "minLength", "maxLength"
+        }
+        if isinstance(value, dict):
+            intersect_keys = restricted_keys.intersection(set(value.keys()))
+            if len(intersect_keys) > 0 and "format" in value.keys() and \
+                    value["format"] in ["ipv4", "ipv6", "mac"]:
+                stacks = inspect.stack()
+                property = "{}/{}/{}".format(
+                    stacks[3].frame.f_locals["key"] if "key" in stacks[3].frame.f_locals else "",
+                    stacks[2].frame.f_locals["key"] if "key" in stacks[2].frame.f_locals else "",
+                    stacks[1].frame.f_locals["key"]
+                )
+                self._errors.append("Property %s should not contain %s as format set to %s" % (
+                    property, intersect_keys, value["format"]
+                ))
+
+    def _required_restriction(self, schema_name, value):
+        expected_set = {"required", "properties"}
+        if isinstance(value, dict) and expected_set.issubset(value.keys()):
+            if isinstance(value["required"], list):
+                for required in value["required"]:
+                    if "default" in value["properties"][required].keys():
+                        self._errors.append(f"Property %s within schema %s have both required as well as default" %(
+                            required, schema_name
+                        ))
 
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content
