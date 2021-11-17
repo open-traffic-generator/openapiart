@@ -308,11 +308,11 @@ class Bundler(object):
             if "metric_group" in xpattern["features"]:
                 schema["properties"]["metric_group"] = {
                     "description": """A unique name is used to indicate to the system that the field may """
-                                   """extend the metric row key and create an aggregate metric row for """
-                                   """every unique value. """
-                                   """To have metric group columns appear in the flow metric rows the flow """
-                                   """metric request allows for the metric_group value to be specified """
-                                   """as part of the request.""",
+                    """extend the metric row key and create an aggregate metric row for """
+                    """every unique value. """
+                    """To have metric group columns appear in the flow metric rows the flow """
+                    """metric request allows for the metric_group value to be specified """
+                    """as part of the request.""",
                     "type": "string",
                 }
         if "enums" in xpattern:
@@ -339,16 +339,13 @@ class Bundler(object):
             if xconstants is not None:
                 counter_schema["x-constants"] = copy.deepcopy(xconstants)
             self._content["components"]["schemas"][counter_pattern_name] = counter_schema
-        self._apply_common_x_field_pattern_properties(schema["properties"]["value"], xpattern, format,
-                                                      property_name="value")
-        self._apply_common_x_field_pattern_properties(schema["properties"]["values"], xpattern, format,
-                                                      property_name="values")
+        self._apply_common_x_field_pattern_properties(schema["properties"]["value"], xpattern, format, property_name="value")
+        self._apply_common_x_field_pattern_properties(schema["properties"]["values"], xpattern, format, property_name="values")
         self._content["components"]["schemas"][schema_name] = schema
 
     def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, property_name):
         # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
         step_defaults = {"mac": "00:00:00:00:00:01", "ipv4": "0.0.0.1", "ipv6": "::1"}
-
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
