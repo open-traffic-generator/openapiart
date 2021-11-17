@@ -670,7 +670,7 @@ func TestRequiredField(t *testing.T) {
 	mandate := openapiart.NewMandate()
 	err := mandate.Validate()
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "RequiredParam is required field")
+	assert.Contains(t, err.Error(), "Mandate.required_param is a required field")
 }
 
 func TestOptionalDefault(t *testing.T) {
@@ -757,7 +757,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	}`
 	err1 := config.FromJson(new_json1)
 	assert.NotNil(t, err1)
-	assert.Contains(t, err1.Error(), "A is required field")
+	assert.Contains(t, err1.Error(), ".a is a required field")
 }
 
 func TestChoiceStale(t *testing.T) {
@@ -980,7 +980,8 @@ func TestStringLengthError(t *testing.T) {
 	config.Name()
 	err := config.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "3 <= length of prefixconfig.strlen <= 6 but got 8")
+		assert.Contains(t, err.Error(),
+			"length of PrefixConfig.str_len shall be in the range of [3, 6] but Got 8 from path prefixConfig.Validate()")
 	}
 }
 
@@ -1015,7 +1016,7 @@ func TestMObjectValidation(t *testing.T) {
 	mObject := openapiart.NewMObject()
 	err := mObject.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "required field on interface mobject")
+		assert.Contains(t, err.Error(), "required field from path mObject.Validate()")
 	}
 }
 
