@@ -381,7 +381,7 @@ func TestBadMacValidation(t *testing.T) {
 		macObj := config.MacPattern().Mac().SetValue(mac)
 		err := macObj.Validate()
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "Invalid Mac")
+			assert.Contains(t, err.Error(), "invalid mac")
 		}
 	}
 }
@@ -449,7 +449,7 @@ func TestBadIpv4Validation(t *testing.T) {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
 		err := ipv4.Validate()
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "Invalid Ipv4")
+			assert.Contains(t, err.Error(), "invalid ipv4")
 		}
 	}
 }
@@ -460,7 +460,7 @@ func TestBadIpv4Values(t *testing.T) {
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid ipv4 addresses")
+		assert.Contains(t, err.Error(), "invalid ipv4 addresses")
 	}
 }
 
@@ -472,7 +472,7 @@ func TestBadIpv4Increment(t *testing.T) {
 	ipv4.SetCount(10)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid Ipv4")
+		assert.Contains(t, err.Error(), "invalid ipv4")
 	}
 }
 
@@ -484,7 +484,7 @@ func TestBadIpv4Decrement(t *testing.T) {
 	ipv4.SetCount(10)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid Ipv4")
+		assert.Contains(t, err.Error(), "invalid ipv4")
 	}
 }
 

@@ -164,13 +164,13 @@ func validationResult() error {
 func validateMac(mac string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
-		return fmt.Errorf(fmt.Sprintf("Invalid Mac address %s", mac))
+		return fmt.Errorf(fmt.Sprintf("invalid mac address %s", mac))
 	}
 	octInd := []string{"0th", "1st", "2nd", "3rd", "4th", "5th"}
 	for ind, val := range macSlice {
 		num, err := strconv.ParseUint(val, 16, 32)
 		if err != nil || num > 255 {
-			return fmt.Errorf(fmt.Sprintf("Invalid Mac address at %s octet in %s mac", octInd[ind], mac))
+			return fmt.Errorf(fmt.Sprintf("invalid mac address at %s octet in %s mac", octInd[ind], mac))
 		}
 	}
 	return nil
@@ -179,13 +179,13 @@ func validateMac(mac string) error {
 func validateIpv4(ip string) error {
 	ipSlice := strings.Split(ip, ".")
 	if len(ipSlice) != 4 {
-		return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("invalid ipv4 address %s", ip))
 	}
 	octInd := []string{"1st", "2nd", "3rd", "4th"}
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 10, 32)
 		if err != nil || num > 255 {
-			return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
+			return fmt.Errorf(fmt.Sprintf("invalid ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
 		}
 	}
 	return nil
@@ -196,13 +196,13 @@ func validateIpv6(ip string) error {
 	if strings.Count(ip, " ") > 0 || strings.Count(ip, ":") > 7 ||
 		strings.Count(ip, "::") > 1 || strings.Count(ip, ":::") > 0 ||
 		strings.Count(ip, ":") == 0 {
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("invalid ipv6 address %s", ip))
 	}
 	if (string(ip[0]) == ":" && string(ip[:2]) != "::") || (string(ip[len(ip)-1]) == ":" && string(ip[len(ip)-2:]) != "::") {
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("invalid ipv6 address %s", ip))
 	}
 	if strings.Count(ip, "::") == 0 && strings.Count(ip, ":") != 7 {
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf(fmt.Sprintf("invalid ipv6 address %s", ip))
 	}
 	if ip == "::" {
 		return nil
@@ -224,7 +224,7 @@ func validateIpv6(ip string) error {
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 16, 64)
 		if err != nil || num > 65535 {
-			return fmt.Errorf(fmt.Sprintf("Invalid Ipv6 address at %s octet in %s ipv6", octInd[ind], ip))
+			return fmt.Errorf(fmt.Sprintf("invalid ipv6 address at %s octet in %s ipv6", octInd[ind], ip))
 		}
 	}
 
@@ -234,7 +234,7 @@ func validateIpv6(ip string) error {
 func validateHex(hex string) error {
 	matched, err := regexp.MatchString(`^[0-9a-fA-F]+$|^0[x|X][0-9a-fA-F]+$`, hex)
 	if err != nil || !matched {
-		return fmt.Errorf(fmt.Sprintf("Invalid hex value %s", hex))
+		return fmt.Errorf(fmt.Sprintf("invalid hex value %s", hex))
 	}
 	return nil
 }
@@ -253,7 +253,7 @@ func validateSlice(valSlice []string, sliceType string) error {
 		} else if sliceType == "hex" {
 			err = validateHex(val)
 		} else {
-			return fmt.Errorf(fmt.Sprintf("Invalid slice type received <%s>", sliceType))
+			return fmt.Errorf(fmt.Sprintf("invalid slice type received <%s>", sliceType))
 		}
 
 		if err != nil {
@@ -262,7 +262,7 @@ func validateSlice(valSlice []string, sliceType string) error {
 	}
 	if len(indices) > 0 {
 		return fmt.Errorf(
-			fmt.Sprintf("Invalid %s addresses at indices %s", sliceType, strings.Join(indices, ",")),
+			fmt.Sprintf("invalid %s addresses at indices %s", sliceType, strings.Join(indices, ",")),
 		)
 	}
 	return nil
