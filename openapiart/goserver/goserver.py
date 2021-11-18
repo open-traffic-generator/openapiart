@@ -69,13 +69,19 @@ class GoServerGenerator(object):
         pass
 
     def _loadroute(self, url: str, pathobj):
+        http_methods = [
+            "get", "post", "put", "delete", "head", "patch"
+        ]
         for methodname, methodobj in pathobj.items():
+            if methodname not in http_methods:
+                continue
             if "tags" not in methodobj:
                 raise AttributeError(f"controller name missing from '{url} - {methodname}:'\nUse tags: [<name>]")
             controllername = methodobj["tags"][0]
             ctrl = self._context.find_controller(controllername)
             ctrl.add_route(url, methodname, methodobj)
         pass
+
 
     def _copy_static_files(self):
         output_path = self._context.output_path
