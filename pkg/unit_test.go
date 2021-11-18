@@ -1385,3 +1385,31 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.TxFrames()
 	assert.Nil(t, new_port_metric.Validate())
 }
+
+func TestItemsMethod(t *testing.T) {
+	api := openapiart.NewApi()
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.G().Add().SetGA("this is GA string")
+	assert.Equal(t, config1.G(), config1.G())
+	config2 := api.NewPrefixConfig()
+	config2.FromJson(config1.ToJson())
+	assert.Len(t, config1.G().Items(), 2)
+	assert.Len(t, config2.G().Items(), 2)
+	for ind, obj := range config1.G().Items() {
+		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+	}
+	require.JSONEq(t, config1.ToJson(), config2.ToJson())
+	config2.G().Add().SetGB(200000)
+	assert.Len(t, config2.G().Items(), 3)
+	for ind, obj := range config1.G().Items() {
+		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+	}
+}
+
+func TestStructGetterMethod(t *testing.T) {
+	jObject := openapiart.NewJObject()
+	val := jObject.JA()
+	assert.Equal(t, val, jObject.JA())
+	jObject.JA().SetEA(0.23495)
+	assert.Equal(t, val, jObject.JA())
+}
