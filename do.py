@@ -150,7 +150,7 @@ def test():
         else:
             print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
 
-    go_coverage_threshold = 35
+    go_coverage_threshold = 25
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
