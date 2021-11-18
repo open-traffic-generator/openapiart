@@ -11,7 +11,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [2.7]
+        python-version: [3.9]
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Generate only for 2.7
+      - name: Generate only for 2.7 - hacked to 3.9
         run: |
           python do.py setup
           python do.py init
