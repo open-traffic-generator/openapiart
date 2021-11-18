@@ -61,6 +61,13 @@ components:
           application/json:
             schema:
               $ref: '#/components/schemas/Error.Details'
+    Error.404:
+      '404':
+        description: 'error 404'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error.Details'
     Error500:
       '500':
         description: 'error 5xx'

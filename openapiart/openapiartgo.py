@@ -22,6 +22,7 @@ class FluentRpc(object):
         self.request = "emptypb.Empty{}"
         self.responses = []
         self.http_call = None
+        self.method_description = None
 
 
 class FluentRpcResponse(object):
@@ -34,6 +35,8 @@ class FluentRpcResponse(object):
         self.status_code = None
         self.schema = None
         self.request_return_type = None
+        self.description = None
+        self.method_description = None
 
 
 class FluentHttp(object):
@@ -45,6 +48,7 @@ class FluentHttp(object):
         self.request = None
         self.request_return_type = None
         self.responses = []
+        self.description = None
 
 
 class FluentNew(object):
@@ -58,6 +62,8 @@ class FluentNew(object):
         self.schema_name = None
         self.schema_object = None
         self.isRpcResponse = False
+        self.description = None
+        self.method_description = None
         self.interface_fields = []
 
     def isOptional(self, property_name):
@@ -74,6 +80,11 @@ class FluentField(object):
     def __init__(self):
         self.name = None
         self.description = None
+        self.getter_method_description = None
+        self.setter_method_description = None
+        self.has_method_description = None
+        self.iter_method_description = None
+        self.method_description = None
         self.type = None
         self.isOptional = True
         self.isPointer = True
@@ -90,6 +101,9 @@ class FluentField(object):
         self.hasminmax = False
         self.min = None
         self.max = None
+        self.hasminmaxlength = False
+        self.min_length = None
+        self.max_length = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -163,6 +177,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._structs = {}
         self._write_mod_file()
         self._write_go_file()
+        self._format_go_file()
+        self._tidy_mod_file()
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
@@ -217,7 +233,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "common.go"))
         self._init_fp(self._filename)
         self._write_package()
-        with open(os.path.join(os.path.dirname(__file__), "common.go.tmp")) as fp:
+        with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
         self._fp = go_pkg_fp
@@ -237,23 +253,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return name
 
     def _get_external_field_name(self, openapi_name):
-        external_name = ""
-        for piece in openapi_name.replace(".", "").split("_"):
-            for i in range(len(piece)):
-                if i == 0 and piece[i].isdigit() is False:
-                    external_name += piece[i].upper()
-                elif piece[i].isdigit():
-                    if "_" + piece[i] in openapi_name:
-                        external_name += "_" + piece[i]
-                    else:
-                        external_name += piece[i]
-                elif external_name[-1].isdigit():
-                    external_name += piece[i].upper()
+        """convert openapi fieldname to protobuf fieldname
+
+        - reference: https://developers.google.com/protocol-buffers/docs/reference/go-generated#fields
+
+        Note that the generated Go field names always use camel-case naming,
+        even if the field name in the .proto file uses lower-case with underscores (as it should).
+        The case-conversion works as follows:
+        - The first letter is capitalized for export.
+        - NOTE: this is ignored as OpenAPIArt doesn't allow fieldnames to start with an underscore
+            - If the first character is an underscore, it is removed and a capital X is prepended.
+        - If an interior underscore is followed by a lower-case letter, the underscore is removed, and the following letter is capitalized.
+        - NOTE: This isn't documented, if a number is followed by a lower-case letter the following letter is capitalized.
+        - Thus, the proto field foo_bar_baz becomes FooBarBaz in Go, and _my_field_name_2 becomes XMyFieldName_2.
+        """
+        external = ""
+        name = openapi_name.replace(".", "")
+        for i in range(len(name)):
+            if i == 0:
+                if name[i] == "_":
+                    pass
                 else:
-                    external_name += piece[i]
-        if external_name in ["String"]:
-            external_name += "_"
-        return external_name
+                    external += name[i].upper()
+            elif name[i] == "_":
+                pass
+            elif name[i - 1] == "_":
+                if name[i].isdigit() or name[i].isupper():
+                    external += "_" + name[i]
+                else:
+                    external += name[i].upper()
+            elif name[i - 1].isdigit() and name[i].islower():
+                external += name[i].upper()
+            else:
+                external += name[i]
+        if external in ["String"]:
+            external += "_"
+        return external
 
     def _get_external_struct_name(self, openapi_name):
         return self._get_external_field_name(openapi_name).replace("_", "")
@@ -280,7 +315,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 rpc = FluentRpc()
                 http = FluentHttp()
                 rpc.operation_name = self._get_external_struct_name(operation_id.value)
+                rpc.description = self._get_description(path_item_object, True)
                 http.operation_name = self._get_external_struct_name(operation_id.value)
+                http.description = self._get_description(path_item_object)
                 if len([m for m in self._api.external_rpc_methods if m.operation_name == rpc.operation_name]) == 0:
                     self._api.external_rpc_methods.append(rpc)
                 if len([m for m in self._api.internal_http_methods if m.operation_name == http.operation_name]) == 0:
@@ -306,6 +343,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.schema_object = self._get_schema_object_from_ref(ref[0].value)
                     new.interface = self._get_external_struct_name(new.schema_name)
                     new.struct = self._get_internal_name(new.schema_name)
+                    new.description = self._get_description(new.schema_object, True)
+                    new.method_description = """// New{interface} returns a new instance of {interface}.
+                    """.format(
+                        interface=new.interface) + "// {} is {}".format(
+                            new.interface, self._get_description(new.schema_object, True).lstrip("// ")
+                        )
                     new.method = """New{interface}() {interface}""".format(interface=new.interface)
                     if len([m for m in self._api.external_new_methods if m.schema_name == new.schema_name]) == 0:
                         self._api.external_new_methods.append(new)
@@ -315,6 +358,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         struct=new.struct,
                     )
+                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// "))
+                    # """
+                    #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
+                    #     // or returns error on failure
+                    #     """.format(
+                    #     operation_name=rpc.operation_name,
+                    #     operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                    #     struct=new.struct,
+                    #     interface=new.interface,
+                    #     request_return_type=rpc.request_return_type,
+                    # )
                     rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         operation_response_name=self._get_external_struct_name(rpc.operation_name),
@@ -344,6 +398,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 else:
+                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// "))
+                    # """
+                    # // Perform {operation_name} and returns {request_return_type} on success
+                    # // or error on failure
+                    # """.format(
+                    #     operation_name=rpc.operation_name,
+                    #     operation_response_name=self._get_external_struct_name(rpc.operation_name),
+                    #     request_return_type=rpc.request_return_type,
+                    # )
                     rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         operation_response_name=self._get_external_struct_name(rpc.operation_name),
@@ -397,7 +460,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            // NewApi returns a new instance of the top level interface hierarchy
+            //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
                 return &api
@@ -445,18 +508,26 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         methods = []
         for new in self._api.external_new_methods:
+            methods.append(new.method_description)
             methods.append(new.method)
         for rpc in self._api.external_rpc_methods:
+            methods.append(rpc.description)
             methods.append(rpc.method)
+            # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
         method_signatures = "\n".join(methods)
         self._write(
-            """type {external_interface_name} interface {{
+            """
+            {description}
+            type {external_interface_name} interface {{
                 Api
                 {method_signatures}
             }}
             """.format(
                 external_interface_name=self._api.external_interface_name,
                 method_signatures=method_signatures,
+                description="// {} {}".format(
+                    self._api.external_interface_name,
+                    self._get_description(self._openapi["info"], True).lstrip("// "))
             )
         )
         for new in self._api.external_new_methods:
@@ -486,7 +557,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                     status_code=response.status_code,
                 )
-            error_handling += 'return nil, fmt.Errorf("A response of 200, 400, 500 has not been implemented")'
+            error_handling += 'return nil, fmt.Errorf("response of 200, 400, 500 has not been implemented")'
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
                         return resp.GetStatusCode_200(), nil
@@ -556,15 +627,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 success_handling = """bodyString := string(bodyBytes)
                 return &bodyString, nil"""
             else:
-                success_handling = """obj := api.{success_method}()
-                    if err := obj.StatusCode200().FromJson(string(bodyBytes)); err != nil {{
+                success_handling = """obj := api.{success_method}().StatusCode200()
+                    if err := obj.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    err := obj.Validate()
                     if err != nil {{
                         return nil, err
                     }}
-                    return obj.StatusCode200(), nil""".format(
+                    return obj, nil""".format(
                     success_method=success_method,
                     pb_pkg_name=self._protobuf_package_name,
                 )
@@ -625,6 +695,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             new.method = "New{interface}() {interface}".format(
                 interface=new.interface,
             )
+            new.description = self._get_description(new.schema_object, True)
+            new.method_description = """// New{interface} returns a new instance of {interface}.
+            """.format(
+                interface=new.interface
+            ) + "// {} is {}".format(
+                new.interface, self._get_description(new.schema_object, True).lstrip("// "))
             new.schema_name = self._get_external_struct_name(new.interface)
             # new.isRpcResponse = True
             self._api.external_new_methods.append(new)
@@ -638,11 +714,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         else:
             new.generated = True
+
+        self._build_setters_getters(new)
+        internal_items = []
+        for field in new.interface_fields:
+            if field.adder_method is not None and field.isArray is True:
+                internal_items.append("{}s {}".format(
+                    field.struct, field.type
+                ))
         self._write(
             """
             // ***** {interface} *****
             type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
+                {internal_items}
             }}
             
             func New{interface}() {interface} {{
@@ -673,7 +758,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if retObj != nil {{
                     return retObj
                 }}
-                vErr := obj.Validate(true)
+                vErr := obj.validateFromText()
                 if vErr != nil {{
                     return vErr
                 }}
@@ -708,15 +793,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                retObj := opts.Unmarshal([]byte(data), obj.Msg())
-                if retObj != nil {{
-                    return retObj
-                }}
-                vErr := obj.Validate(true)
+                uError := opts.Unmarshal([]byte(data), obj.Msg())
+                if uError != nil {{
+                    return fmt.Errorf("unmarshal error %s", strings.Replace(
+                        uError.Error(), "\\u00a0", " ", -1)[7:])
+                }}                
+                vErr := obj.validateFromText()
                 if vErr != nil {{
                     return vErr
                 }}
-                return retObj
+                return nil
             }}
 
             func (obj *{struct}) ToJson() string {{
@@ -742,52 +828,68 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                retObj := opts.Unmarshal([]byte(value), obj.Msg())
-                if retObj != nil {{
-                    return retObj
+                uError := opts.Unmarshal([]byte(value), obj.Msg())
+                if uError != nil {{
+                    return fmt.Errorf("unmarshal error %s", strings.Replace(
+                        uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
-                err := obj.Validate(true)
+                err := obj.validateFromText()
                 if err != nil {{
                     return err
                 }}
-                return retObj
+                return nil
             }}
 
-            func (obj *{struct}) Validate(defaults ...bool) error {{
-                var set_default bool = false
-                if len(defaults) > 0 {{
-                    set_default = defaults[0]
-                }}
-                obj.validateObj(set_default)
+            func (obj *{struct}) validateFromText() error {{
+                obj.validateObj(true)
+                return validationResult()
+            }}
+
+            func (obj *{struct}) Validate() error {{
+                obj.validateObj(false)
                 return validationResult()
             }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
                 interface=new.interface,
+                internal_items="" if len(internal_items) == 0 else "\n".join(internal_items)
             )
         )
-        self._build_setters_getters(new)
+
         interfaces = [
+            "// ToPbText marshals {interface} to protobuf text",
             "ToPbText() string",
+            "// ToYaml marshals {interface} to YAML text",
             "ToYaml() string",
+            "// ToJson marshals {interface} to JSON text",
             "ToJson() string",
+            "// FromPbText unmarshals {interface} from protobuf text",
             "FromPbText(value string) error",
+            "// FromYaml unmarshals {interface} from YAML text",
             "FromYaml(value string) error",
+            "// FromJson unmarshals {interface} from JSON text",
             "FromJson(value string) error",
-            "Validate(defaults ...bool) error",
+            "// Validate validates {interface}",
+            "Validate() error",
+            "validateFromText() error",
             "validateObj(set_default bool)",
             "setDefault()",
         ]
         for field in new.interface_fields:
+            interfaces.append("// {}".format(field.getter_method_description))
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
+                interfaces.append("// {}".format(field.setter_method_description))
                 interfaces.append(field.setter_method)
             if field.has_method is not None:
+                interfaces.append("// {}".format(field.has_method_description))
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
-            """type {interface} interface {{
+            """
+            {description}
+            type {interface} interface {{
                 Msg() *{pb_pkg_name}.{interface}
                 SetMsg(*{pb_pkg_name}.{interface}) {interface}
                 {interface_signatures}
@@ -795,7 +897,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """.format(
                 interface=new.interface,
                 pb_pkg_name=self._protobuf_package_name,
-                interface_signatures=interface_signatures,
+                interface_signatures=interface_signatures.format(interface=new.interface),
+                description="" if new.description is None else "// {} is {}".format(
+                    new.interface, new.description.strip("// ")),
             )
         )
         for field in new.interface_fields:
@@ -809,9 +913,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
             return
-        elif field.isArray and field.isEnum is False:
+        if field.isArray and field.isEnum is False:
             if field.struct:
+                block = ""
+                if field.setChoiceValue is not None:
+                    block = "obj.SetChoice({interface}Choice.{enum})".format(
+                        interface=new.interface, enum=field.setChoiceValue
+                    )
                 body = """if obj.obj.{name} == nil {{
+                        {block}
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
                     return &{parent}{interface}Iter{{obj: obj}}""".format(
@@ -820,33 +930,58 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     pb_struct=field.external_struct,
                     interface=field.external_struct,
                     parent=new.struct,
+                    block=block
                 )
             else:
+                block = "obj.obj.{name} = make({type}, 0)".format(
+                    name=field.name, type=field.type
+                )
+                if field.setChoiceValue is not None:
+                    if field.default is not None and field.default != "":
+                        if field.type == "[]string":
+                            value = '"{}"'.format('", "'.join(field.default))
+                        else:
+                            value = ",".join([str(i) for i in field.default])
+                        block = """obj.Set{name}({type}{{{default}}})""".format(
+                            name=field.name,
+                            type=field.type,
+                            default=value
+                        )
+                    else:
+                        block = """
+                            obj.SetChoice({interface}Choice.{enum})
+                            obj.obj.{name} = make({type}, 0)
+                        """.format(
+                            interface=new.interface,
+                            enum=field.setChoiceValue,
+                            name=field.name,
+                            type=field.type,
+                        )
                 body = """if obj.obj.{name} == nil {{
-                        obj.obj.{name} = make({type}, 0)
+                        {block}
                     }}
                     return obj.obj.{name}""".format(
                     name=field.name,
-                    type=field.type,
+                    block=block
                 )
         elif field.struct is not None:
             # at this time proto generation ignores the optional keyword
             # if the type is an object
-            body = ""
+            set_enum_choice = None
             if field.setChoiceValue is not None:
-                body = """obj.SetChoice({interface}Choice.{enum})
-                """.format(
+                set_enum_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
-            body += """if obj.obj.{name} == nil {{
+            body = """if obj.obj.{name} == nil {{
+                    {set_enum_choice}
                     obj.obj.{name} = New{pb_struct}().Msg()
                 }}
                 return &{struct}{{obj: obj.obj.{name}}}""".format(
                 name=field.name,
-                pb_pkg_name=self._protobuf_package_name,
                 pb_struct=field.external_struct,
                 struct=field.struct,
+                set_enum_choice=set_enum_choice if set_enum_choice else ""
             )
         elif field.isEnum:
             enum_types = []
@@ -870,7 +1005,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """type {interface}{fieldname}Enum string
-
+                //  Enum of {fieldname} on {interface}
                 var {interface}{fieldname} = struct {{
                     {enum_types}
                 }} {{
@@ -911,12 +1046,56 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             return
         elif field.isPointer:
-            body = """return *obj.obj.{fieldname}""".format(
+            set_enum_choice = None
+            default = None
+            if field.setChoiceValue is not None:
+                if field.default is not None:
+                    if field.type == "string":
+                        value = '"{}"'.format(field.default)
+                    elif field.type in ["int32", "int64", "float32", "float64"]:
+                        value = "{fieldtype}({value})".format(fieldtype=field.type, value=field.default)
+                    else:
+                        value = field.default
+                    default = """value := {value}
+                            obj.obj.{fieldname} = &value""".format(value=value, fieldname=field.name)
+                set_enum_choice = """
+                    if obj.obj.{fieldname} == nil {{
+                        obj.SetChoice({interface}Choice.{enum})
+                        {default}
+                    }}
+                """.format(
+                    fieldname=field.name,
+                    default=default if default else "",
+                    interface=new.interface, enum=field.setChoiceValue
+                )
+            body = """{set_enum_choice}
+                return *obj.obj.{fieldname}
+                """.format(
                 fieldname=field.name,
+                set_enum_choice=set_enum_choice if set_enum_choice is not None else ""
             )
         else:
-            body = """return obj.obj.{fieldname}""".format(
+            set_enum_choice = None
+            default = None
+            if field.setChoiceValue is not None:
+                if field.default is not None:
+                    default = "obj.obj.{fieldname} = {value}".format(
+                        value='"{}"'.format(field.default) if "string" in field.type else field.default,
+                        fieldname=field.name
+                    )
+                set_enum_choice = """
+                    if obj.obj.{fieldname} == nil {{
+                        obj.SetChoice({interface}Choice.{enum})
+                        {default}
+                    }}
+                """.format(
+                    fieldname=field.name,
+                    interface=new.interface, enum=field.setChoiceValue,
+                    default=default if default else ""
+                )
+            body = """{set_enum_choice}\n return obj.obj.{fieldname}""".format(
                 fieldname=field.name,
+                set_enum_choice=set_enum_choice if set_enum_choice is not None else ""
             )
         self._write(
             """
@@ -973,6 +1152,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     fieldname=field.name,
                 )
+            enum_set = [self._get_external_field_name(name) for name in field.enums]
+            enum_body = []
+            for enum_field in new.interface_fields:
+                if enum_field.name not in enum_set:
+                    continue
+                if enum_field.isEnum:
+                    enum_body.append(
+                        "obj.obj.{name} = {pb_pkg_name}.{interface}_{name}_unspecified.Enum()".format(
+                            name=enum_field.name, pb_pkg_name=self._protobuf_package_name,
+                            interface=new.interface, fieldname=enum_field.name
+                        )
+                    )
+                    continue
+                enum_body.append("obj.obj.{name} = nil".format(name=enum_field.name))
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
@@ -982,6 +1175,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return obj
                 }}
                 {body}
+                {enum_set}
                 return obj
             }}
             """.format(
@@ -990,6 +1184,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     struct=new.struct,
                     fieldname=field.name,
                     body=body,
+                    enum_set="\n".join(enum_body) if field.name == "Choice" else "",
                 )
             )
             return
@@ -1001,8 +1196,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """obj.obj.{fieldname} = &value""".format(fieldname=field.name)
         else:
             body = """obj.obj.{fieldname} = value""".format(fieldname=field.name)
-        # if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"]:
-        #     body = """\n Validate{format}(value)\n""".format(format=field.format.capitalize()) + body
         set_choice = ""
         if field.setChoiceValue is not None:
             set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
@@ -1013,8 +1206,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
-                {body}
                 {set_choice}
+                {body}
                 return obj
             }}
             """.format(
@@ -1048,17 +1241,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             type {interface} interface {{
-                Append(items ...{field_external_struct}) []{field_external_struct}
-                Add() {field_external_struct}
                 Items() {field_type}
+                Add() {field_external_struct}
+                Append(items ...{field_external_struct}) {interface}
+                Set(index int, newObj {field_external_struct}) {interface}
+                Clear() {interface}
             }}
 
-            func (obj *{internal_struct}) Append(items ...{field_external_struct}) []{field_external_struct} {{
-                for _, item := range items {{
-                    newObj := item.Msg()
-                    obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
-                }}
-                return items
+            func (obj *{internal_struct}) Items() {field_type} {{
+                return obj.obj.{internal_items_name}
             }}
 
             func (obj *{internal_struct}) Add() {field_external_struct} {{
@@ -1066,15 +1257,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                 newLibObj := &{field_internal_struct}{{obj: newObj}}
                 newLibObj.setDefault()
+                obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, newLibObj)
                 return newLibObj
             }}
 
-            func (obj *{internal_struct}) Items() {field_type} {{
-                slice := {field_type}{{}}
-                for _, item := range obj.obj.obj.{field_name} {{
-                    slice = append(slice, &{field_internal_struct}{{obj: item}})
+            func (obj *{internal_struct}) Append(items ...{field_external_struct}) {interface} {{
+                for _, item := range items {{
+                    newObj := item.Msg()
+                    obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
+                    obj.obj.{internal_items_name} = append(obj.obj.{internal_items_name}, item)
                 }}
-                return slice
+                return obj
+            }}
+
+            func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
+                obj.obj.obj.{field_name}[index] = newObj.Msg()
+                obj.obj.{internal_items_name}[index] = newObj
+                return obj
+            }}
+            func (obj *{internal_struct}) Clear()  {interface} {{
+                if obj.obj.obj.{field_name} != nil {{
+                    obj.obj.obj.{field_name} = nil
+                    obj.obj.{internal_items_name} = {field_type}{{}}
+                }}
+                return obj
             }}
             """.format(
                 internal_struct=new_iter.internal_struct,
@@ -1085,6 +1291,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
+                internal_items_name="{}s".format(field.struct)
             )
         )
 
@@ -1134,6 +1341,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field.setChoiceValue = None
             field.isEnum = len(self._get_parser("$..enum").find(property_schema)) > 0
             field.hasminmax = "minimum" in property_schema or "maximum" in property_schema
+            field.hasminmaxlength = "minLength" in property_schema or "maxLength" in property_schema
             field.isArray = "type" in property_schema and property_schema["type"] == "array"
             if field.isEnum:
                 field.enums = self._get_parser("$..enum").find(property_schema)[0].value
@@ -1148,6 +1356,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     and "int" in field.type
                 ):
                     field.type = field.type.replace("32", "64")
+            if field.hasminmaxlength:
+                field.min_length = None if "minLength" not in property_schema else property_schema["minLength"]
+                field.max_length = None if "maxLength" not in property_schema else property_schema["maxLength"]
             if fluent_new.isRpcResponse:
                 if field.type == "[]byte":
                     field.name = "Bytes"
@@ -1161,8 +1372,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
+                field.getter_method_description = "{fieldname} returns []{interface}{fieldname}Enum, set in {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
             elif field.isEnum:
                 field.getter_method = "{fieldname}() {interface}{fieldname}Enum".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+                field.getter_method_description = "{fieldname} returns {interface}{fieldname}Enum, set in {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
@@ -1171,6 +1390,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     name=self._get_external_struct_name(field.name),
                     ftype=field.type,
                 )
+                field.getter_method_description = "{name} returns {ftype}, set in {interface}.".format(
+                    name=self._get_external_struct_name(field.name),
+                    ftype=field.type,
+                    interface=fluent_new.interface
+                )
+                if field.type in self._api.components:
+                    field.getter_method_description = field.getter_method_description + \
+                        """\n// {ftype} is {desc}""".format(
+                            ftype=field.type,
+                            desc=self._api.components[field.type].description.lstrip("// ")
+                        )
+
             if "$ref" in property_schema:
                 schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
                 field.struct = self._get_internal_name(schema_name)
@@ -1180,22 +1411,52 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     fieldstruct=self._get_external_struct_name(field.struct),
                     interface=fluent_new.interface,
                 )
+                field.setter_method_description = "Set{fieldname} assigns {fieldstruct} provided by user to {interface}.".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    fieldstruct=self._get_external_struct_name(field.struct),
+                    interface=fluent_new.interface,
+                )
+                fieldstruct = self._get_external_struct_name(field.struct)
+                if fieldstruct in self._api.components:
+                    field.setter_method_description = field.setter_method_description + \
+                        """\n // {fieldstruct} is {desc}""".format(
+                            fieldstruct=fieldstruct,
+                            desc=self._api.components[fieldstruct].description.lstrip("// ")
+                        )
             if field.isOptional and field.isPointer or "StatusCode" in field.name:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
+                )
+                field.has_method_description = """Has{fieldname} checks if {fieldname} has been set in {interface}""".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface
                 )
             if field.isArray and field.isEnum:
                 field.setter_method = "Set{fieldname}(value []{interface}{fieldname}Enum) {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
+                field.setter_method_description = "Set{fieldname} assigns []{interface}{fieldname}Enum provided by user to {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
+
             elif field.isEnum:
                 field.setter_method = "Set{fieldname}(value {interface}{fieldname}Enum) {interface}".format(
                     fieldname=self._get_external_struct_name(field.name),
                     interface=fluent_new.interface,
                 )
+                field.setter_method_description = "Set{fieldname} assigns {interface}{fieldname}Enum provided by user to {interface}".format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    interface=fluent_new.interface,
+                )
             elif field.type in self._oapi_go_types.values():
                 field.setter_method = "Set{name}(value {ftype}) {interface}".format(
+                    name=self._get_external_struct_name(field.name),
+                    ftype=field.type,
+                    interface=fluent_new.interface,
+                )
+                field.setter_method_description = "Set{name} assigns {ftype} provided by user to {interface}".format(
                     name=self._get_external_struct_name(field.name),
                     ftype=field.type,
                     interface=fluent_new.interface,
@@ -1217,8 +1478,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         parent=fluent_new.interface,
                         external_struct=field.external_struct,
                     )
+                    field.getter_method_description = "{name} returns {parent}{external_struct}Iter, set in {parent}".format(
+                        name=self._get_external_struct_name(field.name),
+                        parent=fluent_new.interface,
+                        external_struct=field.external_struct,
+                    )
                 else:
                     field.setter_method = "Set{name}(value {ftype}) {interface}".format(
+                        name=self._get_external_struct_name(field.name),
+                        ftype=field.type,
+                        interface=fluent_new.interface,
+                    )
+                    field.setter_method_description = "Set{name} assigns {ftype} provided by user to {interface}".format(
                         name=self._get_external_struct_name(field.name),
                         ftype=field.type,
                         interface=fluent_new.interface,
@@ -1239,170 +1510,184 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             fluent_new.interface_fields.append(field)
 
-    def _write_validate_method(self, new):
-        statements = []
-        for field in new.interface_fields:
-            valid = 0
+    def _validate_types(self, new, field):
+        body = ""
+        if field.isPointer or "[]" in field.type:
+            value = "nil"
+        elif field.type == "string":
+            value = '''""'''
+        else:
+            value = 0
+        if field.isOptional is False:
+            body = """
+            // {name} is required
+            if obj.obj.{name}{enum} == {value} {{
+                validation = append(validation, "{name} is required field on interface {interface}")
+            }} """.format(
+                name=field.name, interface=new.interface,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()" if field.isEnum and field.isArray is False else ""
+            )
+
+        inner_body = ""
+        if field.hasminmax and ("int" in field.type or "float" in field.type):
+            line = []
+            if field.min is None and "int" in field.type:
+                field.min = -(2**31 if "32" in field.type else 2**63)
+            if field.max is None and "int" in field.type:
+                field.max = (2**31 if "32" in field.type else 2**63) - 1
+            if field.min is not None:
+                line.append("{pointer}{value} < {min}")
+            if field.max is not None:
+                line.append("{pointer}{value} > {max}")
+            inner_body += (
+                "if "
+                + " || ".join(line)
+                + """ {{
+                    validation = append(
+                        validation,
+                        fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
+                    }}
+                """
+            ).format(
+                name=field.name,
+                interface=new.interface,
+                max="max({})".format(field.type.lstrip("[]")) if field.max is None else field.max,
+                pointer="*" if field.isPointer else "",
+                min="min({})".format(field.type.lstrip("[]")) if field.min is None else field.min,
+                value="item" if field.isArray else "obj.obj.{name}".format(name=field.name),
+                form="%d" if "int" in field.type else "%f"
+            )
             if field.isArray:
-                if field.struct and field.isEnum is False:
-                    statements.append(
-                        """if obj.obj.{name} != nil {{
-                            for _, item := range obj.{name}().Items() {{
-                                item.validateObj(set_default)
-                            }}
-                        }}
-                        """.format(
-                            name=field.name
-                        )
-                    )
-                    valid += 1
-                elif field.isEnum and field.isOptional is False:
-                    statements.append(
-                        """
-                        // {name} required
-                        if obj.obj.{name} == nil {{
-                            validation = append(validation, "{name} is required field on {interface}")
-                        }}
-                        """.format(
-                            name=field.name, interface=new.interface
-                        )
-                    )
-                    valid += 1
-                elif field.itemformat in ["mac", "ipv4", "ipv6", "hex"] and field.struct is False:
-                    statements.append(
-                        """if obj.obj.{name} != nil {{
-                            for _, item := range obj.{name}() {{
-                                err := validate{format}(obj.{name}())
-                                if err != nil {{
-                                    validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
-                                }}
-                            }}
-                        }}
-                        """.format(
-                            name=field.name, format=field.itemformat, interface=new.interface
-                        )
-                    )
-                    valid += 1
-            if field.isEnum and field.isOptional is False and field.isArray is False:
-                statements.append(
-                    """
-                    // {name} required
-                    if obj.obj.{name}.Number() == 0 {{
-                        validation = append(
-                            validation, fmt.Sprintf("{name} is required field on {interface} and got value %s", obj.obj.{name}.String()))
+                inner_body = """
+                    for _, item := range obj.obj.{name} {{
+                        {body}
                     }}
-                    """.format(
-                        name=field.name, interface=new.interface
+                """.format(
+                        body=inner_body, name=field.name
                     )
-                )
-                valid += 1
-            # validate required attr which is not struct
-            if (
-                field.isOptional is False
-                and field.isEnum is False
-                and ((field.type.strip("[]") in self._oapi_go_types.items() and "[]" in field.type) or field.type == "string")
-            ):
-
-                line = """
-                // {name} required
-                if obj.obj.{name} == {value} {{
-                    validation = append(validation, "{name} is required field on interface {interface}")
-                }} """.format(
-                    name=field.name,
-                    interface=new.interface,
-                    value='""' if field.type == "string" else "nil",
-                )
-                if field.format in ["mac", "ipv4", "ipv6", "hex"]:
-                    line = (
-                        line
-                        + """else {{
-                        err := validate{format}(obj.{name}())
-                        if err != nil {{
-                            validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
-                        }}
-                    }}
-                    """.format(
-                            format=field.format.capitalize(), name=field.name, interface=new.interface
-                        )
-                    )
-                statements.append(line)
-                valid += 1
-            # next level validate if field is an object
-            if field.struct and field.isArray is False:
-                line = """
-                    if obj.obj.{name} != nil {{
-                        obj.{external_name}().validateObj(set_default)
-                    }} """
-                if field.isOptional is False:
-                    line = (
-                        line
-                        + """else {{
-                        validation = append(validation, "{name} is required field on interface {interface}")
-                    }}
-                    """
-                    )
-                statements.append(
-                    line.format(name=field.name, external_name=self._get_external_struct_name(field.name), interface=new.interface)
-                )
-                valid += 1
-
-            if field.format is not None and field.format in ["mac", "ipv4", "ipv6", "hex"] and field.isOptional:
-                statements.append(
-                    """
-                    if obj.obj.{name} != {value} {{
-                        err := validate{format}(obj.{name}())
-                        if err != nil {{
-                            validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {name} {interface}"))
-                        }}
-                    }}
-                    """.format(
-                        name=field.name,
-                        format=field.format.capitalize() if field.isArray is False else field.format.capitalize() + "Slice",
-                        value="nil" if field.isPointer is True or field.isArray is True else '""',
-                        interface=new.interface,
-                    )
-                )
-                valid += 1
-            if field.hasminmax and "int" in field.type:
-                valid += 1
+        elif "string" in field.type:
+            if field.hasminmaxlength and "string" in field.type:
                 line = []
-                if field.min is not None:
-                    line.append("{pointer}{value} < {min}")
-                if field.max is not None:
-                    line.append("{pointer}{value} > {max}")
-                body = (
+                if field.min_length is not None:
+                    line.append("len({pointer}{value}) < {min_length}")
+                if field.max_length is not None:
+                    line.append("len({pointer}{value}) > {max_length}")
+                inner_body = (
                     "if "
                     + " || ".join(line)
                     + """ {{
                     validation = append(
-                        validation, fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got %d", {pointer}{value}))
+                        validation,
+                        fmt.Sprintf(
+                            "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
+                            len({pointer}{value})))
                 }}
                 """
                 ).format(
                     name=field.name,
                     interface=new.interface,
-                    max="any" if field.max is None else field.max,
+                    max_length="any" if field.max_length is None else field.max_length,
                     pointer="*" if field.isPointer else "",
-                    min=field.min if field.min is None else field.min,
+                    min_length=field.min_length if field.min_length is None else field.min_length,
                     value="item" if field.isArray else "obj.obj.{name}".format(name=field.name),
                 )
                 if field.isArray:
-                    body = """
+                    inner_body = """
                         for _, item := range obj.obj.{name} {{
                             {body}
                         }}
                     """.format(
-                        body=body, name=field.name
+                        body=inner_body, name=field.name
                     )
-                if field.isPointer:
-                    body = """
-                        if obj.obj.{name} != nil {{
-                            {body}
-                        }}
-                    """.format(
-                        body=body, name=field.name
+            elif field.itemformat in ["mac", "ipv4", "ipv6", "hex"] or field.format in ["mac", "ipv4", "ipv6", "hex"]:
+                if field.format is None:
+                    field.format = field.itemformat
+                inner_body = """
+                    err := validate{format}(obj.{name}())
+                    if err != nil {{
+                        validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
+                    }}
+                """.format(
+                        name=field.name, interface=new.interface,
+                        format=field.format.capitalize() if field.isArray is False
+                        else field.format.capitalize() + "Slice",
                     )
-                statements.append(body)
+        # Enum will be handled via wrapper lib
+        if inner_body == "":
+            return body
+        body += """
+        if obj.obj.{name} != {value} {{
+            {body}
+        }}
+        """.format(name=field.name, value=value, body=inner_body)
+        return body
+
+    def _validate_struct(self, new, field):
+        body = ""
+        if field.isOptional is False and field.isArray is False:
+            body = """
+                // {name} is required
+                if obj.obj.{name} == nil {{
+                    validation = append(validation, "{name} is required field on interface {interface}")
+                }}
+            """.format(name=field.name, interface=new.interface)
+
+        inner_body = "obj.{external_name}().validateObj(set_default)".format(
+            external_name=self._get_external_struct_name(field.name)
+        )
+        if field.isArray:
+            inner_body = """if set_default {{
+                    obj.{internal_items_name} = {field_type}{{}}
+                    for _, item := range obj.obj.{name} {{
+                        obj.{internal_items_name} = append(obj.{internal_items_name}, &{field_internal_struct}{{obj: item}})
+                    }}
+                }}
+                for _, item := range obj.{name}().Items() {{
+                    item.validateObj(set_default)
+                }}
+            """.format(
+                name=field.name,
+                field_type=field.type,
+                internal_items_name="{}s".format(field.struct),
+                field_internal_struct=field.struct
+            )
+        body += """
+            if obj.obj.{name} != nil {{
+                {body}
+            }}
+        """.format(name=field.name, body=inner_body)
+        return body
+
+    def _write_validate_method(self, new):
+        statements = []
+        def p():
+            if valid == 0:
+                print(
+                    "{field} of type {ftype} and {req} is not set for validation on interface {interface}".format(
+                        field=field.name,
+                        interface=new.interface,
+                        ftype=field.type,
+                        req="Optional" if field.isOptional else "required",
+                    )
+                )
+        for field in new.interface_fields:
+            valid = 0
+            if field.type.lstrip("[]") in self._oapi_go_types.values():
+                block = self._validate_types(new, field)
+                if block is None or block.strip() == "":
+                    p()
+                    continue
+                valid += 1
+                statements.append(block)
+            elif field.struct:
+                block = self._validate_struct(new, field)
+                if block is None or block.strip() == "":
+                    p()
+                    continue
+                valid += 1
+                statements.append(block)
+            p()
         body = "\n".join(statements)
         self._write(
             """func (obj *{struct}) validateObj(set_default bool) {{
@@ -1419,40 +1704,59 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_default_method(self, new):
         body = ""
         interface_fields = new.interface_fields
-        hasChoiceConfig = None
+        hasChoiceConfig = []
+        choice_enums = []
         for index, field in enumerate(interface_fields):
             if field.default is None:
                 continue
             if field.name == "Choice":
+                choice_enums = [self._get_external_struct_name(e) for e in field.enums if e != field.default]
                 hasChoiceConfig = ["Choice", self._get_external_struct_name(field.default)]
-                interface_fields.append(interface_fields.pop(index))
+                interface_fields.insert(0, interface_fields.pop(index))
                 break
 
+        choice_body = None
+        enum_fields = []
         for field in interface_fields:
-            if hasChoiceConfig is not None and field.name not in hasChoiceConfig:
-                continue
-
-            if field.struct is not None and field.isOptional is False:
-                body += """if obj.obj.{name} == nil {{
-                    obj.{external_name}()
-                }}
-                """.format(
-                    name=field.name,
-                    external_name=self._get_external_struct_name(field.name),
-                )
-            elif field.default is None:
-                continue
+            # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
+            #     continue
+            if field.default is None or field.isOptional is False or field.name in choice_enums:
+                if field.name not in hasChoiceConfig:
+                    continue
+            if field.struct is not None:
+                if field.name in hasChoiceConfig:
+                    enum_fields.append("obj.{external_name}()".format(external_name=self._get_external_struct_name(field.name)))
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.{external_name}()
+                    }}
+                    """.format(
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        # enum_check="&& {}".format(enum_check) if enum_check is not None and field.name in choice_enums
+                        # else ""
+                    )
             elif field.isArray:
                 if "string" in field.type:
-                    values = '"{0}"'.format('", "'.join(field.default))
+                    values = '"{0}"'.format('", "'.join(field.default)) if field.default != [] else ""
                 else:
                     values = str(field.default)[1:-1]
-                body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({type}{{{values}}})
-                }}
-                """.format(
-                    name=field.name, external_name=self._get_external_struct_name(field.name), type=field.type, values=values
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({type}{{{values}}})".format(
+                            external_name=self._get_external_struct_name(field.name), type=field.type, values=values
+                        )
+                    )
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.Set{external_name}({type}{{{values}}})
+                    }}
+                    """.format(
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        type=field.type,
+                        values=values,
+                    )
             elif field.isEnum:
                 enum_value = """{struct}{name}.{value}""".format(
                     struct=self._get_external_struct_name(new.struct), name=field.name, value=field.default.upper()
@@ -1461,33 +1765,58 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     cnd_check = """obj.obj.{name} == nil""".format(name=field.name)
                 else:
                     cnd_check = """obj.obj.{name}.Number() == 0""".format(name=field.name)
-                body += """if {cnd_check} {{
+                body1 = """if {cnd_check} {{
                     obj.Set{external_name}({enum_value})
+                    <choice_fields>
                 }}
                 """.format(
                     cnd_check=cnd_check,
                     external_name=self._get_external_struct_name(field.name),
                     enum_value=enum_value,
                 )
+                if field.name in hasChoiceConfig:
+                    if choice_body is not None:
+                        body1 = body1.replace(" == nil", ".Number() == 0")
+                    choice_body = body1 if choice_body is None else choice_body.replace("<choice_fields>", body1)
+                else:
+                    body = body + body1.replace("<choice_fields>", "")
             elif field.isPointer:
-                body += """if obj.obj.{name} == nil {{
-                    obj.Set{external_name}({value})
-                }}
-                """.format(
-                    name=field.name,
-                    external_name=self._get_external_struct_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({value})".format(
+                            external_name=self._get_external_struct_name(field.name),
+                            value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                        )
+                    )
+                else:
+                    body += """if obj.obj.{name} == nil {{
+                        obj.Set{external_name}({value})
+                    }}
+                    """.format(
+                        name=field.name,
+                        external_name=self._get_external_struct_name(field.name),
+                        value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    )
             else:
-                body += """if obj.obj.{name} == {check_value} {{
-                    obj.Set{external_name}({value})
-                }}
-                """.format(
-                    name=field.name,
-                    check_value='""' if field.type == "string" else "0",
-                    external_name=self._get_external_struct_name(field.name),
-                    value='"{0}"'.format(field.default) if field.type == "string" else field.default,
-                )
+                if field.name in hasChoiceConfig:
+                    enum_fields.append(
+                        "obj.Set{external_name}({value})".format(
+                            external_name=self._get_external_struct_name(field.name),
+                            value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                        )
+                    )
+                else:
+                    body += """if obj.obj.{name} == {check_value} {{
+                        obj.Set{external_name}({value})
+                    }}
+                    """.format(
+                        name=field.name,
+                        check_value='""' if field.type == "string" else "0",
+                        external_name=self._get_external_struct_name(field.name),
+                        value='"{0}"'.format(field.default) if field.type == "string" else field.default,
+                    )
+        if choice_body is not None:
+            body = choice_body.replace("<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else "") + body
 
         self._write(
             """func (obj *{struct}) setDefault() {{
@@ -1539,6 +1868,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new.schema_name = schema_object_name
                 new.struct = self._get_internal_name(schema_object_name)
                 new.interface = self._get_external_struct_name(schema_object_name)
+                new.description = self._get_description(schema_object, True)
                 self._api.components[new.schema_name] = new
             go_type = new.interface
         else:
@@ -1547,10 +1877,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         return go_type
 
-    def _get_description(self, openapi_object):
-        description = "//  description is TBD"
+    def _get_description(self, openapi_object, noCap=False):
+        description = "// description is TBD"
         if "description" in openapi_object:
             description = ""
-            for line in openapi_object["description"].split("\n"):
-                description += "//  {line}\n".format(line=line.strip())
+            for ind, line in enumerate(openapi_object["description"].split("\n")):
+                if noCap and ind == 0 and line != "":
+                    line = line[0].lower() + line[1:]
+                description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+
+    def _format_go_file(self):
+        """Format the generated go code"""
+        try:
+            process_args = [
+                "goimports",
+                "-w",
+                self._filename,
+            ]
+            cmd = " ".join(process_args)
+            print("Formatting generated go ux file: {}".format(cmd))
+            process = subprocess.Popen(cmd, cwd=self._ux_path, shell=True)
+            process.wait()
+        except Exception as e:
+            print("Bypassed formatting of generated go ux file: {}".format(e))
+
+    def _tidy_mod_file(self):
+        """Tidy the mod file"""
+        try:
+            process_args = [
+                "go",
+                "mod",
+                "tidy",
+            ]
+            os.environ["GO111MODULE"] = "on"
+            print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
+            process = subprocess.Popen(process_args, cwd=self._ux_path, shell=False, env=os.environ)
+            process.wait()
+        except Exception as e:
+            print("Bypassed tidying the generated mod file: {}".format(e))

@@ -1,3 +1,4 @@
+--prefer-binary
 pytest
 pyyaml
 jsonpath-ng

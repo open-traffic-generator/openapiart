@@ -158,7 +158,17 @@ func TestBadKeyJsonDecode(t *testing.T) {
 	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unknown field "bz"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:14): unknown field "bz"`)
+}
+
+func TestBadEnumJsonDecode(t *testing.T) {
+	// Valid Wrong key
+	api := openapiart.NewApi()
+	c1 := api.NewPrefixConfig()
+	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
+	err := c1.FromJson(input_str)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:47): invalid value for enum type: "status_800"`)
 }
 
 func TestBadDatatypeJsonDecode(t *testing.T) {
@@ -168,7 +178,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:20): invalid value for float type: "abc"`)
 }
 
 func TestBadDatastructureJsonDecode(t *testing.T) {
@@ -178,7 +188,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
 
 func TestWithoutValueJsonDecode(t *testing.T) {
@@ -188,7 +198,7 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for int32 type:`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:32): invalid value for int32 type: ""`)
 }
 
 func TestValidYamlDecode(t *testing.T) {
@@ -222,7 +232,24 @@ required_object:
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unknown field "bz"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:13): unknown field "bz"`)
+}
+
+func TestBadEnumYamlDecode(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	var data = `a: Easy
+b: 12.2
+c: 2
+h: true
+required_object:
+  e_a: 1
+  e_b: 2
+response: status_800
+`
+	err := config.FromYaml(data)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:84): invalid value for enum type: "status_800"`)
 }
 
 func TestBadDatatypeYamlDecode(t *testing.T) {
@@ -239,7 +266,7 @@ required_object:
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for float type: "abc"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:17): invalid value for float type: "abc"`)
 }
 
 func TestBadDatastructureYamlDecode(t *testing.T) {
@@ -256,7 +283,7 @@ required_object:
 `
 	err := config.FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `invalid value for string type: [`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
 
 func TestSetMsg(t *testing.T) {
@@ -271,6 +298,7 @@ func TestNestedSetMsg(t *testing.T) {
 	api := openapiart.NewApi()
 	eObject := openapiart.NewApi().NewPrefixConfig().K().EObject()
 	eObject.SetEA(23423.22)
+	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
 	config := api.NewPrefixConfig()
 	config.K().EObject().SetMsg(eObject.Msg())
