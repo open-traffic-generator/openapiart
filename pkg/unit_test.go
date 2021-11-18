@@ -1413,3 +1413,24 @@ func TestStructGetterMethod(t *testing.T) {
 	jObject.JA().SetEA(0.23495)
 	assert.Equal(t, val, jObject.JA())
 }
+
+func TestFromJsonEmpty(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	value1 := fObject.ToJson()
+	value2 := fObject.ToYaml()
+	value3 := fObject.ToPbText()
+	for i, v := range []string{"", ``, `""`, `{}`, "{}"} {
+		err1 := fObject.FromJson(v)
+		assert.Nil(t, err1)
+		err2 := fObject.FromYaml(v)
+		assert.Nil(t, err2)
+		if i < 3 {
+			err3 := fObject.FromPbText(v)
+			assert.Nil(t, err3)
+		}
+	}
+
+	require.JSONEq(t, value1, fObject.ToJson())
+	require.Equal(t, value2, fObject.ToYaml())
+	require.Equal(t, value3, fObject.ToPbText())
+}
