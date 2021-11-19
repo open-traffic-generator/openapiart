@@ -74,7 +74,7 @@ jobs:
           path: art
       - name: Go Lint
         run: |
-          python do.py go_lint
+          sudo python do.py go_lint
       - name: Get package version
         id: get_version
         run: |
