@@ -64,6 +64,9 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate
+      - name: Run go lint
+        run: |
+          sudo python do.py go_lint
       - name: Run tests
         run: |
           sudo python do.py test
@@ -72,9 +75,6 @@ jobs:
         with:
           name: generated-artifacts
           path: art
-      - name: Go Lint
-        run: |
-          sudo python do.py go_lint
       - name: Get package version
         id: get_version
         run: |
