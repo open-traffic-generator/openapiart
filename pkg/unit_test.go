@@ -1419,12 +1419,12 @@ func TestFromJsonEmpty(t *testing.T) {
 	value1 := fObject.ToJson()
 	value2 := fObject.ToYaml()
 	value3 := fObject.ToPbText()
-	for i, v := range []string{"", ``, `""`, `{}`, "{}"} {
+	for i, v := range []string{"", ``, `{}`, "{}"} {
 		err1 := fObject.FromJson(v)
 		assert.Nil(t, err1)
 		err2 := fObject.FromYaml(v)
 		assert.Nil(t, err2)
-		if i < 3 {
+		if i < 2 {
 			err3 := fObject.FromPbText(v)
 			assert.Nil(t, err3)
 		}
