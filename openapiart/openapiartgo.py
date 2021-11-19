@@ -760,7 +760,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
-                if value == `""` {{value = ""}}
                 retObj := proto.UnmarshalText(value, obj.Msg())
                 if retObj != nil {{
                     return retObj
@@ -792,7 +791,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) FromYaml(value string) error {{
-                if value == "" || value == `""` {{value = "{{}}"}}
+                if value == "" {{value = "{{}}"}}
                 data, err := yaml.YAMLToJSON([]byte(value))
                 if err != nil {{
                     return err
@@ -836,7 +835,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial: true,
                     DiscardUnknown: false,
                 }}
-                if value == "" || value == `""` {{value = "{{}}"}}
+                if value == "" {{value = "{{}}"}}
                 uError := opts.Unmarshal([]byte(value), obj.Msg())
                 if uError != nil {{
                     return fmt.Errorf("unmarshal error %s", strings.Replace(
