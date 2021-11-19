@@ -72,12 +72,9 @@ jobs:
         with:
           name: generated-artifacts
           path: art
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: latest
-          working-directory: pkg
-          tests: true
+      - name: Go Lint
+        run: |
+          python do.py go_lint
       - name: Get package version
         id: get_version
         run: |
