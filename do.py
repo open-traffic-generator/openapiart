@@ -171,7 +171,7 @@ def go_lint():
     golangci_lint_version = "1.43.0"
     print("Installing golangci-lint ...")
     cmd = "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-    cmd += " | sh -s -- -b $(go env GOPATH)/bin +v"
+    cmd += " | sh -s -- -b $(go env GOPATH)/bin v"
     cmd += golangci_lint_version
     run([cmd])
     os.chdir("pkg")
