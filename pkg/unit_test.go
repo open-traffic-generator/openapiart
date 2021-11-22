@@ -707,12 +707,16 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	new_json1 := `{
 		"b" : 65, 
 		"c" : 33,
-		"response" : "status_200",
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
 		"h": false
 	}`
 	err1 := config.FromJson(new_json1)
 	assert.NotNil(t, err1)
-	assert.Contains(t, err1.Error(), "RequiredObject is required field on interface PrefixConfig")
+	assert.Contains(t, err1.Error(), "A is required field")
 }
 
 func TestChoiceStale(t *testing.T) {
