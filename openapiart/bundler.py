@@ -9,6 +9,7 @@ import json
 import yaml
 import openapi_spec_validator
 import jsonpath_ng
+import inspect
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -49,6 +50,7 @@ class Bundler(object):
         self._content = {}
         self._includes = {}
         self._resolved = []
+        self._errors = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
 
     def _get_parser(self, pattern):
@@ -64,6 +66,7 @@ class Bundler(object):
         return self._output_filename
 
     def bundle(self):
+        self._errors = []
         self._output_filename = os.path.join(self._output_dir, "openapi.yaml")
         self._json_filename = os.path.join(self._output_dir, "openapi.json")
         self._content = {}
@@ -82,11 +85,16 @@ class Bundler(object):
         self._resolve_license()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
+        self._validate_errors()
         with open(self._output_filename, "w") as fp:
             yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
+
+    def _validate_errors(self):
+        if len(self._errors) > 0:
+            raise TypeError("\n".join(self._errors))
 
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
@@ -174,10 +182,44 @@ class Bundler(object):
                             self._resolve_refs(base_dir, include)
                             self._includes[include_ref] = include
                 else:
+                    self._length_restriction(value)
+                    self._required_restriction(key, value)
                     self._resolve_refs(base_dir, value)
         elif isinstance(yobject, list):
             for item in yobject:
                 self._resolve_refs(base_dir, item)
+
+    def _length_restriction(self, value):
+        restricted_keys = {
+            "length", "minimum", "maximum", "minLength", "maxLength"
+        }
+        if isinstance(value, dict):
+            intersect_keys = restricted_keys.intersection(set(value.keys()))
+            if len(intersect_keys) > 0 and "format" in value.keys() and \
+                    value["format"] in ["ipv4", "ipv6", "mac"]:
+                stacks = inspect.stack()
+                property = "{}/{}/{}".format(
+                    stacks[3].frame.f_locals["key"] if "key" in stacks[3].frame.f_locals else "",
+                    stacks[2].frame.f_locals["key"] if "key" in stacks[2].frame.f_locals else "",
+                    stacks[1].frame.f_locals["key"]
+                )
+                self._errors.append("Property {property} should not contain {keys} with format {format}".format(
+                    property=property,
+                    keys=intersect_keys,
+                    format=value["format"]
+                ))
+
+    def _required_restriction(self, schema_name, value):
+        expected_set = {"required", "properties"}
+        if isinstance(value, dict) and expected_set.issubset(value.keys()):
+            if isinstance(value["required"], list):
+                for required in value["required"]:
+                    if "default" in value["properties"][required].keys():
+                        self._errors.append("Property {property} within schema {name} have "
+                                            "both required as well as default".format(
+                            property=required,
+                            name=schema_name
+                        ))
 
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content
