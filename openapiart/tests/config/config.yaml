@@ -26,11 +26,13 @@ components:
             Indicate to the server what response should be returned
           type: string
           enum: [status_200, status_400, status_404, status_500]
+          default: status_200
         a:
           x-status: under-review
           description: |-
             Small single line description
           type: string
+          default: asdf
         b:
           x-status: deprecated
           description: |-
@@ -39,8 +41,10 @@ components:
             Third line
           type: number
           format: float
+          default: 65.0
         c:
           type: integer
+          default: 33
         d_values:
           description: A list of enum values
           type: array
@@ -169,9 +173,11 @@ components:
         e_a:
           type: number
           format: float
+          default: 1.0
         e_b:
           type: number
           format: double
+          default: 2.0
 
     FObject:
       type: object
