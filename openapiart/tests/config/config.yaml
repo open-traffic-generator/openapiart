@@ -25,7 +25,7 @@ components:
           description: |-
             Indicate to the server what response should be returned
           type: string
-          enum: [status_200, status_400, status_500]
+          enum: [status_200, status_400, status_404, status_500]
           default: status_200
         a:
           x-status: under-review
