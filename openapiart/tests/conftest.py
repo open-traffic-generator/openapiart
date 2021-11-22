@@ -43,7 +43,13 @@ def proto_file_name():
 @pytest.fixture
 def config(api):
     """Return a new instance of an empty config"""
-    return api.prefix_config()
+    config = api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 1
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    return config
 
 
 @pytest.fixture
@@ -52,6 +58,8 @@ def default_config(api):
     config.a = "asdf"
     config.b = 1.1
     config.c = 1
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
     return config
 
 

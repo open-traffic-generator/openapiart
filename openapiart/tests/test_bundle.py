@@ -9,15 +9,18 @@ def test_config(api):
     config.b = 1.1
     config.c = 1
     config.d_values = [config.A, config.B, config.C]
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
     config.e.e_a = 1.1
     config.e.e_b = 1.2
     config.f.f_a = "a"
     config.g.add(g_a="a g_a value")
     config.h = False
     config.i = "11011011"
-    j1, j2 = config.j.jobject().jobject()
-    assert j1 == j2
+    _, g1, g2 = config.g.gobject().gobject()
+    assert g1 == g2
     config.k.e_object.e_a = 77.7
+    config.k.e_object.e_b = 77.7
     config.k.f_object.f_a = "asdf"
     # assert j1.choice == j1._DEFAULTS["choice"]
     djson = json.loads(config.serialize(config.JSON))

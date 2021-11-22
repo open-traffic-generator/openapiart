@@ -3,7 +3,7 @@ components:
     Prefix.Config:
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
-      required: [response, a, b, c, required_object]
+      required: [a, b, c, required_object]
       description: |-
         Container which retains the configuration
       properties:
@@ -32,7 +32,6 @@ components:
           description: |-
             Small single line description
           type: string
-          default: asdf
         b:
           x-status: deprecated
           description: |-
@@ -41,10 +40,8 @@ components:
             Third line
           type: number
           format: float
-          default: 65.0
         c:
           type: integer
-          default: 33
         d_values:
           description: A list of enum values
           type: array
@@ -174,11 +171,9 @@ components:
         e_a:
           type: number
           format: float
-          default: 1.0
         e_b:
           type: number
           format: double
-          default: 2.0
 
     FObject:
       type: object
