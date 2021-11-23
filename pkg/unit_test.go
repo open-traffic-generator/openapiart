@@ -1409,9 +1409,21 @@ func TestItemsMethod(t *testing.T) {
 func TestStructGetterMethod(t *testing.T) {
 	jObject := openapiart.NewJObject()
 	val := jObject.JA()
+	val.SetEA(1.45)
+	val.SetEB(1.456)
 	assert.Equal(t, val, jObject.JA())
 	jObject.JA().SetEA(0.23495)
 	assert.Equal(t, val, jObject.JA())
+
+	jObject1 := openapiart.NewJObject()
+	jObject1.FromJson(jObject.ToJson())
+	assert.Equal(t, jObject1.JA(), jObject1.JA())
+
+	jObject2 := openapiart.NewJObject()
+	val2 := jObject2.JA()
+	val2.SetEA(0.23495).SetEB(1.456)
+	jObject2.FromJson(jObject.ToJson())
+	assert.NotEqual(t, val2, jObject2.JA())
 }
 
 func TestFromJsonEmpty(t *testing.T) {
