@@ -21,9 +21,9 @@ func TestPrefixConfigRequired(t *testing.T) {
 	err := object.FromJson(string(data))
 	err1 := object.FromYaml(string(data))
 	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
-	assert.Contains(t, err.Error(), "RequiredObject", "Response", "A", "B", "C")
-	assert.Contains(t, err1.Error(), "RequiredObject", "Response", "A", "B", "C")
-	assert.Contains(t, err2.Error(), "RequiredObject", "Response", "A", "B", "C")
+	assert.Contains(t, err.Error(), "RequiredObject", "A", "B", "C")
+	assert.Contains(t, err1.Error(), "RequiredObject", "A", "B", "C")
+	assert.Contains(t, err2.Error(), "RequiredObject", "A", "B", "C")
 }
 func TestEObjectRequired(t *testing.T) {
 	object := openapiart.NewEObject()
