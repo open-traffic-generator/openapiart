@@ -168,11 +168,12 @@ def test():
         raise Exception("Go Tests Failed")
 
 def go_lint():
-    golangci_lint_version = "1.43.0"
-    print("Installing golangci-lint ...")
-    cmd = "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-    cmd += " | sh -s -- -b $(go env GOPATH)/bin v"
-    cmd += golangci_lint_version
+    # golangci_lint_version = "1.43.0"
+    # print("Installing golangci-lint ...")
+    # cmd = "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+    # cmd += " | sh -s -- -b $(go env GOPATH)/bin v"
+    # cmd += golangci_lint_version
+    cmd = "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
     run([cmd])
     os.chdir("pkg")
     run(["golangci-lint run -v --modules-download-mode mod"])
