@@ -173,7 +173,7 @@ def go_lint():
     # cmd = "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
     # cmd += " | sh -s -- -b $(go env GOPATH)/bin v"
     # cmd += golangci_lint_version
-    cmd = "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
+    cmd = "GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
     run([cmd])
     os.chdir("pkg")
     run(["golangci-lint run -v --modules-download-mode mod"])
