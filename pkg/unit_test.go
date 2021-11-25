@@ -214,6 +214,7 @@ func TestGObject(t *testing.T) {
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := config.G().Add()
 	g2.SetGA("g_2").SetGB(2).SetGC(22.2).SetGE(2.0)
+	assert.Len(t, config.G().Items(), 2)
 	for i, G := range config.G().Items() {
 		assert.Equal(t, ga[i], G.GA())
 		assert.Equal(t, gb[i], G.GB())
@@ -950,13 +951,13 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 	}
 }
 
-func TestEObjectValidation(t *testing.T) {
-	eObject := openapiart.NewEObject()
-	err := eObject.Validate()
-	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
-	}
-}
+// func TestEObjectValidation(t *testing.T) {
+// 	eObject := openapiart.NewEObject()
+// 	err := eObject.Validate()
+// 	if assert.Error(t, err) {
+// 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
+// 	}
+// }
 
 func TestMObjectValidation(t *testing.T) {
 	mObject := openapiart.NewMObject()
@@ -1383,4 +1384,65 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.RxFrames()
 	new_port_metric.TxFrames()
 	assert.Nil(t, new_port_metric.Validate())
+}
+
+func TestItemsMethod(t *testing.T) {
+	api := openapiart.NewApi()
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.G().Add().SetGA("this is GA string")
+	assert.Equal(t, config1.G(), config1.G())
+	config2 := api.NewPrefixConfig()
+	config2.FromJson(config1.ToJson())
+	assert.Len(t, config1.G().Items(), 2)
+	assert.Len(t, config2.G().Items(), 2)
+	for ind, obj := range config1.G().Items() {
+		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+	}
+	require.JSONEq(t, config1.ToJson(), config2.ToJson())
+	config2.G().Add().SetGB(200000)
+	assert.Len(t, config2.G().Items(), 3)
+	for ind, obj := range config1.G().Items() {
+		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+	}
+}
+
+func TestStructGetterMethod(t *testing.T) {
+	jObject := openapiart.NewJObject()
+	val := jObject.JA()
+	val.SetEA(1.45)
+	val.SetEB(1.456)
+	assert.Equal(t, val, jObject.JA())
+	jObject.JA().SetEA(0.23495)
+	assert.Equal(t, val, jObject.JA())
+
+	jObject1 := openapiart.NewJObject()
+	jObject1.FromJson(jObject.ToJson())
+	assert.Equal(t, jObject1.JA(), jObject1.JA())
+
+	jObject2 := openapiart.NewJObject()
+	val2 := jObject2.JA()
+	val2.SetEA(0.23495).SetEB(1.456)
+	jObject2.FromJson(jObject.ToJson())
+	assert.NotEqual(t, val2, jObject2.JA())
+}
+
+func TestFromJsonEmpty(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	value1 := fObject.ToJson()
+	value2 := fObject.ToYaml()
+	value3 := fObject.ToPbText()
+	for i, v := range []string{"", ``, `{}`, "{}"} {
+		err1 := fObject.FromJson(v)
+		assert.Nil(t, err1)
+		err2 := fObject.FromYaml(v)
+		assert.Nil(t, err2)
+		if i < 2 {
+			err3 := fObject.FromPbText(v)
+			assert.Nil(t, err3)
+		}
+	}
+
+	require.JSONEq(t, value1, fObject.ToJson())
+	require.Equal(t, value2, fObject.ToYaml())
+	require.Equal(t, value3, fObject.ToPbText())
 }
