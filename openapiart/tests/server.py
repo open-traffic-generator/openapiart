@@ -15,7 +15,7 @@ app.PACKAGE = None
 app.PORT = 18080
 
 
-@app.route("/config", methods=["POST"])
+@app.route("/api/config", methods=["POST"])
 def set_config():
     config = app.PACKAGE.Api().prefix_config()
     config.deserialize(request.data.decode("utf-8"))
@@ -29,7 +29,7 @@ def set_config():
         return Response(status=200)
 
 
-@app.route("/config", methods=["GET"])
+@app.route("/api/config", methods=["GET"])
 def get_config():
     serialized_config = app.CONFIG.serialize()
     return Response(serialized_config, mimetype="application/json", status=200)
