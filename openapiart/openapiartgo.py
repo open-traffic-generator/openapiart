@@ -567,9 +567,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }"""
             else:
                 return_value = """if resp.GetStatusCode_200() != nil {{
-                        return &{struct}{{obj: resp.GetStatusCode_200()}}, nil
+                        return New{struct}().SetMsg(resp.GetStatusCode_200()), nil
                     }}""".format(
-                    struct=self._get_internal_name(rpc.request_return_type),
+                    struct=self._get_external_struct_name(rpc.request_return_type),
                     request_return_type=rpc.request_return_type,
                 )
             self._write(
@@ -737,7 +737,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             
             func New{interface}() {interface} {{
                 obj := {struct}{{obj: &{pb_pkg_name}.{interface}{{}}}}
-                {nil_call}
                 obj.setDefault()
                 return &obj
             }}
@@ -945,14 +944,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
                     if obj.{internal_name}Holder == nil {{
-                        obj.{internal_name}Holder = &{parent}{interface}Iter{{obj: obj}}
+                        obj.{internal_name}Holder = new{parent}{interface}Iter().setMsg(obj)
                     }}
                     return obj.{internal_name}Holder""".format(
                     name=field.name,
                     pb_pkg_name=self._protobuf_package_name,
                     pb_struct=field.external_struct,
                     interface=field.external_struct,
-                    parent=new.struct,
+                    parent=new.interface,
                     block=block,
                     internal_name=field.name[0].lower() + field.name[1:]
                 )
@@ -1269,7 +1268,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {internal_items_name} {field_type}
             }}
 
+            func new{interface}() {interface} {{
+                return &{internal_struct}{{}}
+            }}
+
             type {interface} interface {{
+                setMsg(*{parent_internal_struct}) {interface}
                 Items() {field_type}
                 Add() {field_external_struct}
                 Append(items ...{field_external_struct}) {interface}
@@ -1279,12 +1283,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 appendHolderSlice(item {field_external_struct}) {interface}
             }}
 
-            func (obj *{internal_struct}) Items() {field_type} {{
-                if obj.{internal_items_name} == nil && obj.obj.obj.{field_name} != nil {{
-                    for _, item := range obj.obj.obj.{field_name} {{
-                        obj.appendHolderSlice(&{field_internal_struct}{{obj: item}})
-                    }}
+            func (obj *{internal_struct}) setMsg(msg *{parent_internal_struct}) {interface} {{
+                obj.clearHolderSlice()
+                for _, val := range msg.obj.{field_name} {{
+                    obj.appendHolderSlice(&{field_internal_struct}{{obj: val}})
                 }}
+                obj.obj = msg
+                return obj
+            }}
+
+            func (obj *{internal_struct}) Items() {field_type} {{
                 return obj.{internal_items_name}
             }}
 
@@ -1312,14 +1320,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj
             }}
             func (obj *{internal_struct}) Clear()  {interface} {{
-                if obj.obj.obj.{field_name} != nil {{
-                    obj.obj.obj.{field_name} = nil
+                if len(obj.obj.obj.{field_name}) > 0 {{
+                    obj.obj.obj.{field_name} = []*{pb_pkg_name}.{field_external_struct}{{}}
                     obj.{internal_items_name} = {field_type}{{}}
                 }}
                 return obj
             }}
             func (obj *{internal_struct}) clearHolderSlice() {interface} {{
-                if obj.{internal_items_name} != nil {{
+                if len(obj.{internal_items_name}) > 0 {{
                     obj.{internal_items_name} = {field_type}{{}}
                 }}
                 return obj
