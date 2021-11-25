@@ -12,7 +12,6 @@ import (
 var apis []openapiart.OpenapiartApi
 
 func init() {
-	StartHttpServer()
 	StartMockGrpcServer()
 	StartMockHttpServer()
 	grpcApi := openapiart.NewApi()
@@ -74,7 +73,6 @@ func TestUpdateConfigSuccess(t *testing.T) {
 		config3, err := api.UpdateConfig(config2)
 		assert.Nil(t, err)
 		assert.NotNil(t, config3)
-		log.Println(config3.ToYaml())
 	}
 }
 
