@@ -1564,7 +1564,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
-        if field.isOptional is False:
+        if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
