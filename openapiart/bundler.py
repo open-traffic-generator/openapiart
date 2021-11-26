@@ -263,7 +263,6 @@ class Bundler(object):
         schema = {
             "description": description,
             "type": "object",
-            "required": ["choice"],
             "properties": {
                 "choice": {
                     "description": "The type of checksum",
