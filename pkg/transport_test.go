@@ -116,3 +116,15 @@ func TestClearWarnings(t *testing.T) {
 		assert.NotNil(t, resp)
 	}
 }
+
+func TestConnectionClose(t *testing.T) {
+	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	err1 := api.Close()
+	assert.Nil(t, err1)
+}

@@ -456,6 +456,33 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return err
                     }}
                     api.grpcClient = {pb_pkg_name}.NewOpenapiClient(conn)
+                    api.grpc.clientConnection = conn
+                }}
+                return nil
+            }}
+
+            func (api *{internal_struct_name}) grpcClose() error {{
+                if api.grpc != nil {{
+                    if api.grpc.clientConnection != nil {{
+                        err := api.grpc.clientConnection.Close()
+                        if err != nil {{
+                            return err
+                        }}
+                    }}
+                }}
+                api.grpcClient = nil
+                api.grpc = nil
+                return nil
+            }}
+
+            func (api *{internal_struct_name}) Close() error {{
+                if api.hasGrpcTransport() {{
+                    err := api.grpcClose()
+		            return err
+                }}
+                if api.hasHttpTransport() {{
+                    api.http = nil
+		            api.httpClient.client = nil
                 }}
                 return nil
             }}
