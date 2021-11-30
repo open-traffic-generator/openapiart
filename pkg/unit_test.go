@@ -80,7 +80,7 @@ func TestJsonSerialization(t *testing.T) {
 	// expectedJson := bs
 	// eq, _ := JSONBytesEqual(actualJson, expectedJson)
 	// assert.Equal(t, eq, true)
-	yaml := config.ToYaml()
+	yaml, _ := config.ToYaml()
 	log.Print(yaml)
 }
 
@@ -200,7 +200,6 @@ func TestEObject(t *testing.T) {
 	assert.Equal(t, eb, config.E().EB())
 	assert.Equal(t, mparam1, config.E().MParam1())
 	assert.Equal(t, maparam2, config.E().MParam2())
-	log.Print(config.E().ToJson(), config.E().ToYaml())
 }
 
 func TestGObject(t *testing.T) {
@@ -221,7 +220,9 @@ func TestGObject(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	log.Print(g1.ToJson(), g1.ToYaml())
+	g1json, _ := g1.ToJson()
+	g1yaml, _ := g1.ToYaml()
+	log.Print(g1json, g1yaml)
 }
 func TestGObjectAppendMultiple(t *testing.T) {
 	api := openapiart.NewApi()
@@ -259,7 +260,6 @@ func TestLObject(t *testing.T) {
 	assert.Equal(t, "1.1.1.1", config.L().Ipv4())
 	assert.Equal(t, "2000::1", config.L().Ipv6())
 	assert.Equal(t, "0x12", config.L().Hex())
-	log.Print(l.ToJson(), l.ToYaml())
 }
 
 // TestRequiredObject
@@ -522,7 +522,7 @@ func TestDefaultSimpleTypes(t *testing.T) {
 	config.SetB(65)
 	config.SetC(33)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-	actual_result := config.ToJson()
+	actual_result, _ := config.ToJson()
 	expected_result := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -541,7 +541,7 @@ func TestDefaultEObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.E().SetEA(1).SetEB(2)
-	actual_result := config.E().ToJson()
+	actual_result, _ := config.E().ToJson()
 	expected_result := `
 	{
 		"e_a":  1,
@@ -554,7 +554,7 @@ func TestDefaultFObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.F()
-	actual_result := config.F().ToJson()
+	actual_result, _ := config.F().ToJson()
 	expected_result := `
 	{
 		"choice": "f_a",
@@ -618,14 +618,16 @@ func TestChoice1(t *testing.T) {
 	g := config.F().FromJson(json)
 	assert.Nil(t, g)
 	fmt.Println(config.F().ToJson())
-	require.JSONEq(t, config.F().ToJson(), json)
+	configFjson, _ := config.F().ToJson()
+	require.JSONEq(t, configFjson, json)
 	json2 := `{
 		"choice": "f_a",
 		"f_a": "this is f string"
 	}`
 	f := config.F().FromJson(json2)
 	assert.Nil(t, f)
-	require.JSONEq(t, config.F().ToJson(), json2)
+	configFjson2, _ := config.F().ToJson()
+	require.JSONEq(t, configFjson2, json2)
 	fmt.Println(config.F().ToJson())
 }
 
@@ -646,8 +648,8 @@ func TestOptionalDefault(t *testing.T) {
 		"g_d":  "some string",
 		"g_f":  "a"
 	  }`
-
-	require.JSONEq(t, gObject.ToJson(), gJson)
+	gObjectJson, _ := gObject.ToJson()
+	require.JSONEq(t, gObjectJson, gJson)
 }
 
 func TestInterger64(t *testing.T) {
@@ -704,7 +706,8 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	}`
 	err := config.FromJson(new_json)
 	assert.Nil(t, err)
-	require.JSONEq(t, new_json, config.ToJson())
+	configJson, _ := config.ToJson()
+	require.JSONEq(t, new_json, configJson)
 	new_json1 := `{
 		"b" : 65, 
 		"c" : 33,
@@ -728,14 +731,16 @@ func TestChoiceStale(t *testing.T) {
 		"f_a": "This is A Value"
 	}`
 	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json, fObject.ToJson())
+	fObjectJson, _ := fObject.ToJson()
+	require.JSONEq(t, expected_json, fObjectJson)
 	fObject.SetFB(30.245)
 	expected_json1 := `{
 		"choice": "f_b",
 		"f_b": 30.245
 	}`
 	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json1, fObject.ToJson())
+	fObjectJson2, _ := fObject.ToJson()
+	require.JSONEq(t, expected_json1, fObjectJson2)
 }
 
 func TestChoice2(t *testing.T) {
@@ -788,7 +793,8 @@ func TestChoice2(t *testing.T) {
 	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
 	config.J().Add().JB().SetFA("asf")
 	log.Print(config.ToJson())
-	require.JSONEq(t, expected_json, config.ToJson())
+	configJson, _ := config.ToJson()
+	require.JSONEq(t, expected_json, configJson)
 }
 
 func TestGetter(t *testing.T) {
@@ -799,12 +805,14 @@ func TestGetter(t *testing.T) {
 		"f_a": "some string"
 	}`
 	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json, fObject.ToJson())
+	fObjectJson, _ := fObject.ToJson()
+	require.JSONEq(t, expected_json, fObjectJson)
 
 	fObject1 := openapiart.NewFObject()
 	fObject1.Choice()
 	fmt.Println(fObject1.ToJson())
-	require.JSONEq(t, expected_json, fObject1.ToJson())
+	fObject1Json, _ := fObject1.ToJson()
+	require.JSONEq(t, expected_json, fObject1Json)
 
 	pattern := openapiart.NewIpv4Pattern()
 	pattern.Ipv4()
@@ -815,7 +823,8 @@ func TestGetter(t *testing.T) {
 		}
 	}`
 	fmt.Println(pattern.ToJson())
-	require.JSONEq(t, exp_ipv4, pattern.ToJson())
+	patternJson, _ := pattern.ToJson()
+	require.JSONEq(t, exp_ipv4, patternJson)
 	pattern.Ipv4().SetValue("10.1.1.1")
 	assert.Equal(t, "10.1.1.1", pattern.Ipv4().Value())
 	pattern.Ipv4().Values()
@@ -828,7 +837,8 @@ func TestGetter(t *testing.T) {
 		}
 	}`
 	fmt.Println(pattern.ToJson())
-	require.JSONEq(t, exp_ipv41, pattern.ToJson())
+	patternJson1, _ := pattern.ToJson()
+	require.JSONEq(t, exp_ipv41, patternJson1)
 	pattern.Ipv4().SetValues([]string{"20.1.1.1"})
 	assert.Equal(t, []string{"20.1.1.1"}, pattern.Ipv4().Values())
 	checksum := openapiart.NewChecksumPattern().Checksum()
@@ -836,7 +846,8 @@ func TestGetter(t *testing.T) {
 		"choice": "generated",
 		"generated": "good"
 	}`
-	require.JSONEq(t, ch_json, checksum.ToJson())
+	checksumJson, _ := checksum.ToJson()
+	require.JSONEq(t, ch_json, checksumJson)
 	fmt.Println(checksum.ToJson())
 }
 
@@ -1028,12 +1039,12 @@ func TestIeee802x(t *testing.T) {
 	l1.SetMsg(l1.Msg())
 	l1.FlowControl()
 	l1.HasFlowControl()
-	l1.ToJson()
-	l1.ToYaml()
-	l1.ToPbText()
-	assert.Nil(t, l1.FromJson(l1.ToJson()))
-	assert.Nil(t, l1.FromYaml(l1.ToYaml()))
-	assert.Nil(t, l1.FromPbText(l1.ToPbText()))
+	l1json, _ := l1.ToJson()
+	l1yaml, _ := l1.ToYaml()
+	l1pbText, _ := l1.ToPbText()
+	assert.Nil(t, l1.FromJson(l1json))
+	assert.Nil(t, l1.FromYaml(l1yaml))
+	assert.Nil(t, l1.FromPbText(l1pbText))
 }
 
 func TestLevelFour(t *testing.T) {
@@ -1042,12 +1053,12 @@ func TestLevelFour(t *testing.T) {
 	new_level_four.SetMsg(new_level_four.Msg())
 	new_level_four.HasL4P1()
 	new_level_four.SetL4P1(new_level_four.L4P1())
-	new_level_four.ToJson()
-	new_level_four.ToYaml()
-	new_level_four.ToPbText()
-	assert.Nil(t, new_level_four.FromJson(new_level_four.ToJson()))
-	assert.Nil(t, new_level_four.FromYaml(new_level_four.ToYaml()))
-	assert.Nil(t, new_level_four.FromPbText(new_level_four.ToPbText()))
+	fourJson, _ := new_level_four.ToJson()
+	fourYaml, _ := new_level_four.ToYaml()
+	fourPbText, _ := new_level_four.ToPbText()
+	assert.Nil(t, new_level_four.FromJson(fourJson))
+	assert.Nil(t, new_level_four.FromYaml(fourYaml))
+	assert.Nil(t, new_level_four.FromPbText(fourPbText))
 }
 
 func TestIterAppendJObject(t *testing.T) {
@@ -1113,25 +1124,6 @@ func TestIterSetPortMetrics(t *testing.T) {
 	assert.Len(t, p.Items(), 2)
 	p.Clear()
 	assert.Len(t, p.Items(), 0)
-}
-
-func panicValue(fn func()) (recovered interface{}) {
-	defer func() {
-		recovered = recover()
-	}()
-	fn()
-	return
-}
-
-func TestExpectedPanic(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
-	err1, _ := panicValue(func() { config.ToJson() }).(error)
-	err2, _ := panicValue(func() { config.ToYaml() }).(error)
-	err3, _ := panicValue(func() { config.ToPbText() }).(error)
-	assert.Contains(t, err1.Error(), "validation errors")
-	assert.Contains(t, err2.Error(), "validation errors")
-	assert.Contains(t, err3.Error(), "validation errors")
 }
 
 func TestFromYamlErrors(t *testing.T) {
@@ -1213,12 +1205,12 @@ func TestUpdateConfig(t *testing.T) {
 		assert.Nil(t, set_err)
 		config2 := api.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
-		config2.ToPbText()
-		config2.ToJson()
-		config2.ToYaml()
-		assert.Nil(t, config2.FromJson(config2.ToJson()))
-		assert.Nil(t, config2.FromYaml(config2.ToYaml()))
-		assert.Nil(t, config2.FromPbText(config2.ToPbText()))
+		config2PbText, _ := config2.ToPbText()
+		config2Json, _ := config2.ToJson()
+		config2Yaml, _ := config2.ToYaml()
+		assert.Nil(t, config2.FromJson(config2Json))
+		assert.Nil(t, config2.FromYaml(config2Yaml))
+		assert.Nil(t, config2.FromPbText(config2PbText))
 		config2.SetMsg(config2.Msg())
 		config3, err := api.UpdateConfig(config2)
 		assert.Nil(t, err)
@@ -1239,12 +1231,12 @@ func TestNewSetConfigResponse(t *testing.T) {
 	new_resp.HasStatusCode400()
 	new_resp.HasStatusCode404()
 	new_resp.HasStatusCode500()
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewUpdateConfigResponse(t *testing.T) {
@@ -1253,12 +1245,12 @@ func TestNewUpdateConfigResponse(t *testing.T) {
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewGetConfigResponse(t *testing.T) {
@@ -1267,12 +1259,12 @@ func TestNewGetConfigResponse(t *testing.T) {
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewGetMetricsResponse(t *testing.T) {
@@ -1281,12 +1273,12 @@ func TestNewGetMetricsResponse(t *testing.T) {
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewGetWarningsResponse(t *testing.T) {
@@ -1295,12 +1287,12 @@ func TestNewGetWarningsResponse(t *testing.T) {
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewClearWarningsResponse(t *testing.T) {
@@ -1310,36 +1302,36 @@ func TestNewClearWarningsResponse(t *testing.T) {
 	new_resp.Msg()
 	new_resp.HasStatusCode200()
 	new_resp.SetStatusCode200("success")
-	new_resp.ToJson()
-	new_resp.ToYaml()
-	new_resp.ToPbText()
-	assert.Nil(t, new_resp.FromJson(new_resp.ToJson()))
-	assert.Nil(t, new_resp.FromYaml(new_resp.ToYaml()))
-	assert.Nil(t, new_resp.FromPbText(new_resp.ToPbText()))
+	respJson, _ := new_resp.ToJson()
+	respYaml, _ := new_resp.ToYaml()
+	respPbText, _ := new_resp.ToPbText()
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
 func TestNewErrorDetails(t *testing.T) {
 	new_err := openapiart.NewErrorDetails()
 	new_err.SetMsg(new_err.Msg())
 	new_err.Msg()
-	new_err.ToJson()
-	new_err.ToYaml()
-	new_err.ToPbText()
-	assert.Nil(t, new_err.FromJson(new_err.ToJson()))
-	assert.Nil(t, new_err.FromYaml(new_err.ToYaml()))
-	assert.Nil(t, new_err.FromPbText(new_err.ToPbText()))
+	respJson, _ := new_err.ToJson()
+	respYaml, _ := new_err.ToYaml()
+	respPbText, _ := new_err.ToPbText()
+	assert.Nil(t, new_err.FromJson(respJson))
+	assert.Nil(t, new_err.FromYaml(respYaml))
+	assert.Nil(t, new_err.FromPbText(respPbText))
 }
 
 func TestNewError(t *testing.T) {
 	new_err := openapiart.NewError()
 	new_err.SetMsg(new_err.Msg())
 	new_err.Msg()
-	new_err.ToJson()
-	new_err.ToYaml()
-	new_err.ToPbText()
-	assert.Nil(t, new_err.FromJson(new_err.ToJson()))
-	assert.Nil(t, new_err.FromYaml(new_err.ToYaml()))
-	assert.Nil(t, new_err.FromPbText(new_err.ToPbText()))
+	respJson, _ := new_err.ToJson()
+	respYaml, _ := new_err.ToYaml()
+	respPbText, _ := new_err.ToPbText()
+	assert.Nil(t, new_err.FromJson(respJson))
+	assert.Nil(t, new_err.FromYaml(respYaml))
+	assert.Nil(t, new_err.FromPbText(respPbText))
 	new_err.SetErrors(new_err.Errors())
 }
 
@@ -1347,24 +1339,24 @@ func TestNewMetrics(t *testing.T) {
 	new_metrics := openapiart.NewMetrics()
 	new_metrics.SetMsg(new_metrics.Msg())
 	new_metrics.Msg()
-	new_metrics.ToJson()
-	new_metrics.ToYaml()
-	new_metrics.ToPbText()
-	assert.Nil(t, new_metrics.FromJson(new_metrics.ToJson()))
-	assert.Nil(t, new_metrics.FromYaml(new_metrics.ToYaml()))
-	assert.Nil(t, new_metrics.FromPbText(new_metrics.ToPbText()))
+	respJson, _ := new_metrics.ToJson()
+	respYaml, _ := new_metrics.ToYaml()
+	respPbText, _ := new_metrics.ToPbText()
+	assert.Nil(t, new_metrics.FromJson(respJson))
+	assert.Nil(t, new_metrics.FromYaml(respYaml))
+	assert.Nil(t, new_metrics.FromPbText(respPbText))
 }
 
 func TestNewWarningDetails(t *testing.T) {
 	new_warnings := openapiart.NewWarningDetails()
 	new_warnings.SetMsg(new_warnings.Msg())
 	new_warnings.Msg()
-	new_warnings.ToJson()
-	new_warnings.ToYaml()
-	new_warnings.ToPbText()
-	assert.Nil(t, new_warnings.FromJson(new_warnings.ToJson()))
-	assert.Nil(t, new_warnings.FromYaml(new_warnings.ToYaml()))
-	assert.Nil(t, new_warnings.FromPbText(new_warnings.ToPbText()))
+	respJson, _ := new_warnings.ToJson()
+	respYaml, _ := new_warnings.ToYaml()
+	respPbText, _ := new_warnings.ToPbText()
+	assert.Nil(t, new_warnings.FromJson(respJson))
+	assert.Nil(t, new_warnings.FromYaml(respYaml))
+	assert.Nil(t, new_warnings.FromPbText(respPbText))
 }
 
 func TestNewPortMetric(t *testing.T) {
@@ -1374,12 +1366,12 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.SetRxFrames(2000)
 	new_port_metric.SetMsg(new_port_metric.Msg())
 	new_port_metric.Msg()
-	new_port_metric.ToJson()
-	new_port_metric.ToYaml()
-	new_port_metric.ToPbText()
-	assert.Nil(t, new_port_metric.FromJson(new_port_metric.ToJson()))
-	assert.Nil(t, new_port_metric.FromYaml(new_port_metric.ToYaml()))
-	assert.Nil(t, new_port_metric.FromPbText(new_port_metric.ToPbText()))
+	respJson, _ := new_port_metric.ToJson()
+	respYaml, _ := new_port_metric.ToYaml()
+	respPbText, _ := new_port_metric.ToPbText()
+	assert.Nil(t, new_port_metric.FromJson(respJson))
+	assert.Nil(t, new_port_metric.FromYaml(respYaml))
+	assert.Nil(t, new_port_metric.FromPbText(respPbText))
 	new_port_metric.Name()
 	new_port_metric.RxFrames()
 	new_port_metric.TxFrames()
@@ -1392,17 +1384,24 @@ func TestItemsMethod(t *testing.T) {
 	config1.G().Add().SetGA("this is GA string")
 	assert.Equal(t, config1.G(), config1.G())
 	config2 := api.NewPrefixConfig()
-	config2.FromJson(config1.ToJson())
+	config1Json, _ := config1.ToJson()
+	config2.FromJson(config1Json)
 	assert.Len(t, config1.G().Items(), 2)
 	assert.Len(t, config2.G().Items(), 2)
 	for ind, obj := range config1.G().Items() {
-		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+		objJson, _ := obj.ToJson()
+		gJson, _ := config2.G().Items()[ind].ToJson()
+		assert.Equal(t, objJson, gJson)
 	}
-	require.JSONEq(t, config1.ToJson(), config2.ToJson())
+	configJson1, _ := config1.ToJson()
+	config2Json, _ := config2.ToJson()
+	require.JSONEq(t, configJson1, config2Json)
 	config2.G().Add().SetGB(200000)
 	assert.Len(t, config2.G().Items(), 3)
 	for ind, obj := range config1.G().Items() {
-		assert.Equal(t, obj.ToJson(), config2.G().Items()[ind].ToJson())
+		objJson1, _ := obj.ToJson()
+		gJson1, _ := config2.G().Items()[ind].ToJson()
+		assert.Equal(t, objJson1, gJson1)
 	}
 }
 
@@ -1416,21 +1415,23 @@ func TestStructGetterMethod(t *testing.T) {
 	assert.Equal(t, val, jObject.JA())
 
 	jObject1 := openapiart.NewJObject()
-	jObject1.FromJson(jObject.ToJson())
+	jOject1json, _ := jObject.ToJson()
+	jObject1.FromJson(jOject1json)
 	assert.Equal(t, jObject1.JA(), jObject1.JA())
 
 	jObject2 := openapiart.NewJObject()
 	val2 := jObject2.JA()
 	val2.SetEA(0.23495).SetEB(1.456)
-	jObject2.FromJson(jObject.ToJson())
+	jObject2Json, _ := jObject.ToJson()
+	jObject2.FromJson(jObject2Json)
 	assert.NotEqual(t, val2, jObject2.JA())
 }
 
 func TestFromJsonEmpty(t *testing.T) {
 	fObject := openapiart.NewFObject()
-	value1 := fObject.ToJson()
-	value2 := fObject.ToYaml()
-	value3 := fObject.ToPbText()
+	value1, _ := fObject.ToJson()
+	value2, _ := fObject.ToYaml()
+	value3, _ := fObject.ToPbText()
 	for i, v := range []string{"", ``, `{}`, "{}"} {
 		err1 := fObject.FromJson(v)
 		assert.Nil(t, err1)
@@ -1442,9 +1443,12 @@ func TestFromJsonEmpty(t *testing.T) {
 		}
 	}
 
-	require.JSONEq(t, value1, fObject.ToJson())
-	require.Equal(t, value2, fObject.ToYaml())
-	require.Equal(t, value3, fObject.ToPbText())
+	fObjectJson, _ := fObject.ToJson()
+	fObjectYaml, _ := fObject.ToYaml()
+	fObjectPbText, _ := fObject.ToPbText()
+	require.JSONEq(t, value1, fObjectJson)
+	require.Equal(t, value2, fObjectYaml)
+	require.Equal(t, value3, fObjectPbText)
 }
 
 func TestChoiceDefaults(t *testing.T) {
