@@ -1,8 +1,8 @@
 import re
 import openapiart.goserver.string_util as util
+from jsonpath_ng import parse
 
 class Server(object):
-    
     @property
     def basepath(self) -> [str]:
         return self._basepath
@@ -16,6 +16,7 @@ class Server(object):
                 self._basepath = "/" + self._basepath
         except:
             pass
+
 
 class Component(object):
     @property
@@ -42,12 +43,58 @@ class Component(object):
         self._obj = componentobj
 
 
+class Responses(object):
+    @property
+    def response_value(self):
+        return self._response_value
+
+    @property
+    def has_json(self):
+        return self._has_json
+
+    @property
+    def has_binary(self):
+        return self._has_binary
+
+    @property
+    def response_obj(self):
+        return self._response_obj
+
+    def __init__(self, response_value, response_obj, ctx):
+        self._response_value = response_value
+        self._response_obj = response_obj
+        self._ctx = ctx
+        self._has_json = False
+        self._has_binary = False
+        self._check_content()
+
+    def _check_content(self):
+        if "$ref" in self._response_obj:
+            self._response_obj = self._ctx.get_object_from_ref(self._response_obj["$ref"])
+        if "content" in self._response_obj:
+            content = self._response_obj["content"]
+            if 'application/json' in content:
+                self._has_json = True
+            else:
+                parse_schema = parse("$..schema").find(self._response_obj)
+                schema = [s.value for s in parse_schema][0]
+                if "$ref" in schema:
+                    schema = self._ctx.get_object_from_ref(schema["$ref"])
+                if "format" in schema and schema["format"] == "binary":
+                    self._has_binary = True
+
+
 class ControllerRoute(object):
     @property
     def description(self) -> str:
         if "description" in self._obj:
             return self._obj["description"]
         return ""
+
+    @property
+    def responses(self):
+        return self._responses
+
     @property
     def url(self) -> str:
         return self.full_url()
@@ -85,6 +132,8 @@ class ControllerRoute(object):
         self._obj = methodobj
         self._parameters: [str] = []
         self._extract_parameters()
+        self._responses = []
+        self._extract_responses()
 
     def requestBody(self) -> Component:
         _ctx: GeneratorContext = self._ctx
@@ -108,6 +157,11 @@ class ControllerRoute(object):
         if "parameters" in self._obj:
             for param in self._obj["parameters"]:
                 self._parameters.append(param["name"])
+
+    def _extract_responses(self):
+        for response_value, response_obj in self._obj["responses"].items():
+            self._responses.append(Responses(response_value, response_obj, self._ctx))
+
 
 class Controller(object):
     @property
@@ -134,7 +188,8 @@ class Controller(object):
         pass
 
 class GeneratorContext(object):
-    def __init__(self):
+    def __init__(self, openapi):
+        self._openapi = openapi
         self.module_path: str
         self.models_prefix: str
         self.models_path: str
@@ -153,5 +208,11 @@ class GeneratorContext(object):
             ctrl = Controller(yamlname, self)
             self.controllers.append(ctrl)
         return ctrl
+
+    def get_object_from_ref(self, ref):
+        leaf = self._openapi
+        for attr in ref.split("/")[1:]:
+            leaf = leaf[attr]
+        return leaf
 
 

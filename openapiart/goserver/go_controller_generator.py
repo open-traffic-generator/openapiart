@@ -154,21 +154,25 @@ class GoServerControllerGenerator(object):
             )
 
 
-        for response_value, response_obj in route._obj["responses"].items():
+        for response in route.responses:
             w.write_line(
-                f"if result.HasStatusCode{response_value}() {{",
+                f"if result.HasStatusCode{response.response_value}() {{",
             ).push_indent()
             # print(response_obj)
             # no response content defined, return as 'any'
-            if "content" not in response_obj:
-                w.write_line(f"httpapi.WriteAnyResponse(w, {response_value}, result.StatusCode{response_value}())")
-            if "content" in response_obj:
-                content = response_obj["content"]
-                if 'application/json' in content:
-                    w.write_line(f"httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())")
-                else:
-                    w.write_line(f"httpapi.WriteAnyResponse(w, {response_value}, result.StatusCode{response_value}())")
-                
+            write_method = None
+            if response.has_json:
+                write_method = "WriteJSONResponse"
+            elif response.has_binary:
+                write_method = "WriteByteResponse"
+            else:
+                write_method = "WriteAnyResponse"
+            w.write_line(
+                "httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())".format(
+                    write_method=write_method,
+                    response_value=response.response_value
+                )
+            )
             w.write_line("return")
             w.pop_indent()
             w.write_line(

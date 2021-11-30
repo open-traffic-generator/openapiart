@@ -23,7 +23,7 @@ class GoServerGenerator(object):
         ):
         self._output_root_path = output_root_path
         self._openapi = openapi
-        self._context = ctx.GeneratorContext()
+        self._context = ctx.GeneratorContext(openapi)
         self._context.output_path = os.path.join(output_root_path, 'httpapi')
         if len(models_prefix) > 0:
             models_prefix = models_prefix + '.'

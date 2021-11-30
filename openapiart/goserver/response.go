@@ -19,6 +19,12 @@ func WriteJSONResponse(w http.ResponseWriter, statuscode int, data JSONWriter) (
 	return w.Write([]byte(data.ToJson()))
 }
 
+func WriteByteResponse(w http.ResponseWriter, statuscode int, data []byte) (int, error) {
+	w.WriteHeader(statuscode)
+	w.Header().Set("Content-Type", "application/octet-stream; charset=UTF-8")
+	return w.Write(data)
+}
+
 // WriteTextResponse sets an HTTP response with the provided status-code and string.
 func WriteAnyResponse(w http.ResponseWriter, statuscode int, data interface{}) (int, error) {
 	w.WriteHeader(statuscode)
