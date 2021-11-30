@@ -1,3 +1,4 @@
+import enum
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
@@ -963,22 +964,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         if field.isArray and field.isEnum is False:
             if field.struct:
-                block = ""
+                block = "obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}".format(
+                    name=field.name, pb_pkg_name=self._protobuf_package_name,
+                    pb_struct=field.external_struct,
+                )
                 if field.setChoiceValue is not None:
                     block = "obj.SetChoice({interface}Choice.{enum})".format(
                         interface=new.interface, enum=field.setChoiceValue
                     )
-                body = """if obj.obj.{name} == nil {{
+                body = """if len(obj.obj.{name}) == 0 {{
                         {block}
-                        obj.obj.{name} = []*{pb_pkg_name}.{pb_struct}{{}}
                     }}
                     if obj.{internal_name}Holder == nil {{
                         obj.{internal_name}Holder = new{parent}{interface}Iter().setMsg(obj)
                     }}
                     return obj.{internal_name}Holder""".format(
                     name=field.name,
-                    pb_pkg_name=self._protobuf_package_name,
-                    pb_struct=field.external_struct,
                     interface=field.external_struct,
                     parent=new.interface,
                     block=block,
@@ -1002,7 +1003,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     else:
                         block = """
                             obj.SetChoice({interface}Choice.{enum})
-                            obj.obj.{name} = make({type}, 0)
                         """.format(
                             interface=new.interface,
                             enum=field.setChoiceValue,
@@ -1019,24 +1019,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif field.struct is not None:
             # at this time proto generation ignores the optional keyword
             # if the type is an object
-            set_enum_choice = None
+            set_choice_or_new = "obj.obj.{name} = New{pb_struct}().Msg()".format(
+                name=field.name,
+                pb_struct=field.external_struct,
+            )
             if field.setChoiceValue is not None:
-                set_enum_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
+                set_choice_or_new = """obj.SetChoice({interface}Choice.{enum})""".format(
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
             body = """if obj.obj.{name} == nil {{
-                    {set_enum_choice}
-                    obj.obj.{name} = New{pb_struct}().Msg()
+                    {set_choice_or_new}
                 }}
                 if obj.{internal_name}Holder == nil {{
                     obj.{internal_name}Holder = &{struct}{{obj: obj.obj.{name}}}
                 }}
                 return obj.{internal_name}Holder""".format(
                 name=field.name,
-                pb_struct=field.external_struct,
                 struct=field.struct,
-                set_enum_choice=set_enum_choice if set_enum_choice else "",
+                set_choice_or_new=set_choice_or_new,
                 internal_name=field.name[0].lower() + field.name[1:]
             )
         elif field.isEnum:
@@ -1103,25 +1104,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         elif field.isPointer:
             set_enum_choice = None
-            default = None
             if field.setChoiceValue is not None:
-                if field.default is not None:
-                    if field.type == "string":
-                        value = '"{}"'.format(field.default)
-                    elif field.type in ["int32", "int64", "float32", "float64"]:
-                        value = "{fieldtype}({value})".format(fieldtype=field.type, value=field.default)
-                    else:
-                        value = field.default
-                    default = """value := {value}
-                            obj.obj.{fieldname} = &value""".format(value=value, fieldname=field.name)
                 set_enum_choice = """
                     if obj.obj.{fieldname} == nil {{
                         obj.SetChoice({interface}Choice.{enum})
-                        {default}
                     }}
                 """.format(
                     fieldname=field.name,
-                    default=default if default else "",
                     interface=new.interface, enum=field.setChoiceValue
                 )
             body = """{set_enum_choice}
@@ -1132,22 +1121,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         else:
             set_enum_choice = None
-            default = None
             if field.setChoiceValue is not None:
-                if field.default is not None:
-                    default = "obj.obj.{fieldname} = {value}".format(
-                        value='"{}"'.format(field.default) if "string" in field.type else field.default,
-                        fieldname=field.name
-                    )
                 set_enum_choice = """
                     if obj.obj.{fieldname} == nil {{
                         obj.SetChoice({interface}Choice.{enum})
-                        {default}
                     }}
                 """.format(
                     fieldname=field.name,
                     interface=new.interface, enum=field.setChoiceValue,
-                    default=default if default else ""
                 )
             body = """{set_enum_choice}\n return obj.obj.{fieldname}""".format(
                 fieldname=field.name,
@@ -1208,10 +1189,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     fieldname=field.name,
                 )
-            enum_set = [self._get_external_field_name(name) for name in field.enums]
+            enum_set = {self._get_external_field_name(name) : name for name in field.enums}
             enum_body = []
             for enum_field in new.interface_fields:
-                if enum_field.name not in enum_set:
+                if enum_set.get(enum_field.name) is None:
                     continue
                 if enum_field.isEnum:
                     enum_body.append(
@@ -1221,7 +1202,57 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         )
                     )
                     continue
-                enum_body.append("obj.obj.{name} = nil".format(name=enum_field.name))
+                if enum_field.struct is not None and enum_field.isArray is False:
+                    enum_body.append("""
+                        if value == {interface}{name}.{enumupper} {{
+                            obj.obj.{enumname} = New{struct}().Msg()
+                        }}
+                    """.format(
+                        interface=new.interface, name=field.name, enumname=enum_field.name,
+                        struct=self._get_external_struct_name(enum_field.struct),
+                        enumupper=enum_set.get(enum_field.name).upper()
+                    ))
+                elif enum_field.struct is not None and enum_field.isArray:
+                    enum_body.append("""
+                        if value == {interface}{name}.{enumupper} {{
+                            obj.obj.{enumname} = []*{pb_pkg}.{struct}{{}}
+                        }}
+                    """.format(
+                        interface=new.interface, name=field.name, enumname=enum_field.name,
+                        struct=self._get_external_struct_name(enum_field.struct),
+                        enumupper=enum_set.get(enum_field.name).upper(),
+                        pb_pkg=self._protobuf_package_name
+                    ))
+                elif enum_field.default is not None:
+                    default_value = "" if enum_field.default is None else enum_field.default
+                    if enum_field.isArray:
+
+                        default_value = '{type}{{{value}}}'.format(
+                            type=enum_field.type,
+                            value='"{}"'.format('", "'.join(default_value))
+                            if "string" in enum_field.type else ",".join(
+                                [str(e) for e in default_value])
+                        )
+                    else:
+                        default_value = '"{}"'.format(default_value) \
+                            if enum_field.type == "string" \
+                            else "{}({})".format(enum_field.type, default_value)
+                    enum_body.append("""
+                        if value == {interface}{name}.{enumupper} {{
+                            defaultValue := {default_value}
+                            obj.obj.{enumname} = {point}defaultValue
+                        }}
+                    """.format(
+                        interface=new.interface, name=field.name, enumname=enum_field.name,
+                        default_value=default_value,
+                        enumupper=enum_set.get(enum_field.name).upper(),
+                        point="" if enum_field.isArray else "&"
+                    ))
+                enum_body.insert(0, "obj.obj.{name} = nil".format(name=enum_field.name))
+                if enum_field.struct is not None:
+                    enum_body.insert(1, "obj.{name}Holder = nil".format(
+                        name=enum_field.name[0].lower() + enum_field.name[1:]))
+
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
@@ -1900,6 +1931,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                     )
         if choice_body is not None:
+            enum_fields = []
             body = choice_body.replace("<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else "") + body
 
         self._write(

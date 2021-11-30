@@ -1446,3 +1446,56 @@ func TestFromJsonEmpty(t *testing.T) {
 	require.Equal(t, value2, fObject.ToYaml())
 	require.Equal(t, value3, fObject.ToPbText())
 }
+
+func TestChoiceDefaults(t *testing.T) {
+	jObject := openapiart.NewJObject()
+	json := `
+	{
+		"choice": "j_a",
+		"j_a": {}
+	}`
+	require.JSONEq(t, json, jObject.ToJson())
+	jObject.SetChoice(openapiart.JObjectChoice.J_B)
+	json1 := `
+	{
+		"choice": "j_b",
+		"j_b": {
+			"choice": "f_a",
+			"f_a": "some string"
+		}
+	}`
+	require.JSONEq(t, json1, jObject.ToJson())
+	jObject.JB().FB()
+	json2 := `
+	{
+		"choice": "j_b",
+		"j_b": {
+			"choice": "f_b",
+			"f_b": 3
+		}
+	}`
+	require.JSONEq(t, json2, jObject.ToJson())
+	integer := openapiart.NewIntegerPattern()
+	integer.Integer().Values()
+	json3 := `
+	{
+		"integer":  {
+		  "choice":  "values",
+		  "values":  [
+			0
+		  ]
+		}
+	}`
+	require.JSONEq(t, json3, integer.ToJson())
+	integer.Integer().SetValues([]int32{1, 2, 3})
+	json4 := `
+	{
+		"integer":  {
+		  "choice":  "values",
+		  "values":  [
+			1, 2, 3
+		  ]
+		}
+	}`
+	require.JSONEq(t, json4, integer.ToJson())
+}
