@@ -1929,6 +1929,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default) if field.type == "string" else field.default,
                     )
         if choice_body is not None:
+            enum_fields = []
             body = choice_body.replace("<choice_fields>", "\n".join(enum_fields) if enum_fields != [] else "") + body
 
         self._write(
