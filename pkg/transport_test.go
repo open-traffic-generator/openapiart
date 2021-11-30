@@ -42,6 +42,16 @@ func TestSetConfig400(t *testing.T) {
 	}
 }
 
+func TestSetConfig404(t *testing.T) {
+	for _, api := range apis {
+		config := NewFullyPopulatedPrefixConfig(api)
+		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+		resp, err := api.SetConfig(config)
+		assert.Nil(t, resp)
+		assert.NotNil(t, err)
+	}
+}
+
 func TestSetConfig500(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
@@ -81,6 +91,7 @@ func TestGetMetrics(t *testing.T) {
 		metrics, err := api.GetMetrics()
 		assert.Nil(t, err)
 		assert.NotNil(t, metrics)
+		assert.Len(t, metrics.Ports().Items(), 2)
 		for _, row := range metrics.Ports().Items() {
 			log.Println(row.ToYaml())
 		}
@@ -94,4 +105,25 @@ func TestGetWarnings(t *testing.T) {
 		assert.NotNil(t, resp)
 		log.Println(resp.ToYaml())
 	}
+}
+
+func TestClearWarnings(t *testing.T) {
+	for _, api := range apis {
+		api.NewClearWarningsResponse()
+		resp, err := api.ClearWarnings()
+		assert.Nil(t, err)
+		assert.NotNil(t, resp)
+	}
+}
+
+func TestConnectionClose(t *testing.T) {
+	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	err1 := api.Close()
+	assert.Nil(t, err1)
 }

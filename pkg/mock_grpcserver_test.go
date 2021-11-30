@@ -73,6 +73,13 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		resp = &sanity.SetConfigResponse{
 			StatusCode_200: []byte("SetConfig has completed successfully"),
 		}
+	case sanity.PrefixConfig_Response_status_404.Enum().Number():
+		s.Config = req.PrefixConfig
+		resp = &sanity.SetConfigResponse{
+			StatusCode_404: &sanity.ErrorDetails{
+				Errors: []string{"Not found error"},
+			},
+		}
 	}
 	return resp, nil
 }
@@ -116,6 +123,14 @@ func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sani
 		StatusCode_200: &sanity.WarningDetails{
 			Warnings: []string{"This is your first warning", "Your last warning"},
 		},
+	}
+	return resp, nil
+}
+
+func (s *GrpcServer) ClearWarnings(ctx context.Context, empty *empty.Empty) (*sanity.ClearWarningsResponse, error) {
+	value := "warnings cleared"
+	resp := &sanity.ClearWarningsResponse{
+		StatusCode_200: &value,
 	}
 	return resp, nil
 }

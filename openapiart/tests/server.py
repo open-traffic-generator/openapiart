@@ -31,6 +31,11 @@ def set_config():
 
 @app.route("/api/config", methods=["GET"])
 def get_config():
+    app.CONFIG.a = "asdf"
+    app.CONFIG.b = 1.1
+    app.CONFIG.c = 1
+    app.CONFIG.required_object.e_a = 1.1
+    app.CONFIG.required_object.e_b = 1.2
     serialized_config = app.CONFIG.serialize()
     return Response(serialized_config, mimetype="application/json", status=200)
 
