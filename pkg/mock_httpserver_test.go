@@ -117,6 +117,6 @@ func (h *metricsHandler) GetWarnings(r *http.Request) openapiart.GetWarningsResp
 
 func (h *metricsHandler) ClearWarnings(r *http.Request) openapiart.ClearWarningsResponse {
 	response := openapiart.NewClearWarningsResponse()
-	response.StatusCode200()
+	response.SetStatusCode200("success")
 	return response
 }
