@@ -41,6 +41,7 @@ class OpenApiArt(object):
         self._get_info()
         self._get_license()
         self._document()
+        self._go_generate_unit_test = False
 
     def _get_license(self):
         license_name = self._bundler._content["info"]["license"]["name"]
@@ -135,7 +136,7 @@ class OpenApiArt(object):
             print("Bypassed creation of python stubs: {}".format(e))
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name):
+    def GenerateGoSdk(self, package_dir, package_name, generate_unit_test=False):
         """Generates a Go UX Sdk
 
         Args
@@ -168,6 +169,7 @@ class OpenApiArt(object):
 
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
+        self._go_generate_unit_test = generate_unit_test
         self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
@@ -202,7 +204,7 @@ class OpenApiArt(object):
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
-            go_ux.generate(self._openapi)
+            go_ux.generate(self._openapi, self._go_generate_unit_test)
         return self
 
     def _generate_proto_file(self):
