@@ -451,7 +451,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             // grpcConnect builds up a grpc connection
             func (api *{internal_struct_name}) grpcConnect() error {{
                 if api.grpcClient == nil {{
-                    conn, err := grpc.Dial(api.grpc.location, grpc.WithInsecure())
+                    ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
+                    defer cancelFunc()
+                    conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithInsecure())
                     if err != nil {{
                         return err
                     }}
