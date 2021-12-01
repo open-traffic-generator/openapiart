@@ -129,6 +129,8 @@ class GoServerControllerGenerator(object):
         )
         w.push_indent()
         request_body: Component = route.requestBody()
+        rsp_400_error = "response{}400".format(route.operation_name)
+        rsp_500_error = "response{}500".format(route.operation_name)
         if request_body != None:
             modelname = request_body.model_name
             full_modelname = request_body.full_model_name
@@ -137,14 +139,22 @@ class GoServerControllerGenerator(object):
             w.write_line(
                 f"var item {full_modelname}",
                 "if r.Body != nil {",
-                "   body, _ := ioutil.ReadAll(r.Body)",
+                "    body, readError := ioutil.ReadAll(r.Body)",
                 "    if body != nil {",
                 f"        item = {new_modelname}()",
                 "        err := item.FromJson(string(body))",
                 "        if err != nil {",
-                "            item = nil",
+                f"            ctrl.{rsp_400_error}(w, err)",
+                "            return",
                 "        }",
-                "    }",
+                "    } else {",
+                f"        ctrl.{rsp_400_error}(w, readError)",
+                "        return"
+                "    }"  
+                "} else {",
+                "    bodyError := errors.New(\"Request do not have any body\")",
+                f"    ctrl.{rsp_400_error}(w, bodyError)",
+                "    return",
                 "}",
                 f"result := ctrl.handler.{route.operation_name}(item, r)",
             )
@@ -153,8 +163,10 @@ class GoServerControllerGenerator(object):
                 f"result := ctrl.handler.{route.operation_name}(r)",
             )
 
-
+        error_responses = []
         for response in route.responses:
+            if int(response.response_value) in [400, 500]:
+                error_responses.append(response)
             w.write_line(
                 f"if result.HasStatusCode{response.response_value}() {{",
             ).push_indent()
@@ -191,6 +203,21 @@ class GoServerControllerGenerator(object):
             "}",
             ""
         )
+
+        for err_rsp in error_responses:
+            w.write_line("""func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, rsp_err error) {{
+                result := {models_prefix}New{response_model_name}()
+                result.StatusCode{response_value}().SetErrors([]string{{rsp_err.Error()}})
+                httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode500())
+            }}
+            """.format(
+                struct_name=self._struct_name(ctrl),
+                method_name=rsp_400_error if int(err_rsp.response_value) == 400 else rsp_500_error,
+                models_prefix=self._ctx.models_prefix,
+                response_model_name=route.response_model_name,
+                response_value=err_rsp.response_value
+            ))
+
         pass
 
 
