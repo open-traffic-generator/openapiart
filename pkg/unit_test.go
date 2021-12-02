@@ -1537,7 +1537,9 @@ func TestChoiceDefaults(t *testing.T) {
 		"choice": "j_a",
 		"j_a": {}
 	}`
-	require.JSONEq(t, json, jObject.ToJson())
+	j, err0 := jObject.ToJson()
+	assert.Nil(t, err0)
+	require.JSONEq(t, json, j)
 	jObject.SetChoice(openapiart.JObjectChoice.J_B)
 	json1 := `
 	{
@@ -1547,7 +1549,9 @@ func TestChoiceDefaults(t *testing.T) {
 			"f_a": "some string"
 		}
 	}`
-	require.JSONEq(t, json1, jObject.ToJson())
+	j1, err1 := jObject.ToJson()
+	assert.Nil(t, err1)
+	require.JSONEq(t, json1, j1)
 	jObject.JB().FB()
 	json2 := `
 	{
@@ -1557,7 +1561,9 @@ func TestChoiceDefaults(t *testing.T) {
 			"f_b": 3
 		}
 	}`
-	require.JSONEq(t, json2, jObject.ToJson())
+	j2, err2 := jObject.ToJson()
+	assert.Nil(t, err2)
+	require.JSONEq(t, json2, j2)
 	integer := openapiart.NewIntegerPattern()
 	integer.Integer().Values()
 	json3 := `
@@ -1569,7 +1575,9 @@ func TestChoiceDefaults(t *testing.T) {
 		  ]
 		}
 	}`
-	require.JSONEq(t, json3, integer.ToJson())
+	j3, err3 := integer.ToJson()
+	assert.Nil(t, err3)
+	require.JSONEq(t, json3, j3)
 	integer.Integer().SetValues([]int32{1, 2, 3})
 	json4 := `
 	{
@@ -1580,5 +1588,7 @@ func TestChoiceDefaults(t *testing.T) {
 		  ]
 		}
 	}`
-	require.JSONEq(t, json4, integer.ToJson())
+	j4, err4 := integer.ToJson()
+	assert.Nil(t, err4)
+	require.JSONEq(t, json4, j4)
 }
