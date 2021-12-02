@@ -1,4 +1,5 @@
 import os, re
+from jsonpath_ng import parse
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
 from openapiart.goserver.writer import Writer
@@ -52,6 +53,7 @@ class GoServerControllerGenerator(object):
         ).write_line(
             '"io/ioutil"',
             '"net/http"',
+            '"google.golang.org/protobuf/encoding/protojson"',
             f'"{self._root_package}/httpapi"',
             f'"{self._root_package}/httpapi/interfaces"',
             f'{re.sub("[.]", "", self._ctx.models_prefix)} "{self._ctx.models_path}"',
@@ -165,6 +167,11 @@ class GoServerControllerGenerator(object):
 
         error_responses = []
         for response in route.responses:
+            # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
+            if self._need_warnning_check(route, response, ctrl):
+                self._handle_warnning(w, rsp_400_error)
+                continue
+
             if int(response.response_value) in [400, 500]:
                 error_responses.append(response)
             w.write_line(
@@ -205,21 +212,55 @@ class GoServerControllerGenerator(object):
         )
 
         for err_rsp in error_responses:
+            result_status_code = "StatusCode{}".format(str(err_rsp.response_value))
             w.write_line("""func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, rsp_err error) {{
                 result := {models_prefix}New{response_model_name}()
                 result.StatusCode{response_value}().SetErrors([]string{{rsp_err.Error()}})
-                httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode500())
+                httpapi.WriteJSONResponse(w, {response_value}, result.{result_status_code}())
             }}
             """.format(
                 struct_name=self._struct_name(ctrl),
                 method_name=rsp_400_error if int(err_rsp.response_value) == 400 else rsp_500_error,
                 models_prefix=self._ctx.models_prefix,
                 response_model_name=route.response_model_name,
-                response_value=err_rsp.response_value
+                response_value=err_rsp.response_value,
+                result_status_code=result_status_code
             ))
 
         pass
 
+    def _need_warnning_check(self, route, response, ctrl):
+        parse_schema = parse("$..schema").find(response.response_obj)
+        schema = [s.value for s in parse_schema][0]
+        if "$ref" in schema:
+            schema = self._ctx.get_object_from_ref(schema["$ref"])
+        parse_warnings = parse("$..warnings").find(schema)
+        if route.method in ["PUT", "POST"] and \
+                int(response.response_value) == 200 and \
+                response.has_json and \
+                len(parse_warnings) > 0:
+            return True
+        return False
+
+
+    def _handle_warnning(self, w, rsp_400_error):
+        w.write_line("""if result.HasStatusCode200() {{
+                opts := protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: true,
+                    Indent:          "  ",
+                }}
+                data, err := opts.Marshal(result.StatusCode200().Msg())
+                if err != nil {{
+                    ctrl.{rsp_400_error}(w, err)
+                }}
+                httpapi.WriteCustomJSONResponse(w, 200, data)
+                return
+            }}
+            """.format(
+                rsp_400_error=rsp_400_error
+        ))
 
     # def _write_servicehandler_interface(self, w: Writer, ctrl: ctx.Controller):
     #     w.write_line(

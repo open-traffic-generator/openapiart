@@ -14,21 +14,28 @@ type JSONWriter interface {
 
 // WriteJSONResponse sets an HTTP response with the provided status-code and JSON body.
 func WriteJSONResponse(w http.ResponseWriter, statuscode int, data JSONWriter) (int, error) {
-	w.WriteHeader(statuscode)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(statuscode)
 	return w.Write([]byte(data.ToJson()))
 }
 
-func WriteByteResponse(w http.ResponseWriter, statuscode int, data []byte) (int, error) {
+// WriteJSONResponse sets an HTTP response with the provided status-code and JSON data.
+func WriteCustomJSONResponse(w http.ResponseWriter, statuscode int, data []byte) (int, error) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statuscode)
+	return w.Write([]byte(data))
+}
+
+func WriteByteResponse(w http.ResponseWriter, statuscode int, data []byte) (int, error) {
 	w.Header().Set("Content-Type", "application/octet-stream; charset=UTF-8")
+	w.WriteHeader(statuscode)
 	return w.Write(data)
 }
 
 // WriteTextResponse sets an HTTP response with the provided status-code and string.
 func WriteAnyResponse(w http.ResponseWriter, statuscode int, data interface{}) (int, error) {
-	w.WriteHeader(statuscode)
 	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+	w.WriteHeader(statuscode)
 	var dataBytes, _ = json.Marshal(data)
 	return w.Write(dataBytes)
 }
@@ -40,8 +47,8 @@ type YAMLWriter interface {
 
 // WriteYAMLResponse sets an HTTP response with the provided status-code and JSON body.
 func WriteYAMLResponse(w http.ResponseWriter, statuscode int, data YAMLWriter) (int, error) {
-	w.WriteHeader(statuscode)
 	w.Header().Set("Content-Type", "application/yaml; charset=UTF-8")
+	w.WriteHeader(statuscode)
 	return w.Write([]byte(data.ToYaml()))
 }
 
