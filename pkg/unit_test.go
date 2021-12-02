@@ -1499,3 +1499,29 @@ func TestChoiceDefaults(t *testing.T) {
 	}`
 	require.JSONEq(t, json4, integer.ToJson())
 }
+
+func TestSetterWrapperHolder(t *testing.T) {
+	metricsResp := openapiart.NewGetMetricsResponse()
+	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	json1 := `{
+		"status_code_200":  {}
+	}`
+	require.JSONEq(t, json1, metricsResp.ToJson())
+	fmt.Println(metricsResp.ToJson())
+	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
+	json := `{
+		"status_code_200":  {
+		  "ports":  [
+			{
+			  "name":  "abc",
+			  "rx_frames":  100
+			}
+		  ]
+		}
+	}`
+	fmt.Println(metricsResp.ToJson())
+	require.JSONEq(t, json, metricsResp.ToJson())
+	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	require.JSONEq(t, json1, metricsResp.ToJson())
+	fmt.Println(metricsResp.ToJson())
+}
