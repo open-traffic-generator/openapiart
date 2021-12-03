@@ -231,7 +231,10 @@ class GoServerControllerGenerator(object):
 
     def _need_warnning_check(self, route, response, ctrl):
         parse_schema = parse("$..schema").find(response.response_obj)
-        schema = [s.value for s in parse_schema][0]
+        schema = [s.value for s in parse_schema]
+        if len(schema) == 0:
+            return False
+        schema = schema[0]
         if "$ref" in schema:
             schema = self._ctx.get_object_from_ref(schema["$ref"])
         parse_warnings = parse("$..warnings").find(schema)

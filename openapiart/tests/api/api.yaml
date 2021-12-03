@@ -47,6 +47,9 @@ paths:
       description: >-
         Gets the configuration resources.
       responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: Config response
           content:
@@ -61,6 +64,9 @@ paths:
       description: >-
         Gets metrics.
       responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: Unique metrics response
           content:
@@ -75,6 +81,9 @@ paths:
       description: >-
         Gets warnings.
       responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
         '200':
           $ref: '../common/common.yaml#/components/responses/Warnings'
     delete:
@@ -83,5 +92,8 @@ paths:
       description: >-
         Clears warnings.
       responses:
+        x-include:
+        - '../common/common.yaml#/components/responses/Error.400'
+        - '../common/common.yaml#/components/responses/Error500'
         '200':
-          description: 'OK'
+          $ref: '../common/common.yaml#/components/responses/Warnings'
