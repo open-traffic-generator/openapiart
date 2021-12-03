@@ -118,6 +118,14 @@ class GoServerControllerGenerator(object):
         pass
 
     def _write_methods(self, w: Writer, ctrl: ctx.Controller):
+        w.write_line("""var {name}MrlOpts = protojson.MarshalOptions{{
+                UseProtoNames:   true,
+                AllowPartial:    true,
+                EmitUnpopulated: true,
+                Indent:          "  ",
+            }}""".format(
+            name=util.camel_case(ctrl.yamlname)
+        ))
         for route in ctrl.routes:
             self._write_method(w, ctrl, route)
     
@@ -165,46 +173,34 @@ class GoServerControllerGenerator(object):
                 f"result := ctrl.handler.{route.operation_name}(r)",
             )
 
+        rsp_200_section = ""
         error_responses = []
         for response in route.responses:
-            # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
-            if self._need_warnning_check(route, response, ctrl):
-                self._handle_warnning(w, rsp_400_error)
-                continue
-
             if int(response.response_value) in [400, 500]:
                 error_responses.append(response)
-            w.write_line(
-                f"if result.HasStatusCode{response.response_value}() {{",
-            ).push_indent()
-            # print(response_obj)
+
             # no response content defined, return as 'any'
-            write_method = None
             if response.has_json:
                 write_method = "WriteJSONResponse"
             elif response.has_binary:
                 write_method = "WriteByteResponse"
             else:
                 write_method = "WriteAnyResponse"
-            w.write_line(
-                "httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())".format(
+
+            if int(response.response_value) == 200:
+                rsp_200_section = self._get_200_section(
+                    route, response, rsp_400_error, write_method, ctrl
+                )
+            else:
+                w.write_line("""if result.HasStatusCode{response_value}() {{
+                    httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())
+                    return
+                }}""".format(
                     write_method=write_method,
                     response_value=response.response_value
-                )
-            )
-            w.write_line("return")
-            w.pop_indent()
-            w.write_line(
-                "}",
-            )
+                ))
 
-        # w.push_indent()
-        # for r in ctrl.routes:
-        #     w.write_line(
-        #         f"httpapi.Route(\"{r.url}\", ctrl.{r.operation_name}, \"{r.method}\"),",
-        #     )
-        # w.pop_indent()
-        w.write_line("httpapi.WriteDefaultResponse(w, http.StatusInternalServerError)")
+        w.write_line(rsp_200_section)
         w.pop_indent()
         w.write_line(
             "}",
@@ -229,7 +225,7 @@ class GoServerControllerGenerator(object):
 
         pass
 
-    def _need_warnning_check(self, route, response, ctrl):
+    def _need_warning_check(self, route, response):
         parse_schema = parse("$..schema").find(response.response_obj)
         schema = [s.value for s in parse_schema]
         if len(schema) == 0:
@@ -245,25 +241,24 @@ class GoServerControllerGenerator(object):
             return True
         return False
 
-
-    def _handle_warnning(self, w, rsp_400_error):
-        w.write_line("""if result.HasStatusCode200() {{
-                opts := protojson.MarshalOptions{{
-                    UseProtoNames:   true,
-                    AllowPartial:    true,
-                    EmitUnpopulated: true,
-                    Indent:          "  ",
-                }}
-                data, err := opts.Marshal(result.StatusCode200().Msg())
+    def _get_200_section(self, route, response, rsp_400_error, write_method, ctrl):
+        # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
+        if self._need_warning_check(route, response):
+            rsp_200_section = """data, err := {mrl_name}MrlOpts.Marshal(result.StatusCode200().Msg())
                 if err != nil {{
                     ctrl.{rsp_400_error}(w, err)
                 }}
                 httpapi.WriteCustomJSONResponse(w, 200, data)
-                return
-            }}
-            """.format(
+                """.format(
+                mrl_name=util.camel_case(ctrl.yamlname),
                 rsp_400_error=rsp_400_error
-        ))
+            )
+        else:
+            rsp_200_section = "httpapi.{write_method}(w, 200, result.StatusCode200())".format(
+                write_method=write_method,
+            )
+        return rsp_200_section
+
 
     # def _write_servicehandler_interface(self, w: Writer, ctrl: ctx.Controller):
     #     w.write_line(
