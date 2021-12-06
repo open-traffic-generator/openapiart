@@ -1,12 +1,4 @@
-import typing
-import sys
 import os
-import importlib
-import shutil
-import yaml
-import subprocess
-import requests
-import platform
 import shutil
 import openapiart.goserver.generator_context as ctx
 from openapiart.goserver.go_interface_generator import GoServerInterfaceGenerator
@@ -16,11 +8,11 @@ class GoServerGenerator(object):
     def __init__(
         self, 
         openapi, # openapi.yaml.yaml
-        output_root_path: str,
-        module_path: str,
-        models_prefix: str = '',
-        models_path: str = ''
-        ):
+        output_root_path,
+        module_path,
+        models_prefix='',
+        models_path=''
+    ):
         self._output_root_path = output_root_path
         self._openapi = openapi
         self._context = ctx.GeneratorContext(openapi)
@@ -32,7 +24,9 @@ class GoServerGenerator(object):
         self._context.module_path = module_path
         self._context.models_prefix = models_prefix
         self._context.models_path = models_path
-        print(f'GoServer output directory: {self._context.output_path}')
+        print("GoServer output directory: {}".format(
+            self._context.output_path
+        ))
 
     def generate(self):
         self._loadyaml()
@@ -68,7 +62,7 @@ class GoServerGenerator(object):
             self._context.components.append(c)
         pass
 
-    def _loadroute(self, url: str, pathobj):
+    def _loadroute(self, url, pathobj):
         http_methods = [
             "get", "post", "put", "delete", "head", "patch"
         ]
@@ -76,7 +70,10 @@ class GoServerGenerator(object):
             if methodname not in http_methods:
                 continue
             if "tags" not in methodobj:
-                raise AttributeError(f"controller name missing from '{url} - {methodname}:'\nUse tags: [<name>]")
+                raise AttributeError("controller name missing from '{url} - {methodname}:'\nUse tags: [<name>]".format(
+                    url=url,
+                    methodname=methodname
+                ))
             controllername = methodobj["tags"][0]
             ctrl = self._context.find_controller(controllername)
             ctrl.add_route(url, methodname, methodobj)
