@@ -163,7 +163,7 @@ class GoServerControllerGenerator(object):
                 "    }"  
                 "} else {",
                 "    bodyError := errors.New(\"Request do not have any body\")",
-                f"    ctrl.{rsp_400_error}(w, bodyError)",
+                f"    ctrl.{rsp_500_error}(w, bodyError)",
                 "    return",
                 "}",
                 f"result := ctrl.handler.{route.operation_name}(item, r)",
