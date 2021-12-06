@@ -1,14 +1,17 @@
 import os, subprocess
 
+
 class GoTidy(object):
     def __init__(
         self, 
-        output_root_path: str,
-        ):
+        output_root_path,
+    ):
         self._output_root_path = output_root_path
 
     def goTidy(self):
-        print(f'GoTidy output directory: {self._output_root_path}')
+        print("GoTidy output directory: {path}".format(
+            path=self._output_root_path
+        ))
         self._format_go()
         self._tidy_mod()
 
