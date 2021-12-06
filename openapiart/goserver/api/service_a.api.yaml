@@ -24,6 +24,18 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
     delete:
       tags: [ApiTest]
       operationId: dummyResponseTest
@@ -35,6 +47,18 @@ paths:
             text/plain:
               schema:
                 type: string
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
     post:
       tags: [ApiTest]
       operationId: PostRootResponse
@@ -51,8 +75,14 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
-        '500':
+        '400':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
           content:
             application/json:
               schema:

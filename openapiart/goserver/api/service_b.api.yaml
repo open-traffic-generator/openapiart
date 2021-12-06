@@ -19,6 +19,18 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
 
   /serviceb/{item_id}:
     get:
@@ -40,6 +52,12 @@ paths:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
         '400':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
           content:
             application/json:
               schema:
@@ -69,3 +87,15 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'

@@ -173,7 +173,6 @@ class GoServerControllerGenerator(object):
                 f"result := ctrl.handler.{route.operation_name}(r)",
             )
 
-        rsp_200_section = ""
         error_responses = []
         for response in route.responses:
             if int(response.response_value) in [400, 500]:
@@ -188,19 +187,25 @@ class GoServerControllerGenerator(object):
                 write_method = "WriteAnyResponse"
 
             if int(response.response_value) == 200:
-                rsp_200_section = self._get_200_section(
+                rsp_section = self._get_200_section(
                     route, response, rsp_400_error, write_method, ctrl
                 )
             else:
-                w.write_line("""if result.HasStatusCode{response_value}() {{
-                    httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())
-                    return
-                }}""".format(
+                rsp_section = """httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())""".format(
                     write_method=write_method,
                     response_value=response.response_value
-                ))
+                )
 
-        w.write_line(rsp_200_section)
+            w.write_line("""if result.HasStatusCode{response_value}() {{
+                               {rsp_section}
+                               return
+                           }}""".format(
+                response_value=response.response_value,
+                rsp_section=rsp_section
+            ))
+        w.write_line("ctrl.{rsp_500_error}(w, errors.New(\"Unknown error\"))".format(
+            rsp_500_error=rsp_500_error
+        ))
         w.pop_indent()
         w.write_line(
             "}",
@@ -208,11 +213,26 @@ class GoServerControllerGenerator(object):
         )
 
         for err_rsp in error_responses:
-            result_status_code = "StatusCode{}".format(str(err_rsp.response_value))
+            schema = parse("$..schema").find(err_rsp.response_obj)[0].value
+            if '$ref' in schema:
+                schema = self._ctx.get_object_from_ref(schema["$ref"])
+            for prop_name, prop_value in schema["properties"].items():
+                break
+            prop_type = prop_value["type"]
+            if prop_type not in ["string", "array"]:
+                raise Exception("Expecting Errors are string/ array of strings")
+            if prop_type == "string":
+                set_errors = """Set{prop_name}(rsp_err.Error())""".format(
+                    prop_name=util.pascal_case(prop_name)
+                )
+            else:
+                set_errors = """Set{prop_name}([]string{{rsp_err.Error()}})""".format(
+                    prop_name=util.pascal_case(prop_name)
+                )
             w.write_line("""func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, rsp_err error) {{
                 result := {models_prefix}New{response_model_name}()
-                result.StatusCode{response_value}().SetErrors([]string{{rsp_err.Error()}})
-                httpapi.WriteJSONResponse(w, {response_value}, result.{result_status_code}())
+                result.StatusCode{response_value}().{set_errors}
+                httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())
             }}
             """.format(
                 struct_name=self._struct_name(ctrl),
@@ -220,7 +240,7 @@ class GoServerControllerGenerator(object):
                 models_prefix=self._ctx.models_prefix,
                 response_model_name=route.response_model_name,
                 response_value=err_rsp.response_value,
-                result_status_code=result_status_code
+                set_errors=set_errors,
             ))
 
         pass
