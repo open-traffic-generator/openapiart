@@ -6,32 +6,7 @@ on:
   - workflow_dispatch
 
 jobs:
-  generate:
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: [2.7]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Setup Go and protoc
-        run: |
-          python do.py setup_ext
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Generate only for 2.7
-        run: |
-          python do.py setup
-          python do.py init
-          python do.py generate
-
   build:
-    needs: generate
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
@@ -49,12 +24,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Generate only for 3.9
         run: |
           python do.py setup
           python do.py init
-      - name: Build distribution
-        run: |
           python do.py dist
       - name: Install package on clean env
         run: |
@@ -64,33 +37,70 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate
-      - name: Run tests
-        run: |
-          sudo python do.py test
       - name: Archive generated artifacts
         uses: actions/upload-artifact@v2
         with:
           name: generated-artifacts
-          path: art
-      - name: Get package version
-        id: get_version
-        run: |
-          echo "::set-output name=version::v$(python do.py version)"
-      - name: Check tag for current version
-        uses: mukunku/tag-exists-action@v1.0.0
-        id: check_tag
+          path: |
+            dist
+            art
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [2.7 3.9]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
         with:
-          tag: ${{ steps.get_version.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish package
-        if: steps.check_tag.outputs.exists == 'false'
+          ref: ${{ github.head_ref }}
+      - name: Setup Go and protoc
         run: |
-          PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
-      - name: Create release and publish artifacts
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: ncipollo/release-action@v1
+          python do.py setup_ext
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
-          artifacts: "dist/*"
-          tag: ${{ steps.get_version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python do.py setup
+          python do.py init
+      - uses: actions/download-artifact@v2
+        with:
+          name: generated-artifacts
+          path: |
+            dist
+            art
+      - name: Run tests
+        run: |
+          sudo python do.py test
+  #     - name: Archive generated artifacts
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: generated-artifacts
+  #         path: art
+  #     - name: Get package version
+  #       id: get_version
+  #       run: |
+  #         echo "::set-output name=version::v$(python do.py version)"
+  #     - name: Check tag for current version
+  #       uses: mukunku/tag-exists-action@v1.0.0
+  #       id: check_tag
+  #       with:
+  #         tag: ${{ steps.get_version.outputs.version }}
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Publish package
+  #       if: steps.check_tag.outputs.exists == 'false'
+  #       run: |
+  #         PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
+  #     - name: Create release and publish artifacts
+  #       if: steps.check_tag.outputs.exists == 'false'
+  #       uses: ncipollo/release-action@v1
+  #       with:
+  #         artifacts: "dist/*"
+  #         tag: ${{ steps.get_version.outputs.version }}
+  #         token: ${{ secrets.GITHUB_TOKEN }}
