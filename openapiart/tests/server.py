@@ -54,7 +54,7 @@ class OpenApiServer(object):
     def __init__(self, package):
         # TODO Shall change the below sanity path to be dynamic
         pkg_name = "sanity"
-        lib_path = "../../.output/openapiart/%s" % pkg_name
+        lib_path = "../../art/%s" % pkg_name
         sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), lib_path)))
         app.PACKAGE = importlib.import_module(pkg_name)
         app.CONFIG = app.PACKAGE.Api().prefix_config()
@@ -74,4 +74,4 @@ class OpenApiServer(object):
                 break
             except Exception as e:
                 print(e)
-            time.sleep(0.1)
+            time.sleep(1)
