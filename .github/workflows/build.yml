@@ -71,9 +71,6 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: generated-artifacts
-          path: |
-            dist
-            art
       - name: Run tests
         run: |
           sudo python do.py test
