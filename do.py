@@ -135,6 +135,7 @@ def generate():
 def test():
     run(
         [
+            py() + " -m pip install flask",
             py() + " -m pip install pytest-cov",
             py() + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
