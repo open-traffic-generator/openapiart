@@ -8,7 +8,7 @@ import base64
 def grpc_server(pb2, pb2_grpc):
     class OpenapiServicer(pb2_grpc.OpenapiServicer):
         def __init__(self):
-            super().__init__()
+            super(OpenapiServicer, self).__init__()
 
         def SetConfig(self, request, context):
             response_400 = """

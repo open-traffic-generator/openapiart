@@ -5,14 +5,14 @@ import time
 import os
 import importlib
 import sys
-
-import pytest
+import socket
 
 
 app = Flask(__name__)
 app.CONFIG = None
 app.PACKAGE = None
 app.PORT = 18080
+app.HOST = "0.0.0.0"
 
 
 @app.route("/config", methods=["POST"])
@@ -48,10 +48,6 @@ def after_request(resp):
     return resp
 
 
-def web_server():
-    app.run(port=app.PORT, debug=True, use_reloader=False)
-
-
 class OpenApiServer(object):
     def __init__(self, package):
         # TODO Shall change the below sanity path to be dynamic
@@ -63,22 +59,15 @@ class OpenApiServer(object):
         app.PACKAGE = importlib.import_module(pkg_name)
         app.CONFIG = app.PACKAGE.Api().prefix_config()
 
+    @staticmethod
+    def web_server():
+        app.run(host=app.HOST, port=app.PORT, debug=False, use_reloader=False)
+
     def start(self):
-        self._web_server_thread = threading.Thread(target=web_server)
+        self._web_server_thread = threading.Thread(
+            target=OpenApiServer.web_server
+        )
         self._web_server_thread.setDaemon(True)
         self._web_server_thread.start()
-        self._wait_until_ready()
         return self
 
-    def _wait_until_ready(self):
-        time.sleep(1)
-        api = app.PACKAGE.api(location="http://127.0.0.1:{}".format(app.PORT))
-        attempts = 0
-        while attempts < 5:
-            try:
-                api.get_config()
-                break
-            except Exception as e:
-                print(e)
-            time.sleep(1)
-            attempts += 1
