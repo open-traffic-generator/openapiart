@@ -154,7 +154,7 @@ def test():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
-    run(["go mod tidy -e"], capture_output=True)
+    run(["go mod tidy"], capture_output=True)
     ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
