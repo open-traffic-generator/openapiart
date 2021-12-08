@@ -1,4 +1,8 @@
 # Build process
+# Generate go and python artifacts using 3.9
+# Test generated go artifacts using latest go
+# Test generate python artifacts using 2.7 and 3.9
+
 name: CICD
 
 on:

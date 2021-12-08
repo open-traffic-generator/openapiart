@@ -22,7 +22,9 @@ def set_config():
     test = config.h
     if test is not None and isinstance(test, bool) is False:
         return Response(
-            status=590, response=json.dumps({"detail": "invalid data type"}), headers={"Content-Type": "application/json"}
+            status=590,
+            response=json.dumps({"detail": "invalid data type"}),
+            headers={"Content-Type": "application/json"},
         )
     else:
         app.CONFIG = config
@@ -55,7 +57,9 @@ class OpenApiServer(object):
         # TODO Shall change the below sanity path to be dynamic
         pkg_name = "sanity"
         lib_path = "../../art/%s" % pkg_name
-        sys.path.append(os.path.join(os.path.join(os.path.dirname(__file__), lib_path)))
+        sys.path.append(
+            os.path.join(os.path.join(os.path.dirname(__file__), lib_path))
+        )
         app.PACKAGE = importlib.import_module(pkg_name)
         app.CONFIG = app.PACKAGE.Api().prefix_config()
 
@@ -67,11 +71,14 @@ class OpenApiServer(object):
         return self
 
     def _wait_until_ready(self):
+        time.sleep(1)
         api = app.PACKAGE.api(location="http://127.0.0.1:{}".format(app.PORT))
-        while True:
+        attempts = 0
+        while attempts < 5:
             try:
                 api.get_config()
                 break
             except Exception as e:
                 print(e)
             time.sleep(1)
+            attempts += 1
