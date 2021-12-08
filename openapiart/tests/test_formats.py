@@ -22,7 +22,7 @@ def test_formats_bad_string(config, value):
     config.l.string = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {value} was successfully validated".format(value))
     except TypeError:
         pass
 
@@ -32,7 +32,7 @@ def test_formats_bad_integer(config, value):
     config.l.integer = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
@@ -42,7 +42,7 @@ def test_formats_integer_to_be_removed(config, value):
     try:
         config.l.integer = value
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
@@ -53,15 +53,28 @@ def test_formats_good_ipv4(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
     except TypeError:
-        pytest.fail(f"Value {value} was not valid")
+        pytest.fail("Value {} was not valid".format(value))
 
 
-@pytest.mark.parametrize("value", ["1.1. 1.1", 33.4, "asdf", 100, -20, "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "1.1. 1.1",
+        33.4,
+        "asdf",
+        100,
+        -20,
+        "::01",
+        "1.1.1.1.1",
+        "256.256.256.256",
+        "-255.-255.-255.-255",
+    ],
+)
 def test_formats_bad_ipv4(config, value):
     config.l.ipv4 = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
@@ -71,37 +84,64 @@ def test_formats_ipv4_to_be_removed(config, value):
     try:
         config.l.ipv4 = value
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
 
-@pytest.mark.parametrize("value", [33.4, "asdf", "1.1.1.1", 100, -20, "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        33.4,
+        "asdf",
+        "1.1.1.1",
+        100,
+        -20,
+        "65535::65535",
+        "ab: :ab",
+        "ab:ab:ab",
+        "ffff0::ffff0",
+    ],
+)
 def test_formats_bad_ipv6(config, value):
     config.l.ipv6 = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
 
-@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:00", "00:00:00:00:gg:00", "00:00:fa:ce:fa:ce:01", "255:255:255:255:255:255"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        1,
+        2.2,
+        "1.1.1.1",
+        "::01",
+        "00:00:00",
+        "00:00:00:00:gg:00",
+        "00:00:fa:ce:fa:ce:01",
+        "255:255:255:255:255:255",
+    ],
+)
 def test_formats_bad_mac(config, value):
     config.l.mac = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
 
-@pytest.mark.parametrize("value", [1, 2.2, "1.1.1.1", "::01", "00:00:fa:ce:fa:ce:01"])
+@pytest.mark.parametrize(
+    "value", [1, 2.2, "1.1.1.1", "::01", "00:00:fa:ce:fa:ce:01"]
+)
 def test_formats_bad_hex(config, value):
     config.l.hex = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
@@ -111,7 +151,7 @@ def test_string_length(config, value):
     config.str_len = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(f"Value {value} was successfully validated")
+        pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
 
