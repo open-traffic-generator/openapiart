@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.17.1' 
+          go-version: "^1.17.1"
       - name: Setup protoc
         run: |
           python do.py get_protoc
@@ -82,6 +82,30 @@ jobs:
       - name: Run python tests
         run: |
           sudo python do.py test_python
+
+  go_tests:
+    needs: python_tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: generated-artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "^1.17.1"
+      - name: Setup protoc
+        run: |
+          python do.py get_protoc
+          python do.py get_go_deps
+      - name: Run go tests
+        run: |
+          python do.py test_go
 
   #     - name: Archive generated artifacts
   #       uses: actions/upload-artifact@v2
