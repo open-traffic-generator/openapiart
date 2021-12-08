@@ -107,30 +107,29 @@ jobs:
         run: |
           python do.py test_go
 
-  #     - name: Archive generated artifacts
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: generated-artifacts
-  #         path: art
-  #     - name: Get package version
-  #       id: get_version
-  #       run: |
-  #         echo "::set-output name=version::v$(python do.py version)"
-  #     - name: Check tag for current version
-  #       uses: mukunku/tag-exists-action@v1.0.0
-  #       id: check_tag
-  #       with:
-  #         tag: ${{ steps.get_version.outputs.version }}
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Publish package
-  #       if: steps.check_tag.outputs.exists == 'false'
-  #       run: |
-  #         PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
-  #     - name: Create release and publish artifacts
-  #       if: steps.check_tag.outputs.exists == 'false'
-  #       uses: ncipollo/release-action@v1
-  #       with:
-  #         artifacts: "dist/*"
-  #         tag: ${{ steps.get_version.outputs.version }}
-  #         token: ${{ secrets.GITHUB_TOKEN }}
+  publish_python_package:
+    needs: go_tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get package version
+        id: get_version
+        run: |
+          echo "::set-output name=version::v$(python do.py version)"
+      - name: Check tag for current version
+        uses: mukunku/tag-exists-action@v1.0.0
+        id: check_tag
+        with:
+          tag: ${{ steps.get_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
+      - name: Create release and publish artifacts
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "dist/*"
+          tag: ${{ steps.get_version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
