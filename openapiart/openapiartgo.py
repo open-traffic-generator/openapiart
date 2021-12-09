@@ -391,10 +391,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     if url.startswith("/"):
                         url = url[1:]
-                    http.request = """api.httpSendRecv("{url}", {struct}.ToJson(), "{method}")""".format(
+                    http.request = """{structlower}, err := {struct}.ToJson()
+                    if err != nil {{return nil, err}}
+                    resp, err := api.httpSendRecv("{url}", {structlower}, "{method}")
+                    """.format(
                         operation_name=http.operation_name,
                         url=url,
                         struct=new.struct,
+                        structlower=new.struct.lower(),
                         method=str(operation_id.context.path.fields[0]).upper(),
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
@@ -416,7 +420,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.http_call = """return api.http{operation_name}()""".format(
                         operation_name=rpc.operation_name,
                     )
-                    http.request = """api.httpSendRecv("{url}", "", "{method}")""".format(
+                    http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
                         url=url, method=str(operation_id.context.path.fields[0]).upper()
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
@@ -668,7 +672,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    resp, err := {request}
+                    {request}
                     if err != nil {{
                         return nil, err
                     }}
@@ -781,12 +785,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj
             }}
 
-            func (obj *{struct}) ToPbText() string {{
+            func (obj *{struct}) ToPbText() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
-                return proto.MarshalTextString(obj.Msg())
+                return proto.MarshalTextString(obj.Msg()), nil
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
@@ -802,10 +806,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return retObj
             }}
 
-            func (obj *{struct}) ToYaml() string {{
+            func (obj *{struct}) ToYaml() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
@@ -813,12 +817,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     EmitUnpopulated: false,
                 }}
                 data, err := opts.Marshal(obj.Msg())
-                if err != nil {{panic(err)}}
+                if err != nil {{return "", err}}
                 data, err = yaml.JSONToYAML(data)
                 if err != nil {{
-                    panic(err)
+                    return "", err
                 }}
-                return string(data)
+                return string(data), nil
             }}
 
             func (obj *{struct}) FromYaml(value string) error {{
@@ -844,10 +848,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            func (obj *{struct}) ToJson() string {{
+            func (obj *{struct}) ToJson() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
@@ -857,9 +861,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 data, err := opts.Marshal(obj.Msg())
                 if err != nil {{
-                    panic(err)
+                    return "", err
                 }}
-                return string(data)
+                return string(data), nil
             }}
 
             func (obj *{struct}) FromJson(value string) error {{
@@ -907,11 +911,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         interfaces = [
             "// ToPbText marshals {interface} to protobuf text",
-            "ToPbText() string",
+            "ToPbText() (string, error)",
             "// ToYaml marshals {interface} to YAML text",
-            "ToYaml() string",
+            "ToYaml() (string, error)",
             "// ToJson marshals {interface} to JSON text",
-            "ToJson() string",
+            "ToJson() (string, error)",
             "// FromPbText unmarshals {interface} from protobuf text",
             "FromPbText(value string) error",
             "// FromYaml unmarshals {interface} from YAML text",
