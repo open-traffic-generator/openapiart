@@ -1599,8 +1599,10 @@ func TestSetterWrapperHolder(t *testing.T) {
 	json1 := `{
 		"status_code_200":  {}
 	}`
-	require.JSONEq(t, json1, metricsResp.ToJson())
-	fmt.Println(metricsResp.ToJson())
+	metricsrespJson, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, json1, metricsrespJson)
+	fmt.Println(metricsrespJson)
 	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
 	json := `{
 		"status_code_200":  {
@@ -1612,9 +1614,13 @@ func TestSetterWrapperHolder(t *testing.T) {
 		  ]
 		}
 	}`
-	fmt.Println(metricsResp.ToJson())
-	require.JSONEq(t, json, metricsResp.ToJson())
+	metricsrespJson1, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	fmt.Println(metricsrespJson1)
+	require.JSONEq(t, json, metricsrespJson1)
 	metricsResp.SetStatusCode200(openapiart.NewMetrics())
-	require.JSONEq(t, json1, metricsResp.ToJson())
-	fmt.Println(metricsResp.ToJson())
+	metricsrespJson2, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, json1, metricsrespJson2)
+	fmt.Println(metricsrespJson2)
 }
