@@ -66,7 +66,7 @@ jobs:
           python do.py generate
       - name: Run go lint
         run: |
-          sudo python do.py go_lint
+          python do.py go_lint
       - name: Run tests
         run: |
           sudo python do.py test
