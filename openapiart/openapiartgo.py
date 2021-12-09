@@ -407,10 +407,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         struct=new.struct,
                     )
 
-                    http.request = """api.httpSendRecv("{http_url}", {struct}.ToJson(), "{method}")""".format(
+                    http.request = """{structlower}, err := {struct}.ToJson()
+                    if err != nil {{return nil, err}}
+                    resp, err := api.httpSendRecv("{url}", {structlower}, "{method}")
+                    """.format(
                         operation_name=http.operation_name,
-                        http_url=http_url,
+                        url=http_url,
                         struct=new.struct,
+                        structlower=new.struct.lower(),
                         method=str(operation_id.context.path.fields[0]).upper(),
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
@@ -432,8 +436,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.http_call = """return api.http{operation_name}()""".format(
                         operation_name=rpc.operation_name,
                     )
-                    http.request = """api.httpSendRecv("{http_url}", "", "{method}")""".format(
-                        http_url=http_url, method=str(operation_id.context.path.fields[0]).upper()
+                    http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
+                        url=http_url, method=str(operation_id.context.path.fields[0]).upper()
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 for ref in self._get_parser("$..responses").find(path_item_object):
@@ -684,7 +688,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    resp, err := {request}
+                    {request}
                     if err != nil {{
                         return nil, err
                     }}
@@ -764,17 +768,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
         internal_items_nil = []
         for field in new.interface_fields:
             if field.struct and field.isArray is False:
-                internal_items.append("{}Holder {}".format(
-                    field.name[0].lower() + field.name[1:], field.type
+                internal_items.append("{} {}".format(
+                    self._get_holder_name(field), field.type
                 ))
-                internal_items_nil.append("obj.{}Holder = nil".format(
-                    field.name[0].lower() + field.name[1:]))
+                internal_items_nil.append("obj.{} = nil".format(
+                    self._get_holder_name(field)))
             if field.adder_method is not None and field.isArray:
-                internal_items.append("{}Holder {}".format(
-                    field.name[0].lower() + field.name[1:], new.interface + field.external_struct + "Iter"
+                internal_items.append("{} {}".format(
+                    self._get_holder_name(field), new.interface + field.external_struct + "Iter"
                 ))
-                internal_items_nil.append("obj.{}Holder = nil".format(
-                    field.name[0].lower() + field.name[1:]))
+                internal_items_nil.append("obj.{} = nil".format(
+                    self._get_holder_name(field)))
         self._write(
             """
             // ***** {interface} *****
@@ -794,16 +798,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) SetMsg(msg *{pb_pkg_name}.{interface}) {interface} {{
+                {nil_call}
                 proto.Merge(obj.obj, msg)
                 return obj
             }}
 
-            func (obj *{struct}) ToPbText() string {{
+            func (obj *{struct}) ToPbText() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
-                return proto.MarshalTextString(obj.Msg())
+                return proto.MarshalTextString(obj.Msg()), nil
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
@@ -819,10 +824,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return retObj
             }}
 
-            func (obj *{struct}) ToYaml() string {{
+            func (obj *{struct}) ToYaml() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
@@ -830,12 +835,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     EmitUnpopulated: false,
                 }}
                 data, err := opts.Marshal(obj.Msg())
-                if err != nil {{panic(err)}}
+                if err != nil {{return "", err}}
                 data, err = yaml.JSONToYAML(data)
                 if err != nil {{
-                    panic(err)
+                    return "", err
                 }}
-                return string(data)
+                return string(data), nil
             }}
 
             func (obj *{struct}) FromYaml(value string) error {{
@@ -861,10 +866,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            func (obj *{struct}) ToJson() string {{
+            func (obj *{struct}) ToJson() (string, error) {{
                 vErr := obj.Validate()
                 if vErr != nil {{
-                    panic(vErr)
+                    return "", vErr
                 }}
                 opts := protojson.MarshalOptions{{
                     UseProtoNames:   true,
@@ -874,9 +879,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 data, err := opts.Marshal(obj.Msg())
                 if err != nil {{
-                    panic(err)
+                    return "", err
                 }}
-                return string(data)
+                return string(data), nil
             }}
 
             func (obj *{struct}) FromJson(value string) error {{
@@ -924,11 +929,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         interfaces = [
             "// ToPbText marshals {interface} to protobuf text",
-            "ToPbText() string",
+            "ToPbText() (string, error)",
             "// ToYaml marshals {interface} to YAML text",
-            "ToYaml() string",
+            "ToYaml() (string, error)",
             "// ToJson marshals {interface} to JSON text",
-            "ToJson() string",
+            "ToJson() (string, error)",
             "// FromPbText unmarshals {interface} from protobuf text",
             "FromPbText(value string) error",
             "// FromYaml unmarshals {interface} from YAML text",
@@ -972,7 +977,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_has(new, field)
-            self._write_field_setter(new, field)
+            self._write_field_setter(new, field, len(internal_items_nil) > 0)
             self._write_field_adder(new, field)
         self._write_validate_method(new)
         self._write_default_method(new)
@@ -993,15 +998,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body = """if len(obj.obj.{name}) == 0 {{
                         {block}
                     }}
-                    if obj.{internal_name}Holder == nil {{
-                        obj.{internal_name}Holder = new{parent}{interface}Iter().setMsg(obj)
+                    if obj.{internal_name} == nil {{
+                        obj.{internal_name} = new{parent}{interface}Iter().setMsg(obj)
                     }}
-                    return obj.{internal_name}Holder""".format(
+                    return obj.{internal_name}""".format(
                     name=field.name,
                     interface=field.external_struct,
                     parent=new.interface,
                     block=block,
-                    internal_name=field.name[0].lower() + field.name[1:]
+                    internal_name=self._get_holder_name(field)
                 )
             else:
                 block = "obj.obj.{name} = make({type}, 0)".format(
@@ -1049,14 +1054,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{name} == nil {{
                     {set_choice_or_new}
                 }}
-                if obj.{internal_name}Holder == nil {{
-                    obj.{internal_name}Holder = &{struct}{{obj: obj.obj.{name}}}
+                if obj.{internal_name} == nil {{
+                    obj.{internal_name} = &{struct}{{obj: obj.obj.{name}}}
                 }}
-                return obj.{internal_name}Holder""".format(
+                return obj.{internal_name}""".format(
                 name=field.name,
                 struct=field.struct,
                 set_choice_or_new=set_choice_or_new,
-                internal_name=field.name[0].lower() + field.name[1:]
+                internal_name=self._get_holder_name(field)
             )
         elif field.isEnum:
             enum_types = []
@@ -1168,7 +1173,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
 
-    def _write_field_setter(self, new, field):
+    def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
             return
 
@@ -1268,8 +1273,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     ))
                 enum_body.insert(0, "obj.obj.{name} = nil".format(name=enum_field.name))
                 if enum_field.struct is not None:
-                    enum_body.insert(1, "obj.{name}Holder = nil".format(
-                        name=enum_field.name[0].lower() + enum_field.name[1:]))
+                    enum_body.insert(1, "obj.{name} = nil".format(
+                        name=self._get_holder_name(enum_field)))
 
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
@@ -1294,7 +1299,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             return
         elif field.struct is not None:
-            body = """obj.{fieldname}().SetMsg(value.Msg())""".format(
+            body = """{set_nil} = nil
+            obj.obj.{name} = value.Msg()
+            """.format(
+                set_nil="obj.{}".format(self._get_holder_name(field))
+                if set_nil is True else "",
+                name=field.name,
                 fieldname=self._get_external_struct_name(field.name),
             )
         elif field.isPointer:
@@ -1423,7 +1433,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
-                internal_items_name="{}Slice".format(field.struct)
+                internal_items_name=self._get_holder_name(field, True)
             )
         )
 
@@ -2020,6 +2030,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+
+    def _get_holder_name(self, field, isIter=False):
+        if isIter:
+            return "{}Slice".format(field.struct)
+        return "{}Holder".format(field.name[0].lower() + field.name[1:])
 
     def _format_go_file(self):
         """Format the generated go code"""
