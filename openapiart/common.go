@@ -38,20 +38,20 @@ func (obj *grpcTransport) SetLocation(value string) GrpcTransport {
 
 // RequestTimeout returns the grpc request timeout in seconds
 func (obj *grpcTransport) RequestTimeout() time.Duration {
-	return obj.requestTimeout / time.Second
+	return obj.requestTimeout
 }
 
 // SetRequestTimeout contains the timeout value in seconds for a grpc request
 func (obj *grpcTransport) SetRequestTimeout(value time.Duration) GrpcTransport {
-	obj.requestTimeout = value * time.Second
+	obj.requestTimeout = value
 	return obj
 }
 func (obj *grpcTransport) DialTimeout() time.Duration {
-	return obj.dialTimeout / time.Second
+	return obj.dialTimeout
 }
 
 func (obj *grpcTransport) SetDialTimeout(value time.Duration) GrpcTransport {
-	obj.dialTimeout = value * time.Second
+	obj.dialTimeout = value
 	return obj
 }
 
