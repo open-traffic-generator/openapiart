@@ -58,7 +58,8 @@ def get_go_deps():
         [
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports"
+            cmd + " golang.org/x/tools/cmd/goimports",
+            cmd + " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
         ]
     )
 
@@ -168,14 +169,6 @@ def test():
         raise Exception("Go Tests Failed")
 
 def go_lint():
-    # golangci_lint_version = "1.43.0"
-    # print("Installing golangci-lint ...")
-    # cmd = "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
-    # cmd += " | sh -s -- -b $(go env GOPATH)/bin v"
-    # cmd += golangci_lint_version
-    cmd = "GO111MODULES=on go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
-    # os.chdir("pkg")
-    run([cmd])
     run(["golangci-lint run -v --modules-download-mode mod"])
 
 def dist():
