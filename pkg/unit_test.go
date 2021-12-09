@@ -262,7 +262,7 @@ func TestGObjectAppend(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	log.Print(g1.ToJson(), g1.ToYaml())
+	// log.Print(g1.ToJson(), g1.ToYaml())
 }
 
 func TestLObject(t *testing.T) {
@@ -1620,7 +1620,8 @@ func TestSetterWrapperHolder(t *testing.T) {
 	json1 := `{
 		"status_code_200":  {}
 	}`
-	require.JSONEq(t, json1, metricsResp.ToJson())
+	data1, _ := metricsResp.ToJson()
+	require.JSONEq(t, json1, data1)
 	fmt.Println(metricsResp.ToJson())
 	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
 	json := `{
@@ -1634,8 +1635,10 @@ func TestSetterWrapperHolder(t *testing.T) {
 		}
 	}`
 	fmt.Println(metricsResp.ToJson())
-	require.JSONEq(t, json, metricsResp.ToJson())
+	data2, _ := metricsResp.ToJson()
+	require.JSONEq(t, json, data2)
 	metricsResp.SetStatusCode200(openapiart.NewMetrics())
-	require.JSONEq(t, json1, metricsResp.ToJson())
+	data3, _ :=  metricsResp.ToJson()
+	require.JSONEq(t, json1, data3)
 	fmt.Println(metricsResp.ToJson())
 }

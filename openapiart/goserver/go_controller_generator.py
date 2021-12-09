@@ -228,9 +228,16 @@ class GoServerControllerGenerator(object):
             else:
                 write_method = "WriteAnyResponse"
 
-            if int(response.response_value) == 200:
-                rsp_section = self._get_200_section(
-                    route, response, rsp_400_error, write_method, ctrl
+            # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
+            if self._need_warning_check(route, response):
+                rsp_section = """data, err := {mrl_name}MrlOpts.Marshal(result.StatusCode200().Msg())
+                        if err != nil {{
+                            ctrl.{rsp_400_error}(w, err)
+                        }}
+                        httpapi.WriteCustomJSONResponse(w, 200, data)
+                    """.format(
+                    mrl_name=util.camel_case(ctrl.yamlname),
+                    rsp_400_error=rsp_400_error
                 )
             else:
                 rsp_section = """httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())""".format(
@@ -303,23 +310,6 @@ class GoServerControllerGenerator(object):
             return True
         return False
 
-    def _get_200_section(self, route, response, rsp_400_error, write_method, ctrl):
-        # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
-        if self._need_warning_check(route, response):
-            rsp_200_section = """data, err := {mrl_name}MrlOpts.Marshal(result.StatusCode200().Msg())
-                if err != nil {{
-                    ctrl.{rsp_400_error}(w, err)
-                }}
-                httpapi.WriteCustomJSONResponse(w, 200, data)
-                """.format(
-                mrl_name=util.camel_case(ctrl.yamlname),
-                rsp_400_error=rsp_400_error
-            )
-        else:
-            rsp_200_section = "httpapi.{write_method}(w, 200, result.StatusCode200())".format(
-                write_method=write_method,
-            )
-        return rsp_200_section
 
 
     # def _write_servicehandler_interface(self, w: Writer, ctrl: ctx.Controller):

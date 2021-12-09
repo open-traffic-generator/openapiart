@@ -9,14 +9,18 @@ import (
 
 // JSONWriter offers conversion to JSON.
 type JSONWriter interface {
-	ToJson() string
+	ToJson() (string, error)
 }
 
 // WriteJSONResponse sets an HTTP response with the provided status-code and JSON body.
 func WriteJSONResponse(w http.ResponseWriter, statuscode int, data JSONWriter) (int, error) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statuscode)
-	return w.Write([]byte(data.ToJson()))
+	dataStr, err := data.ToJson()
+	if err != nil {
+	    WriteDefaultResponse(w, http.StatusInternalServerError)
+	}
+	return w.Write([]byte(dataStr))
 }
 
 // WriteJSONResponse sets an HTTP response with the provided status-code and JSON data.
