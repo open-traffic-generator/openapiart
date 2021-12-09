@@ -53,7 +53,7 @@ def get_go():
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on go get -v"
+    cmd = "GO111MODULE=on CGO_ENABLED=0 go get -v"
     run(
         [
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
