@@ -31,7 +31,7 @@ def on_linux():
 
 
 def get_go():
-    version = "1.17"
+    version = "1.16"
     targz = None
 
     if on_arm():
