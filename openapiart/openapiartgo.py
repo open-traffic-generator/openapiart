@@ -391,14 +391,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     if url.startswith("/"):
                         url = url[1:]
-                    http.request = """{structlower}, err := {struct}.ToJson()
+                    http.request = """{struct}Json, err := {struct}.ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {structlower}, "{method}")
+                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
                     """.format(
                         operation_name=http.operation_name,
                         url=url,
                         struct=new.struct,
-                        structlower=new.struct.lower(),
                         method=str(operation_id.context.path.fields[0]).upper(),
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
