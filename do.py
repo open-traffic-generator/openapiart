@@ -31,7 +31,7 @@ def on_linux():
 
 
 def get_go():
-    version = "1.16"
+    version = "1.17"
     targz = None
 
     if on_arm():
@@ -56,7 +56,6 @@ def get_go_deps():
     cmd = "GO111MODULE=on CGO_ENABLED=0 go get -v"
     run(
         [
-            cmd + " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0",
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
             cmd + " golang.org/x/tools/cmd/goimports"
@@ -169,6 +168,7 @@ def test():
         raise Exception("Go Tests Failed")
 
 def go_lint():
+    run(["GO111MODULE=on CGO_ENABLED=0 go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"])
     run(["golangci-lint run -v --modules-download-mode mod"])
 
 def dist():
