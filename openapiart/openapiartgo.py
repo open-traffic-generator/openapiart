@@ -748,17 +748,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
         internal_items_nil = []
         for field in new.interface_fields:
             if field.struct and field.isArray is False:
-                internal_items.append("{}Holder {}".format(
-                    field.name[0].lower() + field.name[1:], field.type
+                internal_items.append("{} {}".format(
+                    self._get_holder_name(field), field.type
                 ))
-                internal_items_nil.append("obj.{}Holder = nil".format(
-                    field.name[0].lower() + field.name[1:]))
+                internal_items_nil.append("obj.{} = nil".format(
+                    self._get_holder_name(field)))
             if field.adder_method is not None and field.isArray:
-                internal_items.append("{}Holder {}".format(
-                    field.name[0].lower() + field.name[1:], new.interface + field.external_struct + "Iter"
+                internal_items.append("{} {}".format(
+                    self._get_holder_name(field), new.interface + field.external_struct + "Iter"
                 ))
-                internal_items_nil.append("obj.{}Holder = nil".format(
-                    field.name[0].lower() + field.name[1:]))
+                internal_items_nil.append("obj.{} = nil".format(
+                    self._get_holder_name(field)))
         self._write(
             """type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
@@ -776,6 +776,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) SetMsg(msg *{pb_pkg_name}.{interface}) {interface} {{
+                {nil_call}
                 proto.Merge(obj.obj, msg)
                 return obj
             }}
@@ -954,7 +955,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_has(new, field)
-            self._write_field_setter(new, field)
+            self._write_field_setter(new, field, len(internal_items_nil) > 0)
             self._write_field_adder(new, field)
         self._write_validate_method(new)
         self._write_default_method(new)
@@ -975,15 +976,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body = """if len(obj.obj.{name}) == 0 {{
                         {block}
                     }}
-                    if obj.{internal_name}Holder == nil {{
-                        obj.{internal_name}Holder = new{parent}{interface}Iter().setMsg(obj)
+                    if obj.{internal_name} == nil {{
+                        obj.{internal_name} = new{parent}{interface}Iter().setMsg(obj)
                     }}
-                    return obj.{internal_name}Holder""".format(
+                    return obj.{internal_name}""".format(
                     name=field.name,
                     interface=field.external_struct,
                     parent=new.interface,
                     block=block,
-                    internal_name=field.name[0].lower() + field.name[1:]
+                    internal_name=self._get_holder_name(field)
                 )
             else:
                 block = "obj.obj.{name} = make({type}, 0)".format(
@@ -1031,14 +1032,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if obj.obj.{name} == nil {{
                     {set_choice_or_new}
                 }}
-                if obj.{internal_name}Holder == nil {{
-                    obj.{internal_name}Holder = &{struct}{{obj: obj.obj.{name}}}
+                if obj.{internal_name} == nil {{
+                    obj.{internal_name} = &{struct}{{obj: obj.obj.{name}}}
                 }}
-                return obj.{internal_name}Holder""".format(
+                return obj.{internal_name}""".format(
                 name=field.name,
                 struct=field.struct,
                 set_choice_or_new=set_choice_or_new,
-                internal_name=field.name[0].lower() + field.name[1:]
+                internal_name=self._get_holder_name(field)
             )
         elif field.isEnum:
             enum_types = []
@@ -1150,7 +1151,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         )
 
-    def _write_field_setter(self, new, field):
+    def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
             return
 
@@ -1250,8 +1251,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     ))
                 enum_body.insert(0, "obj.obj.{name} = nil".format(name=enum_field.name))
                 if enum_field.struct is not None:
-                    enum_body.insert(1, "obj.{name}Holder = nil".format(
-                        name=enum_field.name[0].lower() + enum_field.name[1:]))
+                    enum_body.insert(1, "obj.{name} = nil".format(
+                        name=self._get_holder_name(enum_field)))
 
             self._write(
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
@@ -1276,7 +1277,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             return
         elif field.struct is not None:
-            body = """obj.{fieldname}().SetMsg(value.Msg())""".format(
+            body = """{set_nil} = nil
+            obj.obj.{name} = value.Msg()
+            """.format(
+                set_nil="obj.{}".format(self._get_holder_name(field))
+                if set_nil is True else "",
+                name=field.name,
                 fieldname=self._get_external_struct_name(field.name),
             )
         elif field.isPointer:
@@ -1405,7 +1411,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
-                internal_items_name="{}Slice".format(field.struct)
+                internal_items_name=self._get_holder_name(field, True)
             )
         )
 
@@ -2002,6 +2008,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+    
+    def _get_holder_name(self, field, isIter=False):
+        if isIter:
+            return "{}Slice".format(field.struct)
+        return "{}Holder".format(field.name[0].lower() + field.name[1:])
 
     def _format_go_file(self):
         """Format the generated go code"""
