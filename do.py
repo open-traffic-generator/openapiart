@@ -56,10 +56,10 @@ def get_go_deps():
     cmd = "GO111MODULE=on CGO_ENABLED=0 go get -v"
     run(
         [
+            cmd + " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0",
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports",
-            cmd + " github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
+            cmd + " golang.org/x/tools/cmd/goimports"
         ]
     )
 
