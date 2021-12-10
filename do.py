@@ -169,7 +169,8 @@ def test():
 
 def go_lint():
     run(["GO111MODULE=on CGO_ENABLED=0 go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"])
-    run(["golangci-lint run -v --modules-download-mode mod"])
+    run(["golangci-lint run -v"])
+
 
 def dist():
     clean()
