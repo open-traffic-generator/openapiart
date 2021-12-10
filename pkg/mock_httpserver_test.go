@@ -38,49 +38,79 @@ func StartMockHttpServer() {
 		switch r.Method {
 		case http.MethodPost:
 			body, _ := ioutil.ReadAll(r.Body)
-			httpServer.Config.FromJson(string(body))
+			err := httpServer.Config.FromJson(string(body))
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
 			w.Header().Set("Content-Type", "application/json")
 			response := httpServer.Api.NewSetConfigResponse()
 			switch httpServer.Config.Response() {
 			case PrefixConfigResponse.STATUS_200:
 				response.SetStatusCode200([]byte("Successful set config operation"))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(response.StatusCode200()))
+				_, err := w.Write([]byte(response.StatusCode200()))
+				if err != nil {
+					log.Printf("error: %s", err.Error())
+				}
 			case PrefixConfigResponse.STATUS_400:
 				response.StatusCode400().SetErrors([]string{"A 400 error has occurred"})
 				w.WriteHeader(http.StatusBadRequest)
 				resp400, _ := response.StatusCode400().ToJson()
-				w.Write([]byte(resp400))
+				_, err := w.Write([]byte(resp400))
+				if err != nil {
+					log.Printf("error: %s", err.Error())
+				}
 			case PrefixConfigResponse.STATUS_500:
 				response.StatusCode500().SetErrors([]string{"A 500 error has occurred"})
 				w.WriteHeader(http.StatusInternalServerError)
 				resp500, _ := response.StatusCode500().ToJson()
-				w.Write([]byte(resp500))
+				_, err := w.Write([]byte(resp500))
+				if err != nil {
+					log.Printf("error: %s", err.Error())
+				}
 			case PrefixConfigResponse.STATUS_404:
 				response.StatusCode404().SetErrors([]string{"Not found error"})
 				w.WriteHeader(http.StatusNotFound)
 				resp404, _ := response.StatusCode404().ToJson()
-				w.Write([]byte(resp404))
+				_, err := w.Write([]byte(resp404))
+				if err != nil {
+					log.Printf("error: %s", err.Error())
+				}
 			}
 		case http.MethodPatch:
 			body, _ := ioutil.ReadAll(r.Body)
 			request := httpServer.Api.NewPrefixConfig()
-			request.FromJson(string(body))
+			err := request.FromJson(string(body))
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
 			response := httpServer.Api.NewUpdateConfigResponse()
 			conf, _ := httpServer.Config.ToJson()
-			response.StatusCode200().FromJson(conf)
+			err1 := response.StatusCode200().FromJson(conf)
+			if err1 != nil {
+				log.Printf("error: %s", err1.Error())
+			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			resp200, _ := response.StatusCode200().ToJson()
-			w.Write([]byte(resp200))
+			_, err2 := w.Write([]byte(resp200))
+			if err2 != nil {
+				log.Printf("error: %s", err2.Error())
+			}
 		case http.MethodGet:
 			response := httpServer.Api.NewGetConfigResponse()
 			conf, _ := httpServer.Config.ToJson()
-			response.StatusCode200().FromJson(conf)
+			err1 := response.StatusCode200().FromJson(conf)
+			if err1 != nil {
+				log.Printf("error: %s", err1.Error())
+			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			resp200, _ := response.StatusCode200().ToJson()
-			w.Write([]byte(resp200))
+			_, err := w.Write([]byte(resp200))
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
 		}
 	})
 
@@ -93,7 +123,10 @@ func StartMockHttpServer() {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			resp200, _ := response.StatusCode200().ToJson()
-			w.Write([]byte(resp200))
+			_, err := w.Write([]byte(resp200))
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
 		}
 	})
 
@@ -105,7 +138,10 @@ func StartMockHttpServer() {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			resp200, _ := response.StatusCode200().ToJson()
-			w.Write([]byte(resp200))
+			_, err := w.Write([]byte(resp200))
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
 		}
 	})
 

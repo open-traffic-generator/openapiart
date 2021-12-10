@@ -1450,7 +1450,8 @@ func TestItemsMethod(t *testing.T) {
 	config2 := api.NewPrefixConfig()
 	config1Json, err := config1.ToJson()
 	assert.Nil(t, err)
-	config2.FromJson(config1Json)
+	json_err := config2.FromJson(config1Json)
+	assert.Nil(t, json_err)
 	assert.Len(t, config1.G().Items(), 2)
 	assert.Len(t, config2.G().Items(), 2)
 	for ind, obj := range config1.G().Items() {
@@ -1488,7 +1489,8 @@ func TestStructGetterMethod(t *testing.T) {
 	jObject1 := openapiart.NewJObject()
 	jOject1json, err := jObject.ToJson()
 	assert.Nil(t, err)
-	jObject1.FromJson(jOject1json)
+	err1 := jObject1.FromJson(jOject1json)
+	assert.Nil(t, err1)
 	assert.Equal(t, jObject1.JA(), jObject1.JA())
 
 	jObject2 := openapiart.NewJObject()
@@ -1496,7 +1498,8 @@ func TestStructGetterMethod(t *testing.T) {
 	val2.SetEA(0.23495).SetEB(1.456)
 	jObject2Json, err := jObject.ToJson()
 	assert.Nil(t, err)
-	jObject2.FromJson(jObject2Json)
+	err2 := jObject2.FromJson(jObject2Json)
+	assert.Nil(t, err2)
 	assert.NotEqual(t, val2, jObject2.JA())
 }
 

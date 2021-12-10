@@ -64,7 +64,8 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 	yaml1, err := c1.ToYaml()
 	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
-	c2.FromYaml(yaml1)
+	yaml_err := c2.FromYaml(yaml1)
+	assert.Nil(t, yaml_err)
 	yaml2, err := c2.ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
@@ -77,7 +78,8 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 	json1, err := c1.ToJson()
 	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
-	c2.FromJson(json1)
+	json_err := c2.FromJson(json1)
+	assert.Nil(t, json_err)
 	json2, err := c2.ToJson()
 	assert.Nil(t, err)
 	assert.Equal(t, json1, json2)
@@ -91,7 +93,8 @@ func TestPartialSerDes(t *testing.T) {
 	var jsonMap map[string]interface{}
 	c1json, err := c1.ToJson()
 	assert.Nil(t, err)
-	json.Unmarshal([]byte(c1json), &jsonMap)
+	unmarsh_err := json.Unmarshal([]byte(c1json), &jsonMap)
+	assert.Nil(t, unmarsh_err)
 
 	// extract just the e object
 	data1, _ := json.Marshal(jsonMap["e"])
@@ -101,8 +104,10 @@ func TestPartialSerDes(t *testing.T) {
 
 	// create a new config that consists of just the e object and the g object
 	c2 := api.NewPrefixConfig()
-	c2.E().FromJson(string(data1))
-	c2.G().Add().FromJson(string(data2))
+	json_err := c2.E().FromJson(string(data1))
+	assert.Nil(t, json_err)
+	json_err1 := c2.G().Add().FromJson(string(data2))
+	assert.Nil(t, json_err1)
 	yaml1, err := c2.E().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(yaml1)
@@ -117,7 +122,8 @@ func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	pbString, err := c1.ToPbText()
 	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
-	c2.FromPbText(pbString)
+	pbtext_err := c2.FromPbText(pbString)
+	assert.Nil(t, pbtext_err)
 	c1json, err := c1.ToJson()
 	assert.Nil(t, err)
 	c2json, err := c2.ToJson()
