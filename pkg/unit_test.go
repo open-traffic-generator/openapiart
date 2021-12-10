@@ -67,7 +67,6 @@ func TestJsonSerialization(t *testing.T) {
 	config.MacPattern().Mac().Increment().SetStart("00:00:00:00:00:0a").SetStart("00:00:00:00:00:01").SetCount(100)
 	config.MacPattern().Mac().Decrement().SetStart("00:00:00:00:00:0a").SetStart("00:00:00:00:00:01").SetCount(100)
 	config.ChecksumPattern().Checksum().SetCustom(64)
-	fmt.Println(config.ToJson())
 
 	// TBD: this needs to be fixed as order of json keys is not guaranteed to be the same
 	// out := config.ToJson()
@@ -80,7 +79,8 @@ func TestJsonSerialization(t *testing.T) {
 	// expectedJson := bs
 	// eq, _ := JSONBytesEqual(actualJson, expectedJson)
 	// assert.Equal(t, eq, true)
-	yaml := config.ToYaml()
+	yaml, err := config.ToYaml()
+	assert.Nil(t, err)
 	log.Print(yaml)
 }
 
@@ -88,8 +88,12 @@ func TestNewAndSet(t *testing.T) {
 	c := openapiart.NewPrefixConfig()
 	c.SetE(openapiart.NewEObject().SetEA(123.456).SetEB(453.123))
 	c.SetF(openapiart.NewFObject().SetFA("fa string"))
-	log.Println(c.E().ToYaml())
-	log.Println(c.F().ToYaml())
+	yaml1, err := c.E().ToYaml()
+	assert.Nil(t, err)
+	yaml2, err := c.F().ToYaml()
+	assert.Nil(t, err)
+	log.Println(yaml1)
+	log.Println(yaml2)
 }
 
 func TestSimpleTypes(t *testing.T) {
@@ -184,7 +188,7 @@ func TestListWrapFromJson(t *testing.T) {
 	  }`
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.FromJson(listWrap)
+	assert.Nil(t, config.FromJson(listWrap))
 	assert.Equal(t, len(config.G().Items()), 1)
 }
 
@@ -200,7 +204,6 @@ func TestEObject(t *testing.T) {
 	assert.Equal(t, eb, config.E().EB())
 	assert.Equal(t, mparam1, config.E().MParam1())
 	assert.Equal(t, maparam2, config.E().MParam2())
-	log.Print(config.E().ToJson(), config.E().ToYaml())
 }
 
 func TestGObject(t *testing.T) {
@@ -214,13 +217,18 @@ func TestGObject(t *testing.T) {
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := config.G().Add()
 	g2.SetGA("g_2").SetGB(2).SetGC(22.2).SetGE(2.0)
+	assert.Len(t, config.G().Items(), 2)
 	for i, G := range config.G().Items() {
 		assert.Equal(t, ga[i], G.GA())
 		assert.Equal(t, gb[i], G.GB())
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	log.Print(g1.ToJson(), g1.ToYaml())
+	g1json, err := g1.ToJson()
+	assert.Nil(t, err)
+	g1yaml, err := g1.ToYaml()
+	assert.Nil(t, err)
+	log.Print(g1json, g1yaml)
 }
 func TestGObjectAppendMultiple(t *testing.T) {
 	api := openapiart.NewApi()
@@ -258,7 +266,6 @@ func TestLObject(t *testing.T) {
 	assert.Equal(t, "1.1.1.1", config.L().Ipv4())
 	assert.Equal(t, "2000::1", config.L().Ipv6())
 	assert.Equal(t, "0x12", config.L().Hex())
-	log.Print(l.ToJson(), l.ToYaml())
 }
 
 // TestRequiredObject
@@ -305,7 +312,9 @@ func TestChoice(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 
 	f := config.F()
-	fmt.Println(f.ToJson())
+	fJson, err := f.ToJson()
+	assert.Nil(t, err)
+	fmt.Println(fJson)
 	f.SetFA("a fa string")
 	assert.Equal(t, f.Choice(), openapiart.FObjectChoice.F_A)
 
@@ -315,7 +324,9 @@ func TestChoice(t *testing.T) {
 	j.JB()
 	assert.Equal(t, j.Choice(), openapiart.JObjectChoice.J_B)
 
-	fmt.Println(config.ToYaml())
+	configYaml, err := config.ToYaml()
+	assert.Nil(t, err)
+	fmt.Println(configYaml)
 }
 
 func TestHas(t *testing.T) {
@@ -521,7 +532,8 @@ func TestDefaultSimpleTypes(t *testing.T) {
 	config.SetB(65)
 	config.SetC(33)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-	actual_result := config.ToJson()
+	actual_result, err := config.ToJson()
+	assert.Nil(t, err)
 	expected_result := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -540,7 +552,8 @@ func TestDefaultEObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.E().SetEA(1).SetEB(2)
-	actual_result := config.E().ToJson()
+	actual_result, err := config.E().ToJson()
+	assert.Nil(t, err)
 	expected_result := `
 	{
 		"e_a":  1,
@@ -553,7 +566,8 @@ func TestDefaultFObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.F()
-	actual_result := config.F().ToJson()
+	actual_result, err := config.F().ToJson()
+	assert.Nil(t, err)
 	expected_result := `
 	{
 		"choice": "f_a",
@@ -616,16 +630,19 @@ func TestChoice1(t *testing.T) {
 	}`
 	g := config.F().FromJson(json)
 	assert.Nil(t, g)
-	fmt.Println(config.F().ToJson())
-	require.JSONEq(t, config.F().ToJson(), json)
+	configFjson, err := config.F().ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, configFjson, json)
 	json2 := `{
 		"choice": "f_a",
 		"f_a": "this is f string"
 	}`
 	f := config.F().FromJson(json2)
 	assert.Nil(t, f)
-	require.JSONEq(t, config.F().ToJson(), json2)
-	fmt.Println(config.F().ToJson())
+	configFjson2, err := config.F().ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, configFjson2, json2)
+	fmt.Println(configFjson2)
 }
 
 func TestRequiredField(t *testing.T) {
@@ -645,8 +662,9 @@ func TestOptionalDefault(t *testing.T) {
 		"g_d":  "some string",
 		"g_f":  "a"
 	  }`
-
-	require.JSONEq(t, gObject.ToJson(), gJson)
+	gObjectJson, err := gObject.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, gObjectJson, gJson)
 }
 
 func TestInterger64(t *testing.T) {
@@ -689,7 +707,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 	config.SetRequiredObject(openapiart.NewEObject().SetEA(10.1).SetEB(30.234))
 	config.SetInteger64(200645)
-	config.Validate()
+	assert.Nil(t, config.Validate())
 	new_json := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -703,7 +721,9 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	}`
 	err := config.FromJson(new_json)
 	assert.Nil(t, err)
-	require.JSONEq(t, new_json, config.ToJson())
+	configJson, err := config.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, new_json, configJson)
 	new_json1 := `{
 		"b" : 65, 
 		"c" : 33,
@@ -726,15 +746,17 @@ func TestChoiceStale(t *testing.T) {
 		"choice": "f_a",
 		"f_a": "This is A Value"
 	}`
-	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json, fObject.ToJson())
+	fObjectJson, err := fObject.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, expected_json, fObjectJson)
 	fObject.SetFB(30.245)
 	expected_json1 := `{
 		"choice": "f_b",
 		"f_b": 30.245
 	}`
-	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json1, fObject.ToJson())
+	fObjectJson2, err := fObject.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, expected_json1, fObjectJson2)
 }
 
 func TestChoice2(t *testing.T) {
@@ -786,8 +808,10 @@ func TestChoice2(t *testing.T) {
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
 	config.J().Add().JB().SetFA("asf")
-	log.Print(config.ToJson())
-	require.JSONEq(t, expected_json, config.ToJson())
+	configJson, err := config.ToJson()
+	assert.Nil(t, err)
+	log.Print(configJson)
+	require.JSONEq(t, expected_json, configJson)
 }
 
 func TestGetter(t *testing.T) {
@@ -797,13 +821,15 @@ func TestGetter(t *testing.T) {
 		"choice": "f_a",
 		"f_a": "some string"
 	}`
-	fmt.Println(fObject.ToJson())
-	require.JSONEq(t, expected_json, fObject.ToJson())
+	fObjectJson, err := fObject.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, expected_json, fObjectJson)
 
 	fObject1 := openapiart.NewFObject()
 	fObject1.Choice()
-	fmt.Println(fObject1.ToJson())
-	require.JSONEq(t, expected_json, fObject1.ToJson())
+	fObject1Json, err := fObject1.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, expected_json, fObject1Json)
 
 	pattern := openapiart.NewIpv4Pattern()
 	pattern.Ipv4()
@@ -813,8 +839,9 @@ func TestGetter(t *testing.T) {
 			"value":  "0.0.0.0"
 		}
 	}`
-	fmt.Println(pattern.ToJson())
-	require.JSONEq(t, exp_ipv4, pattern.ToJson())
+	patternJson, err := pattern.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, exp_ipv4, patternJson)
 	pattern.Ipv4().SetValue("10.1.1.1")
 	assert.Equal(t, "10.1.1.1", pattern.Ipv4().Value())
 	pattern.Ipv4().Values()
@@ -826,8 +853,9 @@ func TestGetter(t *testing.T) {
 			]
 		}
 	}`
-	fmt.Println(pattern.ToJson())
-	require.JSONEq(t, exp_ipv41, pattern.ToJson())
+	patternJson1, err := pattern.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, exp_ipv41, patternJson1)
 	pattern.Ipv4().SetValues([]string{"20.1.1.1"})
 	assert.Equal(t, []string{"20.1.1.1"}, pattern.Ipv4().Values())
 	checksum := openapiart.NewChecksumPattern().Checksum()
@@ -835,8 +863,10 @@ func TestGetter(t *testing.T) {
 		"choice": "generated",
 		"generated": "good"
 	}`
-	require.JSONEq(t, ch_json, checksum.ToJson())
-	fmt.Println(checksum.ToJson())
+	checksumJson, err := checksum.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, ch_json, checksumJson)
+	fmt.Println(checksumJson)
 }
 
 func TestStringLength(t *testing.T) {
@@ -848,7 +878,9 @@ func TestStringLength(t *testing.T) {
 	config.SetFullDuplex100Mb(2)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	config.SetStrLen("123456")
-	log.Print(config.ToJson())
+	configJson, err := config.ToJson()
+	assert.Nil(t, err)
+	log.Print(configJson)
 }
 
 func TestListClear(t *testing.T) {
@@ -910,4 +942,685 @@ func TestFromJsonErrors(t *testing.T) {
 	fObj := openapiart.NewFObject()
 	err2 := fObj.FromJson(json2)
 	assert.Contains(t, err2.Error(), "unmarshal error")
+}
+
+func TestStringLengthError(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetName("config")
+	config.SetSpace1(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse("status_200")
+	config.SetStrLen("12345678")
+	config.StrLen()
+	config.Space1()
+	config.Name()
+	err := config.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "3 <= length of prefixconfig.strlen <= 6 but got 8")
+	}
+}
+
+func TestIncorrectChoiceEnum(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse("status_600")
+	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
+	config.F().SetFB(3.0)
+	config.Ieee8021Qbb()
+	config.FullDuplex100Mb()
+	config.Response()
+	err := config.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "status_600 is not a valid choice")
+	}
+}
+
+// func TestEObjectValidation(t *testing.T) {
+// 	eObject := openapiart.NewEObject()
+// 	err := eObject.Validate()
+// 	if assert.Error(t, err) {
+// 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
+// 	}
+// }
+
+func TestMObjectValidation(t *testing.T) {
+	mObject := openapiart.NewMObject()
+	err := mObject.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "required field on interface mobject")
+	}
+}
+
+func TestMobjectValidationError(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(10.2).SetEB(20)
+	config.SetA("abc")
+	config.SetB(10.32)
+	config.SetC(20)
+	config.MObject().
+		SetString("asdf").
+		SetInteger(120).
+		SetDouble(55.4).
+		SetFloat(33.2).
+		SetHex("00AABBCCCIJ").
+		SetMac("00:AA:BB:CC:DD:EE:AA").
+		SetIpv6("2001::1::1").
+		SetIpv4("1.1.1.1.2")
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	err := config.Validate()
+	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()),
+			"invalid mac address",
+			"invalid ipv4 address",
+			"invalid hex value",
+			"invalid ipv6 address")
+	}
+}
+
+func TestLObjectError(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	l := config.L()
+	l.SetString("test")
+	l.SetInteger(180)
+	l.SetFloat(100.11)
+	l.SetDouble(1.7976931348623157e+308)
+	l.SetMac("00:00:00:00:00:0a:22")
+	l.SetIpv4("1.1.1.1.1.1")
+	l.SetIpv6("2000::1:::4")
+	l.SetHex("0x12KJN")
+	err := config.Validate()
+	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()),
+			"invalid mac address",
+			"invalid ipv4 address",
+			"invalid hex value",
+			"invalid ipv6 address")
+	}
+}
+
+func TestIeee802x(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetCase(openapiart.NewLayer1Ieee802X())
+	config.Case()
+	l1 := openapiart.NewLayer1Ieee802X()
+	l1.SetFlowControl(true)
+	l1.SetMsg(l1.Msg())
+	l1.FlowControl()
+	l1.HasFlowControl()
+	l1json, err := l1.ToJson()
+	assert.Nil(t, err)
+	l1yaml, err := l1.ToYaml()
+	assert.Nil(t, err)
+	l1pbText, err := l1.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, l1.FromJson(l1json))
+	assert.Nil(t, l1.FromYaml(l1yaml))
+	assert.Nil(t, l1.FromPbText(l1pbText))
+}
+
+func TestLevelFour(t *testing.T) {
+	new_level_four := openapiart.NewLevelFour()
+	new_level_four.Msg()
+	new_level_four.SetMsg(new_level_four.Msg())
+	new_level_four.HasL4P1()
+	new_level_four.SetL4P1(new_level_four.L4P1())
+	fourJson, err := new_level_four.ToJson()
+	assert.Nil(t, err)
+	fourYaml, err := new_level_four.ToYaml()
+	assert.Nil(t, err)
+	fourPbText, err := new_level_four.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_level_four.FromJson(fourJson))
+	assert.Nil(t, new_level_four.FromYaml(fourYaml))
+	assert.Nil(t, new_level_four.FromPbText(fourPbText))
+}
+
+func TestIterAppendJObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.J().Add()
+	j := config.J().Append(openapiart.NewJObject())
+
+	assert.Equal(t, len(j.Items()), 2)
+}
+
+func TestIterSetJObject(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.J().Add().JA().SetEA(100)
+	config.J().Add()
+	j := config.J().Set(1, openapiart.NewJObject().SetChoice("j_b"))
+
+	assert.Contains(t, j.Items()[1].Choice(), "j_b")
+	assert.Len(t, config.J().Items(), 2)
+	config.J().Clear()
+	assert.Len(t, config.J().Items(), 0)
+}
+
+func TestIterAppendGObject(t *testing.T) {
+	config := openapiart.NewUpdateConfig()
+	config.G().Add()
+	g := config.G().Append(openapiart.NewGObject())
+
+	assert.Equal(t, len(g.Items()), 2)
+}
+
+func TestIterSetGObject(t *testing.T) {
+	config := openapiart.NewUpdateConfig()
+	name := "new name set on slice"
+	config.G().Add().SetName("original name set on add")
+	config.G().Add()
+	g := config.G().Set(1, openapiart.NewGObject().SetName(name))
+
+	assert.Equal(t, name, g.Items()[1].Name())
+	assert.Len(t, g.Items(), 2)
+	g.Clear()
+	assert.Len(t, g.Items(), 0)
+
+}
+
+func TestIterAppendPortMetrics(t *testing.T) {
+	config := openapiart.NewMetrics()
+	config.Ports().Add()
+	p := config.Ports().Append(openapiart.NewPortMetric())
+
+	assert.Equal(t, len(p.Items()), 2)
+}
+
+func TestIterSetPortMetrics(t *testing.T) {
+	config := openapiart.NewMetrics()
+	name := "new port metric"
+	config.Ports().Add().SetName("original name set on add")
+	config.Ports().Add()
+	p := config.Ports().Set(1, openapiart.NewPortMetric().SetName(name))
+
+	assert.Equal(t, name, p.Items()[1].Name())
+	assert.Len(t, p.Items(), 2)
+	p.Clear()
+	assert.Len(t, p.Items(), 0)
+}
+
+func TestFromYamlErrors(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	incorrect_format := `{
+		"a":"asdf",
+		"b" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"required_object" :
+			"e_a" : 1,
+			"e_b" : 2
+
+	}`
+	assert.NotNil(t, config.FromYaml(incorrect_format))
+	incorrect_key := `{
+		"a":"asdf",
+		"z" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"required_object" : {
+			"e_a" : 1,
+			"e_b" : 2
+		}
+	}`
+	assert.NotNil(t, config.FromYaml(incorrect_key))
+	incorrect_value := `{
+		"a":"asdf",
+		"b" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"str_len" : "abcdefg",
+		"required_object" : {
+			"e_a" : 1,
+			"e_b" : 2
+		}
+	}`
+	assert.NotNil(t, config.FromYaml(incorrect_value))
+}
+
+func TestFromPbTextErrors(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	incorrect_format := `{
+		"a":"asdf",
+		"b" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"required_object" :
+			"e_a" : 1,
+			"e_b" : 2
+
+	}`
+	assert.NotNil(t, config.FromPbText(incorrect_format))
+	incorrect_key := `{
+		"a":"asdf",
+		"z" : 65,
+		"c" : 33,
+		"h": true,
+		"response" : "status_200",
+		"required_object" : {
+			"e_a" : 1,
+			"e_b" : 2
+		}
+	}`
+	assert.NotNil(t, config.FromPbText(incorrect_key))
+}
+
+func TestUpdateConfig(t *testing.T) {
+	for _, api := range apis {
+		config1 := NewFullyPopulatedPrefixConfig(api)
+		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+		_, set_err := api.SetConfig(config1)
+		assert.Nil(t, set_err)
+		config2 := api.NewUpdateConfig()
+		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
+		config2PbText, err := config2.ToPbText()
+		assert.Nil(t, err)
+		config2Json, err := config2.ToJson()
+		assert.Nil(t, err)
+		config2Yaml, err := config2.ToYaml()
+		assert.Nil(t, err)
+		assert.Nil(t, config2.FromJson(config2Json))
+		assert.Nil(t, config2.FromYaml(config2Yaml))
+		assert.Nil(t, config2.FromPbText(config2PbText))
+		config2.SetMsg(config2.Msg())
+		config3, err := api.UpdateConfig(config2)
+		assert.Nil(t, err)
+		assert.NotNil(t, config3)
+		config3Yaml, err := config3.ToYaml()
+		assert.Nil(t, err)
+		log.Println(config3Yaml)
+	}
+}
+
+func TestNewSetConfigResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewSetConfigResponse()
+	new_resp.SetStatusCode200([]byte{0, 1})
+	new_resp.SetStatusCode400(new_resp.StatusCode400())
+	new_resp.SetStatusCode500(new_resp.StatusCode500())
+	new_resp.SetStatusCode404(new_resp.StatusCode400())
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode400()
+	new_resp.HasStatusCode404()
+	new_resp.HasStatusCode500()
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewUpdateConfigResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewUpdateConfigResponse()
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode200()
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewGetConfigResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewGetConfigResponse()
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode200()
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewGetMetricsResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewGetMetricsResponse()
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode200()
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewGetWarningsResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewGetWarningsResponse()
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode200()
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewClearWarningsResponse(t *testing.T) {
+	api := openapiart.NewApi()
+	new_resp := api.NewClearWarningsResponse()
+	new_resp.SetMsg(new_resp.Msg())
+	new_resp.Msg()
+	new_resp.HasStatusCode200()
+	new_resp.SetStatusCode200("success")
+	respJson, err := new_resp.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_resp.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_resp.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_resp.FromJson(respJson))
+	assert.Nil(t, new_resp.FromYaml(respYaml))
+	assert.Nil(t, new_resp.FromPbText(respPbText))
+}
+
+func TestNewErrorDetails(t *testing.T) {
+	new_err := openapiart.NewErrorDetails()
+	new_err.SetMsg(new_err.Msg())
+	new_err.Msg()
+	respJson, err := new_err.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_err.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_err.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_err.FromJson(respJson))
+	assert.Nil(t, new_err.FromYaml(respYaml))
+	assert.Nil(t, new_err.FromPbText(respPbText))
+}
+
+func TestNewError(t *testing.T) {
+	new_err := openapiart.NewError()
+	new_err.SetMsg(new_err.Msg())
+	new_err.Msg()
+	respJson, err := new_err.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_err.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_err.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_err.FromJson(respJson))
+	assert.Nil(t, new_err.FromYaml(respYaml))
+	assert.Nil(t, new_err.FromPbText(respPbText))
+	new_err.SetErrors(new_err.Errors())
+}
+
+func TestNewMetrics(t *testing.T) {
+	new_metrics := openapiart.NewMetrics()
+	new_metrics.SetMsg(new_metrics.Msg())
+	new_metrics.Msg()
+	respJson, err := new_metrics.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_metrics.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_metrics.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_metrics.FromJson(respJson))
+	assert.Nil(t, new_metrics.FromYaml(respYaml))
+	assert.Nil(t, new_metrics.FromPbText(respPbText))
+}
+
+func TestNewWarningDetails(t *testing.T) {
+	new_warnings := openapiart.NewWarningDetails()
+	new_warnings.SetMsg(new_warnings.Msg())
+	new_warnings.Msg()
+	respJson, err := new_warnings.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_warnings.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_warnings.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_warnings.FromJson(respJson))
+	assert.Nil(t, new_warnings.FromYaml(respYaml))
+	assert.Nil(t, new_warnings.FromPbText(respPbText))
+}
+
+func TestNewPortMetric(t *testing.T) {
+	new_port_metric := openapiart.NewPortMetric()
+	new_port_metric.SetName("portmetric")
+	new_port_metric.SetTxFrames(1000)
+	new_port_metric.SetRxFrames(2000)
+	new_port_metric.SetMsg(new_port_metric.Msg())
+	new_port_metric.Msg()
+	respJson, err := new_port_metric.ToJson()
+	assert.Nil(t, err)
+	respYaml, err := new_port_metric.ToYaml()
+	assert.Nil(t, err)
+	respPbText, err := new_port_metric.ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_port_metric.FromJson(respJson))
+	assert.Nil(t, new_port_metric.FromYaml(respYaml))
+	assert.Nil(t, new_port_metric.FromPbText(respPbText))
+	new_port_metric.Name()
+	new_port_metric.RxFrames()
+	new_port_metric.TxFrames()
+	assert.Nil(t, new_port_metric.Validate())
+}
+
+func TestItemsMethod(t *testing.T) {
+	api := openapiart.NewApi()
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.G().Add().SetGA("this is GA string")
+	assert.Equal(t, config1.G(), config1.G())
+	config2 := api.NewPrefixConfig()
+	config1Json, err := config1.ToJson()
+	assert.Nil(t, err)
+	config2.FromJson(config1Json)
+	assert.Len(t, config1.G().Items(), 2)
+	assert.Len(t, config2.G().Items(), 2)
+	for ind, obj := range config1.G().Items() {
+		objJson, err := obj.ToJson()
+		assert.Nil(t, err)
+		gJson, err := config2.G().Items()[ind].ToJson()
+		assert.Nil(t, err)
+		assert.Equal(t, objJson, gJson)
+	}
+	configJson1, err := config1.ToJson()
+	assert.Nil(t, err)
+	config2Json, err := config2.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, configJson1, config2Json)
+	config2.G().Add().SetGB(200000)
+	assert.Len(t, config2.G().Items(), 3)
+	for ind, obj := range config1.G().Items() {
+		objJson1, err := obj.ToJson()
+		assert.Nil(t, err)
+		gJson1, err := config2.G().Items()[ind].ToJson()
+		assert.Nil(t, err)
+		assert.Equal(t, objJson1, gJson1)
+	}
+}
+
+func TestStructGetterMethod(t *testing.T) {
+	jObject := openapiart.NewJObject()
+	val := jObject.JA()
+	val.SetEA(1.45)
+	val.SetEB(1.456)
+	assert.Equal(t, val, jObject.JA())
+	jObject.JA().SetEA(0.23495)
+	assert.Equal(t, val, jObject.JA())
+
+	jObject1 := openapiart.NewJObject()
+	jOject1json, err := jObject.ToJson()
+	assert.Nil(t, err)
+	jObject1.FromJson(jOject1json)
+	assert.Equal(t, jObject1.JA(), jObject1.JA())
+
+	jObject2 := openapiart.NewJObject()
+	val2 := jObject2.JA()
+	val2.SetEA(0.23495).SetEB(1.456)
+	jObject2Json, err := jObject.ToJson()
+	assert.Nil(t, err)
+	jObject2.FromJson(jObject2Json)
+	assert.NotEqual(t, val2, jObject2.JA())
+}
+
+func TestFromJsonEmpty(t *testing.T) {
+	fObject := openapiart.NewFObject()
+	value1, err := fObject.ToJson()
+	assert.Nil(t, err)
+	value2, err := fObject.ToYaml()
+	assert.Nil(t, err)
+	value3, err := fObject.ToPbText()
+	assert.Nil(t, err)
+	for i, v := range []string{"", ``, `{}`, "{}"} {
+		err1 := fObject.FromJson(v)
+		assert.Nil(t, err1)
+		err2 := fObject.FromYaml(v)
+		assert.Nil(t, err2)
+		if i < 2 {
+			err3 := fObject.FromPbText(v)
+			assert.Nil(t, err3)
+		}
+	}
+
+	fObjectJson, err := fObject.ToJson()
+	assert.Nil(t, err)
+	fObjectYaml, err := fObject.ToYaml()
+	assert.Nil(t, err)
+	fObjectPbText, err := fObject.ToPbText()
+	assert.Nil(t, err)
+	require.JSONEq(t, value1, fObjectJson)
+	require.Equal(t, value2, fObjectYaml)
+	require.Equal(t, value3, fObjectPbText)
+}
+
+func TestChoiceDefaults(t *testing.T) {
+	jObject := openapiart.NewJObject()
+	json := `
+	{
+		"choice": "j_a",
+		"j_a": {}
+	}`
+	j, err0 := jObject.ToJson()
+	assert.Nil(t, err0)
+	require.JSONEq(t, json, j)
+	jObject.SetChoice(openapiart.JObjectChoice.J_B)
+	json1 := `
+	{
+		"choice": "j_b",
+		"j_b": {
+			"choice": "f_a",
+			"f_a": "some string"
+		}
+	}`
+	j1, err1 := jObject.ToJson()
+	assert.Nil(t, err1)
+	require.JSONEq(t, json1, j1)
+	jObject.JB().FB()
+	json2 := `
+	{
+		"choice": "j_b",
+		"j_b": {
+			"choice": "f_b",
+			"f_b": 3
+		}
+	}`
+	j2, err2 := jObject.ToJson()
+	assert.Nil(t, err2)
+	require.JSONEq(t, json2, j2)
+	integer := openapiart.NewIntegerPattern()
+	integer.Integer().Values()
+	json3 := `
+	{
+		"integer":  {
+		  "choice":  "values",
+		  "values":  [
+			0
+		  ]
+		}
+	}`
+	j3, err3 := integer.ToJson()
+	assert.Nil(t, err3)
+	require.JSONEq(t, json3, j3)
+	integer.Integer().SetValues([]int32{1, 2, 3})
+	json4 := `
+	{
+		"integer":  {
+		  "choice":  "values",
+		  "values":  [
+			1, 2, 3
+		  ]
+		}
+	}`
+	j4, err4 := integer.ToJson()
+	assert.Nil(t, err4)
+	require.JSONEq(t, json4, j4)
+}
+
+func TestSetterWrapperHolder(t *testing.T) {
+	metricsResp := openapiart.NewGetMetricsResponse()
+	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	json1 := `{
+		"status_code_200":  {}
+	}`
+	metricsrespJson, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, json1, metricsrespJson)
+	fmt.Println(metricsrespJson)
+	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
+	json := `{
+		"status_code_200":  {
+		  "ports":  [
+			{
+			  "name":  "abc",
+			  "rx_frames":  100
+			}
+		  ]
+		}
+	}`
+	metricsrespJson1, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	fmt.Println(metricsrespJson1)
+	require.JSONEq(t, json, metricsrespJson1)
+	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	metricsrespJson2, err := metricsResp.ToJson()
+	assert.Nil(t, err)
+	require.JSONEq(t, json1, metricsrespJson2)
+	fmt.Println(metricsrespJson2)
 }

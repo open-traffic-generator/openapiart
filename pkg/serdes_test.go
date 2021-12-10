@@ -61,10 +61,12 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	yaml1 := c1.ToYaml()
+	yaml1, err := c1.ToYaml()
+	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
 	c2.FromYaml(yaml1)
-	yaml2 := c2.ToYaml()
+	yaml2, err := c2.ToYaml()
+	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }
 
@@ -72,10 +74,12 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	json1 := c1.ToJson()
+	json1, err := c1.ToJson()
+	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
 	c2.FromJson(json1)
-	json2 := c2.ToJson()
+	json2, err := c2.ToJson()
+	assert.Nil(t, err)
 	assert.Equal(t, json1, json2)
 }
 
@@ -85,7 +89,9 @@ func TestPartialSerDes(t *testing.T) {
 
 	// convert the configuration to a map[string]interface{}
 	var jsonMap map[string]interface{}
-	json.Unmarshal([]byte(c1.ToJson()), &jsonMap)
+	c1json, err := c1.ToJson()
+	assert.Nil(t, err)
+	json.Unmarshal([]byte(c1json), &jsonMap)
 
 	// extract just the e object
 	data1, _ := json.Marshal(jsonMap["e"])
@@ -97,17 +103,26 @@ func TestPartialSerDes(t *testing.T) {
 	c2 := api.NewPrefixConfig()
 	c2.E().FromJson(string(data1))
 	c2.G().Add().FromJson(string(data2))
-	fmt.Println(c2.E().ToYaml())
-	fmt.Println(c2.G().Add().ToYaml())
+	yaml1, err := c2.E().ToYaml()
+	assert.Nil(t, err)
+	fmt.Println(yaml1)
+	yaml2, err := c2.G().Add().ToYaml()
+	assert.Nil(t, err)
+	fmt.Println(yaml2)
 }
 
 func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
-	pbString := c1.ToPbText()
+	pbString, err := c1.ToPbText()
+	assert.Nil(t, err)
 	c2 := api.NewPrefixConfig()
 	c2.FromPbText(pbString)
-	assert.Equal(t, c1.ToJson(), c2.ToJson())
+	c1json, err := c1.ToJson()
+	assert.Nil(t, err)
+	c2json, err := c2.ToJson()
+	assert.Nil(t, err)
+	assert.Equal(t, c1json, c2json)
 }
 
 func TestArrayOfStringsSetGet(t *testing.T) {
@@ -215,7 +230,9 @@ response: status_200
 `
 	err := config.FromYaml(data)
 	assert.Nil(t, err)
-	assert.Equal(t, data, config.ToYaml())
+	configYaml, err := config.ToYaml()
+	assert.Nil(t, err)
+	assert.Equal(t, data, configYaml)
 }
 
 func TestBadKeyYamlDecode(t *testing.T) {
@@ -291,7 +308,11 @@ func TestSetMsg(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 	copy := openapiart.NewApi().NewPrefixConfig()
 	copy.SetMsg(config.Msg())
-	assert.Equal(t, config.ToYaml(), copy.ToYaml())
+	configYaml, err := config.ToYaml()
+	assert.Nil(t, err)
+	copyYaml, err := copy.ToYaml()
+	assert.Nil(t, err)
+	assert.Equal(t, configYaml, copyYaml)
 }
 
 func TestNestedSetMsg(t *testing.T) {
@@ -302,5 +323,9 @@ func TestNestedSetMsg(t *testing.T) {
 	eObject.SetName("asdfasdf")
 	config := api.NewPrefixConfig()
 	config.K().EObject().SetMsg(eObject.Msg())
-	assert.Equal(t, config.K().EObject().ToYaml(), eObject.ToYaml())
+	yaml1, err := config.K().EObject().ToYaml()
+	assert.Nil(t, err)
+	yaml2, err := eObject.ToYaml()
+	assert.Nil(t, err)
+	assert.Equal(t, yaml1, yaml2)
 }

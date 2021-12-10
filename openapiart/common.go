@@ -6,18 +6,23 @@ import (
 	"strings"
 	"time"
 	"regexp"
+	"google.golang.org/grpc"
 )
 
 type grpcTransport struct {
-	location       string
-	requestTimeout time.Duration
+	clientConnection *grpc.ClientConn
+	location         string
+	requestTimeout   time.Duration
+	dialTimeout      time.Duration
 }
 
 type GrpcTransport interface {
 	SetLocation(value string) GrpcTransport
 	Location() string
-	SetRequestTimeout(value int) GrpcTransport
-	RequestTimeout() int
+	SetRequestTimeout(value time.Duration) GrpcTransport
+	RequestTimeout() time.Duration
+	SetDialTimeout(value time.Duration) GrpcTransport
+	DialTimeout() time.Duration
 }
 
 // Location
@@ -32,13 +37,21 @@ func (obj *grpcTransport) SetLocation(value string) GrpcTransport {
 }
 
 // RequestTimeout returns the grpc request timeout in seconds
-func (obj *grpcTransport) RequestTimeout() int {
-	return int(obj.requestTimeout / time.Second)
+func (obj *grpcTransport) RequestTimeout() time.Duration {
+	return obj.requestTimeout
 }
 
 // SetRequestTimeout contains the timeout value in seconds for a grpc request
-func (obj *grpcTransport) SetRequestTimeout(value int) GrpcTransport {
-	obj.requestTimeout = time.Duration(value) * time.Second
+func (obj *grpcTransport) SetRequestTimeout(value time.Duration) GrpcTransport {
+	obj.requestTimeout = value
+	return obj
+}
+func (obj *grpcTransport) DialTimeout() time.Duration {
+	return obj.dialTimeout
+}
+
+func (obj *grpcTransport) SetDialTimeout(value time.Duration) GrpcTransport {
+	obj.dialTimeout = value
 	return obj
 }
 
@@ -86,6 +99,7 @@ type Api interface {
 	hasGrpcTransport() bool
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
+	Close() error
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -93,6 +107,7 @@ func (api *api) NewGrpcTransport() GrpcTransport {
 	api.grpc = &grpcTransport{
 		location:       "localhost:5050",
 		requestTimeout: 10 * time.Second,
+		dialTimeout:    10 * time.Second,
 	}
 	api.http = nil
 	return api.grpc
@@ -108,6 +123,11 @@ func (api *api) NewHttpTransport() HttpTransport {
 	api.http = &httpTransport{
 		location: "https://localhost:443",
 		verify:   false,
+	}
+	if api.grpc != nil {
+		if api.grpc.clientConnection != nil {
+			api.grpc.clientConnection.Close()
+		}
 	}
 	api.grpc = nil
 	return api.http
