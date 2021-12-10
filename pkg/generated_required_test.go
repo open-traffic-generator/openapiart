@@ -3,10 +3,10 @@ package openapiart_test
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestPrefixConfigRequired(t *testing.T) {
@@ -20,7 +20,8 @@ func TestPrefixConfigRequired(t *testing.T) {
 	data, _ := opts.Marshal(object.Msg())
 	err := object.FromJson(string(data))
 	err1 := object.FromYaml(string(data))
-	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
+	protoMarshal, _ := proto.Marshal(object.Msg())
+	err2 := object.FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "RequiredObject", "A", "B", "C")
 	assert.Contains(t, err1.Error(), "RequiredObject", "A", "B", "C")
 	assert.Contains(t, err2.Error(), "RequiredObject", "A", "B", "C")
@@ -53,7 +54,8 @@ func TestMandateRequired(t *testing.T) {
 	data, _ := opts.Marshal(object.Msg())
 	err := object.FromJson(string(data))
 	err1 := object.FromYaml(string(data))
-	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
+	protoMarshal, _ := proto.Marshal(object.Msg())
+	err2 := object.FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "RequiredParam")
 	assert.Contains(t, err1.Error(), "RequiredParam")
 	assert.Contains(t, err2.Error(), "RequiredParam")
@@ -69,7 +71,8 @@ func TestMObjectRequired(t *testing.T) {
 	data, _ := opts.Marshal(object.Msg())
 	err := object.FromJson(string(data))
 	err1 := object.FromYaml(string(data))
-	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
+	protoMarshal, _ := proto.Marshal(object.Msg())
+	err2 := object.FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 	assert.Contains(t, err1.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 	assert.Contains(t, err2.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
@@ -85,7 +88,8 @@ func TestPortMetricRequired(t *testing.T) {
 	data, _ := opts.Marshal(object.Msg())
 	err := object.FromJson(string(data))
 	err1 := object.FromYaml(string(data))
-	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
+	protoMarshal, _ := proto.Marshal(object.Msg())
+	err2 := object.FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "Name", "TxFrames", "RxFrames")
 	assert.Contains(t, err1.Error(), "Name", "TxFrames", "RxFrames")
 	assert.Contains(t, err2.Error(), "Name", "TxFrames", "RxFrames")
