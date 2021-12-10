@@ -406,15 +406,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                         struct=new.struct,
                     )
-
-                    http.request = """{structlower}, err := {struct}.ToJson()
+                    if url.startswith("/"):
+                        url = url[1:]
+                    http.request = """{struct}Json, err := {struct}.ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {structlower}, "{method}")
+                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
                     """.format(
                         operation_name=http.operation_name,
                         url=http_url,
                         struct=new.struct,
-                        structlower=new.struct.lower(),
                         method=str(operation_id.context.path.fields[0]).upper(),
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)

@@ -33,7 +33,8 @@ func TestPostRootResponse(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, wr.Code)
 
 	inputbody := openapiart.NewApiTestInputBody().SetSomeString("this is the input body")
-	inputbuffer := bytes.NewBuffer([]byte(inputbody.ToJson()))
+	j, _ := inputbody.ToJson()
+	inputbuffer := bytes.NewBuffer([]byte(j))
 
 	req, _ = http.NewRequest(http.MethodPost, "/api/apitest", inputbuffer)
 	wr = httptest.NewRecorder()
