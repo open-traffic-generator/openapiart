@@ -228,7 +228,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/grpc"')
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
-        self._write('import "github.com/golang/protobuf/proto"')
+        self._write('import "google.golang.org/protobuf/proto"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(os.path.join(self._ux_path, "common.go"))
@@ -790,11 +790,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if vErr != nil {{
                     return "", vErr
                 }}
-                return proto.MarshalTextString(obj.Msg()), nil
+                protoMarshal, err := proto.Marshal(obj.Msg())
+                if err != nil {{
+                    return "", err
+                }}
+                return string(protoMarshal), nil
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
-                retObj := proto.UnmarshalText(value, obj.Msg())
+                retObj := proto.Unmarshal([]byte(value), obj.Msg())
                 if retObj != nil {{
                     return retObj
                 }}
