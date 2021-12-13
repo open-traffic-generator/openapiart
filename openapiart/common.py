@@ -218,6 +218,7 @@ class OpenApiValidator(object):
     __slots__ = ()
 
     def __init__(self):
+        self._validation_errors = []
         pass
 
     def validate_mac(self, mac):
@@ -358,7 +359,8 @@ class OpenApiValidator(object):
         else:
             verdict = v_obj(value)
         if verdict is False:
-            raise TypeError(err_msg)
+            self._validation_errors.append(err_msg)
+            # raise TypeError(err_msg)
 
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
@@ -506,12 +508,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if getattr(self, "_REQUIRED", None) is None:
             return
         for name in self._REQUIRED:
-            if getattr(self, name, None) is None:
+            if self._properties.get(name) is None:
                 msg = "{} is a mandatory property of {}" " and should not be set to None".format(
                     name,
                     self.__class__,
                 )
-                raise ValueError(msg)
+                # raise ValueError(msg)
+                self._validation_errors.append(msg)
 
     def _validate_types(self, property_name, property_value):
         common_data_types = [list, str, int, float, bool]
@@ -523,7 +526,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             return
         if "enum" in details and property_value not in details["enum"]:
             msg = "property {} shall be one of these" " {} enum, but got {} at {}"
-            raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
+            self._validation_errors.append(
+                msg.format(property_name, details["enum"], property_value, self.__class__)
+            )
+            # raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
         if details["type"] in common_data_types and "format" not in details:
             msg = "property {} shall be of type {} at {}".format(property_name, details["type"], self.__class__)
             self.types_validation(property_value, details["type"], msg, details.get("itemtype"), details.get("minimum"), details.get("maximum"),
@@ -536,7 +542,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             object_class = getattr(module, class_name)
             if not isinstance(property_value, object_class):
                 msg = "property {} shall be of type {}," " but got {} at {}"
-                raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
+                self._validation_errors.append(
+                    msg.format(property_name, class_name, type(property_value), self.__class__)
+                )
+                # raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
         if "format" in details:
             msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
             _type = details["type"] if details["type"] is list else details["format"]
@@ -544,9 +553,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                                   details.get("minLength"), details.get("maxLength"))
 
     def validate(self):
-        self._validate_required()
-        for key, value in self._properties.items():
-            self._validate_types(key, value)
+        self.serialize()
+        if self._validation_errors > 0:
+            raise Exception("\n".join(self._validation_errors))
+        # self._validate_required()
+        # for key, value in self._properties.items():
+        #     self._validate_types(key, value)
 
     def get(self, name, with_default=False):
         """
@@ -649,6 +661,12 @@ class OpenApiIter(OpenApiBase):
     def clear(self):
         del self._items[:]
         self._index = -1
+    
+    def set(self, index, item):
+        if isinstance(item, OpenApiObject) is False:
+            raise Exception("Item is not an instance of OpenApiObject")
+        self._items[index] = item
+        return self
 
     def _encode(self):
         return [item._encode() for item in self._items]
