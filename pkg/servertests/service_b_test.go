@@ -47,10 +47,10 @@ func TestGetSingleItem(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, wr.Code) // missing support for 404
 
 	jsonResponse, _ = ioutil.ReadAll(wr.Body)
-	err := openapiart.NewCommonResponseError()
-	assert.Equal(t, "not found: id '3'", err.Message())
-	errFromJson := r.FromJson(string(jsonResponse))
+	errNew := openapiart.NewCommonResponseError()
+	errFromJson := errNew.FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
+	assert.Equal(t, "not found: id '3'", errNew.Message())
 }
 
 func TestGetSingleItemLevel2(t *testing.T) {
