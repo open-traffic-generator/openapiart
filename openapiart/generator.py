@@ -29,6 +29,7 @@ class Generator(object):
 
     def __init__(self, openapi_filename, package_name, output_dir=None, extension_prefix=None):
         self._parsers = {}
+        self._base_url = ""
         self._generated_methods = []
         self._generated_classes = []
         self._generated_top_level_factories = []
@@ -89,6 +90,8 @@ class Generator(object):
         print("generating using model version %s" % self._openapi_version)
 
     def generate(self):
+        self._base_url = ""
+        self._get_base_url()
         self._api_filename = os.path.join(self._output_dir, self._output_file + ".py")
         with open(self._api_filename, "w") as self._fid:
             self._fid.write(
@@ -117,6 +120,17 @@ class Generator(object):
         self._write_http_api_class(methods)
         self._write_init()
         return self
+
+    def _get_base_url(self):
+        self._base_url = ""
+        if "servers" in self._openapi:
+            server = self._openapi["servers"][0]
+            try:
+                self._base_url = server['variables']['basePath']['default']
+                if not self._base_url.startswith("/"):
+                    self._base_url = "/" + self._base_url
+            except KeyError:
+                pass
 
     def _write_init(self):
         filename = os.path.join(self._output_dir, "__init__.py")
@@ -186,7 +200,7 @@ class Generator(object):
                     "name": method_name,
                     "args": ["self"] if len(request) == 0 else ["self", "payload"],
                     "http_method": path["method"],
-                    "url": path["url"],
+                    "url": self._base_url + path["url"],
                     "description": self._get_description(operation),
                     "response_type": response_type,
                 }

@@ -244,6 +244,27 @@ func TestGObjectAppendMultiple(t *testing.T) {
 	assert.Equal(t, item.GA(), "g_2")
 }
 
+func TestGObjectAppend(t *testing.T) {
+	ga := []string{"g_1", "g_2"}
+	gb := []int32{1, 2}
+	gc := []float32{11.1, 22.2}
+	ge := []float64{1.0, 2.0}
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	g1 := openapiart.NewGObject()
+	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
+	g2 := openapiart.NewGObject()
+	g2.SetGA("g_2").SetGB(2).SetGC(22.2).SetGE(2.0)
+	config.G().Append(g1, g2)
+	for i, G := range config.G().Items() {
+		assert.Equal(t, ga[i], G.GA())
+		assert.Equal(t, gb[i], G.GB())
+		assert.Equal(t, gc[i], G.GC())
+		assert.Equal(t, ge[i], G.GE())
+	}
+	// log.Print(g1.ToJson(), g1.ToYaml())
+}
+
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
 	var float_ float32 = 100.11

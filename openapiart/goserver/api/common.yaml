@@ -1,0 +1,22 @@
+openapi: 3.1.0
+
+info:
+  title: Common schema definitions
+  version: 0.0.0
+  description: >-
+    This file contains component definitions used by multiple components
+
+components:
+  schemas:
+
+    Common.ResponseSuccess:
+      type: object
+      properties:
+        message:
+          type: string
+
+    Common.ResponseError:
+      type: object
+      properties:
+        message:
+          type: string

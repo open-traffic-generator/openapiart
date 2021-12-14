@@ -1,0 +1,14 @@
+openapi: 3.1.0
+
+info:
+  title: Service-A components
+  version: 0.0.0
+
+components:
+  schemas:
+
+    ApiTest.InputBody:
+      type: object
+      properties:
+        some_string:
+          type: string
