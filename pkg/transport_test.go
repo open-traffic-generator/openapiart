@@ -12,7 +12,10 @@ import (
 var apis []openapiart.OpenapiartApi
 
 func init() {
-	StartMockGrpcServer()
+	err := StartMockGrpcServer()
+	if err != nil {
+		log.Printf("error: %s", err.Error())
+	}
 	StartMockHttpServer()
 	grpcApi := openapiart.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
@@ -66,7 +69,10 @@ func TestGetConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
 		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-		api.SetConfig(config)
+		_, err := api.SetConfig(config)
+		if err != nil {
+			log.Printf("error: %s", err.Error())
+		}
 		resp, err := api.GetConfig()
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
@@ -77,7 +83,10 @@ func TestUpdateConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config1 := NewFullyPopulatedPrefixConfig(api)
 		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-		api.SetConfig(config1)
+		_, err := api.SetConfig(config1)
+		if err != nil {
+			log.Printf("error: %s", err.Error())
+		}
 		config2 := api.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 		config3, err := api.UpdateConfig(config2)
