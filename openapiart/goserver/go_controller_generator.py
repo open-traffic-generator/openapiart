@@ -38,8 +38,6 @@ class GoServerControllerGenerator(object):
             print("Controller: {}".format(fullname))
             for line in w.strings:
                 file.write(line + '\n')
-            pass
-        pass
 
     def _write_header(self, w):
         # type: (Writer) -> None
@@ -93,7 +91,6 @@ class GoServerControllerGenerator(object):
             "}",
             ""
         )
-        pass
 
     def _write_newcontroller(self, w, ctrl):
         # type: (Writer, ctx.Controller) -> None
@@ -112,7 +109,6 @@ class GoServerControllerGenerator(object):
             "}",
             ""
         )
-        pass
 
     def _write_routes(self, w, ctrl):
         # type: (Writer, ctx.Controller) -> None
@@ -140,7 +136,6 @@ class GoServerControllerGenerator(object):
             "}",
             ""
         )
-        pass
 
     def _write_methods(self, w, ctrl):
         # type: (Writer, ctx.Controller) -> None
@@ -299,8 +294,6 @@ class GoServerControllerGenerator(object):
                 response_value=err_rsp.response_value,
                 set_errors=set_errors,
             ))
-
-        pass
 
     def _need_warning_check(self, route, response):
         parse_schema = parse("$..schema").find(response.response_obj)

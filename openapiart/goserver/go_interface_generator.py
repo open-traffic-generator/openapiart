@@ -118,7 +118,6 @@ class GoServerInterfaceGenerator(object):
             "}",
             ""
         )
-        pass
 
     def _write_servicehandler_interface(self, w, ctrl):
         # type: (Writer, ctx.Controller) -> None
@@ -146,7 +145,6 @@ class GoServerInterfaceGenerator(object):
                         full_responsename=full_responsename
                     )
                 )
-                pass
             else:
                 w.write_line(
                     """{operation_name}(r *http.Request) {full_responsename}""".format(
@@ -159,6 +157,5 @@ class GoServerInterfaceGenerator(object):
             "}",
             ""
         )
-        pass
 
 

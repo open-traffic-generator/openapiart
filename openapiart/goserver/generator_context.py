@@ -15,7 +15,7 @@ class Server(object):
             self._basepath = self._obj['variables']['basePath']['default']
             if self._basepath.startswith("/") == False:
                 self._basepath = "/" + self._basepath
-        except:
+        except KeyError:
             pass
 
 
@@ -165,12 +165,12 @@ class ControllerRoute(object):
                 if component.yaml_name == yamlname:
                     return component
             return None
-        except:
+        except KeyError:
             return None
     def full_url(self):
         _ctx = self._ctx  # type: GeneratorContext
         server = _ctx.servers[0]
-        if server == None:
+        if server is None:
             return self._url
         return server.basepath + self._url
 
@@ -209,7 +209,7 @@ class Controller(object):
 
     def add_route(self, url, method, methodobj):
         self.routes.append(ControllerRoute(url, method, methodobj, self._ctx))
-        pass
+
 
 class GeneratorContext(object):
     def __init__(self, openapi):

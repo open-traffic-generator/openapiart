@@ -48,19 +48,16 @@ class GoServerGenerator(object):
         if "paths" in self._openapi:
             for url, pathobj in self._openapi["paths"].items():
                 self._loadroute(url, pathobj)
-        pass
     
     def _load_servers(self, servers):
         for server in servers:
             s = ctx.Server(server)
             self._context.servers.append(s)
-        pass
 
     def _load_components(self, components):
         for componentname, componentobj in components.items():
             c = ctx.Component(componentname, componentobj, self._context)
             self._context.components.append(c)
-        pass
 
     def _loadroute(self, url, pathobj):
         http_methods = [
@@ -77,7 +74,6 @@ class GoServerGenerator(object):
             controllername = methodobj["tags"][0]
             ctrl = self._context.find_controller(controllername)
             ctrl.add_route(url, methodname, methodobj)
-        pass
 
 
     def _copy_static_files(self):

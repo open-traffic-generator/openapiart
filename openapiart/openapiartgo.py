@@ -192,7 +192,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 self._base_url = server['variables']['basePath']['default']
                 if not self._base_url.startswith("/"):
                     self._base_url = "/" + self._base_url
-            except:
+            except KeyError:
                 pass
 
     def _write_mod_file(self):
