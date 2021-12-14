@@ -144,17 +144,19 @@ class GoServerControllerGenerator(object):
 
     def _write_methods(self, w, ctrl):
         # type: (Writer, ctx.Controller) -> None
-        w.write_line("""var {name}MrlOpts = protojson.MarshalOptions{{
-                UseProtoNames:   true,
-                AllowPartial:    true,
-                EmitUnpopulated: true,
-                Indent:          "  ",
-            }}""".format(
-            name=util.camel_case(ctrl.yamlname)
-        ))
+        self._has_warning_check = False
         for route in ctrl.routes:
             self._write_method(w, ctrl, route)
-    
+        if self._has_warning_check:
+            w.write_line("""var {name}MrlOpts = protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: true,
+                    Indent:          "  ",
+                }}""".format(
+                name=util.camel_case(ctrl.yamlname)
+            ))
+
     def _write_method(self, w, ctrl, route):
         # type: (Writer, ctx.Controller,ctx.ControllerRoute) -> None
         w.write_line("/*")
@@ -240,7 +242,10 @@ class GoServerControllerGenerator(object):
                     rsp_400_error=rsp_400_error
                 )
             else:
-                rsp_section = """httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())""".format(
+                rsp_section = """_, err := httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())
+                        if err != nil {{
+                            log.Print(err.Error())
+                    }}""".format(
                     write_method=write_method,
                     response_value=response.response_value
                 )
@@ -281,7 +286,10 @@ class GoServerControllerGenerator(object):
             w.write_line("""func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, rsp_err error) {{
                 result := {models_prefix}New{response_model_name}()
                 result.StatusCode{response_value}().{set_errors}
-                httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())
+                _, err := httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())
+                if err != nil {{
+                    log.Print(err.Error())
+                }}
             }}
             """.format(
                 struct_name=self._struct_name(ctrl),
@@ -307,6 +315,7 @@ class GoServerControllerGenerator(object):
                 int(response.response_value) == 200 and \
                 response.has_json and \
                 len(parse_warnings) > 0:
+            self._has_warning_check = True
             return True
         return False
 
