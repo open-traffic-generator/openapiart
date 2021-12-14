@@ -48,10 +48,9 @@ func TestGetSingleItem(t *testing.T) {
 
 	jsonResponse, _ = ioutil.ReadAll(wr.Body)
 	err := openapiart.NewCommonResponseError()
-	assert.Nil(t, err)
+	assert.Equal(t, "not found: id '3'", err.Message())
 	errFromJson := r.FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
-	assert.Equal(t, "not found: id '3'", err.Message())
 }
 
 func TestGetSingleItemLevel2(t *testing.T) {
