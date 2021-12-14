@@ -77,7 +77,10 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 func (h *bundlerHandler) UpdateConfig(rbody openapiart.UpdateConfig, r *http.Request) openapiart.UpdateConfigResponse {
 	response := openapiart.NewUpdateConfigResponse()
 	data, _ := httpServer.Config.ToJson()
-	response.StatusCode200().FromJson(data)
+	err := response.StatusCode200().FromJson(data)
+	if err != nil {
+		log.Print(err.Error())
+	}
 	return response
 }
 

@@ -4,6 +4,7 @@ package httpapi
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -18,7 +19,9 @@ func WriteJSONResponse(w http.ResponseWriter, statuscode int, data JSONWriter) (
 	w.WriteHeader(statuscode)
 	dataStr, err := data.ToJson()
 	if err != nil {
-	    WriteDefaultResponse(w, http.StatusInternalServerError)
+		if _, err := WriteDefaultResponse(w, http.StatusInternalServerError); err != nil {
+			log.Print(err.Error())
+		}
 	}
 	return w.Write([]byte(dataStr))
 }

@@ -21,7 +21,8 @@ func TestGetRootResponse(t *testing.T) {
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
 	r := openapiart.NewCommonResponseSuccess()
-	r.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	assert.Equal(t, "from GetRootResponse", r.Message())
 }
 
@@ -43,7 +44,8 @@ func TestPostRootResponse(t *testing.T) {
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
 	r := openapiart.NewCommonResponseSuccess()
-	r.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	assert.Equal(t, "this is the input body", r.Message())
 }
 

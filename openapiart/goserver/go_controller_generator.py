@@ -177,7 +177,9 @@ class GoServerControllerGenerator(object):
         request_body = route.requestBody()   # type: ctx.Component
         rsp_400_error = "response{}400".format(route.operation_name)
         rsp_500_error = "response{}500".format(route.operation_name)
+        rsp_errors = [500]
         if request_body != None:
+            rsp_errors.append(400)
             modelname = request_body.model_name
             full_modelname = request_body.full_model_name
             new_modelname = self._ctx.models_prefix + "New" + modelname
@@ -219,7 +221,7 @@ class GoServerControllerGenerator(object):
 
         error_responses = []
         for response in route.responses:
-            if int(response.response_value) in [400, 500]:
+            if int(response.response_value) in rsp_errors:
                 error_responses.append(response)
 
             # no response content defined, return as 'any'
@@ -242,8 +244,7 @@ class GoServerControllerGenerator(object):
                     rsp_400_error=rsp_400_error
                 )
             else:
-                rsp_section = """_, err := httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}())
-                        if err != nil {{
+                rsp_section = """if _, err := httpapi.{write_method}(w, {response_value}, result.StatusCode{response_value}()); err != nil {{
                             log.Print(err.Error())
                     }}""".format(
                     write_method=write_method,
@@ -286,8 +287,7 @@ class GoServerControllerGenerator(object):
             w.write_line("""func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, rsp_err error) {{
                 result := {models_prefix}New{response_model_name}()
                 result.StatusCode{response_value}().{set_errors}
-                _, err := httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}())
-                if err != nil {{
+                if _, err := httpapi.WriteJSONResponse(w, {response_value}, result.StatusCode{response_value}()); err != nil {{
                     log.Print(err.Error())
                 }}
             }}

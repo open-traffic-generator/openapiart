@@ -20,7 +20,8 @@ func TestGetAllItems(t *testing.T) {
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItemList()
-	r.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	items := r.Items().Items()
 	assert.Equal(t, 2, len(items))
 	assert.Equal(t, "1", items[0].SomeId())
@@ -36,7 +37,8 @@ func TestGetSingleItem(t *testing.T) {
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItem()
-	r.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	assert.Equal(t, "1", r.SomeId())
 
 	req, _ = http.NewRequest(http.MethodGet, "/api/serviceb/3", nil)
@@ -46,7 +48,8 @@ func TestGetSingleItem(t *testing.T) {
 
 	jsonResponse, _ = ioutil.ReadAll(wr.Body)
 	err := openapiart.NewCommonResponseError()
-	err.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	assert.Equal(t, "not found: id '3'", err.Message())
 }
 
@@ -59,7 +62,8 @@ func TestGetSingleItemLevel2(t *testing.T) {
 
 	jsonResponse, _ := ioutil.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItem()
-	r.FromJson(string(jsonResponse))
+	err := r.FromJson(string(jsonResponse))
+	assert.Nil(t, err)
 	assert.Equal(t, "aa", r.PathId())
 	assert.Equal(t, "bb", r.Level2())
 }
