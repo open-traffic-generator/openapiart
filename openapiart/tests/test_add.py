@@ -12,8 +12,8 @@ def test_add(api):
     assert config.f.f_b == config.f._DEFAULTS["f_b"]
     g1 = config.g.add(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
     g1.g_d = "gdgdgd"
-    j = config.j.add()
-    j.j_b.f_a = "a"
+    jval = config.j.add()
+    jval.j_b.f_a = "a"
     print(config)
     assert config.g[0].choice == "g_d"
     yaml = config.serialize(encoding=config.YAML)

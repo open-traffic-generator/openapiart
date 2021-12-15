@@ -216,10 +216,16 @@ class OpenApiBase(object):
 class OpenApiValidator(object):
 
     __slots__ = ()
+    _validation_errors = []
 
     def __init__(self):
-        self._validation_errors = []
         pass
+
+    def _append_error(self, msg):
+        self._validation_errors.append(msg)
+    
+    def _get_validation_errors(self):
+        return self._validation_errors
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
@@ -359,8 +365,14 @@ class OpenApiValidator(object):
         else:
             verdict = v_obj(value)
         if verdict is False:
-            self._validation_errors.append(err_msg)
+            self._append_error(err_msg)
             # raise TypeError(err_msg)
+    
+    def _raise_validation(self):
+        errors = "\n".join(self._validation_errors)
+        if len(self._get_validation_errors()) > 0:
+            self._validation_errors.clear()
+            raise Exception(errors)
 
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
@@ -399,16 +411,24 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             return True
         else:
             return False
+    
+    def _is_enum_valid(self, name, value):
+        if name in self._TYPES and "enum" in self._TYPES[name]:
+            if value in self._TYPES[name]["enum"]:
+                return True
+            else:
+                return False
+        return True
 
     def _get_property(self, name, default_value=None, parent=None, choice=None):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
             self._set_choice(name)
-            if "_choice" in default_value.__slots__:
-                self._properties[name] = default_value(parent=parent, choice=choice)
-            else:
-                self._properties[name] = default_value(parent=parent)
+            # if "_choice" in default_value.__slots__:
+            #     self._properties[name] = default_value(parent=parent, choice=choice)
+            # else:
+            self._properties[name] = default_value(parent=parent)
             if "_DEFAULTS" in dir(self._properties[name]) and "choice" in self._properties[name]._DEFAULTS:
                 getattr(self._properties[name], self._properties[name]._DEFAULTS["choice"])
         else:
@@ -424,8 +444,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
         else:
-            self._set_choice(name)
-            self._properties[name] = value
+            if not self._is_enum_valid(name, value):
+                self._append_error("{} is not a valid enum for property {}".format(value, name))
+            else:
+                self._set_choice(name)
+                self._properties[name] = value
         if self._parent is not None and self._choice is not None and value is not None:
             self._parent._set_property("choice", self._choice)
 
@@ -441,6 +464,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 if key in self._TYPES and "format" in self._TYPES[key] and self._TYPES[key]["format"] == "int64":
                     value = str(value)
                 output[key] = value
+        self._raise_validation()
         return output
 
     def _decode(self, obj):
@@ -450,7 +474,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 if isinstance(property_value, dict):
                     child = self._get_child_class(property_name)
                     if "choice" in child[1]._TYPES and "_parent" in child[1].__slots__:
-                        property_value = child[1](self, property_name)._decode(property_value)
+                        property_value = child[1](self)._decode(property_value)
                     elif "_parent" in child[1].__slots__:
                         property_value = child[1](self)._decode(property_value)
                     else:
@@ -471,6 +495,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 self._properties[property_name] = property_value
             self._validate_types(property_name, property_value)
         self._validate_required()
+        self._raise_validation()
         return self
 
     def _get_child_class(self, property_name, is_property_list=False):
@@ -514,7 +539,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     self.__class__,
                 )
                 # raise ValueError(msg)
-                self._validation_errors.append(msg)
+                self._append_error(msg)
 
     def _validate_types(self, property_name, property_value):
         common_data_types = [list, str, int, float, bool]
@@ -526,7 +551,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             return
         if "enum" in details and property_value not in details["enum"]:
             msg = "property {} shall be one of these" " {} enum, but got {} at {}"
-            self._validation_errors.append(
+            self._append_error(
                 msg.format(property_name, details["enum"], property_value, self.__class__)
             )
             # raise TypeError(msg.format(property_name, details["enum"], property_value, self.__class__))
@@ -542,7 +567,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             object_class = getattr(module, class_name)
             if not isinstance(property_value, object_class):
                 msg = "property {} shall be of type {}," " but got {} at {}"
-                self._validation_errors.append(
+                self._append_error(
                     msg.format(property_name, class_name, type(property_value), self.__class__)
                 )
                 # raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
@@ -554,11 +579,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def validate(self):
         self.serialize()
-        if self._validation_errors > 0:
-            raise Exception("\n".join(self._validation_errors))
-        # self._validate_required()
-        # for key, value in self._properties.items():
-        #     self._validate_types(key, value)
+        self._raise_validation()
 
     def get(self, name, with_default=False):
         """
