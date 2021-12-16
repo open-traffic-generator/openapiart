@@ -547,7 +547,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             # raise ValueError("Invalid Property {}".format(property_name))
             return
         details = self._TYPES[property_name]
-        if property_value is None and property_name not in self._DEFAULTS and property_name not in self._REQUIRED:
+        if property_value is None:
             return
         if "enum" in details and property_value not in details["enum"]:
             msg = "property {} shall be one of these" " {} enum, but got {} at {}"
@@ -572,13 +572,26 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 )
                 # raise TypeError(msg.format(property_name, class_name, type(property_value), self.__class__))
         if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(property_value, details["format"], self.__class__)
+            msg = "Invalid {} format on property {}, expected {} at {}".format(
+                property_value, property_name, details["format"], self.__class__
+            )
             _type = details["type"] if details["type"] is list else details["format"]
             self.types_validation(property_value, _type, msg, details["format"], details.get("minimum"), details.get("maximum"),
                                   details.get("minLength"), details.get("maxLength"))
 
-    def validate(self):
-        self.serialize()
+    def validate(self, skip_exception=False):
+        self._validate_required()
+        for key, value in self._properties.items():
+            if isinstance(value, OpenApiObject):
+                value.validate(True)
+            elif isinstance(value, OpenApiIter):
+                for item in value:
+                    if not isinstance(item, OpenApiObject):
+                        continue
+                    item.validate(True)
+            self._validate_types(key, value)
+        if skip_exception:
+            return self._validation_errors
         self._raise_validation()
 
     def get(self, name, with_default=False):
