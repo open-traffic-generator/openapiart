@@ -11,7 +11,6 @@ TBD:
 import sys
 import yaml
 import os
-import subprocess
 import re
 import requests
 import pkgutil
@@ -22,7 +21,20 @@ from .openapiartplugin import OpenApiArtPlugin
 MODELS_RELEASE = "v0.3.3"
 
 
-class Generator(object):
+class FluentRpc(object):
+    """SetConfig(config Config) error"""
+
+    def __init__(self):
+        self.method = None
+        self.operation_name = None
+        self.request_class = None
+        self.request_property = None
+        self.good_response_type = None  # considering 200-ok
+        self.bad_responses = []         # != 200-ok
+        self.description = None
+
+
+class Generator():
     """Generates python classes based on an openapi.yaml file produced by the
     bundler.py infrastructure.
     """
@@ -106,6 +118,14 @@ class Generator(object):
             self._fid.write("\n")
         with open(os.path.join(os.path.dirname(__file__), "common.py"), "r") as fp:
             common_content = fp.read()
+            common_content = common_content.replace(
+                "import sanity_pb2_grpc",
+                "import {}_pb2_grpc".format(self._package_name)
+            )
+            common_content = common_content.replace(
+                "import sanity_pb2",
+                "import {}_pb2".format(self._package_name)
+            )
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
@@ -115,9 +135,10 @@ class Generator(object):
                 )
         with open(self._api_filename, "a") as self._fid:
             self._fid.write(common_content)
-        methods, factories = self._get_methods_and_factories()
+        methods, factories, rpc_methods = self._get_methods_and_factories()
         self._write_api_class(methods, factories)
         self._write_http_api_class(methods)
+        self._write_rpc_api_class(rpc_methods)
         self._write_init()
         return self
 
@@ -152,6 +173,7 @@ class Generator(object):
         code generation.
         """
         methods = []
+        rpc_methods = []
         factories = []
         refs = []
         self._top_level_schema_refs = []
@@ -164,37 +186,51 @@ class Generator(object):
                 continue
             self._generated_methods.append(method_name)
             print("found method %s" % method_name)
-
+            rpc = FluentRpc()
+            rpc.method = method_name
+            rpc.operation_name = self._get_external_struct_name(
+                operation["operationId"].replace(".", "_")
+            )
+            rpc.description = self._get_description(operation)
             request = self._get_parser("$..requestBody..schema").find(operation)
             for req in request:
-                _, _, _, ref = self._get_object_property_class_names(req.value)
+                _, property_name, class_name, ref = self._get_object_property_class_names(req.value)
                 if ref:
                     refs.append(ref)
+                    rpc.request_property = property_name
+                    rpc.request_class = class_name
 
-            response = self._get_parser("$..responses..schema").find(operation)
+
             response_type = None
-            if len(response) == 0:
-                # since some responses currently directly $ref to a schema
-                # stored someplace else, we need to go one level deeper to
-                # get actual response type (currently extracting only for 200)
-                response = self._get_parser('$..responses.."200"').find(operation)
-                response_name, _, _, _ = self._get_object_property_class_names(response[0].value)
-                if response_name is not None:
-                    response = self._get_parser('$.."$ref"').find(self._openapi["components"]["responses"][response_name])
-                    if len(response) > 0:
-                        _, response_type, _, ref = self._get_object_property_class_names(response[0].value)
+            response_list = operation.get("responses")
+            if response_list is None:
+                raise Exception("{} should have responses".format(method_name))
+            for response_code, response_property in response_list.items():
+                if int(response_code) == 200:
+                    schema_obj = self._get_parser("$..schema").find(response_property)
+                    if len(schema_obj) == 0:
+                        response_name, _, _, ref = self._get_object_property_class_names(response_property)
+                        if response_name is not None:
+                            response = self._get_parser('$.."$ref"').find(
+                                self._get_object_from_ref(ref)
+                            )
+                            if len(response) > 0:
+                                _, response_type, _, ref = self._get_object_property_class_names(response[0].value)
+                                if ref:
+                                    refs.append(ref)
+                    else:
+                        _, response_type, _, ref = self._get_object_property_class_names(schema_obj[0].value)
                         if ref:
                             refs.append(ref)
-            else:
-                _, response_type, _, ref = self._get_object_property_class_names(response[0].value)
-                if ref:
-                    refs.append(ref)
+                else:
+                    rpc.bad_responses.append(str(response_code))
 
             if response_type is None:
                 # TODO: response type is usually None for schema which does not
                 # contain any ref (e.g. response of POST /results/capture)
                 pass
 
+            rpc.good_response_type = response_type
             methods.append(
                 {
                     "name": method_name,
@@ -205,6 +241,7 @@ class Generator(object):
                     "response_type": response_type,
                 }
             )
+            rpc_methods.append(rpc)
 
         # parse top level objects (arguments for API requests)
         for ref in refs:
@@ -232,10 +269,88 @@ class Generator(object):
             else:
                 self._write_openapi_list(ref, property_name)
 
-        return methods, factories
+        return methods, factories, rpc_methods
+
+    def _write_rpc_api_class(self, rpc_methods):
+        class_code = """class GrpcApi(Api):
+    # OpenAPI gRPC Api
+    def __init__(self, **kwargs):
+        super(GrpcApi, self).__init__(**kwargs)
+        self._request_timeout = 10
+        self._location = (
+            kwargs["location"]
+            if "location" in kwargs and kwargs["location"] is not None
+            else "localhost:50051"
+        )
+        self._transport = kwargs["transport"] if "transport" in kwargs else None
+        self._logger = kwargs["logger"] if "logger" in kwargs else None
+        self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
+        if self._logger is None:
+            stdout_handler = logging.StreamHandler(sys.stdout)
+            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+            formatter.converter = time.gmtime
+            stdout_handler.setFormatter(formatter)
+            self._logger = logging.Logger(self.__module__, level=self._loglevel)
+            self._logger.addHandler(stdout_handler)
+        self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+
+        channel = grpc.insecure_channel(self._location)
+        self._stub = pb2_grpc.OpenapiStub(channel)
+
+    def _serialize_payload(self, payload):
+        if not isinstance(payload, (str, dict, OpenApiBase)):
+            raise Exception("We are supporting [str, dict, OpenApiBase] object")
+        if isinstance(payload, OpenApiBase):
+            payload = payload.serialize()
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
+        return payload
+
+    @property
+    def request_timeout(self):
+        return self._request_timeout
+
+    @request_timeout.setter
+    def request_timeout(self, timeout):
+        self._request_timeout = timeout"""
+
+        with open(self._api_filename, "a") as self._fid:
+            self._write()
+            self._write()
+            self._write(0, class_code)
+            for rpc_method in rpc_methods:
+                self._write()
+                if rpc_method.request_class is None:
+                    self._write(1, "def %s(self):" % rpc_method.method)
+                    self._write(2, "res_obj = self._stub.%s()" %rpc_method.operation_name)
+                else:
+                    self._write(1, "def %s(self, payload):" % rpc_method.method)
+                    self._write(2, "pb_obj = json_format.Parse(")
+                    self._write(3, "self._serialize_payload(payload),")
+                    self._write(3, "pb2.%s()" %rpc_method.request_class)
+                    self._write(2, ")")
+                    req_args = "%s=pb_obj" %rpc_method.request_property
+                    self._write(2, "req_obj = pb2.{operation_name}Request({request_property}=pb_obj)".format(
+                        operation_name=rpc_method.operation_name,
+                        request_property=rpc_method.request_property
+                    ))
+                    self._write(2, "res_obj = self._stub.%s(req_obj)" %rpc_method.operation_name)
+                self._write(2, "response = json_format.MessageToDict(res_obj)")
+                self._write(2, "if response.get(\"statusCode200\") is not None:")
+                if rpc_method.good_response_type:
+                    self._write(3, "return self.%s().deserialize(response.get(\"statusCode200\"))"
+                                %rpc_method.good_response_type)
+                else:
+                    self._write(3, "return response.get(\"statusCode200\")")
+                for rsp_code in rpc_method.bad_responses:
+                    self._write(2, """if response.get("statusCode{code}") is not None:""".format(
+                        code=rsp_code
+                    ))
+                    self._write(3, """raise Exception({code}, response.get("statusCode{code}"))""".format(
+                        code=rsp_code
+                    ))
 
     def _write_http_api_class(self, methods):
-        self._generated_classes.append("HttpApi")
         with open(self._api_filename, "a") as self._fid:
             self._write()
             self._write()
@@ -315,6 +430,47 @@ class Generator(object):
             property_name = object_name.lower().replace(".", "_")
             class_name = object_name.replace(".", "")
         return (object_name, property_name, class_name, ref_name)
+
+    def _get_external_struct_name(self, openapi_name):
+        return self._get_external_field_name(openapi_name).replace("_", "")
+
+    def _get_external_field_name(self, openapi_name):
+        """convert openapi fieldname to protobuf fieldname
+
+        - reference: https://developers.google.com/protocol-buffers/docs/reference/go-generated#fields
+
+        Note that the generated Go field names always use camel-case naming,
+        even if the field name in the .proto file uses lower-case with underscores (as it should).
+        The case-conversion works as follows:
+        - The first letter is capitalized for export.
+        - NOTE: this is ignored as OpenAPIArt doesn't allow fieldnames to start with an underscore
+            - If the first character is an underscore, it is removed and a capital X is prepended.
+        - If an interior underscore is followed by a lower-case letter, the underscore is removed, and the following letter is capitalized.
+        - NOTE: This isn't documented, if a number is followed by a lower-case letter the following letter is capitalized.
+        - Thus, the proto field foo_bar_baz becomes FooBarBaz in Go, and _my_field_name_2 becomes XMyFieldName_2.
+        """
+        external = ""
+        name = openapi_name.replace(".", "")
+        for i in range(len(name)):
+            if i == 0:
+                if name[i] == "_":
+                    pass
+                else:
+                    external += name[i].upper()
+            elif name[i] == "_":
+                pass
+            elif name[i - 1] == "_":
+                if name[i].isdigit() or name[i].isupper():
+                    external += "_" + name[i]
+                else:
+                    external += name[i].upper()
+            elif name[i - 1].isdigit() and name[i].islower():
+                external += name[i].upper()
+            else:
+                external += name[i]
+        if external in ["String"]:
+            external += "_"
+        return external
 
     def _write_openapi_object(self, ref, choice_method_name=None):
         schema_object = self._get_object_from_ref(ref)
