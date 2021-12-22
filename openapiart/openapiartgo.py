@@ -240,6 +240,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(line)
         self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
+        self._write("google.golang.org/grpc/credentials/insecure")
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
@@ -474,7 +475,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if api.grpcClient == nil {{
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
                     defer cancelFunc()
-                    conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithInsecure())
+                    conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithTransportCredentials(insecure.NewCredentials()))
                     if err != nil {{
                         return err
                     }}
