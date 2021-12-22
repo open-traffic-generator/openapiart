@@ -240,7 +240,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(line)
         self._write('import "google.golang.org/protobuf/types/known/emptypb"')
         self._write('import "google.golang.org/grpc"')
-        self._write("google.golang.org/grpc/credentials/insecure")
+        self._write('import "google.golang.org/grpc/credentials/insecure"')
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
