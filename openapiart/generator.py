@@ -276,7 +276,10 @@ class Generator():
     # OpenAPI gRPC Api
     def __init__(self, **kwargs):
         super(GrpcApi, self).__init__(**kwargs)
+        self._stub = None
+        self._channel = None
         self._request_timeout = 10
+        self._keep_alive_timeout = 10 * 1000
         self._location = (
             kwargs["location"]
             if "location" in kwargs and kwargs["location"] is not None
@@ -294,8 +297,13 @@ class Generator():
             self._logger.addHandler(stdout_handler)
         self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
-        channel = grpc.insecure_channel(self._location)
-        self._stub = pb2_grpc.OpenapiStub(channel)
+    def _get_stub(self):
+        if self._stub is None:
+            CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
+                               ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
+            self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            self._stub = pb2_grpc.OpenapiStub(self._channel)
+        return self._stub
 
     def _serialize_payload(self, payload):
         if not isinstance(payload, (str, dict, OpenApiBase)):
@@ -308,12 +316,28 @@ class Generator():
 
     @property
     def request_timeout(self):
+        \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
         return self._request_timeout
 
     @request_timeout.setter
     def request_timeout(self, timeout):
-        self._request_timeout = timeout"""
+        self._request_timeout = timeout
 
+    @property
+    def keep_alive_timeout(self):
+        return self._keep_alive_timeout
+
+    @keep_alive_timeout.setter
+    def keep_alive_timeout(self, timeout):
+        self._keep_alive_timeout = timeout * 1000
+        
+    def close(self):
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
+            self._stub = None"""
+
+        self._generated_classes.append("Transport")
         with open(self._api_filename, "a") as self._fid:
             self._write()
             self._write()
@@ -322,7 +346,9 @@ class Generator():
                 self._write()
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
-                    self._write(2, "res_obj = self._stub.%s()" %rpc_method.operation_name)
+                    self._write(2, "stub = self._get_stub()")
+                    self._write(2, "empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()")
+                    self._write(2, "res_obj = stub.%s(empty, timeout=self._request_timeout)" %rpc_method.operation_name)
                 else:
                     self._write(1, "def %s(self, payload):" % rpc_method.method)
                     self._write(2, "pb_obj = json_format.Parse(")
@@ -334,7 +360,8 @@ class Generator():
                         operation_name=rpc_method.operation_name,
                         request_property=rpc_method.request_property
                     ))
-                    self._write(2, "res_obj = self._stub.%s(req_obj)" %rpc_method.operation_name)
+                    self._write(2, "stub = self._get_stub()")
+                    self._write(2, "res_obj = stub.%s(req_obj, timeout=self._request_timeout)" %rpc_method.operation_name)
                 self._write(2, "response = json_format.MessageToDict(res_obj)")
                 self._write(2, "if response.get(\"statusCode200\") is not None:")
                 if rpc_method.good_response_type:
@@ -360,6 +387,14 @@ class Generator():
             self._write(1, "def __init__(self, **kwargs):")
             self._write(2, "super(HttpApi, self).__init__(**kwargs)")
             self._write(2, "self._transport = HttpTransport(**kwargs)")
+            self._write()
+            self._write(1, "@property")
+            self._write(1, "def verify(self):")
+            self._write(2, "return self._transport.verify")
+            self._write()
+            self._write(1, "@verify.setter")
+            self._write(1, "def verify(self, value):")
+            self._write(2, "self._transport.set_verify(value)")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -414,6 +449,10 @@ class Generator():
                 self._write(2, "Return: %s" % factory["class_name"])
                 self._write(2, '"""')
                 self._write(2, "return %s()" % factory["class_name"])
+
+            self._write()
+            self._write(1, "def close(self):")
+            self._write(2, "pass")
 
     def _get_object_property_class_names(self, ref):
         """Returns: `Tuple(object_name, property_name, class_name, ref_name)`"""

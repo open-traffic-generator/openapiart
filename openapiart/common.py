@@ -21,6 +21,10 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
+class Transport:
+    HTTP = "http"
+    GRPC = "grpc"
+
 def api(location=None, transport="http", verify=True, logger=None, loglevel=logging.INFO, ext=None):
     """Create an instance of an Api class
 
@@ -88,10 +92,14 @@ class HttpTransport(object):
             self.logger = logging.Logger(self.__module__, level=self.loglevel)
             self.logger.addHandler(stdout_handler)
         self.logger.debug("HttpTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        self.set_verify(self.verify)
+        self._session = requests.Session()
+
+    def set_verify(self, verify):
+        self.verify = verify
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             self.logger.warning("Certificate verification is disabled")
-        self._session = requests.Session()
 
     def send_recv(self, method, relative_url, payload=None, return_object=None, headers=None):
         url = "%s%s" % (self.location, relative_url)
