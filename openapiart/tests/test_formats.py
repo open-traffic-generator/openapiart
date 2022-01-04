@@ -4,7 +4,7 @@ import json
 
 
 def test_formats_sanity(config):
-    config.l.string = "asdf"
+    config.l.string_param = "asdf"
     config.l.integer = 88
     config.l.float = 22.3
     config.l.double = 2342.222
@@ -19,7 +19,7 @@ def test_formats_sanity(config):
 
 @pytest.mark.parametrize("value", [33.4, 100])
 def test_formats_bad_string(config, value):
-    config.l.string = value
+    config.l.string_param = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail(f"Value {value} was successfully validated")

@@ -1061,6 +1061,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj.validateObj(false)
                 return validationResult()
             }}
+
+            func (obj *{struct}) String() string {{
+                str, err := obj.ToYaml()
+                if err != nil {{
+                    return err.Error()
+                }}
+                return str
+            }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1097,6 +1105,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "FromJson(value string) error",
             "// Validate validates {interface}",
             "Validate() error",
+            "// A stringer function",
+            "String() string",
             "validateFromText() error",
             "validateObj(set_default bool)",
             "setDefault()",

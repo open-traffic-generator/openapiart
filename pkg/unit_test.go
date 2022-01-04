@@ -38,7 +38,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.K().EObject().SetEA(77.7).SetEB(2.0)
 	config.K().FObject().SetFA("asdf")
 	l := config.L()
-	l.SetString("test")
+	l.SetStringParam("test")
 	l.SetInteger(80)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)
@@ -271,7 +271,7 @@ func TestLObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	l := config.L()
-	l.SetString("test")
+	l.SetStringParam("test")
 	l.SetInteger(80)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)
@@ -279,7 +279,7 @@ func TestLObject(t *testing.T) {
 	l.SetIpv4("1.1.1.1")
 	l.SetIpv6("2000::1")
 	l.SetHex("0x12")
-	assert.Equal(t, "test", config.L().String())
+	assert.Equal(t, "test", config.L().StringParam())
 	assert.Equal(t, int_, config.L().Integer())
 	assert.Equal(t, float_, config.L().Float())
 	assert.Equal(t, 1.7976931348623157e+308, config.L().Double())
@@ -605,7 +605,7 @@ func TestRequiredValidation(t *testing.T) {
 	config.SetB(10.32)
 	config.SetC(20)
 	config.MObject().
-		SetString("asdf").
+		SetStringParam("asdf").
 		SetInteger(63).
 		SetDouble(55.4).
 		SetFloat(33.2).
@@ -1027,7 +1027,7 @@ func TestMobjectValidationError(t *testing.T) {
 	config.SetB(10.32)
 	config.SetC(20)
 	config.MObject().
-		SetString("asdf").
+		SetStringParam("asdf").
 		SetInteger(120).
 		SetDouble(55.4).
 		SetFloat(33.2).
@@ -1051,7 +1051,7 @@ func TestLObjectError(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	l := config.L()
-	l.SetString("test")
+	l.SetStringParam("test")
 	l.SetInteger(180)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)
@@ -1647,4 +1647,10 @@ func TestSetterWrapperHolder(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson2)
 	fmt.Println(metricsrespJson2)
+}
+
+func TestStringer(t *testing.T) {
+	lObj := openapiart.NewLObject()
+	lObj.SetDouble(10.1).SetFloat(20.1).SetStringParam("abc")
+	fmt.Println(lObj)
 }

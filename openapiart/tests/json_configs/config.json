@@ -54,7 +54,7 @@
       }
     },
     "l": {
-      "string": "test",
+      "string_param": "test",
       "integer": 80,
       "float": 100.11,
       "double": 1.7976931348623157e+308,
