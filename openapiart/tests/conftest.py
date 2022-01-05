@@ -5,7 +5,7 @@ import importlib
 import logging
 from .utils import common as utl
 from .server import OpenApiServer
-from .grpcserver import grpc_server
+from .grpcserver import grpc_server, GRPC_PORT
 from .server import app
 
 
@@ -18,7 +18,7 @@ pytest.module = importlib.import_module(pytest.module_name)
 pytest.http_server = OpenApiServer(pytest.module).start()
 pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
 pytest.pb2_grpc_module = importlib.import_module(pytest.module_name + "_pb2_grpc")
-pytest.grpc_server = grpc_server(pytest.pb2_module, pytest.pb2_grpc_module).start()
+pytest.grpc_server = grpc_server()
 
 
 @pytest.fixture(scope="session")
@@ -28,6 +28,17 @@ def api():
     return module.api(
         location="http://127.0.0.1:{}".format(app.PORT),
         verify=False,
+        logger=None,
+        loglevel=logging.DEBUG,
+    )
+
+
+@pytest.fixture(scope="session")
+def grpc_api():
+    """Return an instance of the top level gRPC Api class from the generated package"""
+    return pytest.module.api(
+        location="localhost:{}".format(GRPC_PORT),
+        transport=pytest.module.Transport.GRPC,
         logger=None,
         loglevel=logging.DEBUG,
     )

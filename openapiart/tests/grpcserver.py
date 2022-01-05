@@ -1,54 +1,87 @@
+import os
+import sys
 import grpc
+import json
+import base64
+import threading
+import importlib
 from concurrent import futures
 from google.protobuf import json_format
-import threading
-import base64
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", "sanity"))
+pb2_grpc = importlib.import_module("sanity_pb2_grpc")
+pb2 = importlib.import_module("sanity_pb2")
 
-def grpc_server(pb2, pb2_grpc):
-    class OpenapiServicer(pb2_grpc.OpenapiServicer):
-        def __init__(self):
-            super().__init__()
+GRPC_PORT = 50051
 
-        def SetConfig(self, request, context):
-            response_400 = """
-                {
-                    "status_code_400" : {
-                        "errors" : ["invalid value"]
-                    }
+class OpenapiServicer(pb2_grpc.OpenapiServicer):
+    def __init__(self):
+        self._prefix_config = None
+        super().__init__()
+
+    def _log(self, value):
+        print("gRPC Server: %s" %value)
+
+    def SetConfig(self, request, context):
+        self._log("Executing SetConfig")
+        response_400 = """
+            {
+                "status_code_400" : {
+                    "errors" : ["invalid value"]
                 }
-                """
+            }
+            """
 
-            response_200 = """
-                {
-                    "status_code_200" : "%s"
-                }
-            """ % base64.b64encode(
-                b"success"
-            ).decode(
-                "utf-8"
-            )
+        response_200 = """
+            {
+                "status_code_200" : "%s"
+            }
+        """ % base64.b64encode(
+            b"success"
+        ).decode(
+            "utf-8"
+        )
 
-            test = request.prefix_config.l.integer
-            if test is not None and (test < 10 or test > 90):
-                res_obj = json_format.Parse(response_400, pb2.SetConfigResponse())
-            else:
-                res_obj = json_format.Parse(response_200, pb2.SetConfigResponse())
+        test = request.prefix_config.l.integer
+        self._prefix_config = json_format.MessageToDict(
+            request.prefix_config, preserving_proto_field_name=True
+        )
+        if test is not None and (test < 10 or test > 90):
+            res_obj = json_format.Parse(response_400, pb2.SetConfigResponse())
+        else:
+            res_obj = json_format.Parse(response_200, pb2.SetConfigResponse())
 
-            return res_obj
+        return res_obj
 
-        def start(self):
-            self._web_server_thread = threading.Thread(target=local_web_server)
-            self._web_server_thread.setDaemon(True)
-            self._web_server_thread.start()
-            return self
+    def GetConfig(self, request, context):
+        self._log("Executing GetConfig")
+        response_200 = {
+            "status_code_200": self._prefix_config
+        }
+        res_obj = json_format.Parse(
+            json.dumps(response_200), pb2.GetConfigResponse()
+        )
+        return res_obj
 
-    def local_web_server():
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        pb2_grpc.add_OpenapiServicer_to_server(OpenapiServicer(), server)
+def gRpcServer():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    pb2_grpc.add_OpenapiServicer_to_server(OpenapiServicer(), server)
+    print("gRPC Server: Starting server. Listening on port %s." % GRPC_PORT)
+    server.add_insecure_port("[::]:{}".format(GRPC_PORT))
+    server.start()
 
-        print("Starting server. Listening on port 50051.")
-        server.add_insecure_port("[::]:50051")
-        server.start()
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        server.stop(5)
+        print("Server shutdown gracefully")
 
-    return OpenapiServicer()
+
+def grpc_server():
+    web_server_thread = threading.Thread(target=gRpcServer)
+    web_server_thread.setDaemon(True)
+    web_server_thread.start()
+
+if __name__ == '__main__':
+    gRpcServer()

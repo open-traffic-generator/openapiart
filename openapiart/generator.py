@@ -361,19 +361,23 @@ class Generator():
                         request_property=rpc_method.request_property
                     ))
                     self._write(2, "stub = self._get_stub()")
-                    self._write(2, "res_obj = stub.%s(req_obj, timeout=self._request_timeout)" %rpc_method.operation_name)
-                self._write(2, "response = json_format.MessageToDict(res_obj)")
-                self._write(2, "if response.get(\"statusCode200\") is not None:")
+                    self._write(2, "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
+                                %rpc_method.operation_name)
+                self._write(2, "response = json_format.MessageToDict(")
+                self._write(3, "res_obj, preserving_proto_field_name=True")
+                self._write(2, ")")
+                self._write(2, "if response.get(\"status_code_200\") is not None:")
                 if rpc_method.good_response_type:
-                    self._write(3, "return self.%s().deserialize(response.get(\"statusCode200\"))"
-                                %rpc_method.good_response_type)
+                    self._write(3, "return self.%s().deserialize(" %rpc_method.good_response_type)
+                    self._write(4, "response.get(\"status_code_200\")")
+                    self._write(3, ")")
                 else:
-                    self._write(3, "return response.get(\"statusCode200\")")
+                    self._write(3, "return response.get(\"status_code_200\")")
                 for rsp_code in rpc_method.bad_responses:
-                    self._write(2, """if response.get("statusCode{code}") is not None:""".format(
+                    self._write(2, """if response.get("status_code_{code}") is not None:""".format(
                         code=rsp_code
                     ))
-                    self._write(3, """raise Exception({code}, response.get("statusCode{code}"))""".format(
+                    self._write(3, """raise Exception({code}, response.get("status_code_{code}"))""".format(
                         code=rsp_code
                     ))
 
