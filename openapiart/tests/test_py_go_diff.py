@@ -7,17 +7,18 @@ def test_iter_set_method(default_config):
     default_config.j.add()
     default_config.j.set(0, module.JObject())
     assert len(default_config.j) == 1
-    # below 2 statements shall raise exception need to modify generator
-    # if exception is raised, it would conflict with below mentioned
-    # comments about flow.packet
-    default_config.j.append(module.FObject())
-    default_config.j.set(1, module.FObject())
+    try:
+        default_config.j.append(module.FObject())
+        pytest.fail("appending an invalid object is not throwing exception")
+    except Exception:
+        pass
+    try:
+        default_config.j.set(0, module.FObject())
+        pytest.fail("setting an invalid object is not throwing exception")
+    except Exception:
+        pass
 
-    default_config.j.set(1, module.JObject())
-    # below statement is a replica of snappi flow.packet Iter
-    # indexing will return protocol header obj instead of FlowHeader
-    # which is actually set with set or append or add methods
-    assert isinstance(default_config.j[1], module.EObject)
+    assert isinstance(default_config.j[0], module.EObject)
 
 
 def test_validation_errors():
