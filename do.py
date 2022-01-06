@@ -142,7 +142,7 @@ def test_python():
     )
     import re
 
-    coverage_threshold = 50
+    coverage_threshold = 45
     with open("./cov_report/index.html") as fp:
         out = fp.read()
         result = re.findall(r"data-ratio.*?[>](\d+)\b", out)[0]
