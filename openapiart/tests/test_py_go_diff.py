@@ -46,12 +46,12 @@ def test_validation_errors():
     p.required_object.e_a = 10.1
     p.required_object.e_b = 20
     p.j.add().j_a
-    errors = p.validate(True)
+    errors = p._validate(True)
     assert len([True for e in errors if "e_b is a mandatory property" in e]) == 2
     
 
 def test_enum_setter():
     p = module.Api().prefix_config()
     p.response = "abc"
-    errors = p.validate(True)
+    errors = p._validate(True)
     assert "abc is not a valid enum for property response" in errors

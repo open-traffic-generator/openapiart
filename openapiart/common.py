@@ -579,20 +579,23 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self.types_validation(property_value, _type, msg, details["format"], details.get("minimum"), details.get("maximum"),
                                   details.get("minLength"), details.get("maxLength"))
 
-    def validate(self, skip_exception=False):
+    def _validate(self, skip_exception=False):
         self._validate_required()
         for key, value in self._properties.items():
             if isinstance(value, OpenApiObject):
-                value.validate(True)
+                value._validate(True)
             elif isinstance(value, OpenApiIter):
                 for item in value:
                     if not isinstance(item, OpenApiObject):
                         continue
-                    item.validate(True)
+                    item._validate(True)
             self._validate_types(key, value)
         if skip_exception:
             return self._validation_errors
         self._raise_validation()
+    
+    def validate(self):
+        return self._validate()
 
     def get(self, name, with_default=False):
         """
