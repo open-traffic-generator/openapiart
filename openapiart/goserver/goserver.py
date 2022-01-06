@@ -8,11 +8,11 @@ class GoServerGenerator(object):
     def __init__(
         self, 
         openapi, # openapi.yaml.yaml
-        output_root_path,
-        module_path,
-        models_prefix='',
-        models_path=''
-    ):
+        output_root_path: str,
+        module_path: str,
+        models_prefix: str = '',
+        models_path: str = ''
+        ):
         self._output_root_path = output_root_path
         self._openapi = openapi
         self._context = ctx.GeneratorContext(openapi)
@@ -59,7 +59,7 @@ class GoServerGenerator(object):
             c = ctx.Component(componentname, componentobj, self._context)
             self._context.components.append(c)
 
-    def _loadroute(self, url, pathobj):
+    def _loadroute(self, url: str, pathobj):
         http_methods = [
             "get", "post", "put", "delete", "head", "patch"
         ]
