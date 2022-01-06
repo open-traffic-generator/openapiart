@@ -244,6 +244,27 @@ func TestGObjectAppendMultiple(t *testing.T) {
 	assert.Equal(t, item.GA(), "g_2")
 }
 
+func TestGObjectAppend(t *testing.T) {
+	ga := []string{"g_1", "g_2"}
+	gb := []int32{1, 2}
+	gc := []float32{11.1, 22.2}
+	ge := []float64{1.0, 2.0}
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	g1 := openapiart.NewGObject()
+	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
+	g2 := openapiart.NewGObject()
+	g2.SetGA("g_2").SetGB(2).SetGC(22.2).SetGE(2.0)
+	config.G().Append(g1, g2)
+	for i, G := range config.G().Items() {
+		assert.Equal(t, ga[i], G.GA())
+		assert.Equal(t, gb[i], G.GB())
+		assert.Equal(t, gc[i], G.GC())
+		assert.Equal(t, ge[i], G.GE())
+	}
+	// log.Print(g1.ToJson(), g1.ToYaml())
+}
+
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
 	var float_ float32 = 100.11
@@ -1450,7 +1471,8 @@ func TestItemsMethod(t *testing.T) {
 	config2 := api.NewPrefixConfig()
 	config1Json, err := config1.ToJson()
 	assert.Nil(t, err)
-	config2.FromJson(config1Json)
+	json_err := config2.FromJson(config1Json)
+	assert.Nil(t, json_err)
 	assert.Len(t, config1.G().Items(), 2)
 	assert.Len(t, config2.G().Items(), 2)
 	for ind, obj := range config1.G().Items() {
@@ -1488,7 +1510,8 @@ func TestStructGetterMethod(t *testing.T) {
 	jObject1 := openapiart.NewJObject()
 	jOject1json, err := jObject.ToJson()
 	assert.Nil(t, err)
-	jObject1.FromJson(jOject1json)
+	err1 := jObject1.FromJson(jOject1json)
+	assert.Nil(t, err1)
 	assert.Equal(t, jObject1.JA(), jObject1.JA())
 
 	jObject2 := openapiart.NewJObject()
@@ -1496,7 +1519,8 @@ func TestStructGetterMethod(t *testing.T) {
 	val2.SetEA(0.23495).SetEB(1.456)
 	jObject2Json, err := jObject.ToJson()
 	assert.Nil(t, err)
-	jObject2.FromJson(jObject2Json)
+	err2 := jObject2.FromJson(jObject2Json)
+	assert.Nil(t, err2)
 	assert.NotEqual(t, val2, jObject2.JA())
 }
 

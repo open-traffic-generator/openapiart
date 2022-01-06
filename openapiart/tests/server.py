@@ -15,7 +15,7 @@ app.PORT = 18080
 app.HOST = "0.0.0.0"
 
 
-@app.route("/config", methods=["POST"])
+@app.route("/api/config", methods=["POST"])
 def set_config():
     config = app.PACKAGE.Api().prefix_config()
     config.deserialize(request.data.decode("utf-8"))
@@ -31,7 +31,7 @@ def set_config():
         return Response(status=200)
 
 
-@app.route("/config", methods=["GET"])
+@app.route("/api/config", methods=["GET"])
 def get_config():
     app.CONFIG.a = "asdf"
     app.CONFIG.b = 1.1

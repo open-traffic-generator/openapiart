@@ -156,6 +156,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         super(OpenApiArtGo, self).__init__(**kwargs)
         self._api = FluentStructure()
         self._api_interface_methods = []
+        self._base_url = ""
         self._oapi_go_types = {
             "string": "string",
             "boolean": "bool",
@@ -172,14 +173,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
 
     def generate(self, openapi):
+        self._base_url = ""
         self._openapi = openapi
         self._ux_path = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
         self._protoc_path = os.path.normpath(os.path.join(self._ux_path, self._protobuf_package_name))
         self._structs = {}
+        self._get_base_url()
         self._write_mod_file()
         self._write_go_file()
         self._format_go_file()
         self._tidy_mod_file()
+
+    def _get_base_url(self):
+        self._base_url = ""
+        if "servers" in self._openapi:
+            server = self._openapi["servers"][0]
+            try:
+                self._base_url = server['variables']['basePath']['default']
+                if not self._base_url.startswith("/"):
+                    self._base_url = "/" + self._base_url
+            except KeyError:
+                pass
 
     def _write_mod_file(self):
         self._filename = os.path.normpath(os.path.join(self._ux_path, "go.mod"))
@@ -228,7 +242,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/grpc"')
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
-        self._write('import "github.com/golang/protobuf/proto"')
+        self._write('import "google.golang.org/protobuf/proto"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(os.path.join(self._ux_path, "common.go"))
@@ -311,6 +325,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             external_name=self._get_external_struct_name(self._go_sdk_package_name)
         )
         for url, path_object in self._openapi["paths"].items():
+            http_url = self._base_url + url
+            if http_url.startswith("/"):
+                http_url = http_url[1:]
             for operation_id in self._get_parser("$..operationId").find(path_object):
                 path_item_object = operation_id.context.value
                 rpc = FluentRpc()
@@ -359,7 +376,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         interface=new.interface,
                         struct=new.struct,
                     )
-                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// ")) 
+                    rpc.description = "// {} {}".format(rpc.operation_name, rpc.description.lstrip("// "))
                     # """
                     #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
                     #     // or returns error on failure
@@ -391,14 +408,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     if url.startswith("/"):
                         url = url[1:]
-                    http.request = """{structlower}, err := {struct}.ToJson()
+                    http.request = """{struct}Json, err := {struct}.ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {structlower}, "{method}")
+                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
                     """.format(
                         operation_name=http.operation_name,
-                        url=url,
+                        url=http_url,
                         struct=new.struct,
-                        structlower=new.struct.lower(),
                         method=str(operation_id.context.path.fields[0]).upper(),
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
@@ -421,7 +437,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                     )
                     http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
-                        url=url, method=str(operation_id.context.path.fields[0]).upper()
+                        url=http_url, method=str(operation_id.context.path.fields[0]).upper()
                     )
                     http.method = """http{rpc_method}""".format(rpc_method=rpc.method)
                 for ref in self._get_parser("$..responses").find(path_item_object):
@@ -560,7 +576,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 external_interface_name=self._api.external_interface_name,
                 method_signatures=method_signatures,
                 description="// {} {}".format(
-                    self._api.external_interface_name, 
+                    self._api.external_interface_name,
                     self._get_description(self._openapi["info"], True).lstrip("// "))
             )
         )
@@ -764,7 +780,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 internal_items_nil.append("obj.{} = nil".format(
                     self._get_holder_name(field)))
         self._write(
-            """type {struct} struct {{
+            """
+            // ***** {interface} *****
+            type {struct} struct {{
                 obj *{pb_pkg_name}.{interface}
                 {internal_items}
             }}
@@ -790,11 +808,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if vErr != nil {{
                     return "", vErr
                 }}
-                return proto.MarshalTextString(obj.Msg()), nil
+                protoMarshal, err := proto.Marshal(obj.Msg())
+                if err != nil {{
+                    return "", err
+                }}
+                return string(protoMarshal), nil
             }}
 
             func (obj *{struct}) FromPbText(value string) error {{
-                retObj := proto.UnmarshalText(value, obj.Msg())
+                retObj := proto.Unmarshal([]byte(value), obj.Msg())
                 if retObj != nil {{
                     return retObj
                 }}
@@ -2012,7 +2034,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
-    
+
     def _get_holder_name(self, field, isIter=False):
         if isIter:
             return "{}Slice".format(field.struct)

@@ -83,6 +83,7 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         self._resolve_license()
+        self._fill_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         self._validate_errors()
@@ -96,6 +97,28 @@ class Bundler(object):
         if len(self._errors) > 0:
             raise TypeError("\n".join(self._errors))
 
+    def _fill_required_responses(self):
+        responses = self._get_parser("$..paths..responses").find(self._content)
+        error_codes = ["400", "500"]
+        code_responses = {}
+        for response in responses:
+            if set(error_codes).issubset(set(code_responses.keys())):
+                break
+            for code, value in response.value.items():
+                code_responses[str(code)] = response.value[code]
+
+        if not set(error_codes).issubset(set(code_responses.keys())):
+            raise Exception("please configure these {} error codes".format(
+                error_codes
+            ))
+
+        for response in responses:
+            value = response.value
+            keys = [str(k) for k in value.keys()]
+            for rsp_code in error_codes:
+                if rsp_code not in keys:
+                    value[rsp_code] = copy.deepcopy(code_responses[rsp_code])
+    
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
         with open(self._output_filename) as fid:

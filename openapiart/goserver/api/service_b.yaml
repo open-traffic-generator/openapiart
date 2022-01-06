@@ -1,0 +1,28 @@
+openapi: 3.1.0
+
+info:
+  title: Service-B components
+  version: 0.0.0
+
+components:
+  schemas:
+
+    ServiceB.Item:
+      type: object
+      properties:
+        some_id:
+          type: string
+        some_string:
+          type: string
+        path_id:
+          type: string
+        level_2:
+          type: string
+
+    ServiceB.ItemList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceB.Item'

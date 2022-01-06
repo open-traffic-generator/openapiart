@@ -24,14 +24,26 @@ def create_openapi_artifacts(openapiart_class):
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/common/common.yaml"),
         os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"),
+
+        # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
+        os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_a.api.yaml"),
+        os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_b.api.yaml"),
     ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
     ).GeneratePythonSdk(
         package_name="sanity"
     ).GenerateGoSdk(
-        package_dir="github.com/open-traffic-generator/openapiart/pkg", package_name="openapiart"
+        package_dir="github.com/open-traffic-generator/openapiart/pkg",
+        package_name="openapiart"
+    ).GenerateGoServer(
+        module_path="github.com/open-traffic-generator/openapiart/pkg",
+        models_prefix="openapiart",
+        models_path="github.com/open-traffic-generator/openapiart/pkg"
+    ).GoTidy(
+        relative_package_dir="pkg",
     )
+
 
 
 if __name__ == "__main__":

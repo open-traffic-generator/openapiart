@@ -1,0 +1,89 @@
+openapi: 3.0.3
+
+info:
+  title: Schema for Service1
+  version: 0.0.0
+  description: >-
+    Each service should be defined in individual yaml files.
+    If the service has a small API and model set it can be defined in a single file,
+    else it is recommended to split it into
+      apitest.api.yaml  - for api dfinition
+      apitest.yaml      - for model definition used by the service
+
+paths:
+
+  /apitest:
+    get:
+      tags: [ApiTest]
+      operationId: GetRootResponse
+      description: simple GET api with single return type
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+    delete:
+      tags: [ApiTest]
+      operationId: dummyResponseTest
+      responses:
+        '200':
+          description: |-
+            OK
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+    post:
+      tags: [ApiTest]
+      operationId: PostRootResponse
+      description: simple POST api with single return type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: './service_a.yaml#/components/schemas/ApiTest.InputBody'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'

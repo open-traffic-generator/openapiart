@@ -1,0 +1,101 @@
+openapi: 3.0.3
+
+info:
+  title: Schema for ServiceB
+  version: 0.0.0
+  description: >-
+
+paths:
+
+  /serviceb:
+    get:
+      tags: [ServiceB]
+      operationId: GetAllItems
+      description: return list of some items
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+
+  /serviceb/{item_id}:
+    get:
+      tags: [ServiceB]
+      operationId: GetSingleItem
+      description: return single item
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+
+  /serviceb/{item_id}/{level_2}:
+    get:
+      tags: [ServiceB]
+      # operationId will be CamelCased, it is not possible to define a private method in an interface
+      operationId: getSingleItemLevel2
+      description: return single item
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: level_2
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+        '400':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+        '500':
+          description: Error500
+          content:
+            application/json:
+              schema:
+                $ref: './common.yaml#/components/schemas/Common.ResponseError'

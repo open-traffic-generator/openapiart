@@ -12,6 +12,13 @@ info:
     url: https://github.com/open-traffic-generator/openapiart/issues
 
 servers: 
-  - url: /
+  - url: https://{hostname}:{port}/{basePath}
+    variables:
+      hostname:
+        default: 0.0.0.0
+      port:
+        default: "8080"
+      basePath:
+        default: api
 
 paths: {}

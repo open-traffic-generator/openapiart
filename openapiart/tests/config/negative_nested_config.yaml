@@ -20,12 +20,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RootComponentWithNested'
+        400:
+          description: 'error 4xx'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error.Details'
+        500:
+          description: 'error 5xx'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error.Details'
 
 components:
   schemas:
     ComponentWithNoProperties:
       type: object
       description: Component with no properties
+
+    Error.Details:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
 
     RootComponentWithNested:
       type: object

@@ -12,6 +12,7 @@ __pycache__
 /scratch
 /cov_report
 /**/art
+/**/art_go
 .local
 /pkg/coverage.txt
 /pkg/coverage.out
@@ -19,3 +20,5 @@ __pycache__
 /pkg/go.mod
 /pkg/go.sum
 /pkg/openapiart.go
+/pkg/httpapi
+_debug_bin
