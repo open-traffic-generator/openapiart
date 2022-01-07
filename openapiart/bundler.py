@@ -2,7 +2,6 @@
 """
 import sys
 import os
-import subprocess
 import re
 import copy
 import json
@@ -38,7 +37,9 @@ class Bundler(object):
 
     @staticmethod
     def literal_representer(dumper, data):
-        return dumper.represent_scalar(u"tag:yaml.org,2002:str", data, style="|")
+        return dumper.represent_scalar(
+            u"tag:yaml.org,2002:str", data, style="|"
+        )
 
     def __init__(self, api_files, output_dir="./"):
         self._parsers = {}
@@ -83,12 +84,19 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         self._resolve_license()
-        self._fill_required_responses()
+        self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         self._validate_errors()
         with open(self._output_filename, "w") as fp:
-            yaml.dump(self._content, fp, indent=2, allow_unicode=True, line_break="\n", sort_keys=False)
+            yaml.dump(
+                self._content,
+                fp,
+                indent=2,
+                allow_unicode=True,
+                line_break="\n",
+                sort_keys=False,
+            )
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
@@ -97,28 +105,34 @@ class Bundler(object):
         if len(self._errors) > 0:
             raise TypeError("\n".join(self._errors))
 
-    def _fill_required_responses(self):
+    def _validate_required_responses(self):
+        """Ensure all paths include a 400 and 500 response.
+
+        Print every path that does not include a 400 or 500 response.
+
+        Returns
+        -------
+        Exception: one or more paths is missing a 400 or 500 response
+        None: all paths have a 400 and 500 response
+        """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        error_codes = ["400", "500"]
-        code_responses = {}
+        required_error_codes = ["400", "500"]
+        missing_paths = ""
         for response in responses:
-            if set(error_codes).issubset(set(code_responses.keys())):
-                break
-            for code, value in response.value.items():
-                code_responses[str(code)] = response.value[code]
+            missing = set(required_error_codes).difference(
+                set(response.value.keys())
+            )
+            if len(missing):
+                error_message = "{}: is missing the following required responses: {}".format(
+                    response.full_path,
+                    missing,
+                )
+                print(error_message)
+                missing_paths += "{}\n".format(error_message)
+        if len(missing_paths) > 0:
+            raise Exception(missing_paths)
+        return None
 
-        if not set(error_codes).issubset(set(code_responses.keys())):
-            raise Exception("please configure these {} error codes".format(
-                error_codes
-            ))
-
-        for response in responses:
-            value = response.value
-            keys = [str(k) for k in value.keys()]
-            for rsp_code in error_codes:
-                if rsp_code not in keys:
-                    value[rsp_code] = copy.deepcopy(code_responses[rsp_code])
-    
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
         with open(self._output_filename) as fid:
@@ -136,7 +150,10 @@ class Bundler(object):
 
     def _process_yaml_object(self, base_dir, yobject):
         for key, value in yobject.items():
-            if key in ["openapi", "info", "servers"] and key not in self._content.keys():
+            if (
+                key in ["openapi", "info", "servers"]
+                and key not in self._content.keys()
+            ):
                 self._content[key] = value
             elif key in ["paths"]:
                 if key not in self._content.keys():
@@ -159,7 +176,10 @@ class Bundler(object):
             if "properties" in objects[key]:
                 for name in objects[key]["properties"]:
                     if re.match(regex, name) is None:
-                        raise NameError("%s property name `%s` contains invalid characters" % (key, name))
+                        raise NameError(
+                            "%s property name `%s` contains invalid characters"
+                            % (key, name)
+                        )
             self._content["components"][components_key][key] = value
 
     def _check_nested_components(self, components):
@@ -201,7 +221,9 @@ class Bundler(object):
                 elif key == "x-include":
                     for include_ref in value:
                         if include_ref not in self._includes:
-                            include = self._get_schema_object(base_dir, include_ref)
+                            include = self._get_schema_object(
+                                base_dir, include_ref
+                            )
                             self._resolve_refs(base_dir, include)
                             self._includes[include_ref] = include
                 else:
@@ -214,23 +236,36 @@ class Bundler(object):
 
     def _length_restriction(self, value):
         restricted_keys = {
-            "length", "minimum", "maximum", "minLength", "maxLength"
+            "length",
+            "minimum",
+            "maximum",
+            "minLength",
+            "maxLength",
         }
         if isinstance(value, dict):
             intersect_keys = restricted_keys.intersection(set(value.keys()))
-            if len(intersect_keys) > 0 and "format" in value.keys() and \
-                    value["format"] in ["ipv4", "ipv6", "mac"]:
+            if (
+                len(intersect_keys) > 0
+                and "format" in value.keys()
+                and value["format"] in ["ipv4", "ipv6", "mac"]
+            ):
                 stacks = inspect.stack()
                 property = "{}/{}/{}".format(
-                    stacks[3].frame.f_locals["key"] if "key" in stacks[3].frame.f_locals else "",
-                    stacks[2].frame.f_locals["key"] if "key" in stacks[2].frame.f_locals else "",
-                    stacks[1].frame.f_locals["key"]
+                    stacks[3].frame.f_locals["key"]
+                    if "key" in stacks[3].frame.f_locals
+                    else "",
+                    stacks[2].frame.f_locals["key"]
+                    if "key" in stacks[2].frame.f_locals
+                    else "",
+                    stacks[1].frame.f_locals["key"],
                 )
-                self._errors.append("Property {property} should not contain {keys} with format {format}".format(
-                    property=property,
-                    keys=intersect_keys,
-                    format=value["format"]
-                ))
+                self._errors.append(
+                    "Property {property} should not contain {keys} with format {format}".format(
+                        property=property,
+                        keys=intersect_keys,
+                        format=value["format"],
+                    )
+                )
 
     def _required_restriction(self, schema_name, value):
         expected_set = {"required", "properties"}
@@ -238,11 +273,12 @@ class Bundler(object):
             if isinstance(value["required"], list):
                 for required in value["required"]:
                     if "default" in value["properties"][required].keys():
-                        self._errors.append("Property {property} within schema {name} have "
-                                            "both required as well as default".format(
-                            property=required,
-                            name=schema_name
-                        ))
+                        self._errors.append(
+                            "Property {property} within schema {name} have "
+                            "both required as well as default".format(
+                                property=required, name=schema_name
+                            )
+                        )
 
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content
@@ -252,15 +288,29 @@ class Bundler(object):
         """
         import jsonpath_ng
 
-        for xpattern_path in self._get_parser("$..{}".format(pattern_extension)).find(self._content):
+        for xpattern_path in self._get_parser(
+            "$..{}".format(pattern_extension)
+        ).find(self._content):
             print("generating %s..." % (str(xpattern_path.full_path)))
-            object_name = xpattern_path.full_path.left.left.left.right.fields[0]
+            object_name = xpattern_path.full_path.left.left.left.right.fields[
+                0
+            ]
             property_name = xpattern_path.full_path.left.right.fields[0]
             property_schema = jsonpath_ng.Parent().find(xpattern_path)[0].value
             xpattern = xpattern_path.value
             schema_name = "Pattern.{}.{}".format(
-                "".join([piece[0].upper() + piece[1:] for piece in object_name.split("_")]),
-                "".join([piece[0].upper() + piece[1:] for piece in property_name.split("_")]),
+                "".join(
+                    [
+                        piece[0].upper() + piece[1:]
+                        for piece in object_name.split("_")
+                    ]
+                ),
+                "".join(
+                    [
+                        piece[0].upper() + piece[1:]
+                        for piece in property_name.split("_")
+                    ]
+                ),
             )
             format = None
             type_name = xpattern["format"]
@@ -274,11 +324,17 @@ class Bundler(object):
                 description = property_schema["description"]
 
             if xpattern["format"] == "checksum":
-                self._generate_checksum_schema(xpattern, schema_name, description)
+                self._generate_checksum_schema(
+                    xpattern, schema_name, description
+                )
             else:
-                self._generate_value_schema(xpattern, schema_name, description, type_name, format)
+                self._generate_value_schema(
+                    xpattern, schema_name, description, type_name, format
+                )
 
-            property_schema["$ref"] = "#/components/schemas/{}".format(schema_name)
+            property_schema["$ref"] = "#/components/schemas/{}".format(
+                schema_name
+            )
             del property_schema[pattern_extension]
 
     def _generate_checksum_schema(self, xpattern, schema_name, description):
@@ -309,15 +365,26 @@ class Bundler(object):
         }
         self._content["components"]["schemas"][schema_name] = schema
 
-    def _generate_value_schema(self, xpattern, schema_name, description, type_name, format):
-        xconstants = xpattern["x-constants"] if "x-constants" in xpattern else None
+    def _generate_value_schema(
+        self, xpattern, schema_name, description, type_name, format
+    ):
+        xconstants = (
+            xpattern["x-constants"] if "x-constants" in xpattern else None
+        )
         schema = {
             "description": description,
             "type": "object",
             "properties": {
-                "choice": {"type": "string", "enum": ["value", "values"], "default": "value"},
+                "choice": {
+                    "type": "string",
+                    "enum": ["value", "values"],
+                    "default": "value",
+                },
                 "value": {"type": copy.deepcopy(type_name)},
-                "values": {"type": "array", "items": {"type": copy.deepcopy(type_name)}},
+                "values": {
+                    "type": "array",
+                    "items": {"type": copy.deepcopy(type_name)},
+                },
             },
         }
         if xconstants is not None:
@@ -326,7 +393,11 @@ class Bundler(object):
             if "auto" in xpattern["features"]:
                 schema["properties"]["choice"]["enum"].append("auto")
                 schema["properties"]["choice"]["default"] = "auto"
-                schema["properties"]["auto"] = {"type": "string", "enum": ["auto"], "default": "auto"}
+                schema["properties"]["auto"] = {
+                    "type": "string",
+                    "enum": ["auto"],
+                    "default": "auto",
+                }
             if "metric_group" in xpattern["features"]:
                 schema["properties"]["metric_group"] = {
                     "description": """A unique name is used to indicate to the system that the field may """
@@ -338,36 +409,76 @@ class Bundler(object):
                     "type": "string",
                 }
         if "enums" in xpattern:
-            schema["properties"]["value"]["enum"] = copy.deepcopy(xpattern["enums"])
-            schema["properties"]["values"]["items"]["enum"] = copy.deepcopy(xpattern["enums"])
+            schema["properties"]["value"]["enum"] = copy.deepcopy(
+                xpattern["enums"]
+            )
+            schema["properties"]["values"]["items"]["enum"] = copy.deepcopy(
+                xpattern["enums"]
+            )
         if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
             counter_pattern_name = "{}.Counter".format(schema_name)
-            schema["properties"]["choice"]["enum"].extend(["increment", "decrement"])
-            schema["properties"]["increment"] = {"$ref": "#/components/schemas/{}".format(counter_pattern_name)}
-            schema["properties"]["decrement"] = {"$ref": "#/components/schemas/{}".format(counter_pattern_name)}
+            schema["properties"]["choice"]["enum"].extend(
+                ["increment", "decrement"]
+            )
+            schema["properties"]["increment"] = {
+                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
+            }
+            schema["properties"]["decrement"] = {
+                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
+            }
             counter_schema = {
                 "description": "{} counter pattern".format(xpattern["format"]),
                 "type": "object",
-                "properties": {"start": {"type": type_name}, "step": {"type": type_name}},
+                "properties": {
+                    "start": {"type": type_name},
+                    "step": {"type": type_name},
+                },
             }
             if "features" in xpattern and "count" in xpattern["features"]:
-                counter_schema["properties"]["count"] = {"type": "integer", "default": 1}
+                counter_schema["properties"]["count"] = {
+                    "type": "integer",
+                    "default": 1,
+                }
             self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["start"], xpattern, format, property_name="start"
+                counter_schema["properties"]["start"],
+                xpattern,
+                format,
+                property_name="start",
             )
             self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["step"], xpattern, format, property_name="step"
+                counter_schema["properties"]["step"],
+                xpattern,
+                format,
+                property_name="step",
             )
             if xconstants is not None:
                 counter_schema["x-constants"] = copy.deepcopy(xconstants)
-            self._content["components"]["schemas"][counter_pattern_name] = counter_schema
-        self._apply_common_x_field_pattern_properties(schema["properties"]["value"], xpattern, format, property_name="value")
-        self._apply_common_x_field_pattern_properties(schema["properties"]["values"], xpattern, format, property_name="values")
+            self._content["components"]["schemas"][
+                counter_pattern_name
+            ] = counter_schema
+        self._apply_common_x_field_pattern_properties(
+            schema["properties"]["value"],
+            xpattern,
+            format,
+            property_name="value",
+        )
+        self._apply_common_x_field_pattern_properties(
+            schema["properties"]["values"],
+            xpattern,
+            format,
+            property_name="values",
+        )
         self._content["components"]["schemas"][schema_name] = schema
 
-    def _apply_common_x_field_pattern_properties(self, schema, xpattern, format, property_name):
+    def _apply_common_x_field_pattern_properties(
+        self, schema, xpattern, format, property_name
+    ):
         # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
-        step_defaults = {"mac": "00:00:00:00:00:01", "ipv4": "0.0.0.1", "ipv6": "::1"}
+        step_defaults = {
+            "mac": "00:00:00:00:00:01",
+            "ipv4": "0.0.0.1",
+            "ipv6": "::1",
+        }
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
@@ -390,12 +501,16 @@ class Bundler(object):
         """
         include_schemas = []
         for xincludes in self._get_parser("$..x-include").find(self._content):
-            parent_schema_object = jsonpath_ng.Parent().find(xincludes)[0].value
+            parent_schema_object = (
+                jsonpath_ng.Parent().find(xincludes)[0].value
+            )
             for xinclude in xincludes.value:
                 print("resolving %s..." % (str(xinclude)))
                 include_schemas.append(xinclude)
                 include_schema_object = self._includes[xinclude]
-                self._merge(copy.deepcopy(include_schema_object), parent_schema_object)
+                self._merge(
+                    copy.deepcopy(include_schema_object), parent_schema_object
+                )
             del parent_schema_object["x-include"]
 
     def _remove_x_include(self):
@@ -428,7 +543,9 @@ class Bundler(object):
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
             if "description" not in parent_schema_object:
                 parent_schema_object["description"] = "TBD"
-            parent_schema_object["description"] = "Status: {status}\n{description}".format(
+            parent_schema_object[
+                "description"
+            ] = "Status: {status}\n{description}".format(
                 status=xstatus.value,
                 description=parent_schema_object["description"],
             )
@@ -439,14 +556,20 @@ class Bundler(object):
         """
         import jsonpath_ng
 
-        for xconstraint in self._get_parser("$..x-constraint").find(self._content):
+        for xconstraint in self._get_parser("$..x-constraint").find(
+            self._content
+        ):
             print("resolving %s..." % (str(xconstraint.full_path)))
-            parent_schema_object = jsonpath_ng.Parent().find(xconstraint)[0].value
+            parent_schema_object = (
+                jsonpath_ng.Parent().find(xconstraint)[0].value
+            )
             if "description" not in parent_schema_object:
                 parent_schema_object["description"] = "TBD"
             parent_schema_object["description"] += "\n\nx-constraint:\n"
             for constraint in xconstraint.value:
-                parent_schema_object["description"] += "- {}\n".format(constraint)
+                parent_schema_object["description"] += "- {}\n".format(
+                    constraint
+                )
 
     def _merge(self, src, dst):
         """
@@ -472,7 +595,9 @@ class Bundler(object):
         json_path = "$..'%s'" % schema_path.split("/")[-1]
         schema_object = self._get_parser(json_path).find(self._content)
         if len(schema_object) == 0:
-            schema_object = self._get_schema_object_from_file(base_dir, schema_path)
+            schema_object = self._get_schema_object_from_file(
+                base_dir, schema_path
+            )
         else:
             schema_object = schema_object[0].value
         return schema_object
@@ -506,7 +631,9 @@ class Bundler(object):
         if "license" not in self._content["info"]:
             self._content["info"]["license"] = {"name": "NO-LICENSE-PRESENT"}
         elif "name" not in self._content["info"]["license"]:
-            raise Exception("The following properties are REQUIRED: license.name")
+            raise Exception(
+                "The following properties are REQUIRED: license.name"
+            )
 
     def _resolve_keys(self, content):
         changes = {}
