@@ -474,7 +474,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if api.grpcClient == nil {{
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
                     defer cancelFunc()
-                    conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithInsecure())
+                    conn, err := grpc.DialContext(ctx, api.grpc.location, insecure.NewCredentials())
                     if err != nil {{
                         return err
                     }}

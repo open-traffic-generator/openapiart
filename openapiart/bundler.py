@@ -1,5 +1,6 @@
 """Build Process
 """
+from logging import error
 import sys
 import os
 import subprocess
@@ -118,21 +119,20 @@ class Bundler(object):
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
         required_error_codes = ["400", "500"]
-        failed = False
+        missing_paths = ""
         for response in responses:
             missing = set(required_error_codes).difference(
                 set(response.value.keys())
             )
             if len(missing):
-                print(
-                    "{}: please configure these missing required error codes: {}".format(
-                        response.full_path,
-                        missing,
-                    )
+                error_message = "{}: is missing the following required responses: {}".format(
+                    response.full_path,
+                    missing,
                 )
-                failed = True
-        if failed:
-            raise Exception("please fix above")
+                print(error_message)
+                missing_paths += "{}\n".format(error_message)
+        if len(missing_paths) > 0:
+            raise Exception(missing_paths)
         return None
 
     def _validate_file(self):
