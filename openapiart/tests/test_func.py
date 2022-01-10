@@ -186,3 +186,6 @@ def test_int_64_format(api, default_config):
         conf.validate()
     except TypeError as e:
         print(e)
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])

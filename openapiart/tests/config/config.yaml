@@ -223,7 +223,7 @@ components:
         Format validation object
       type: object
       properties:
-        string:
+        string_param:
           type: string
         integer:
           type: integer
@@ -252,9 +252,9 @@ components:
       description: |-
         Required format validation object
       type: object
-      required: [string, integer, float, double, mac, ipv4, ipv6, hex]
+      required: [string_param, integer, float, double, mac, ipv4, ipv6, hex]
       properties:
-        string:
+        string_param:
           type: string
         integer:
           type: integer

@@ -24,7 +24,7 @@ func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.Pref
 	config.K().EObject().SetEA(77.7).SetEB(2.0).SetName("An EB name")
 	config.K().FObject().SetFA("asdf").SetFB(44.32232)
 	l := config.L()
-	l.SetString("test")
+	l.SetStringParam("test")
 	l.SetInteger(80)
 	l.SetFloat(100.11)
 	l.SetDouble(1.7976931348623157e+308)

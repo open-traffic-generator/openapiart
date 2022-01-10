@@ -3,9 +3,10 @@ import sys
 import os
 import importlib
 import logging
+import time
 from .utils import common as utl
 from .server import OpenApiServer
-from .grpcserver import grpc_server, GRPC_PORT
+from .grpcserver import grpc_server
 from .server import app
 
 
@@ -13,11 +14,17 @@ from .server import app
 # artifacts should not be generated from here as these tests are run as sudo
 pytest.module_name = "sanity"
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", pytest.module_name))
+sys.path.append(
+    os.path.join(
+        os.path.dirname(__file__), "..", "..", "art", pytest.module_name
+    )
+)
 pytest.module = importlib.import_module(pytest.module_name)
 pytest.http_server = OpenApiServer(pytest.module).start()
 pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
-pytest.pb2_grpc_module = importlib.import_module(pytest.module_name + "_pb2_grpc")
+pytest.pb2_grpc_module = importlib.import_module(
+    pytest.module_name + "_pb2_grpc"
+)
 pytest.grpc_server = grpc_server()
 
 
@@ -25,12 +32,25 @@ pytest.grpc_server = grpc_server()
 def api():
     """Return an instance of the top level Api class from the generated package"""
     module = importlib.import_module(pytest.module_name)
-    return module.api(
+    api = module.api(
         location="http://127.0.0.1:{}".format(app.PORT),
         verify=False,
         logger=None,
         loglevel=logging.DEBUG,
     )
+    # verify http server is up
+    attempts = 1
+    while True:
+        try:
+            api.get_config()
+            break
+        except Exception as e:
+            print(e)
+            if attempts > 5:
+                raise (e)
+        time.sleep(0.5)
+        attempts += 1
+    return api
 
 
 @pytest.fixture(scope="session")

@@ -73,9 +73,9 @@ func TestMObjectRequired(t *testing.T) {
 	err1 := object.FromYaml(string(data))
 	protoMarshal, _ := proto.Marshal(object.Msg())
 	err2 := object.FromPbText(string(protoMarshal))
-	assert.Contains(t, err.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
-	assert.Contains(t, err1.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
-	assert.Contains(t, err2.Error(), "String_", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
+	assert.Contains(t, err.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
+	assert.Contains(t, err1.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
+	assert.Contains(t, err2.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 }
 func TestPortMetricRequired(t *testing.T) {
 	object := openapiart.NewPortMetric()
