@@ -371,7 +371,7 @@ class OpenApiValidator(object):
     def _raise_validation(self):
         errors = "\n".join(self._validation_errors)
         if len(self._get_validation_errors()) > 0:
-            self._validation_errors.clear()
+            self._validation_errors = []
             raise Exception(errors)
 
 
