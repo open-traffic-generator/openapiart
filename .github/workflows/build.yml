@@ -83,7 +83,7 @@ jobs:
         run: ls -R
       - name: Run python tests
         run: |
-          sudo python do.py test_python
+          sudo python do.py testpy
 
   go_tests:
     needs: python_tests
@@ -103,7 +103,7 @@ jobs:
           go-version: "1.17.5"
       - name: Run go tests
         run: |
-          python do.py test_go
+          python do.py testgo
 
   publish_python_package:
     needs: go_tests
