@@ -1061,6 +1061,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return err.Error()
                 }}
                 return str
+            }}
+            
             func (obj *{struct}) Clone() ({interface}, error) {{
                 newObj := New{interface}()
                 json, err := obj.ToJson()
