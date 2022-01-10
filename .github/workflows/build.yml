@@ -23,11 +23,10 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: actions/setup-go@v2
         with:
-          go-version: "^1.17.1"
+          go-version: "1.17.5"
       - name: Setup protoc
         run: |
-          python do.py get_protoc
-          python do.py get_go_deps
+          python do.py setup_ext
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -101,11 +100,10 @@ jobs:
         run: ls -R
       - uses: actions/setup-go@v2
         with:
-          go-version: "^1.17.1"
+          go-version: "1.17.5"
       - name: Setup protoc
         run: |
-          python do.py get_protoc
-          python do.py get_go_deps
+          python do.py setup_ext
       - name: Run go tests
         run: |
           python do.py test_go
