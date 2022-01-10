@@ -6,7 +6,7 @@ import logging
 import time
 from .utils import common as utl
 from .server import OpenApiServer
-from .grpcserver import grpc_server
+from .grpcserver import grpc_server, GRPC_PORT
 from .server import app
 
 
