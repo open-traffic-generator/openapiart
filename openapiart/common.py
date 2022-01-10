@@ -216,23 +216,23 @@ class OpenApiBase(object):
 class OpenApiValidator(object):
 
     __slots__ = ()
-    _validation_errors = []
+    validation_errors = []
 
     def __init__(self):
        pass
 
     def _append_error(self, msg):
-        self._validation_errors.append(msg)
+        self.validation_errors.append(msg)
     
     def _get_validation_errors(self):
-        return self._validation_errors
+        return self.validation_errors
     
     def _clear_errors(self):
         import platform
         if '2.7' in platform.python_version().rsplit(".", 1)[0]:
-            self._validation_errors = []
+            self.validation_errors = []
         else:
-            self._validation_errors.clear()
+            self.validation_errors.clear()
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
