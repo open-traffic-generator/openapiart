@@ -23,3 +23,5 @@ __pycache__
 /pkg/openapiart.go
 /pkg/httpapi
 _debug_bin
+.env
+.env2

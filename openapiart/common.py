@@ -230,7 +230,7 @@ class OpenApiValidator(object):
     def _clear_errors(self):
         import platform
         if '2.7' in platform.python_version().rsplit(".", 1)[0]:
-            self._validation_errors = []
+            del self._validation_errors[:]
         else:
             self._validation_errors.clear()
 
@@ -392,7 +392,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = ("_properties", "_parent", "_choice")
-    _validation_errors = []
 
     _DEFAULTS = {}
     _TYPES = {}
