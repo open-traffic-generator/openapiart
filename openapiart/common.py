@@ -376,7 +376,7 @@ class OpenApiValidator(object):
             # raise TypeError(err_msg)
     
     def _raise_validation(self):
-        errors = "\n".join(self._validation_errors)
+        errors = "\n".join(self.validation_errors)
         if len(self._get_validation_errors()) > 0:
             self._clear_errors()
             raise Exception(errors)
@@ -598,7 +598,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     item._validate(True)
             self._validate_types(key, value)
         if skip_exception:
-            return self._validation_errors
+            return self.validation_errors
         self._raise_validation()
     
     def validate(self):
