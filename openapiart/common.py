@@ -216,23 +216,23 @@ class OpenApiBase(object):
 class OpenApiValidator(object):
 
     __slots__ = ()
-    validation_errors = []
+    _validation_errors = []
 
     def __init__(self):
        pass
 
     def _append_error(self, msg):
-        self.validation_errors.append(msg)
+        self._validation_errors.append(msg)
     
     def _get_validation_errors(self):
-        return self.validation_errors
+        return self._validation_errors
     
     def _clear_errors(self):
         import platform
         if '2.7' in platform.python_version().rsplit(".", 1)[0]:
-            self.validation_errors = []
+            self._validation_errors = []
         else:
-            self.validation_errors.clear()
+            self._validation_errors.clear()
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
@@ -376,7 +376,7 @@ class OpenApiValidator(object):
             # raise TypeError(err_msg)
     
     def _raise_validation(self):
-        errors = "\n".join(self.validation_errors)
+        errors = "\n".join(self._validation_errors)
         if len(self._get_validation_errors()) > 0:
             self._clear_errors()
             raise Exception(errors)
@@ -392,6 +392,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = ("_properties", "_parent", "_choice")
+    _validation_errors = []
+
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
@@ -598,7 +600,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     item._validate(True)
             self._validate_types(key, value)
         if skip_exception:
-            return self.validation_errors
+            return self._validation_errors
         self._raise_validation()
     
     def validate(self):
