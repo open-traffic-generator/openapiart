@@ -132,16 +132,17 @@ def generate():
     )
 
 
-def test():
+def testpy():
     run(
         [
+            py() + " -m pip install flask",
             py() + " -m pip install pytest-cov",
             py() + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
     )
     import re
 
-    coverage_threshold = 50
+    coverage_threshold = 45
     with open("./cov_report/index.html") as fp:
         out = fp.read()
         result = re.findall(r"data-ratio.*?[>](\d+)\b", out)[0]
@@ -150,9 +151,11 @@ def test():
         else:
             print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
 
-    go_coverage_threshold = 25
+def testgo():
+    go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
+    run(["go mod tidy"], capture_output=True)
     ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]

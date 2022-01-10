@@ -4,8 +4,7 @@ from jsonpath_ng import parse
 
 class Server(object):
     @property
-    def basepath(self):
-        # type: () -> [str]
+    def basepath(self) -> [str]:
         return self._basepath
 
     def __init__(self, serverobj):
@@ -21,31 +20,25 @@ class Server(object):
 
 class Component(object):
     @property
-    def yaml_name(self):
-        # type: () -> [str]
+    def yaml_name(self) -> [str]:
         return self._yamlname
 
     @property
-    def model_name(self):
-        # type: () -> str
+    def model_name(self) -> str:
         return re.sub('[.]', '', self._yamlname)
 
     @property
-    def full_model_name(self):
-        # type: () -> str
-        _ctx = self._ctx
-        return "{models_prefix}{model_name}".format(
-            models_prefix=_ctx.models_prefix,
-            model_name=self.model_name
-        )
+    def full_model_name(self) -> str:
+        _ctx: GeneratorContext = self._ctx
+        return f"{_ctx.models_prefix}{self.model_name}"
 
     def __init__(
         self,
-        yamlname,
+        yamlname: str,
         componentobj,
         ctx
         ):
-        self._ctx = ctx  # type: GeneratorContext
+        self._ctx: GeneratorContext = ctx
         self._yamlname = yamlname
         self._obj = componentobj
 
@@ -70,7 +63,7 @@ class Responses(object):
     def __init__(self, response_value, response_obj, ctx):
         self._response_value = response_value
         self._response_obj = response_obj
-        self._ctx = ctx # type: GeneratorContext
+        self._ctx = ctx
         self._has_json = False
         self._has_binary = False
         self._check_content()
@@ -93,8 +86,7 @@ class Responses(object):
 
 class ControllerRoute(object):
     @property
-    def description(self):
-        # type: () -> str
+    def description(self) -> str:
         if "description" in self._obj:
             return self._obj["description"]
         return ""
@@ -104,60 +96,50 @@ class ControllerRoute(object):
         return self._responses
 
     @property
-    def url(self):
-        # type: () -> str
+    def url(self) -> str:
         return self.full_url()
 
     @property
-    def method(self):
-        # type: () -> str
+    def method(self) -> str:
         return self._method
 
     @property
-    def operation_name(self):
-        # type: () -> str
+    def operation_name(self) -> str:
         name = self._obj['operationId']
         name = util.pascal_case(name)
         return name
 
     @property
-    def route_parameters(self):
-        # type: () -> [str]
+    def route_parameters(self) -> [str]:
         return self._parameters
 
     @property
-    def response_model_name(self):
-        # type: () -> str
+    def response_model_name(self) -> str:
         return self.operation_name + 'Response'
 
     @property
-    def full_responsename(self):
-        # type: () -> str
-        _ctx = self._ctx # type: GeneratorContext
-        return """{models_prefix}{response_model_name}""".format(
-            models_prefix=_ctx.models_prefix,
-            response_model_name=self.response_model_name
-        )
+    def full_responsename(self) -> Component:
+        _ctx: GeneratorContext = self._ctx
+        return f"{_ctx.models_prefix}{self.response_model_name}"
 
     def __init__(
         self,
-        url,
-        method,
+        url: str,
+        method: str,
         methodobj,
         ctx
-    ):
-        self._ctx = ctx
+        ):
+        self._ctx: GeneratorContext = ctx
         self._url = url
         self._method = method.upper()
         self._obj = methodobj
-        self._parameters = []
+        self._parameters: [str] = []
         self._extract_parameters()
         self._responses = []
         self._extract_responses()
 
-    def requestBody(self):
-        # type: () -> Component
-        _ctx = self._ctx # type: GeneratorContext
+    def requestBody(self) -> Component:
+        _ctx: GeneratorContext = self._ctx
         try:
             ref = self._obj['requestBody']['content']['application/json']['schema']['$ref']
             yamlname = ref.split('/')[-1]
@@ -168,7 +150,7 @@ class ControllerRoute(object):
         except KeyError:
             return None
     def full_url(self):
-        _ctx = self._ctx  # type: GeneratorContext
+        _ctx: GeneratorContext = self._ctx
         server = _ctx.servers[0]
         if server is None:
             return self._url
@@ -186,45 +168,41 @@ class ControllerRoute(object):
 
 class Controller(object):
     @property
-    def controller_name(self):
-        # type: () -> str
+    def controller_name(self) -> str:
         name = util.pascal_case(self.yamlname) + 'Controller'
         return name
 
     @property
-    def service_handler_name(self):
-        # type: () -> str
+    def service_handler_name(self) -> str:
         name = util.pascal_case(self.yamlname) + 'Handler'
         return name
 
     @property
-    def yamlname(self):
-        # type: () -> str
+    def yamlname(self) -> str:
         return self._yamlname
 
-    def __init__(self, yamlname, ctx):
+    def __init__(self, yamlname: str, ctx):
         self._ctx = ctx
         self.routes = []  # type: [GeneratorContext]
         self._yamlname = yamlname
 
-    def add_route(self, url, method, methodobj):
+    def add_route(self, url: str, method: str, methodobj):
         self.routes.append(ControllerRoute(url, method, methodobj, self._ctx))
 
 
 class GeneratorContext(object):
     def __init__(self, openapi):
         self._openapi = openapi
-        self.module_path = str()  # type: str
-        self.models_prefix = str()  # type: str
-        self.models_path = str()  # type: str
-        self.output_path = str()  # type: str
-        self.servers = []   # type: [Server]
-        self.components = []  # type: [Component]
-        self.controllers = []  # type: [Controller]
+        self.module_path: str
+        self.models_prefix: str
+        self.models_path: str
+        self.output_path: str
+        self.servers: [Server] = []
+        self.components: [Component] = []
+        self.controllers: [Controller] = []
 
-    def find_controller(self, yamlname):
-        #  type:(str) -> Controller
-        ctrl = None  #type: Controller
+    def find_controller(self, yamlname: str) -> Controller:
+        ctrl: Controller = None
         for c in self.controllers:
             if c.yamlname == yamlname:
                 ctrl = c
