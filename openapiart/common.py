@@ -226,6 +226,9 @@ class OpenApiValidator(object):
     
     def _get_validation_errors(self):
         return self._validation_errors
+    
+    def _clear_errors(self):
+        self._validation_errors = []
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
@@ -371,7 +374,7 @@ class OpenApiValidator(object):
     def _raise_validation(self):
         errors = "\n".join(self._validation_errors)
         if len(self._get_validation_errors()) > 0:
-            self._validation_errors = []
+            self._clear_errors()
             raise Exception(errors)
 
 
