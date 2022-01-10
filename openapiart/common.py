@@ -219,7 +219,7 @@ class OpenApiValidator(object):
     _validation_errors = []
 
     def __init__(self):
-        pass
+       pass
 
     def _append_error(self, msg):
         self._validation_errors.append(msg)
@@ -228,7 +228,11 @@ class OpenApiValidator(object):
         return self._validation_errors
     
     def _clear_errors(self):
-        self._validation_errors = []
+        import platform
+        if '2.7' in platform.python_version().rsplit(".", 1)[0]:
+            self._validation_errors = []
+        else:
+            self._validation_errors.clear()
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
