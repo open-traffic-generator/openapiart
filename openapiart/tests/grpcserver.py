@@ -18,7 +18,7 @@ GRPC_PORT = 50051
 class OpenapiServicer(pb2_grpc.OpenapiServicer):
     def __init__(self):
         self._prefix_config = None
-        super().__init__()
+        super(OpenapiServicer, self).__init__()
 
     def _log(self, value):
         print("gRPC Server: %s" %value)
