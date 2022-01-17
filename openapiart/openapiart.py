@@ -28,11 +28,13 @@ class OpenApiArt(object):
         protobuf_name=None,
         artifact_dir=None,
         extension_prefix=None,
+        proto_service=None,
     ):
         self._output_dir = os.path.abspath(artifact_dir if artifact_dir is not None else "art")
         self._go_sdk_package_dir = None
         self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
         self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
+        self._proto_service = proto_service if proto_service is not None else "Openapi"
 
         print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
@@ -199,6 +201,7 @@ class OpenApiArt(object):
                     "go_sdk_package_dir": self._go_sdk_package_dir,
                     "go_sdk_package_name": self._go_sdk_package_name,
                     "output_dir": self._output_dir,
+                    "proto_service": self._proto_service,
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
@@ -244,6 +247,7 @@ class OpenApiArt(object):
                 "protobuf_package_name": self._protobuf_package_name,
                 "go_sdk_package_dir": self._go_sdk_package_dir,
                 "output_dir": self._output_dir,
+                "proto_service": self._proto_service,
             }
         )
         protobuf.generate(self._openapi)

@@ -31,6 +31,7 @@ def create_openapi_artifacts(openapiart_class):
     ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
+        proto_service="Openapi",
     ).GeneratePythonSdk(
         package_name="sanity"
     ).GenerateGoSdk(

@@ -157,6 +157,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._api = FluentStructure()
         self._api_interface_methods = []
         self._base_url = ""
+        self._proto_service = kwargs.get("proto_service")
         self._oapi_go_types = {
             "string": "string",
             "boolean": "bool",
@@ -589,7 +590,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(
             """type {internal_struct_name} struct {{
                 api
-                grpcClient {pb_pkg_name}.OpenapiClient
+                grpcClient {pb_pkg_name}.{proto_service}Client
                 httpClient httpClient
             }}
 
@@ -602,7 +603,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{
                         return err
                     }}
-                    api.grpcClient = {pb_pkg_name}.NewOpenapiClient(conn)
+                    api.grpcClient = {pb_pkg_name}.New{proto_service}Client(conn)
                     api.grpc.clientConnection = conn
                 }}
                 return nil
@@ -678,6 +679,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 internal_struct_name=self._api.internal_struct_name,
                 interface=self._api.external_interface_name,
                 pb_pkg_name=self._protobuf_package_name,
+                proto_service=self._proto_service,
             )
         )
         methods = []
