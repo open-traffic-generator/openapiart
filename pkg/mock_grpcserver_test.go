@@ -99,18 +99,24 @@ func (s *GrpcServer) UpdateConfig(ctx context.Context, req *sanity.UpdateConfigR
 }
 
 func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*sanity.GetMetricsResponse, error) {
+	P2 := "P2"
+	var txFrames1 float64 = 3000
+	var rxFrames1 float64 = 2788
+	P1 := "P1"
+	var txFrames2 float64 = 2323
+	var rxFrames2 float64 = 2000
 	resp := &sanity.GetMetricsResponse{
 		StatusCode_200: &sanity.Metrics{
 			Ports: []*sanity.PortMetric{
-				&sanity.PortMetric{
-					Name:     "P2",
-					TxFrames: 3000,
-					RxFrames: 2788,
+				{
+					Name:     &P2,
+					TxFrames: &txFrames1,
+					RxFrames: &rxFrames1,
 				},
-				&sanity.PortMetric{
-					Name:     "P1",
-					TxFrames: 2323,
-					RxFrames: 2000,
+				{
+					Name:     &P1,
+					TxFrames: &txFrames2,
+					RxFrames: &rxFrames2,
 				},
 			},
 		},

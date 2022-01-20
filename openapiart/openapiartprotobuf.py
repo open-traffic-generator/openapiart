@@ -296,7 +296,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if property_type.endswith(".Enum"):
                 if default is not None:
                     default = "{}.{}".format(property_type.split(" ")[-1], default.lower())
-            if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
+            if property_type.startswith("repeated"):
                 optional = ""
             else:
                 optional = "optional "

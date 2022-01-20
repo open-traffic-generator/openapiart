@@ -1556,10 +1556,14 @@ func TestFromJsonEmpty(t *testing.T) {
 
 func TestChoiceDefaults(t *testing.T) {
 	jObject := openapiart.NewJObject()
+	jObject.JA().SetEA(100.0).SetEB(200.0)
 	json := `
 	{
 		"choice": "j_a",
-		"j_a": {}
+		"j_a": {
+			"e_a" : 100.0,
+			"e_b" : 200.0
+		}
 	}`
 	j, err0 := jObject.ToJson()
 	assert.Nil(t, err0)
@@ -1627,12 +1631,13 @@ func TestSetterWrapperHolder(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson)
 	fmt.Println(metricsrespJson)
-	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
+	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetTxFrames(100).SetRxFrames(100)
 	json := `{
 		"status_code_200":  {
 		  "ports":  [
 			{
 			  "name":  "abc",
+			  "tx_frames": 100,
 			  "rx_frames":  100
 			}
 		  ]
@@ -1653,4 +1658,13 @@ func TestStringer(t *testing.T) {
 	lObj := openapiart.NewLObject()
 	lObj.SetDouble(10.1).SetFloat(20.1).SetStringParam("abc")
 	fmt.Println(lObj)
+}
+
+func TestZeroValueAndEmptyString(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	config.RequiredObject().SetEA(100).SetEB(100)
+	config.SetA("").SetB(0).SetC(0)
+	json, err := config.ToJson()
+	log.Print(json)
+	assert.Nil(t, err)
 }
