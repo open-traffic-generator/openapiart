@@ -12,6 +12,7 @@ This document includes additional details on the following topics that are speci
   - x-include
   - x-constraint
   - x-field-pattern
+  - x-stream
 - OpenAPI supported datatype formats
   - [string formats](#Datatype-String-Formats)
 
@@ -98,6 +99,150 @@ components:
           type: string
           enum: [current, deprecated, obsolete, under_review]
           default: current
+```
+
+- `x-stream`
+```yaml
+paths:
+  /url:
+    post:
+      callbacks:
+        event_name:
+          x-stream:
+            description: |-
+              This keyword is to specify the asynchronous event that would originate on a service.
+              - server means a stream of messages originates from server. where client sends one request
+                and server responds with multiple replies.
+              - client means a stream of messages originates from client. where client sends multiple requests
+                and server responds with single reply.
+              - bidirectional means stream of messages originates from both sides. for example, the server could wait to 
+                receive all the client messages before writing its responses, or it could alternately read a message then 
+                write a message, or some other combination of reads and writes.
+              Note: Implementers shall take care of message ordering in http, while grpc handles it self.
+              If x-stream keyword is not specified the api call behavior defaults to unary, where client sends one request and
+              server responds one response.
+            type: string
+            enum: [server, client, bidirectional]
+            default: server
+```
+The example below demonstrates the server, client and bidirectional streaming.
+```yaml               
+paths:
+  /server_stream_url:
+    post:
+      requestBody:
+        x-stream: server
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://client_side_notify.com/send/callback
+              required: [callbackUrl]
+      responses:
+        '201':
+          description: Webhook created
+      callbacks:
+        myEvent:
+          '{$request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: some event happened
+                      required: [message]
+              responses:
+                '200':
+                  description: client side server returns this code if it accepts the callback
+  /client_stream_url:
+    post:
+      requestBody:
+        x-stream: client
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Stream received
+  /bidirectional_stream_url:
+    post:
+      requestBody:
+        x-stream: bidirectional
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+                  example: https://client_side_notify.com/send/callback
+              required: [callbackUrl]
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  callbackUrl:
+                    type: string
+                    format: uri
+                    example: https://server_side_notify.com/send/callback
+                required: [callbackUrl]
+      callbacks:
+        serverEvent:
+          '{$request.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: some event happened
+                      required: [message]
+              responses:
+                '200':
+                  description: client side server returns this code if it accepts the callback
+        clientEvent:
+          '{$response.body#/callbackUrl}':
+            post:
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: some event happened
+                      required: [message]
+              responses:
+                '200':
+                  description: server returns this code if it accepts the callback
+
 ```
 
 
