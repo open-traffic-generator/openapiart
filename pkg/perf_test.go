@@ -73,17 +73,20 @@ func TestPerf(t *testing.T) {
 
 	jDStart := time.Now()
 	jsonconf := api.NewPrefixConfig()
-	jsonconf.FromJson(json)
+	jdErr := jsonconf.FromJson(json)
+	assert.Nil(t, jdErr)
 	jDEnd := time.Now()
 
 	yDStart := time.Now()
 	yamlconf := api.NewPrefixConfig()
-	yamlconf.FromYaml(yaml)
+	ydErr := yamlconf.FromYaml(yaml)
+	assert.Nil(t, ydErr)
 	yDEnd := time.Now()
 
 	pDStart := time.Now()
 	pbConf := api.NewPrefixConfig()
-	pbConf.FromPbText(pbText)
+	pdErr := pbConf.FromPbText(pbText)
+	assert.Nil(t, pdErr)
 	pDEnd := time.Now()
 
 	fmt.Printf("Time elapsed to deserialize to Json %d ms \n", (jDEnd.Nanosecond()-jDStart.Nanosecond())/1000)
@@ -91,7 +94,8 @@ func TestPerf(t *testing.T) {
 	fmt.Printf("Time elapsed to deserialize to PbText %d ms \n", (pDEnd.Nanosecond()-pDStart.Nanosecond())/1000)
 
 	callStart := time.Now()
-	apis[0].SetConfig(config)
+	_, apiErr := apis[0].SetConfig(config)
+	assert.Nil(t, apiErr)
 	callEnd := time.Now()
 	fmt.Printf("Time elapsed to Call SetConfig %d ms \n", (callEnd.Nanosecond()-callStart.Nanosecond())/1000)
 }
