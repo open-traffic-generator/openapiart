@@ -7,7 +7,10 @@ import urllib3
 import io
 import sys
 import time
-import re
+import grpc
+import sanity_pb2_grpc as pb2_grpc
+import sanity_pb2 as pb2
+from google.protobuf import json_format
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -18,7 +21,11 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None):
+class Transport:
+    HTTP = "http"
+    GRPC = "grpc"
+
+def api(location=None, transport="http", verify=True, logger=None, loglevel=logging.INFO, ext=None):
     """Create an instance of an Api class
 
     generator.Generator outputs a base Api class with the following:
@@ -32,6 +39,7 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
     Args
     ----
     - location (str): The location of an Open Traffic Generator server.
+    - transport (enum["http", "grpc"]): Transport Type
     - verify (bool): Verify the server's TLS certificate, or a string, in which
       case it must be a path to a CA bundle to use. Defaults to `True`.
       When set to `False`, requests will accept any TLS certificate presented by
@@ -46,8 +54,17 @@ def api(location=None, verify=True, logger=None, loglevel=logging.INFO, ext=None
     - ext (str): Name of an extension package
     """
     params = locals()
+    transport_types = ["http", "grpc"]
     if ext is None:
-        return HttpApi(**params)
+        if transport not in transport_types:
+            raise Exception("{transport} is not within valid transport types {transport_types}".format(
+                transport=transport,
+                transport_types=transport_types
+            ))
+        if transport == "http":
+            return HttpApi(**params)
+        else:
+            return GrpcApi(**params)
     try:
         lib = importlib.import_module("{}_{}".format(__name__, ext))
         return lib.Api(**params)
@@ -75,10 +92,14 @@ class HttpTransport(object):
             self.logger = logging.Logger(self.__module__, level=self.loglevel)
             self.logger.addHandler(stdout_handler)
         self.logger.debug("HttpTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        self.set_verify(self.verify)
+        self._session = requests.Session()
+
+    def set_verify(self, verify):
+        self.verify = verify
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             self.logger.warning("Certificate verification is disabled")
-        self._session = requests.Session()
 
     def send_recv(self, method, relative_url, payload=None, return_object=None, headers=None):
         url = "%s%s" % (self.location, relative_url)
