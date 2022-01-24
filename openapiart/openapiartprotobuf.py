@@ -271,7 +271,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 optional = ""
             else:
                 optional = "optional "
-            self._write(self._justify_desc(self._get_description(property_object), indent=1))
+            desc = self._get_description(property_object)
+            if default is not None:
+                desc += "\ndefault = {}".format(default)
+            if optional == "" and not property_type.startswith("repeated"):
+                desc += "\nrequired = true"
+            self._write(self._justify_desc(desc, indent=1))
             self._write("{}{} {} = {};".format(optional, property_type, property_name.lower(), id), indent=1)
 
     def _write_service(self):
@@ -300,15 +305,16 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         text = text.split("\n")
         comment = " * "
         for line in text:
-            each_line = []
             char_80 = ""
             for word in line.split(" "):
                 if len(char_80) <= 80:
                     char_80 += word + " "
                 else:
-                    each_line.append(char_80.strip())
+                    lines.append(char_80.strip())
                     char_80 = word + " "
             if char_80 != "":
-                each_line.append(char_80.strip())
-            lines.append("\n{}{}".format(indent, comment).join(each_line))
-        return "{}/* ".format(indent) + "\n{}{}".format(indent, comment).join(lines) + " */"
+                lines.append(char_80.strip())
+            # lines.append("\n{}{}".format(indent, comment).join(each_line))
+        if len(lines) > 1:
+            return "{}/* ".format(indent) + "\n{}{}".format(indent, comment).join(lines) + " */"
+        return "// {}".format(lines[0])
