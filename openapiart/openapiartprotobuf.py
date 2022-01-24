@@ -112,9 +112,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
-        self._write("// {}".format(self._info))
-        for line in self._license.split("\n"):
-            self._write("// {}".format(line))
+        self._write(self._justify_desc(self._info, use_multi=True))
+        self._write(self._justify_desc(self._license, use_multi=True))
+        # for line in self._license.split("\n"):
+        #     self._write("// {}".format(line))
         self._write()
         self._write('syntax = "proto3";')
         self._write()
@@ -299,7 +300,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         line = "rpc {}({}) returns ({}{});".format(operation.rpc, operation.request, "", operation.response)
         self._write(line, indent=1)
     
-    def _justify_desc(self, text, indent=0):
+    def _justify_desc(self, text, indent=0, use_multi=False):
         indent = " " * (indent * 2)
         lines = []
         text = text.split("\n")
@@ -315,6 +316,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if char_80 != "":
                 lines.append(char_80.strip())
             # lines.append("\n{}{}".format(indent, comment).join(each_line))
-        if len(lines) > 1:
-            return "{}/* ".format(indent) + "\n{}{}".format(indent, comment).join(lines) + " */"
-        return "// {}".format(lines[0])
+        if use_multi == True:
+            return "{}/* ".format(indent) + "\n{}* ".format(indent).join(lines) + "*/"
+        return "{}// {}".format(indent, lines[0])
