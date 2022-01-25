@@ -112,8 +112,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
-        self._write(self._justify_desc(self._info, use_multi=True))
-        self._write(self._justify_desc(self._license, use_multi=True))
+        self._write(self._justify_desc(self._info + "\n{}".format(self._license), use_multi=True))
         # for line in self._license.split("\n"):
         #     self._write("// {}".format(line))
         self._write()
@@ -317,5 +316,5 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 lines.append(char_80.strip())
             # lines.append("\n{}{}".format(indent, comment).join(each_line))
         if use_multi == True:
-            return "{}/* ".format(indent) + "\n{}* ".format(indent).join(lines) + "*/"
+            return "{}/* ".format(indent) + "\n{} * ".format(indent).join(lines) + " */"
         return "{}// {}".format(indent, lines[0])
