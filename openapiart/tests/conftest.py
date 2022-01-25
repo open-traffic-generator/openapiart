@@ -21,10 +21,8 @@ sys.path.append(
 )
 pytest.module = importlib.import_module(pytest.module_name)
 pytest.http_server = OpenApiServer(pytest.module).start()
-# pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
-# pytest.pb2_grpc_module = importlib.import_module(
-#     pytest.module_name + "_pb2_grpc"
-# )
+pytest.pb2_module = importlib.import_module("sanity_pb2")
+pytest.pb2_grpc_module = importlib.import_module("sanity_pb2_grpc")
 pytest.grpc_server = grpc_server()
 
 
@@ -105,13 +103,13 @@ def utils():
     return utl
 
 
-# @pytest.fixture(scope="session")
-# def pb2():
-#     """Returns pb2 package"""
-#     return pytest.pb2_module
-#
-#
-# @pytest.fixture(scope="session")
-# def pb2_grpc():
-#     """Returns pb2_grpc package"""
-#     return pytest.pb2_grpc_module
+@pytest.fixture(scope="session")
+def pb2():
+    """Returns pb2 package"""
+    return pytest.pb2_module
+
+
+@pytest.fixture(scope="session")
+def pb2_grpc():
+    """Returns pb2_grpc package"""
+    return pytest.pb2_grpc_module
