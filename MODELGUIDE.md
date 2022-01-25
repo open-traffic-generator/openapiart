@@ -106,24 +106,23 @@ components:
 paths:
   /url:
     post:
-      callbacks:
-        event_name:
-          x-stream:
-            description: |-
-              This keyword is to specify the asynchronous event that would originate on a service.
-              - server means a stream of messages originates from server. where client sends one request
-                and server responds with multiple replies.
-              - client means a stream of messages originates from client. where client sends multiple requests
-                and server responds with single reply.
-              - bidirectional means stream of messages originates from both sides. for example, the server could wait to 
-                receive all the client messages before writing its responses, or it could alternately read a message then 
-                write a message, or some other combination of reads and writes.
-              Note: Implementers shall take care of message ordering in http, while grpc handles it self.
-              If x-stream keyword is not specified the api call behavior defaults to unary, where client sends one request and
-              server responds one response.
-            type: string
-            enum: [server, client, bidirectional]
-            default: server
+      requestBody:
+        x-stream:
+          description: |-
+            This keyword is to specify the asynchronous event that would originate on a service.
+            - server means a stream of messages originates from server. where client sends one request
+              and server responds with multiple replies.
+            - client means a stream of messages originates from client. where client sends multiple requests
+              and server responds with single reply.
+            - bidirectional means stream of messages originates from both sides. for example, the server could wait to 
+              receive all the client messages before writing its responses, or it could alternately read a message then 
+              write a message, or some other combination of reads and writes.
+            Note: Implementers shall take care of message ordering in http, while grpc handles it self.
+            If x-stream keyword is not specified the api call behavior defaults to unary, where client sends one request and
+            server responds one response.
+          type: string
+          enum: [server, client, bidirectional]
+          default: server
 ```
 The example below demonstrates the server, client and bidirectional streaming.
 ```yaml               
