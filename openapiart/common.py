@@ -8,9 +8,9 @@ import io
 import sys
 import time
 import grpc
-from sanity import sanity_pb2_grpc as pb2_grpc
-from sanity import sanity_pb2 as pb2
 from google.protobuf import json_format
+import sanity_pb2_grpc as pb2_grpc
+import sanity_pb2 as pb2
 
 try:
     from typing import Union, Dict, List, Any, Literal

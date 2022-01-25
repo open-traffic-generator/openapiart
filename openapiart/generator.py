@@ -121,20 +121,20 @@ class Generator():
             self._fid.write("\n")
         with open(os.path.join(os.path.dirname(__file__), "common.py"), "r") as fp:
             common_content = fp.read()
-            common_content = common_content.replace(
-                "from sanity import sanity_pb2_grpc",
-                "from {pkg_name} import {proto_name}_pb2_grpc".format(
-                    pkg_name=self._package_name,
-                    proto_name=self._protobuf_package_name
-                )
+            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
+            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                pkg_name=self._package_name,
+                text=cnf_text.replace("sanity", self._protobuf_package_name)
             )
-            common_content = common_content.replace(
-                "from sanity import sanity_pb2",
-                "from {pkg_name} import {proto_name}_pb2".format(
-                    pkg_name=self._package_name,
-                    proto_name=self._protobuf_package_name
-                )
+            common_content = common_content.replace(cnf_text, modify_text)
+
+            cnf_text = "import sanity_pb2 as pb2"
+            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                pkg_name=self._package_name,
+                text=cnf_text.replace("sanity", self._protobuf_package_name)
             )
+            common_content = common_content.replace(cnf_text, modify_text)
+
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
