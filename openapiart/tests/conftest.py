@@ -19,10 +19,14 @@ sys.path.append(
         os.path.dirname(__file__), "..", "..", "art", pytest.module_name
     )
 )
+print("111111: {}".format(sys.path))
+
 pytest.module = importlib.import_module(pytest.module_name)
 pytest.http_server = OpenApiServer(pytest.module).start()
-pytest.pb2_module = importlib.import_module("sanity_pb2")
-pytest.pb2_grpc_module = importlib.import_module("sanity_pb2_grpc")
+pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
+pytest.pb2_grpc_module = importlib.import_module(
+    pytest.module_name + "_pb2_grpc"
+)
 pytest.grpc_server = grpc_server()
 
 
