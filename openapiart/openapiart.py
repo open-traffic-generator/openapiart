@@ -114,6 +114,7 @@ class OpenApiArt(object):
             python_ux = getattr(module, "Generator")(
                 self._bundler.openapi_filepath,
                 self._python_module_name,
+                self._protobuf_package_name,
                 output_dir=self._output_dir,
                 extension_prefix=self._extension_prefix,
             )
@@ -131,6 +132,21 @@ class OpenApiArt(object):
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
             subprocess.check_call(process_args, shell=False)
+
+            pb2_grpc_file = os.path.join(python_sdk_dir, "{}_pb2_grpc.py".format(
+                self._protobuf_package_name
+            ))
+            current_text = "import {proto_name}_pb2 as {proto_name}__pb2".format(
+                proto_name=self._protobuf_package_name
+            )
+            new_text = "try:\n    {text}\nexcept ImportError:\n    from {pkg_name} {text}".format(
+                text=current_text,
+                pkg_name=self._python_module_name
+            )
+            with open(pb2_grpc_file) as f:
+                file_contents = f.read().replace(current_text, new_text)
+            with open(pb2_grpc_file, "w") as f:
+                f.write(file_contents)
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
         return self

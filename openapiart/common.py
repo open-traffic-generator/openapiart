@@ -8,8 +8,8 @@ import io
 import sys
 import time
 import grpc
-import sanity_pb2_grpc as pb2_grpc
-import sanity_pb2 as pb2
+from sanity import sanity_pb2_grpc as pb2_grpc
+from sanity import sanity_pb2 as pb2
 from google.protobuf import json_format
 
 try:
