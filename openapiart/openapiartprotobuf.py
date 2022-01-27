@@ -274,7 +274,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             desc = self._get_description(property_object)
             if default is not None:
                 desc += "\ndefault = {}".format(default)
-            if optional == "" and not property_type.startswith("repeated"):
+            if optional == "" and property_type.startswith("repeated") is not True:
                 desc += "\nrequired = true"
             self._write(self._justify_desc(desc, indent=1))
             self._write("{}{} {} = {};".format(optional, property_type, property_name.lower(), id), indent=1)
@@ -303,18 +303,17 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         indent = " " * (indent * 2)
         lines = []
         text = text.split("\n")
-        comment = " * "
         for line in text:
             char_80 = ""
             for word in line.split(" "):
                 if len(char_80) <= 80:
                     char_80 += word + " "
-                else:
-                    lines.append(char_80.strip())
-                    char_80 = word + " "
+                    continue
+                lines.append(char_80.strip())
+                char_80 = word + " "
             if char_80 != "":
                 lines.append(char_80.strip())
             # lines.append("\n{}{}".format(indent, comment).join(each_line))
         if use_multi == True:
             return "{}/* ".format(indent) + "\n{} * ".format(indent).join(lines) + " */"
-        return "{}// {}".format(indent, lines[0])
+        return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)
