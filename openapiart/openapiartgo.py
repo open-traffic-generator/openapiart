@@ -238,9 +238,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         - package name
         - common custom code
         """
-        self._write("// {}".format(self._info))
-        for line in self._license.split("\n"):
-            self._write("// {}".format(line))
+        self._write(self._justify_desc(self._info + "\n" +self._license, use_multi=True))
         self._write()
 
     def _write_package(self):

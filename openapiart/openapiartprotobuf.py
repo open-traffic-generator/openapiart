@@ -296,22 +296,4 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write(self._justify_desc(self._get_description(path_item_object), indent=1))
         line = "rpc {}({}) returns ({}{});".format(operation.rpc, operation.request, "", operation.response)
         self._write(line, indent=1)
-    
-    def _justify_desc(self, text, indent=0, use_multi=False):
-        indent = " " * (indent * 2)
-        lines = []
-        text = text.split("\n")
-        for line in text:
-            char_80 = ""
-            for word in line.split(" "):
-                if len(char_80) <= 80:
-                    char_80 += word + " "
-                    continue
-                lines.append(char_80.strip())
-                char_80 = word + " "
-            if char_80 != "":
-                lines.append(char_80.strip())
-            # lines.append("\n{}{}".format(indent, comment).join(each_line))
-        if use_multi == True:
-            return "{}/* ".format(indent) + "\n{} * ".format(indent).join(lines) + " */"
-        return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)
+
