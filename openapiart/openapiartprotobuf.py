@@ -8,7 +8,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
         self._filename = os.path.normpath(os.path.join(self._output_dir, "{}.proto".format(self._protobuf_file_name)))
         self.default_indent = "  "
-        self._custom_id = 60000
+        self.proto_service_name = kwargs.get("proto_service", "Openapi")
         self._init_fp(self._filename)
 
     def generate(self, openapi):
@@ -112,9 +112,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
-        self._write("// {}".format(self._info))
-        for line in self._license.split("\n"):
-            self._write("// {}".format(line))
+        self._write(self._justify_desc(self._info + "\n{}".format(self._license), use_multi=True))
         self._write()
         self._write('syntax = "proto3";')
         self._write()
@@ -125,35 +123,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
-        self._write()
-        self._write("message OpenApiMsgOpt {")
-        self._write("string description = 10;", indent=1)
-        self._write("}")
-        self._write("extend google.protobuf.MessageOptions {")
-        self._write("optional OpenApiMsgOpt msg_meta = {};".format(self._next_custom_id()), indent=1)
-        self._write("}")
-        self._write()
-        self._write("message OpenApiFldOpt {")
-        self._write("string default = 10;", indent=1)
-        self._write("string description = 20;", indent=1)
-        self._write("}")
-        self._write("extend google.protobuf.FieldOptions {")
-        self._write("optional OpenApiFldOpt fld_meta = {};".format(self._next_custom_id()), indent=1)
-        self._write("}")
-        self._write()
-        self._write("message OpenApiSvcOpt {")
-        self._write("string description = 10;", indent=1)
-        self._write("}")
-        self._write("extend google.protobuf.ServiceOptions {")
-        self._write("optional OpenApiSvcOpt svc_meta = {};".format(self._next_custom_id()), indent=1)
-        self._write("}")
-        self._write()
-        self._write("message OpenApiRpcOpt {")
-        self._write("string description = 10;", indent=1)
-        self._write("}")
-        self._write("extend google.protobuf.MethodOptions {")
-        self._write("optional OpenApiRpcOpt rpc_meta = {};".format(self._next_custom_id()), indent=1)
-        self._write("}")
 
     def _get_field_type(self, property_name, openapi_object):
         """Convert openapi type -> protobuf type
@@ -241,7 +210,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _get_description(self, openapi_object):
         if "description" in openapi_object:
-            return openapi_object["description"].replace("\n", "\\n").replace('"', "")
+            return openapi_object["description"].replace('"', "")
         else:
             return "Description missing in models"
 
@@ -264,8 +233,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         msg_name = name.replace(".", "")
         print("writing msg {}".format(msg_name))
         self._write()
+        self._write(self._justify_desc(self._get_description(schema_object)))
         self._write("message {} {{".format(msg_name), indent=0)
-        self._write('option (msg_meta).description = "{}";'.format(self._get_description(schema_object)), indent=1)
         if "content" in schema_object:
             # when accessing components/responses
             self._write_response_fields(msg_name, schema_object)
@@ -300,17 +269,19 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 optional = ""
             else:
                 optional = "optional "
-            self._write("{}{} {} = {} [".format(optional, property_type, property_name.lower(), id), indent=1)
+            desc = self._get_description(property_object)
             if default is not None:
-                self._write('(fld_meta).default = "{}",'.format(default), indent=2)
-            self._write('(fld_meta).description = "{}"'.format(self._get_description(property_object)), indent=2)
-            self._write("];", indent=1)
+                desc += "\ndefault = {}".format(default)
+            if optional == "" and property_type.startswith("repeated") is not True:
+                desc += "\nrequired = true"
+            self._write(self._justify_desc(desc, indent=1))
+            self._write("{}{} {} = {};".format(optional, property_type, property_name.lower(), id), indent=1)
 
     def _write_service(self):
         self._write()
-        self._write("service Openapi {")
         paths_object = self._openapi["paths"]
-        self._write('option (svc_meta).description = "{}";'.format(self._get_description(paths_object)), indent=1)
+        self._write(self._justify_desc(self._get_description(paths_object), indent=1))
+        self._write("service {name} {{".format(name=self.proto_service_name))
         self._write()
         for url, path_object in self._openapi["paths"].items():
             for method, path_item_object in path_object.items():
@@ -322,7 +293,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """ """
         operation = self._get_operation(path_item_object)
         print("writing rpc {}".format(operation.rpc))
-        line = "rpc {}({}) returns ({}{}) {{".format(operation.rpc, operation.request, "", operation.response)
+        self._write(self._justify_desc(self._get_description(path_item_object), indent=1))
+        line = "rpc {}({}) returns ({}{});".format(operation.rpc, operation.request, "", operation.response)
         self._write(line, indent=1)
-        self._write('option (rpc_meta).description = "{}";'.format(self._get_description(path_item_object)), indent=2)
-        self._write("}", indent=1)
+

@@ -28,11 +28,13 @@ class OpenApiArt(object):
         protobuf_name=None,
         artifact_dir=None,
         extension_prefix=None,
+        proto_service=None,
     ):
         self._output_dir = os.path.abspath(artifact_dir if artifact_dir is not None else "art")
         self._go_sdk_package_dir = None
         self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
         self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
+        self._proto_service = proto_service if proto_service is not None else "Openapi"
 
         print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
         shutil.rmtree(self._output_dir, ignore_errors=True)
@@ -48,7 +50,11 @@ class OpenApiArt(object):
 
     def _get_info(self):
         try:
-            self._info = "{} {}".format(self._bundler._content["info"]["title"], self._bundler._content["info"]["version"])
+            self._info = "{} {} \n{}".format(
+                self._bundler._content["info"]["title"],
+                self._bundler._content["info"]["version"],
+                self._bundler._content["info"].get("description", "\nDescription not available")
+            )
         except Exception as e:
             ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(e))
             raise ex
@@ -114,6 +120,7 @@ class OpenApiArt(object):
             python_ux = getattr(module, "Generator")(
                 self._bundler.openapi_filepath,
                 self._python_module_name,
+                self._protobuf_package_name,
                 output_dir=self._output_dir,
                 extension_prefix=self._extension_prefix,
             )
@@ -131,6 +138,21 @@ class OpenApiArt(object):
             ]
             print("Generating python grpc stubs: {}".format(" ".join(process_args)))
             subprocess.check_call(process_args, shell=False)
+
+            pb2_grpc_file = os.path.join(python_sdk_dir, "{}_pb2_grpc.py".format(
+                self._protobuf_package_name
+            ))
+            current_text = "import {proto_name}_pb2 as {proto_name}__pb2".format(
+                proto_name=self._protobuf_package_name
+            )
+            new_text = "try:\n    {text}\nexcept ImportError:\n    from {pkg_name} {text}".format(
+                text=current_text,
+                pkg_name=self._python_module_name
+            )
+            with open(pb2_grpc_file) as f:
+                file_contents = f.read().replace(current_text, new_text)
+            with open(pb2_grpc_file, "w") as f:
+                f.write(file_contents)
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
         return self
@@ -199,6 +221,7 @@ class OpenApiArt(object):
                     "go_sdk_package_dir": self._go_sdk_package_dir,
                     "go_sdk_package_name": self._go_sdk_package_name,
                     "output_dir": self._output_dir,
+                    "proto_service": self._proto_service,
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
@@ -244,6 +267,7 @@ class OpenApiArt(object):
                 "protobuf_package_name": self._protobuf_package_name,
                 "go_sdk_package_dir": self._go_sdk_package_dir,
                 "output_dir": self._output_dir,
+                "proto_service": self._proto_service,
             }
         )
         protobuf.generate(self._openapi)

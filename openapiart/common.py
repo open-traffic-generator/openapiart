@@ -8,9 +8,9 @@ import io
 import sys
 import time
 import grpc
+from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
-from google.protobuf import json_format
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -25,7 +25,7 @@ class Transport:
     HTTP = "http"
     GRPC = "grpc"
 
-def api(location=None, transport="http", verify=True, logger=None, loglevel=logging.INFO, ext=None):
+def api(location=None, transport=None, verify=True, logger=None, loglevel=logging.INFO, ext=None):
     """Create an instance of an Api class
 
     generator.Generator outputs a base Api class with the following:
@@ -56,6 +56,7 @@ def api(location=None, transport="http", verify=True, logger=None, loglevel=logg
     params = locals()
     transport_types = ["http", "grpc"]
     if ext is None:
+        transport = "http" if transport is None else transport
         if transport not in transport_types:
             raise Exception("{transport} is not within valid transport types {transport_types}".format(
                 transport=transport,
@@ -66,6 +67,8 @@ def api(location=None, transport="http", verify=True, logger=None, loglevel=logg
         else:
             return GrpcApi(**params)
     try:
+        if transport is not None:
+            raise Exception("ext and transport are not mutually exclusive. Please configure one of them.")
         lib = importlib.import_module("{}_{}".format(__name__, ext))
         return lib.Api(**params)
     except ImportError as err:

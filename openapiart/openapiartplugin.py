@@ -45,3 +45,22 @@ class OpenApiArtPlugin(object):
             if len(piece) > 1:
                 camel_case += piece[1:]
         return camel_case
+    
+    def _justify_desc(self, text, indent=0, use_multi=False):
+        indent = " " * (indent * 2)
+        lines = []
+        text = text.split("\n")
+        for line in text:
+            char_80 = ""
+            for word in line.split(" "):
+                if len(char_80) <= 80:
+                    char_80 += word + " "
+                    continue
+                lines.append(char_80.strip())
+                char_80 = word + " "
+            if char_80 != "":
+                lines.append(char_80.strip())
+            # lines.append("\n{}{}".format(indent, comment).join(each_line))
+        if use_multi == True:
+            return "{}/* ".format(indent) + "\n{} * ".format(indent).join(lines) + " */"
+        return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)

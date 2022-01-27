@@ -39,7 +39,9 @@ class Generator():
     bundler.py infrastructure.
     """
 
-    def __init__(self, openapi_filename, package_name, output_dir=None, extension_prefix=None):
+    def __init__(
+            self, openapi_filename, package_name, protobuf_package_name, output_dir=None, extension_prefix=None
+    ):
         self._parsers = {}
         self._base_url = ""
         self._generated_methods = []
@@ -54,6 +56,7 @@ class Generator():
         if os.path.exists(self._output_dir) is False:
             os.mkdir(self._output_dir)
         self._package_name = package_name
+        self._protobuf_package_name = protobuf_package_name
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, "..", "docs")
         self._get_openapi_file()
@@ -118,14 +121,20 @@ class Generator():
             self._fid.write("\n")
         with open(os.path.join(os.path.dirname(__file__), "common.py"), "r") as fp:
             common_content = fp.read()
-            common_content = common_content.replace(
-                "import sanity_pb2_grpc",
-                "import {}_pb2_grpc".format(self._package_name)
+            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
+            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                pkg_name=self._package_name,
+                text=cnf_text.replace("sanity", self._protobuf_package_name)
             )
-            common_content = common_content.replace(
-                "import sanity_pb2",
-                "import {}_pb2".format(self._package_name)
+            common_content = common_content.replace(cnf_text, modify_text)
+
+            cnf_text = "import sanity_pb2 as pb2"
+            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                pkg_name=self._package_name,
+                text=cnf_text.replace("sanity", self._protobuf_package_name)
             )
+            common_content = common_content.replace(cnf_text, modify_text)
+
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
