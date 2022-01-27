@@ -23,8 +23,8 @@ def test_protobuf(config, pb_config, utils):
 
     # Serialize protobuf to json
     pb_json = json_format.MessageToJson(
-        pb_obj, preserving_proto_field_name=True)
+        pb_obj, preserving_proto_field_name=True
+    )
 
     # Compare jsons serialized from snappi & protobuf
     assert utils.compare_json(snappi_json, pb_json)
-

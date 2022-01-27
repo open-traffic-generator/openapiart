@@ -3,15 +3,17 @@ import os, subprocess
 
 class GoTidy(object):
     def __init__(
-        self, 
+        self,
         output_root_path,
     ):
         self._output_root_path = output_root_path
 
     def goTidy(self):
-        print("GoTidy output directory: {path}".format(
-            path=self._output_root_path
-        ))
+        print(
+            "GoTidy output directory: {path}".format(
+                path=self._output_root_path
+            )
+        )
         self._format_go()
         self._tidy_mod()
 
@@ -25,7 +27,9 @@ class GoTidy(object):
             ]
             cmd = " ".join(process_args)
             print("Formatting generated go files in folder: {}".format(cmd))
-            process = subprocess.Popen(cmd, cwd=self._output_root_path, shell=True)
+            process = subprocess.Popen(
+                cmd, cwd=self._output_root_path, shell=True
+            )
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))
@@ -39,8 +43,17 @@ class GoTidy(object):
                 "tidy",
             ]
             os.environ["GO111MODULE"] = "on"
-            print("Tidying the generated go mod file: {}".format(" ".join(process_args)))
-            process = subprocess.Popen(process_args, cwd=self._output_root_path, shell=False, env=os.environ)
+            print(
+                "Tidying the generated go mod file: {}".format(
+                    " ".join(process_args)
+                )
+            )
+            process = subprocess.Popen(
+                process_args,
+                cwd=self._output_root_path,
+                shell=False,
+                env=os.environ,
+            )
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))

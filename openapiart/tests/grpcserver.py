@@ -9,11 +9,14 @@ from concurrent import futures
 from google.protobuf import json_format
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art", "sanity"))
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..", "..", "art", "sanity")
+)
 pb2_grpc = importlib.import_module("sanity_pb2_grpc")
 pb2 = importlib.import_module("sanity_pb2")
 
 GRPC_PORT = 50051
+
 
 class OpenapiServicer(pb2_grpc.OpenapiServicer):
     def __init__(self):
@@ -21,7 +24,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         super(OpenapiServicer, self).__init__()
 
     def _log(self, value):
-        print("gRPC Server: %s" %value)
+        print("gRPC Server: %s" % value)
 
     def SetConfig(self, request, context):
         self._log("Executing SetConfig")
@@ -56,13 +59,12 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def GetConfig(self, request, context):
         self._log("Executing GetConfig")
-        response_200 = {
-            "status_code_200": self._prefix_config
-        }
+        response_200 = {"status_code_200": self._prefix_config}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetConfigResponse()
         )
         return res_obj
+
 
 def gRpcServer():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -83,5 +85,6 @@ def grpc_server():
     web_server_thread.setDaemon(True)
     web_server_thread.start()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     gRpcServer()

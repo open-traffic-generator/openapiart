@@ -11,11 +11,19 @@ class OpenApiArtPlugin(object):
         self._license = kwargs["license"]
         self._info = kwargs["info"]
         self._output_dir = kwargs["output_dir"]
-        self._python_module_name = None if "python_module_name" not in kwargs else kwargs["python_module_name"]
+        self._python_module_name = (
+            None
+            if "python_module_name" not in kwargs
+            else kwargs["python_module_name"]
+        )
         self._protobuf_package_name = kwargs["protobuf_package_name"]
         self._protobuf_file_name = kwargs["protobuf_package_name"]
         self._go_sdk_package_dir = kwargs["go_sdk_package_dir"]
-        self._go_sdk_package_name = None if "go_sdk_package_name" not in kwargs else kwargs["go_sdk_package_name"]
+        self._go_sdk_package_name = (
+            None
+            if "go_sdk_package_name" not in kwargs
+            else kwargs["go_sdk_package_name"]
+        )
         self.default_indent = "    "
         self._parsers = {}
 
@@ -27,7 +35,9 @@ class OpenApiArtPlugin(object):
         self._fp.close()
 
     def _write(self, line="", indent=0, newline=True):
-        line = "{}{}{}".format(self.default_indent * indent, line, "\n" if newline else "")
+        line = "{}{}{}".format(
+            self.default_indent * indent, line, "\n" if newline else ""
+        )
         self._fp.write(line.encode())
 
     def _get_parser(self, pattern):
@@ -45,7 +55,7 @@ class OpenApiArtPlugin(object):
             if len(piece) > 1:
                 camel_case += piece[1:]
         return camel_case
-    
+
     def _justify_desc(self, text, indent=0, use_multi=False):
         indent = " " * (indent * 2)
         lines = []
@@ -62,5 +72,9 @@ class OpenApiArtPlugin(object):
                 lines.append(char_80.strip())
             # lines.append("\n{}{}".format(indent, comment).join(each_line))
         if use_multi == True:
-            return "{}/* ".format(indent) + "\n{} * ".format(indent).join(lines) + " */"
+            return (
+                "{}/* ".format(indent)
+                + "\n{} * ".format(indent).join(lines)
+                + " */"
+            )
         return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)

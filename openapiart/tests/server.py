@@ -70,4 +70,3 @@ class OpenApiServer(object):
         self._web_server_thread.setDaemon(True)
         self._web_server_thread.start()
         return self
-

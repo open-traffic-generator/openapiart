@@ -10,7 +10,9 @@ import platform
 os.environ["GOPATH"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".local"
 )
-os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(os.environ["GOPATH"])
+os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(
+    os.environ["GOPATH"]
+)
 
 
 def arch():
@@ -46,7 +48,9 @@ def get_go():
         os.mkdir(os.environ["GOPATH"])
 
     print("Installing Go ...")
-    cmd = "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
+    cmd = (
+        "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
+    )
     cmd += " | tar -C " + os.environ["GOPATH"] + " -xzf -"
     run([cmd])
 
@@ -58,7 +62,7 @@ def get_go_deps():
         [
             cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports"
+            cmd + " golang.org/x/tools/cmd/goimports",
         ]
     )
 
@@ -79,8 +83,8 @@ def get_protoc():
     cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
     cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
     cmd += version + "/" + zipfile
-    cmd += ' && unzip ./protoc.zip -d ' + os.environ["GOPATH"]
-    cmd += ' && rm -rf ./protoc.zip )'
+    cmd += " && unzip ./protoc.zip -d " + os.environ["GOPATH"]
+    cmd += " && rm -rf ./protoc.zip )"
     run([cmd])
 
 
@@ -124,7 +128,9 @@ def lint():
 
 
 def generate():
-    artifacts = os.path.normpath(os.path.join(os.path.dirname(__file__), "artifacts.py"))
+    artifacts = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), "artifacts.py")
+    )
     run(
         [
             py() + " " + artifacts,
@@ -137,7 +143,8 @@ def testpy():
         [
             py() + " -m pip install flask",
             py() + " -m pip install pytest-cov",
-            py() + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
+            py()
+            + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
     )
     import re
@@ -147,31 +154,51 @@ def testpy():
         out = fp.read()
         result = re.findall(r"data-ratio.*?[>](\d+)\b", out)[0]
         if int(result) < coverage_threshold:
-            raise Exception("Coverage thresold[{0}] is NOT achieved[{1}]".format(coverage_threshold, result))
+            raise Exception(
+                "Coverage thresold[{0}] is NOT achieved[{1}]".format(
+                    coverage_threshold, result
+                )
+            )
         else:
-            print("Coverage thresold[{0}] is achieved[{1}]".format(coverage_threshold, result))
+            print(
+                "Coverage thresold[{0}] is achieved[{1}]".format(
+                    coverage_threshold, result
+                )
+            )
+
 
 def testgo():
     go_coverage_threshold = 35
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     run(["go mod tidy"], capture_output=True)
-    ret = run(["go test ./... -v -coverprofile coverage.txt"], capture_output=True)
+    ret = run(
+        ["go test ./... -v -coverprofile coverage.txt"], capture_output=True
+    )
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
     if int(result) < go_coverage_threshold:
         raise Exception(
             "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
-                go_coverage_threshold, result))
+                go_coverage_threshold, result
+            )
+        )
     else:
         print(
             "Go tests achieved {1}% ,Coverage thresold {0}%".format(
-                go_coverage_threshold, result))
-    if 'FAIL' in ret:
+                go_coverage_threshold, result
+            )
+        )
+    if "FAIL" in ret:
         raise Exception("Go Tests Failed")
 
+
 def go_lint():
-    run(["GO111MODULE=on CGO_ENABLED=0 go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"])
+    run(
+        [
+            "GO111MODULE=on CGO_ENABLED=0 go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
+        ]
+    )
     os.chdir("pkg")
     run(["golangci-lint run -v"])
 
@@ -190,7 +217,9 @@ def install():
     wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
     run(
         [
-            "{} -m pip install --upgrade --force-reinstall {}[testing]".format(py(), os.path.join("dist", wheel)),
+            "{} -m pip install --upgrade --force-reinstall {}[testing]".format(
+                py(), os.path.join("dist", wheel)
+            ),
         ]
     )
 

@@ -238,7 +238,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         - package name
         - common custom code
         """
-        self._write(self._justify_desc(self._info + "\n" +self._license, use_multi=True))
+        self._write(
+            self._justify_desc(
+                self._info + "\n" + self._license, use_multi=True
+            )
+        )
         self._write()
 
     def _write_package(self):
@@ -2073,12 +2077,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         body=inner_body, name=field.name
                     )
-            elif field.itemformat in [
-                "mac",
-                "ipv4",
-                "ipv6",
-                "hex",
-            ] or field.format in ["mac", "ipv4", "ipv6", "hex"]:
+            elif (
+                field.itemformat
+                in [
+                    "mac",
+                    "ipv4",
+                    "ipv6",
+                    "hex",
+                ]
+                or field.format in ["mac", "ipv4", "ipv6", "hex"]
+            ):
                 if field.format is None:
                     field.format = field.itemformat
                 inner_body = """
