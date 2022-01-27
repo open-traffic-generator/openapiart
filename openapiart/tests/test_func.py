@@ -104,7 +104,7 @@ def test_x_pattern_ipv4_good_and_bad_list(default_config, ipv4):
         default_config.ipv4_pattern.serialize(default_config.DICT)
         pytest.fail("ipv4 values got serialize")
     except Exception as e:
-        if "['-255.-255.-255.-255']" not in str(e):
+        if "`-255.-255.-255.-255`" not in str(e):
             pytest.fail("Invalid ipv4 list is not proper in error message")
 
 
@@ -115,7 +115,7 @@ def test_x_pattern_ipv6_good_and_bad_list(default_config, ipv6):
         default_config.ipv6_pattern.serialize(default_config.DICT)
         pytest.fail("ipv6 values got serialize")
     except Exception as e:
-        if "[':', 'abcd::abcd::']" not in str(e):
+        if "`abcd::abcd::`" not in str(e) or "`:`" not in str(e):
             pytest.fail("Invalid ipv6 list is not proper in error message")
 
 
@@ -126,7 +126,7 @@ def test_x_pattern_mac_good_and_bad_list(default_config, mac):
         default_config.mac_pattern.serialize(default_config.DICT)
         pytest.fail("mac values got serialize")
     except Exception as e:
-        if "[':', 'abcd::abcd::']" not in str(e):
+        if "`abcd::abcd::`" not in str(e) or "`:`" not in str(e):
             pytest.fail("Invalid mac list is not proper in error message")
 
 
@@ -139,7 +139,8 @@ def test_x_pattern_integer_good_and_bad_list(default_config, integer):
         default_config.integer_pattern.serialize(default_config.DICT)
         pytest.fail("integer values got serialize")
     except Exception as e:
-        if "['abcd::abcd::', 256, 'ab:ab:ab:ab:ab:ab']" not in str(e):
+        if "`abcd::abcd::`" not in str(e) \
+            or "`256`" not in str(e) or "`ab:ab:ab:ab:ab:ab`" not in str(e):
             pytest.fail("Invalid integer list is not proper in error message")
 
 

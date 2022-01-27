@@ -704,11 +704,20 @@ class Generator:
         if external in ["String"]:
             external += "_"
         return external
+    
+    def _small_first_char(self, words):
+        if isinstance(words, list):
+            ret = []
+            for wrd in words:
+                ret.append(wrd[0].lower() + wrd[1:])
+            return ret
+        return words[0].lower() + words[1:]
 
     def _write_openapi_object(self, ref, choice_method_name=None):
         schema_object = self._get_object_from_ref(ref)
         ref_name = ref.split("/")[-1]
         class_name = ref_name.replace(".", "")
+        json_name = "_".join(self._small_first_char(ref_name.split(".")))
         if class_name in self._generated_classes:
             return
         self._generated_classes.append(class_name)
@@ -723,7 +732,7 @@ class Generator:
             if "choice" in self._get_choice_names(schema_object):
                 slots.append("'_choice'")
             self._write(1, "__slots__ = (%s)" % ",".join(slots))
-            self._write()
+            self._write(1, "_JSON_NAME = \"%s\"" % json_name)
 
             # write _TYPES definition
             # TODO: this func won't detect whether $ref for a given property is
