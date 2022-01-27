@@ -50,7 +50,11 @@ class OpenApiArt(object):
 
     def _get_info(self):
         try:
-            self._info = "{} {}".format(self._bundler._content["info"]["title"], self._bundler._content["info"]["version"])
+            self._info = "{} {} \n{}".format(
+                self._bundler._content["info"]["title"],
+                self._bundler._content["info"]["version"],
+                self._bundler._content["info"].get("description", "\nDescription not available")
+            )
         except Exception as e:
             ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(e))
             raise ex

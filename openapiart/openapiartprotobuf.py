@@ -113,8 +113,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _write_header(self, info_object):
         self._write(self._justify_desc(self._info + "\n{}".format(self._license), use_multi=True))
-        # for line in self._license.split("\n"):
-        #     self._write("// {}".format(line))
         self._write()
         self._write('syntax = "proto3";')
         self._write()
