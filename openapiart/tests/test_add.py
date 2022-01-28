@@ -1,6 +1,4 @@
 import pytest
-import jsonpath_ng as jp
-import json
 
 
 def test_add(api):

@@ -11,7 +11,7 @@ import jsonpath_ng
 import inspect
 
 try:
-    from typing import Union, Dict, List, Any, Literal
+    from typing import Union, Dict, Literal
 except ImportError:
     from typing_extensions import Literal
 
@@ -590,7 +590,6 @@ class Bundler(object):
         return dst
 
     def _get_schema_object(self, base_dir, schema_path):
-        import jsonpath_ng
 
         json_path = "$..'%s'" % schema_path.split("/")[-1]
         schema_object = self._get_parser(json_path).find(self._content)
@@ -603,7 +602,6 @@ class Bundler(object):
         return schema_object
 
     def _get_schema_object_from_file(self, base_dir, schema_path):
-        import jsonpath_ng
         import yaml
 
         paths = schema_path.split("#")

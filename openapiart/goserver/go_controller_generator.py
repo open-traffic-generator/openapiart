@@ -1,4 +1,5 @@
-import os, re
+import os
+import re
 from jsonpath_ng import parse
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
@@ -152,7 +153,7 @@ class GoServerControllerGenerator(object):
         rsp_400_error = "response{}400".format(route.operation_name)
         rsp_500_error = "response{}500".format(route.operation_name)
         rsp_errors = [500]
-        if request_body != None:
+        if request_body is not None:
             rsp_errors.append(400)
             modelname = request_body.model_name
             full_modelname = request_body.full_model_name

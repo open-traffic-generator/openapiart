@@ -1,6 +1,4 @@
 import pytest
-import importlib
-import logging
 import json
 import base64
 

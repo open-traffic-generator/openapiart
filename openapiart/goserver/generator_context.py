@@ -13,7 +13,7 @@ class Server(object):
         self._basepath = ""
         try:
             self._basepath = self._obj["variables"]["basePath"]["default"]
-            if self._basepath.startswith("/") == False:
+            if self._basepath.startswith("/") is False:
                 self._basepath = "/" + self._basepath
         except KeyError:
             pass

@@ -3,7 +3,7 @@
 Given an openapi.yaml file that has been produced by the Bundler class in the
 bundler.py file the Generator class will produce an enhanced python ux file.
 
-TBD: 
+TBD:
 - packet slicing using constants
 - docstrings
 - type checking
@@ -399,7 +399,7 @@ class Generator:
     @keep_alive_timeout.setter
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
-        
+
     def close(self):
         if self._channel is not None:
             self._channel.close()
@@ -433,7 +433,7 @@ class Generator:
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
                     self._write(2, ")")
-                    req_args = "%s=pb_obj" % rpc_method.request_property
+                    "%s=pb_obj" % rpc_method.request_property
                     self._write(
                         2,
                         "req_obj = pb2.{operation_name}Request({request_property}=pb_obj)".format(

@@ -4,7 +4,6 @@ import importlib
 import shutil
 import yaml
 import subprocess
-import requests
 import platform
 
 

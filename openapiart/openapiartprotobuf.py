@@ -1,5 +1,4 @@
 import os
-import jsonpath_ng
 from .openapiartplugin import OpenApiArtPlugin
 
 

@@ -1,4 +1,5 @@
-import os, re
+import os
+import re
 import openapiart.goserver.string_util as util
 import openapiart.goserver.generator_context as ctx
 from openapiart.goserver.writer import Writer
@@ -103,7 +104,7 @@ class GoServerInterfaceGenerator(object):
             self._write_route_description(w, r)
             full_responsename = r.full_responsename
             request_body: Component = r.requestBody()
-            if request_body != None:
+            if request_body is not None:
                 full_requestname = request_body.full_model_name
                 w.write_line(
                     f"{r.operation_name}(rbody {full_requestname}, r *http.Request) {full_responsename}"

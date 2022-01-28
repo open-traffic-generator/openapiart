@@ -1,4 +1,3 @@
-import enum
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
@@ -483,9 +482,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     # )
                     rpc.method = """{operation_name}({struct} {interface}) ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
-                        operation_response_name=self._get_external_struct_name(
-                            rpc.operation_name
-                        ),
                         struct=new.struct,
                         interface=new.interface,
                         request_return_type=rpc.request_return_type,
@@ -510,7 +506,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{return nil, err}}
                     resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
                     """.format(
-                        operation_name=http.operation_name,
                         url=http_url,
                         struct=new.struct,
                         method=str(
@@ -534,9 +529,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     # )
                     rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
-                        operation_response_name=self._get_external_struct_name(
-                            rpc.operation_name
-                        ),
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.http_call = (
@@ -628,11 +620,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (api *{internal_struct_name}) Close() error {{
                 if api.hasGrpcTransport() {{
                     err := api.grpcClose()
-		            return err
+                    return err
                 }}
                 if api.hasHttpTransport() {{
                     api.http = nil
-		            api.httpClient.client = nil
+                    api.httpClient.client = nil
                 }}
                 return nil
             }}
@@ -642,7 +634,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 return &api
             }}
-            
+
             // httpConnect builds up a http connection
             func (api *{internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
@@ -659,7 +651,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return nil
             }}
-            
+
             func (api *{internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
@@ -676,7 +668,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
                 return httpClient.client.Do(req)
-            }}            
+            }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
                 interface=self._api.external_interface_name,
@@ -719,8 +711,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=new.method,
-                    struct=new.struct,
-                    pb_pkg_name=self._protobuf_package_name,
                     interface=new.interface,
                 )
             )
@@ -753,7 +743,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
                     ),
-                    request_return_type=rpc.request_return_type,
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
@@ -761,7 +750,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
-                    
+
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
@@ -780,9 +769,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     method=rpc.method,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
-                    operation_response_name=self._get_internal_name(
-                        rpc.operation_name
-                    ),
                     error_handling=error_handling,
                     return_value=return_value,
                     http_call=rpc.http_call,
@@ -821,7 +807,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     return obj, nil""".format(
                     success_method=success_method,
-                    pb_pkg_name=self._protobuf_package_name,
                 )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
@@ -936,7 +921,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 obj *{pb_pkg_name}.{interface}
                 {internal_items}
             }}
-            
+
             func New{interface}() {interface} {{
                 obj := {struct}{{obj: &{pb_pkg_name}.{interface}{{}}}}
                 obj.setDefault()
@@ -1012,7 +997,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return fmt.Errorf("unmarshal error %s", strings.Replace(
                         uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
-                {nil_call}         
+                {nil_call}
                 vErr := obj.validateFromText()
                 if vErr != nil {{
                     return vErr
@@ -1209,8 +1194,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         """.format(
                             interface=new.interface,
                             enum=field.setChoiceValue,
-                            name=field.name,
-                            type=field.type,
                         )
                 body = """if obj.obj.{name} == nil {{
                         {block}
@@ -1374,7 +1357,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 obj.obj.{fieldname} = items""".format(
                 interface=new.interface,
-                struct=new.struct,
                 fieldname=field.name,
                 pb_pkg_name=self._protobuf_package_name,
             )
@@ -1415,7 +1397,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             name=enum_field.name,
                             pb_pkg_name=self._protobuf_package_name,
                             interface=new.interface,
-                            fieldname=enum_field.name,
                         )
                     )
                     continue
@@ -1535,7 +1516,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_nil is True
                 else "",
                 name=field.name,
-                fieldname=self._get_external_struct_name(field.name),
             )
         elif field.isPointer:
             body = """obj.obj.{fieldname} = &value""".format(
@@ -1685,7 +1665,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """.format(
                 fieldname=self._get_external_struct_name(field.name),
                 struct=new.struct,
-                getter_method=field.getter_method,
                 description=field.description,
                 fieldtype=field.type,
                 internal_field_name=field.name,
@@ -2141,8 +2120,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
             """.format(
                 name=field.name,
-                field_type=field.type,
-                internal_items_name="{}Slice".format(field.struct),
                 field_internal_struct=field.struct,
             )
         body += """

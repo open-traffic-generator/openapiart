@@ -71,7 +71,7 @@ class OpenApiArtPlugin(object):
             if char_80 != "":
                 lines.append(char_80.strip())
             # lines.append("\n{}{}".format(indent, comment).join(each_line))
-        if use_multi == True:
+        if use_multi is True:
             return (
                 "{}/* ".format(indent)
                 + "\n{} * ".format(indent).join(lines)

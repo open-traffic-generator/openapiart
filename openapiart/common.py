@@ -12,10 +12,6 @@ from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
 
-try:
-    from typing import Union, Dict, List, Any, Literal
-except ImportError:
-    from typing_extensions import Literal
 
 if sys.version_info[0] == 3:
     unicode = str

@@ -159,7 +159,7 @@ def test_x_pattern_good_inc_dec(default_config, index, direction):
     dir_obj.count = count[index]
     try:
         default_config.serialize(default_config.DICT)
-    except TypeError as e:
+    except TypeError:
         pytest.fail("%s with %s Failed to serialize" % (enum, direction))
 
 
