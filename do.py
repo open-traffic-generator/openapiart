@@ -116,7 +116,13 @@ def init():
 
 
 def lint():
-    paths = [pkg()[0], "openapiart", "setup.py", "do.py"]
+    paths = [
+        pkg()[0],
+        "art/sanity/sanity.py",
+        "openapiart",
+        "setup.py",
+        "do.py",
+    ]
 
     run(
         [

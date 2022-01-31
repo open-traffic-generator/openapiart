@@ -1262,7 +1262,7 @@ func TestUpdateConfig(t *testing.T) {
 		assert.Nil(t, config2.FromYaml(config2Yaml))
 		assert.Nil(t, config2.FromPbText(config2PbText))
 		config2.SetMsg(config2.Msg())
-		config3, err := api.UpdateConfig(config2)
+		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
 		assert.NotNil(t, config3)
 		config3Yaml, err := config3.ToYaml()
@@ -1296,7 +1296,7 @@ func TestNewSetConfigResponse(t *testing.T) {
 
 func TestNewUpdateConfigResponse(t *testing.T) {
 	api := openapiart.NewApi()
-	new_resp := api.NewUpdateConfigResponse()
+	new_resp := api.NewUpdateConfigurationResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasStatusCode200()

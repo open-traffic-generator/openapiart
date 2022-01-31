@@ -89,7 +89,7 @@ func TestUpdateConfigSuccess(t *testing.T) {
 		}
 		config2 := api.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
-		config3, err := api.UpdateConfig(config2)
+		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
 		assert.NotNil(t, config3)
 	}

@@ -20,7 +20,7 @@ paths:
 
     patch:
       tags: ['Bundler']
-      operationId: update_config
+      operationId: update_configuration
       description: >-
         Sets configuration resources.
       requestBody:
