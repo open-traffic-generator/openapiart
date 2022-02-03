@@ -36,8 +36,8 @@ def on_linux():
     return "linux" in sys.platform
 
 
-def get_go():
-    version = "1.17"
+def get_go(go_version="1.17"):
+    version = go_version
     targz = None
 
     if on_arm():
@@ -92,9 +92,9 @@ def get_protoc():
     run([cmd])
 
 
-def setup_ext():
+def setup_ext(go_version="1.17"):
     if on_linux():
-        get_go()
+        get_go(go_version)
         get_protoc()
         get_go_deps()
     else:
