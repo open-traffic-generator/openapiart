@@ -48,7 +48,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
     if sdk == "python" or sdk == None:
         open_api.GeneratePythonSdk(package_name="sanity")
 
-    if sdk == "go" or sdk == None:
+    if sdk == "go" or sdk is None:
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",
