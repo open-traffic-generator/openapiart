@@ -1,0 +1,3673 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Protocol Documentation</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>
+    <style>
+      body {
+        width: 60em;
+        margin: 1em auto;
+        color: #222;
+        font-family: "Ubuntu", sans-serif;
+        padding-bottom: 4em;
+      }
+
+      h1 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      h2 {
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+        margin: 1.5em 0;
+      }
+
+      h3 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      a {
+        text-decoration: none;
+        color: #567e25;
+      }
+
+      table {
+        width: 100%;
+        font-size: 80%;
+        border-collapse: collapse;
+      }
+
+      thead {
+        font-weight: 700;
+        background-color: #dcdcdc;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #fbfbfb;
+      }
+
+      td {
+        border: 1px solid #ccc;
+        padding: 0.5ex 2ex;
+      }
+
+      td p {
+        text-indent: 1em;
+        margin: 0;
+      }
+
+      td p:nth-child(1) {
+        text-indent: 0;  
+      }
+
+       
+      .field-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(3) {  
+        width: 6em;
+      }
+      .field-table td:nth-child(4) {  
+        width: auto;
+      }
+
+       
+      .extension-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(3) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(4) {  
+        width: 5em;
+      }
+      .extension-table td:nth-child(5) {  
+        width: auto;
+      }
+
+       
+      .enum-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(3) {  
+        width: auto;
+      }
+
+       
+      .scalar-value-types-table tr {
+        height: 3em;
+      }
+
+       
+      #toc-container ul {
+        list-style-type: none;
+        padding-left: 1em;
+        line-height: 180%;
+        margin: 0;
+      }
+      #toc > li > a {
+        font-weight: bold;
+      }
+
+       
+      .file-heading {
+        width: 100%;
+        display: table;
+        border-bottom: 1px solid #aaa;
+        margin: 4em 0 1.5em 0;
+      }
+      .file-heading h2 {
+        border: none;
+        display: table-cell;
+      }
+      .file-heading a {
+        text-align: right;
+        display: table-cell;
+      }
+
+       
+      .badge {
+        width: 1.6em;
+        height: 1.6em;
+        display: inline-block;
+
+        line-height: 1.6em;
+        text-align: center;
+        font-weight: bold;
+        font-size: 60%;
+
+        color: #89ba48;
+        background-color: #dff0c8;
+
+        margin: 0.5ex 1em 0.5ex -1em;
+        border: 1px solid #fbfbfb;
+        border-radius: 1ex;
+      }
+    </style>
+
+    
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+  </head>
+
+  <body>
+
+    <h1 id="title">Protocol Documentation</h1>
+
+    <h2>Table of Contents</h2>
+
+    <div id="toc-container">
+      <ul id="toc">
+        
+          
+          <li>
+            <a href="#sanity.proto">sanity.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#sanity.ApiTestInputBody"><span class="badge">M</span>ApiTestInputBody</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.ChecksumPattern"><span class="badge">M</span>ChecksumPattern</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.ClearWarningsResponse"><span class="badge">M</span>ClearWarningsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.CommonResponseError"><span class="badge">M</span>CommonResponseError</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.CommonResponseSuccess"><span class="badge">M</span>CommonResponseSuccess</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.DummyResponseTestResponse"><span class="badge">M</span>DummyResponseTestResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.EObject"><span class="badge">M</span>EObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Error"><span class="badge">M</span>Error</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.ErrorDetails"><span class="badge">M</span>ErrorDetails</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.FObject"><span class="badge">M</span>FObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.FObject.Choice"><span class="badge">M</span>FObject.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GObject"><span class="badge">M</span>GObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GObject.Choice"><span class="badge">M</span>GObject.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GObject.GF"><span class="badge">M</span>GObject.GF</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetAllItemsResponse"><span class="badge">M</span>GetAllItemsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetConfigResponse"><span class="badge">M</span>GetConfigResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetMetricsResponse"><span class="badge">M</span>GetMetricsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetRootResponseResponse"><span class="badge">M</span>GetRootResponseResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetSingleItemLevel2Response"><span class="badge">M</span>GetSingleItemLevel2Response</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetSingleItemResponse"><span class="badge">M</span>GetSingleItemResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GetWarningsResponse"><span class="badge">M</span>GetWarningsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.IntegerPattern"><span class="badge">M</span>IntegerPattern</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Ipv4Pattern"><span class="badge">M</span>Ipv4Pattern</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Ipv6Pattern"><span class="badge">M</span>Ipv6Pattern</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.JObject"><span class="badge">M</span>JObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.JObject.Choice"><span class="badge">M</span>JObject.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.KObject"><span class="badge">M</span>KObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.LObject"><span class="badge">M</span>LObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Layer1Ieee802x"><span class="badge">M</span>Layer1Ieee802x</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.LevelFour"><span class="badge">M</span>LevelFour</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.LevelOne"><span class="badge">M</span>LevelOne</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.LevelThree"><span class="badge">M</span>LevelThree</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.LevelTwo"><span class="badge">M</span>LevelTwo</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.MObject"><span class="badge">M</span>MObject</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.MacPattern"><span class="badge">M</span>MacPattern</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Mandate"><span class="badge">M</span>Mandate</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Metrics"><span class="badge">M</span>Metrics</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternChecksumPatternChecksum"><span class="badge">M</span>PatternChecksumPatternChecksum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternChecksumPatternChecksum.Choice"><span class="badge">M</span>PatternChecksumPatternChecksum.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternChecksumPatternChecksum.Generated"><span class="badge">M</span>PatternChecksumPatternChecksum.Generated</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIntegerPatternInteger"><span class="badge">M</span>PatternIntegerPatternInteger</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIntegerPatternInteger.Choice"><span class="badge">M</span>PatternIntegerPatternInteger.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIntegerPatternIntegerCounter"><span class="badge">M</span>PatternIntegerPatternIntegerCounter</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv4PatternIpv4"><span class="badge">M</span>PatternIpv4PatternIpv4</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv4PatternIpv4.Choice"><span class="badge">M</span>PatternIpv4PatternIpv4.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv4PatternIpv4Counter"><span class="badge">M</span>PatternIpv4PatternIpv4Counter</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv6PatternIpv6"><span class="badge">M</span>PatternIpv6PatternIpv6</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv6PatternIpv6.Choice"><span class="badge">M</span>PatternIpv6PatternIpv6.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv6PatternIpv6Counter"><span class="badge">M</span>PatternIpv6PatternIpv6Counter</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternMacPatternMac"><span class="badge">M</span>PatternMacPatternMac</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternMacPatternMac.Choice"><span class="badge">M</span>PatternMacPatternMac.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternMacPatternMacCounter"><span class="badge">M</span>PatternMacPatternMacCounter</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternPrefixConfigHeaderChecksum"><span class="badge">M</span>PatternPrefixConfigHeaderChecksum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternPrefixConfigHeaderChecksum.Choice"><span class="badge">M</span>PatternPrefixConfigHeaderChecksum.Choice</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternPrefixConfigHeaderChecksum.Generated"><span class="badge">M</span>PatternPrefixConfigHeaderChecksum.Generated</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PortMetric"><span class="badge">M</span>PortMetric</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PostRootResponseRequest"><span class="badge">M</span>PostRootResponseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PostRootResponseResponse"><span class="badge">M</span>PostRootResponseResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PrefixConfig"><span class="badge">M</span>PrefixConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PrefixConfig.DValues"><span class="badge">M</span>PrefixConfig.DValues</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PrefixConfig.Response"><span class="badge">M</span>PrefixConfig.Response</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.ServiceBItem"><span class="badge">M</span>ServiceBItem</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.ServiceBItemList"><span class="badge">M</span>ServiceBItemList</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.SetConfigRequest"><span class="badge">M</span>SetConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.SetConfigResponse"><span class="badge">M</span>SetConfigResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.UpdateConfig"><span class="badge">M</span>UpdateConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.UpdateConfigRequest"><span class="badge">M</span>UpdateConfigRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.UpdateConfigResponse"><span class="badge">M</span>UpdateConfigResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.WarningDetails"><span class="badge">M</span>WarningDetails</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.Warnings"><span class="badge">M</span>Warnings</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#sanity.FObject.Choice.Enum"><span class="badge">E</span>FObject.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GObject.Choice.Enum"><span class="badge">E</span>GObject.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.GObject.GF.Enum"><span class="badge">E</span>GObject.GF.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.JObject.Choice.Enum"><span class="badge">E</span>JObject.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternChecksumPatternChecksum.Choice.Enum"><span class="badge">E</span>PatternChecksumPatternChecksum.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternChecksumPatternChecksum.Generated.Enum"><span class="badge">E</span>PatternChecksumPatternChecksum.Generated.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIntegerPatternInteger.Choice.Enum"><span class="badge">E</span>PatternIntegerPatternInteger.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv4PatternIpv4.Choice.Enum"><span class="badge">E</span>PatternIpv4PatternIpv4.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternIpv6PatternIpv6.Choice.Enum"><span class="badge">E</span>PatternIpv6PatternIpv6.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternMacPatternMac.Choice.Enum"><span class="badge">E</span>PatternMacPatternMac.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternPrefixConfigHeaderChecksum.Choice.Enum"><span class="badge">E</span>PatternPrefixConfigHeaderChecksum.Choice.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PatternPrefixConfigHeaderChecksum.Generated.Enum"><span class="badge">E</span>PatternPrefixConfigHeaderChecksum.Generated.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PrefixConfig.DValues.Enum"><span class="badge">E</span>PrefixConfig.DValues.Enum</a>
+                </li>
+              
+                <li>
+                  <a href="#sanity.PrefixConfig.Response.Enum"><span class="badge">E</span>PrefixConfig.Response.Enum</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#sanity.Openapi"><span class="badge">S</span>Openapi</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+        <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+      </ul>
+    </div>
+
+    
+      
+      <div class="file-heading">
+        <h2 id="sanity.proto">sanity.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="sanity.ApiTestInputBody">ApiTestInputBody</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>some_string</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.ChecksumPattern">ChecksumPattern</h3>
+        <p>Test checksum pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>checksum</td>
+                  <td><a href="#sanity.PatternChecksumPatternChecksum">PatternChecksumPatternChecksum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.ClearWarningsResponse">ClearWarningsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.CommonResponseError">CommonResponseError</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>message</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.CommonResponseSuccess">CommonResponseSuccess</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>message</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.DummyResponseTestResponse">DummyResponseTestResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.EObject">EObject</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>e_a</td>
+                  <td><a href="#float">float</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>e_b</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>m_param1</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>m_param2</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Error">Error</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>errors</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.ErrorDetails">ErrorDetails</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>errors</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.FObject">FObject</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.FObject.Choice.Enum">FObject.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.f_a </p></td>
+                </tr>
+              
+                <tr>
+                  <td>f_a</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = some string </p></td>
+                </tr>
+              
+                <tr>
+                  <td>f_b</td>
+                  <td><a href="#double">double</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 3.0 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.FObject.Choice">FObject.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.GObject">GObject</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>g_a</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = asdf </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_b</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 6 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_c</td>
+                  <td><a href="#float">float</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 77.7 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.GObject.Choice.Enum">GObject.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.g_d </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_d</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = some string </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_e</td>
+                  <td><a href="#double">double</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 3.0 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g_f</td>
+                  <td><a href="#sanity.GObject.GF.Enum">GObject.GF.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Another enum to test protbuf enum generation
+default = GF.Enum.a </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GObject.Choice">GObject.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.GObject.GF">GObject.GF</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.GetAllItemsResponse">GetAllItemsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.ServiceBItemList">ServiceBItemList</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetConfigResponse">GetConfigResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.PrefixConfig">PrefixConfig</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetMetricsResponse">GetMetricsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.Metrics">Metrics</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetRootResponseResponse">GetRootResponseResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.CommonResponseSuccess">CommonResponseSuccess</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetSingleItemLevel2Response">GetSingleItemLevel2Response</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.ServiceBItem">ServiceBItem</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetSingleItemResponse">GetSingleItemResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.ServiceBItem">ServiceBItem</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.GetWarningsResponse">GetWarningsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.WarningDetails">WarningDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.IntegerPattern">IntegerPattern</h3>
+        <p>Test integer pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>integer</td>
+                  <td><a href="#sanity.PatternIntegerPatternInteger">PatternIntegerPatternInteger</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Ipv4Pattern">Ipv4Pattern</h3>
+        <p>Test ipv4 pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>ipv4</td>
+                  <td><a href="#sanity.PatternIpv4PatternIpv4">PatternIpv4PatternIpv4</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Ipv6Pattern">Ipv6Pattern</h3>
+        <p>Test ipv6 pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>ipv6</td>
+                  <td><a href="#sanity.PatternIpv6PatternIpv6">PatternIpv6PatternIpv6</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.JObject">JObject</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.JObject.Choice.Enum">JObject.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.j_a </p></td>
+                </tr>
+              
+                <tr>
+                  <td>j_a</td>
+                  <td><a href="#sanity.EObject">EObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>j_b</td>
+                  <td><a href="#sanity.FObject">FObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.JObject.Choice">JObject.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.KObject">KObject</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>e_object</td>
+                  <td><a href="#sanity.EObject">EObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>f_object</td>
+                  <td><a href="#sanity.FObject">FObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.LObject">LObject</h3>
+        <p>Format validation object</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>string_param</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>integer</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>float</td>
+                  <td><a href="#float">float</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>double</td>
+                  <td><a href="#double">double</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mac</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv4</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv6</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hex</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Layer1Ieee802x">Layer1Ieee802x</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>flow_control</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.LevelFour">LevelFour</h3>
+        <p>Test level4 redundant junk testing</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>l4_p1</td>
+                  <td><a href="#sanity.LevelOne">LevelOne</a></td>
+                  <td>optional</td>
+                  <td><p>loop over level 1 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.LevelOne">LevelOne</h3>
+        <p>To Test Multi level non-primitive types</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>l1_p1</td>
+                  <td><a href="#sanity.LevelTwo">LevelTwo</a></td>
+                  <td>optional</td>
+                  <td><p>Level one </p></td>
+                </tr>
+              
+                <tr>
+                  <td>l1_p2</td>
+                  <td><a href="#sanity.LevelFour">LevelFour</a></td>
+                  <td>optional</td>
+                  <td><p>Level one to four </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.LevelThree">LevelThree</h3>
+        <p>Test Level3</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>l3_p1</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Set value at Level 3 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.LevelTwo">LevelTwo</h3>
+        <p>Test Level 2</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>l2_p1</td>
+                  <td><a href="#sanity.LevelThree">LevelThree</a></td>
+                  <td>optional</td>
+                  <td><p>Level Two </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.MObject">MObject</h3>
+        <p>Required format validation object</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>string_param</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>integer</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>float</td>
+                  <td><a href="#float">float</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>double</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mac</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv4</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv6</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hex</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.MacPattern">MacPattern</h3>
+        <p>Test mac pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>mac</td>
+                  <td><a href="#sanity.PatternMacPatternMac">PatternMacPatternMac</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Mandate">Mandate</h3>
+        <p>Object to Test required Parameter</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required_param</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Metrics">Metrics</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>ports</td>
+                  <td><a href="#sanity.PortMetric">PortMetric</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternChecksumPatternChecksum">PatternChecksumPatternChecksum</h3>
+        <p>TBD</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternChecksumPatternChecksum.Choice.Enum">PatternChecksumPatternChecksum.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>The type of checksum
+default = Choice.Enum.generated </p></td>
+                </tr>
+              
+                <tr>
+                  <td>generated</td>
+                  <td><a href="#sanity.PatternChecksumPatternChecksum.Generated.Enum">PatternChecksumPatternChecksum.Generated.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>A system generated checksum value
+default = Generated.Enum.good </p></td>
+                </tr>
+              
+                <tr>
+                  <td>custom</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>A custom checksum value </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternChecksumPatternChecksum.Choice">PatternChecksumPatternChecksum.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternChecksumPatternChecksum.Generated">PatternChecksumPatternChecksum.Generated</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternIntegerPatternInteger">PatternIntegerPatternInteger</h3>
+        <p>TBD</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternIntegerPatternInteger.Choice.Enum">PatternIntegerPatternInteger.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 0 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models
+default = [0] </p></td>
+                </tr>
+              
+                <tr>
+                  <td>increment</td>
+                  <td><a href="#sanity.PatternIntegerPatternIntegerCounter">PatternIntegerPatternIntegerCounter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>decrement</td>
+                  <td><a href="#sanity.PatternIntegerPatternIntegerCounter">PatternIntegerPatternIntegerCounter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternIntegerPatternInteger.Choice">PatternIntegerPatternInteger.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternIntegerPatternIntegerCounter">PatternIntegerPatternIntegerCounter</h3>
+        <p>integer counter pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 0 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>step</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 1 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternIpv4PatternIpv4">PatternIpv4PatternIpv4</h3>
+        <p>TBD</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternIpv4PatternIpv4.Choice.Enum">PatternIpv4PatternIpv4.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 0.0.0.0 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models
+default = [&#39;0.0.0.0&#39;] </p></td>
+                </tr>
+              
+                <tr>
+                  <td>increment</td>
+                  <td><a href="#sanity.PatternIpv4PatternIpv4Counter">PatternIpv4PatternIpv4Counter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>decrement</td>
+                  <td><a href="#sanity.PatternIpv4PatternIpv4Counter">PatternIpv4PatternIpv4Counter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternIpv4PatternIpv4.Choice">PatternIpv4PatternIpv4.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternIpv4PatternIpv4Counter">PatternIpv4PatternIpv4Counter</h3>
+        <p>ipv4 counter pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 0.0.0.0 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>step</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 0.0.0.1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 1 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternIpv6PatternIpv6">PatternIpv6PatternIpv6</h3>
+        <p>TBD</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternIpv6PatternIpv6.Choice.Enum">PatternIpv6PatternIpv6.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = :: </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models
+default = [&#39;::&#39;] </p></td>
+                </tr>
+              
+                <tr>
+                  <td>increment</td>
+                  <td><a href="#sanity.PatternIpv6PatternIpv6Counter">PatternIpv6PatternIpv6Counter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>decrement</td>
+                  <td><a href="#sanity.PatternIpv6PatternIpv6Counter">PatternIpv6PatternIpv6Counter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternIpv6PatternIpv6.Choice">PatternIpv6PatternIpv6.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternIpv6PatternIpv6Counter">PatternIpv6PatternIpv6Counter</h3>
+        <p>ipv6 counter pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = :: </p></td>
+                </tr>
+              
+                <tr>
+                  <td>step</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = ::1 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 1 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternMacPatternMac">PatternMacPatternMac</h3>
+        <p>TBD</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternMacPatternMac.Choice.Enum">PatternMacPatternMac.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = Choice.Enum.value </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 00:00:00:00:00:00 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models
+default = [&#39;00:00:00:00:00:00&#39;] </p></td>
+                </tr>
+              
+                <tr>
+                  <td>increment</td>
+                  <td><a href="#sanity.PatternMacPatternMacCounter">PatternMacPatternMacCounter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>decrement</td>
+                  <td><a href="#sanity.PatternMacPatternMacCounter">PatternMacPatternMacCounter</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternMacPatternMac.Choice">PatternMacPatternMac.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternMacPatternMacCounter">PatternMacPatternMacCounter</h3>
+        <p>mac counter pattern</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 00:00:00:00:00:00 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>step</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 00:00:00:00:00:01 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models
+default = 1 </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternPrefixConfigHeaderChecksum">PatternPrefixConfigHeaderChecksum</h3>
+        <p>Header checksum</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>choice</td>
+                  <td><a href="#sanity.PatternPrefixConfigHeaderChecksum.Choice.Enum">PatternPrefixConfigHeaderChecksum.Choice.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>The type of checksum
+default = Choice.Enum.generated </p></td>
+                </tr>
+              
+                <tr>
+                  <td>generated</td>
+                  <td><a href="#sanity.PatternPrefixConfigHeaderChecksum.Generated.Enum">PatternPrefixConfigHeaderChecksum.Generated.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>A system generated checksum value
+default = Generated.Enum.good </p></td>
+                </tr>
+              
+                <tr>
+                  <td>custom</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>A custom checksum value </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PatternPrefixConfigHeaderChecksum.Choice">PatternPrefixConfigHeaderChecksum.Choice</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PatternPrefixConfigHeaderChecksum.Generated">PatternPrefixConfigHeaderChecksum.Generated</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PortMetric">PortMetric</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tx_frames</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rx_frames</td>
+                  <td><a href="#double">double</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PostRootResponseRequest">PostRootResponseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>api_test_input_body</td>
+                  <td><a href="#sanity.ApiTestInputBody">ApiTestInputBody</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PostRootResponseResponse">PostRootResponseResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.CommonResponseError">CommonResponseError</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.CommonResponseSuccess">CommonResponseSuccess</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PrefixConfig">PrefixConfig</h3>
+        <p>Container which retains the configuration</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required_object</td>
+                  <td><a href="#sanity.EObject">EObject</a></td>
+                  <td></td>
+                  <td><p>A required object that MUST be generated as such.
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>optional_object</td>
+                  <td><a href="#sanity.EObject">EObject</a></td>
+                  <td>optional</td>
+                  <td><p>An optional object that MUST be generated as such. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ieee_802_1qbb</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>space_1</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_duplex_100_mb</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>response</td>
+                  <td><a href="#sanity.PrefixConfig.Response.Enum">PrefixConfig.Response.Enum</a></td>
+                  <td>optional</td>
+                  <td><p>Indicate to the server what response should be returned
+default = Response.Enum.status_200 </p></td>
+                </tr>
+              
+                <tr>
+                  <td>a</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Status: under-review
+Small single line description
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>b</td>
+                  <td><a href="#float">float</a></td>
+                  <td></td>
+                  <td><p>Status: deprecated
+Longer multi-line description
+Second line is here
+Third line
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>c</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Description missing in models
+required = true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>d_values</td>
+                  <td><a href="#sanity.PrefixConfig.DValues.Enum">PrefixConfig.DValues.Enum</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of enum values </p></td>
+                </tr>
+              
+                <tr>
+                  <td>e</td>
+                  <td><a href="#sanity.EObject">EObject</a></td>
+                  <td>optional</td>
+                  <td><p>A child object </p></td>
+                </tr>
+              
+                <tr>
+                  <td>f</td>
+                  <td><a href="#sanity.FObject">FObject</a></td>
+                  <td>optional</td>
+                  <td><p>An object with only choice(s) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>g</td>
+                  <td><a href="#sanity.GObject">GObject</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of objects with choice and properties </p></td>
+                </tr>
+              
+                <tr>
+                  <td>h</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>optional</td>
+                  <td><p>A boolean value
+default = True </p></td>
+                </tr>
+              
+                <tr>
+                  <td>i</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td>optional</td>
+                  <td><p>A byte string </p></td>
+                </tr>
+              
+                <tr>
+                  <td>j</td>
+                  <td><a href="#sanity.JObject">JObject</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of objects with only choice </p></td>
+                </tr>
+              
+                <tr>
+                  <td>k</td>
+                  <td><a href="#sanity.KObject">KObject</a></td>
+                  <td>optional</td>
+                  <td><p>A nested object with only one property which is a choice object </p></td>
+                </tr>
+              
+                <tr>
+                  <td>l</td>
+                  <td><a href="#sanity.LObject">LObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>list_of_string_values</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of string values </p></td>
+                </tr>
+              
+                <tr>
+                  <td>list_of_integer_values</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of integer values </p></td>
+                </tr>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#sanity.LevelOne">LevelOne</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mandatory</td>
+                  <td><a href="#sanity.Mandate">Mandate</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv4_pattern</td>
+                  <td><a href="#sanity.Ipv4Pattern">Ipv4Pattern</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ipv6_pattern</td>
+                  <td><a href="#sanity.Ipv6Pattern">Ipv6Pattern</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mac_pattern</td>
+                  <td><a href="#sanity.MacPattern">MacPattern</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>integer_pattern</td>
+                  <td><a href="#sanity.IntegerPattern">IntegerPattern</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>checksum_pattern</td>
+                  <td><a href="#sanity.ChecksumPattern">ChecksumPattern</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>case</td>
+                  <td><a href="#sanity.Layer1Ieee802x">Layer1Ieee802x</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>m_object</td>
+                  <td><a href="#sanity.MObject">MObject</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>integer64</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td>optional</td>
+                  <td><p>int64 type </p></td>
+                </tr>
+              
+                <tr>
+                  <td>header_checksum</td>
+                  <td><a href="#sanity.PatternPrefixConfigHeaderChecksum">PatternPrefixConfigHeaderChecksum</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>str_len</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Status: under-review
+string minimum&amp;maximum Length </p></td>
+                </tr>
+              
+                <tr>
+                  <td>hex_slice</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Status: under-review
+Array of Hex </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.PrefixConfig.DValues">PrefixConfig.DValues</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.PrefixConfig.Response">PrefixConfig.Response</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="sanity.ServiceBItem">ServiceBItem</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>some_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>some_string</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>path_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+                <tr>
+                  <td>level_2</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.ServiceBItemList">ServiceBItemList</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>items</td>
+                  <td><a href="#sanity.ServiceBItem">ServiceBItem</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.SetConfigRequest">SetConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_config</td>
+                  <td><a href="#sanity.PrefixConfig">PrefixConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.SetConfigResponse">SetConfigResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_404</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.UpdateConfig">UpdateConfig</h3>
+        <p>Object to Test required Parameter</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>g</td>
+                  <td><a href="#sanity.GObject">GObject</a></td>
+                  <td>repeated</td>
+                  <td><p>A list of objects with choice and properties </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.UpdateConfigRequest">UpdateConfigRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>update_config</td>
+                  <td><a href="#sanity.UpdateConfig">UpdateConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.UpdateConfigResponse">UpdateConfigResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status_code_200</td>
+                  <td><a href="#sanity.PrefixConfig">PrefixConfig</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_400</td>
+                  <td><a href="#sanity.ErrorDetails">ErrorDetails</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status_code_500</td>
+                  <td><a href="#sanity.Error">Error</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.WarningDetails">WarningDetails</h3>
+        <p>Description missing in models</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>warnings</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Description missing in models </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="sanity.Warnings">Warnings</h3>
+        <p>Success warning payload similar to otg Success</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>warning_details</td>
+                  <td><a href="#sanity.WarningDetails">WarningDetails</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="sanity.FObject.Choice.Enum">FObject.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>f_a</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>f_b</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.GObject.Choice.Enum">GObject.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>g_d</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>g_e</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.GObject.GF.Enum">GObject.GF.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>a</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>b</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>c</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.JObject.Choice.Enum">JObject.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>j_a</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>j_b</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternChecksumPatternChecksum.Choice.Enum">PatternChecksumPatternChecksum.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>generated</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>custom</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternChecksumPatternChecksum.Generated.Enum">PatternChecksumPatternChecksum.Generated.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>good</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>bad</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternIntegerPatternInteger.Choice.Enum">PatternIntegerPatternInteger.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>value</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>values</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>increment</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>decrement</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternIpv4PatternIpv4.Choice.Enum">PatternIpv4PatternIpv4.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>value</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>values</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>increment</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>decrement</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternIpv6PatternIpv6.Choice.Enum">PatternIpv6PatternIpv6.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>value</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>values</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>increment</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>decrement</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternMacPatternMac.Choice.Enum">PatternMacPatternMac.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>value</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>values</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>increment</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>decrement</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternPrefixConfigHeaderChecksum.Choice.Enum">PatternPrefixConfigHeaderChecksum.Choice.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>generated</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>custom</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PatternPrefixConfigHeaderChecksum.Generated.Enum">PatternPrefixConfigHeaderChecksum.Generated.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>good</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>bad</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PrefixConfig.DValues.Enum">PrefixConfig.DValues.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>a</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>b</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>c</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="sanity.PrefixConfig.Response.Enum">PrefixConfig.Response.Enum</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>unspecified</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>status_200</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>status_400</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>status_404</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>status_500</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="sanity.Openapi">Openapi</h3>
+        <p>Description missing in models</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SetConfig</td>
+                <td><a href="#sanity.SetConfigRequest">SetConfigRequest</a></td>
+                <td><a href="#sanity.SetConfigResponse">SetConfigResponse</a></td>
+                <td><p>Sets configuration resources.</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateConfig</td>
+                <td><a href="#sanity.UpdateConfigRequest">UpdateConfigRequest</a></td>
+                <td><a href="#sanity.UpdateConfigResponse">UpdateConfigResponse</a></td>
+                <td><p>Sets configuration resources.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetConfig</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetConfigResponse">GetConfigResponse</a></td>
+                <td><p>Gets the configuration resources.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetMetrics</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetMetricsResponse">GetMetricsResponse</a></td>
+                <td><p>Gets metrics.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetWarnings</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetWarningsResponse">GetWarningsResponse</a></td>
+                <td><p>Gets warnings.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ClearWarnings</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.ClearWarningsResponse">ClearWarningsResponse</a></td>
+                <td><p>Clears warnings.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetRootResponse</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetRootResponseResponse">GetRootResponseResponse</a></td>
+                <td><p>simple GET api with single return type</p></td>
+              </tr>
+            
+              <tr>
+                <td>DummyResponseTest</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.DummyResponseTestResponse">DummyResponseTestResponse</a></td>
+                <td><p>Description missing in models</p></td>
+              </tr>
+            
+              <tr>
+                <td>PostRootResponse</td>
+                <td><a href="#sanity.PostRootResponseRequest">PostRootResponseRequest</a></td>
+                <td><a href="#sanity.PostRootResponseResponse">PostRootResponseResponse</a></td>
+                <td><p>simple POST api with single return type</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetAllItems</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetAllItemsResponse">GetAllItemsResponse</a></td>
+                <td><p>return list of some items</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetSingleItem</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetSingleItemResponse">GetSingleItemResponse</a></td>
+                <td><p>return single item</p></td>
+              </tr>
+            
+              <tr>
+                <td>GetSingleItemLevel2</td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><a href="#sanity.GetSingleItemLevel2Response">GetSingleItemLevel2Response</a></td>
+                <td><p>return single item</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+
+    <h2 id="scalar-value-types">Scalar Value Types</h2>
+    <table class="scalar-value-types-table">
+      <thead>
+        <tr><td>.proto Type</td><td>Notes</td><td>C++</td><td>Java</td><td>Python</td><td>Go</td><td>C#</td><td>PHP</td><td>Ruby</td></tr>
+      </thead>
+      <tbody>
+        
+          <tr id="double">
+            <td>double</td>
+            <td></td>
+            <td>double</td>
+            <td>double</td>
+            <td>float</td>
+            <td>float64</td>
+            <td>double</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="float">
+            <td>float</td>
+            <td></td>
+            <td>float</td>
+            <td>float</td>
+            <td>float</td>
+            <td>float32</td>
+            <td>float</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="int32">
+            <td>int32</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="int64">
+            <td>int64</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="uint32">
+            <td>uint32</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int/long</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="uint64">
+            <td>uint64</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint32">
+            <td>sint32</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint64">
+            <td>sint64</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="fixed32">
+            <td>fixed32</td>
+            <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="fixed64">
+            <td>fixed64</td>
+            <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="sfixed32">
+            <td>sfixed32</td>
+            <td>Always four bytes.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sfixed64">
+            <td>sfixed64</td>
+            <td>Always eight bytes.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="bool">
+            <td>bool</td>
+            <td></td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>boolean</td>
+            <td>bool</td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>TrueClass/FalseClass</td>
+          </tr>
+        
+          <tr id="string">
+            <td>string</td>
+            <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+            <td>string</td>
+            <td>String</td>
+            <td>str/unicode</td>
+            <td>string</td>
+            <td>string</td>
+            <td>string</td>
+            <td>String (UTF-8)</td>
+          </tr>
+        
+          <tr id="bytes">
+            <td>bytes</td>
+            <td>May contain any arbitrary sequence of bytes.</td>
+            <td>string</td>
+            <td>ByteString</td>
+            <td>str</td>
+            <td>[]byte</td>
+            <td>ByteString</td>
+            <td>string</td>
+            <td>String (ASCII-8BIT)</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </body>
+</html>
+

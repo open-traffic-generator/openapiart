@@ -61,12 +61,13 @@ def get_go(go_version="1.17"):
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go get -v"
+    cmd = "GO111MODULE=on CGO_ENABLED=0 go get"
     run(
         [
-            cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
-            cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports",
+            cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
+            cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
+            cmd + " -v golang.org/x/tools/cmd/goimports",
+            cmd + " -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc"
         ]
     )
 
