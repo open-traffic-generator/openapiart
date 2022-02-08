@@ -36,7 +36,7 @@ components:
             format: integer
             default: 0
             length: 8
-            features: [count]
+            features: [count, auto]
     ChecksumPattern:
       description: Test checksum pattern
       type: object
