@@ -123,6 +123,12 @@ jobs:
       - name: Run go lint
         run: |
           python do.py go_lint
+      - name: Archive generated artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-artifacts
+          path: |
+            pkg
       - uses: actions/download-artifact@v2
         with:
           name: generated-artifacts
@@ -134,13 +140,6 @@ jobs:
       - name: Run go tests
         run: |
           python do.py testgo
-      - name: Archive generated artifacts
-        if: ${{ matrix.go-version }} == '1.17.5'
-        uses: actions/upload-artifact@v2
-        with:
-          name: generated-artifacts
-          path: |
-            pkg
 
   publish_go_package:
     needs: go_tests
