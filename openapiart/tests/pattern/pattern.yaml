@@ -26,7 +26,7 @@ components:
           x-field-pattern:
             format: mac
             default: "00:00:00:00:00:00"
-            features: [count]
+            features: [count, auto]
     IntegerPattern:
       description: Test integer pattern
       type: object
@@ -36,7 +36,7 @@ components:
             format: integer
             default: 0
             length: 8
-            features: [count, auto]
+            features: [count]
     ChecksumPattern:
       description: Test checksum pattern
       type: object

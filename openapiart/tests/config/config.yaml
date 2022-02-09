@@ -132,6 +132,12 @@ components:
           items:
             type: string
             format: hex
+        auto_field_test:
+            x-field-pattern:
+              format: integer
+              default: 0
+              length: 8
+              features: [count, auto]
 
     Layer1Ieee802x:
       type: object

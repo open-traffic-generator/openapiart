@@ -391,6 +391,12 @@ class Bundler(object):
             schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
             if "auto" in xpattern["features"]:
+                if "default" not in xpattern:
+                    self._errors.append(
+                        "default must be set for property {}, when auto feature is enabled".format(
+                            schema_name
+                        )
+                    )
                 schema["properties"]["choice"]["enum"].append("auto")
                 schema["properties"]["choice"]["default"] = "auto"
                 description = [
@@ -406,7 +412,7 @@ class Bundler(object):
                     schema["properties"]["auto"],
                     xpattern,
                     format,
-                    property_name="value",
+                    property_name="auto",
                 )
             if "metric_group" in xpattern["features"]:
                 schema["properties"]["metric_group"] = {
