@@ -10,3 +10,4 @@ typing
 setuptools
 wheel
 twine
+black==21.12b0

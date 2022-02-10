@@ -129,7 +129,7 @@ def lint():
             py()
             + " -m black "
             + " ".join(paths)
-            + " --exclude=openapiart/common.py --check",
+            + " --exclude=openapiart/common.py --required-version 21.12b0 --check",
             py() + " -m flake8 " + " ".join(paths),
         ]
     )
