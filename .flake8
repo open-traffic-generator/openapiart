@@ -1,3 +1,3 @@
 [flake8]
-ignore = E501, W503, F821, E731, E402, E743, E741
+ignore = E501, W503, F821, E731, E402, E743, E741, F401
 exclude = openapiart/common.py, openapiart/__init__.py
