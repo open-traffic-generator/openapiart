@@ -10,4 +10,3 @@ typing
 setuptools
 wheel
 twine
-black

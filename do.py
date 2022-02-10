@@ -108,6 +108,8 @@ def setup():
 
 
 def init():
+    if sys.version_info[0] == 3:
+        run([py() + " -m pip install black"])
     run(
         [
             py() + " -m pip install -r requirements.txt",
