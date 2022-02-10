@@ -186,7 +186,7 @@ class OpenApiArt(object):
             print("Bypassed creation of python stubs: {}".format(e))
         # Auto formatting generated python SDK with Black
         process_args = [
-            "python -m black",
+            "{} -m black".format(sys.executable),
             os.path.join(python_sdk_dir, self._python_module_name + ".py"),
         ]
         cmd = " ".join(process_args)
