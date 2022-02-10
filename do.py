@@ -122,7 +122,8 @@ def lint():
         "setup.py",
         "do.py",
     ]
-
+    # --check will check for any files to be formatted with black
+    # if linting fails, format the files with black and commit
     run(
         [
             py()

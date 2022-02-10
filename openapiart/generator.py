@@ -252,7 +252,9 @@ class Generator:
             for response_code, response_property in response_list.items():
                 if int(response_code) == 200:
                     rpc.good_response_property = response_property
-                    schema_obj = self._get_parser("$..schema").find(response_property)
+                    schema_obj = self._get_parser("$..schema").find(
+                        response_property
+                    )
                     if len(schema_obj) == 0:
                         (
                             response_name,
@@ -444,25 +446,40 @@ class Generator:
                         ),
                     )
                     self._write(2, "stub = self._get_stub()")
-                    self._write(2, "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
-                                %rpc_method.operation_name)
-                including_default, return_byte = self._process_good_response(rpc_method)
+                    self._write(
+                        2,
+                        "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
+                        % rpc_method.operation_name,
+                    )
+                including_default, return_byte = self._process_good_response(
+                    rpc_method
+                )
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
-                self._write(2, "status_code_200 = response.get(\"status_code_200\")")
+                self._write(
+                    2, 'status_code_200 = response.get("status_code_200")'
+                )
                 self._write(2, "if status_code_200 is not None:")
                 if return_byte:
-                    self._write(3, "return io.BytesIO(res_obj.status_code_200)")
+                    self._write(
+                        3, "return io.BytesIO(res_obj.status_code_200)"
+                    )
                 elif rpc_method.good_response_type:
                     if including_default:
                         self._write(3, "if len(status_code_200) == 0:")
-                        self._write(4, "status_code_200 = json_format.MessageToDict(")
+                        self._write(
+                            4, "status_code_200 = json_format.MessageToDict("
+                        )
                         self._write(5, "res_obj.status_code_200,")
                         self._write(5, "preserving_proto_field_name=True,")
                         self._write(5, "including_default_value_fields=True")
                         self._write(4, ")")
-                    self._write(3, "return self.%s().deserialize(" %rpc_method.good_response_type)
+                    self._write(
+                        3,
+                        "return self.%s().deserialize("
+                        % rpc_method.good_response_type,
+                    )
                     self._write(4, "status_code_200")
                     self._write(3, ")")
                 else:
@@ -496,15 +513,23 @@ class Generator:
         if len(content) > 0:
             value = content[0].value
             if "application/json" in value:
-                schema = value['application/json'].get("schema")
+                schema = value["application/json"].get("schema")
                 if schema is not None:
-                    _, _, _, ref = self._get_object_property_class_names(schema)
+                    _, _, _, ref = self._get_object_property_class_names(
+                        schema
+                    )
                     if ref is not None:
                         schema = self._get_object_from_ref(ref)
-                    if schema.get("properties") is not None \
-                            and schema.get("properties").get("warnings") is not None:
+                    if (
+                        schema.get("properties") is not None
+                        and schema.get("properties").get("warnings")
+                        is not None
+                    ):
                         parse_warnings = True
-        if rpc_method.http_method in ["put", "post", "patch"] and parse_warnings:
+        if (
+            rpc_method.http_method in ["put", "post", "patch"]
+            and parse_warnings
+        ):
             including_default = True
         return including_default, return_byte
 
