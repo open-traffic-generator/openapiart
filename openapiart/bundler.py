@@ -38,7 +38,7 @@ class Bundler(object):
     @staticmethod
     def literal_representer(dumper, data):
         return dumper.represent_scalar(
-            u"tag:yaml.org,2002:str", data, style="|"
+            "tag:yaml.org,2002:str", data, style="|"
         )
 
     def __init__(self, api_files, output_dir="./"):

@@ -1977,9 +1977,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
             if field.min is None and "int" in field.type:
-                field.min = -(2 ** 31 if "32" in field.type else 2 ** 63)
+                field.min = -(2**31 if "32" in field.type else 2**63)
             if field.max is None and "int" in field.type:
-                field.max = (2 ** 31 if "32" in field.type else 2 ** 63) - 1
+                field.max = (2**31 if "32" in field.type else 2**63) - 1
             if field.min is not None:
                 line.append("{pointer}{value} < {min}")
             if field.max is not None:
@@ -2056,16 +2056,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         body=inner_body, name=field.name
                     )
-            elif (
-                field.itemformat
-                in [
-                    "mac",
-                    "ipv4",
-                    "ipv6",
-                    "hex",
-                ]
-                or field.format in ["mac", "ipv4", "ipv6", "hex"]
-            ):
+            elif field.itemformat in [
+                "mac",
+                "ipv4",
+                "ipv6",
+                "hex",
+            ] or field.format in ["mac", "ipv4", "ipv6", "hex"]:
                 if field.format is None:
                     field.format = field.itemformat
                 inner_body = """
