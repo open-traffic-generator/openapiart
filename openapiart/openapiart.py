@@ -185,13 +185,14 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
         # Auto formatting generated python SDK with Black
-        process_args = [
-            "{} -m black".format(sys.executable),
-            os.path.join(python_sdk_dir, self._python_module_name + ".py"),
-        ]
-        cmd = " ".join(process_args)
-        print("Formatting Generated Python SDK: {}".format(cmd))
-        subprocess.check_call(cmd, shell=True)
+        if sys.version_info[0] == 3:
+            process_args = [
+                "{} -m black".format(sys.executable),
+                os.path.join(python_sdk_dir, self._python_module_name + ".py"),
+            ]
+            cmd = " ".join(process_args)
+            print("Formatting Generated Python SDK: {}".format(cmd))
+            subprocess.check_call(cmd, shell=True)
         return self
 
     def GenerateGoSdk(self, package_dir, package_name):
