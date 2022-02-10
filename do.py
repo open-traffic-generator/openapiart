@@ -118,7 +118,6 @@ def init():
 def lint():
     paths = [
         pkg()[0],
-        "art/sanity/sanity.py",
         "openapiart",
         "setup.py",
         "do.py",
@@ -126,7 +125,10 @@ def lint():
 
     run(
         [
-            py() + " -m black " + " ".join(paths),
+            py()
+            + " -m black "
+            + " ".join(paths)
+            + " --exclude=openapiart/common.py --check",
             py() + " -m flake8 " + " ".join(paths),
         ]
     )
