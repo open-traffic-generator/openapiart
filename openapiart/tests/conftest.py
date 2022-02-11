@@ -4,6 +4,7 @@ import os
 import importlib
 import logging
 import time
+import yaml
 from .utils import common as utl
 from .server import OpenApiServer
 from .grpcserver import grpc_server, GRPC_PORT
@@ -13,7 +14,8 @@ from .server import app
 # TBD: fix this hardcoding
 # artifacts should not be generated from here as these tests are run as sudo
 pytest.module_name = "sanity"
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
+pytest.artifacts_path = os.path.join(os.path.dirname(__file__), "..", "..", "art")
+sys.path.append(pytest.artifacts_path)
 sys.path.append(
     os.path.join(
         os.path.dirname(__file__), "..", "..", "art", pytest.module_name
@@ -116,3 +118,12 @@ def pb2():
 def pb2_grpc():
     """Returns pb2_grpc package"""
     return pytest.pb2_grpc_module
+
+
+@pytest.fixture
+def openapi_yaml():
+    path =  os.path.join(pytest.artifacts_path, "openapi.yaml")
+    _openapi = None
+    with open(path) as fp:
+        _openapi = yaml.safe_load(fp.read())
+    return _openapi
