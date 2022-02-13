@@ -67,14 +67,14 @@ class FluentNew(object):
         self.method_description = None
         self.interface_fields = []
 
-    def isOptional(self, property_name):
-        if self.schema_object is None:
-            return True
-        if "required" not in self.schema_object:
-            return True
-        if property_name not in self.schema_object["required"]:
-            return True
-        return False
+    def isOptional(self, property_name, field=None): 
+        if property_name in self.schema_object.get("required", "") and field is not None:  
+            field.isRequired = True
+        if 'type' in self.schema_object["properties"][property_name].keys():
+            if self.schema_object["properties"][property_name]['type'] == 'array':
+                return False
+        return True
+
 
 
 class FluentField(object):
@@ -105,6 +105,7 @@ class FluentField(object):
         self.hasminmaxlength = False
         self.min_length = None
         self.max_length = None
+        self.isRequired = False
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1780,7 +1781,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         property_schema["$ref"]
                     )
                     field.name = self._get_external_struct_name(schema_name)
-            field.isOptional = fluent_new.isOptional(property_name)
+            field.isOptional = fluent_new.isOptional(property_name, field)
             field.isPointer = (
                 False if field.type.startswith("[") else field.isOptional
             )
@@ -1972,11 +1973,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = ""
         if field.isPointer or "[]" in field.type:
             value = "nil"
-        elif field.type == "string":
-            value = '''""'''
         else:
             value = 0
-        if field.isOptional is False and "string" in field.type:
+        if field.isRequired is True:
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
@@ -2107,7 +2106,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _validate_struct(self, new, field):
         body = ""
-        if field.isOptional is False and field.isArray is False:
+        if field.isRequired is True and field.isArray is False:
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
@@ -2218,7 +2217,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             #     continue
             if (
                 field.default is None
-                or field.isOptional is False
+                or field.isRequired is True
                 or field.name in choice_enums
             ):
                 if field.name not in hasChoiceConfig:
