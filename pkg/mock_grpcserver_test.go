@@ -91,8 +91,8 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 	return resp, nil
 }
 
-func (s *GrpcServer) UpdateConfig(ctx context.Context, req *sanity.UpdateConfigRequest) (*sanity.UpdateConfigResponse, error) {
-	resp := &sanity.UpdateConfigResponse{
+func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.UpdateConfigurationRequest) (*sanity.UpdateConfigurationResponse, error) {
+	resp := &sanity.UpdateConfigurationResponse{
 		StatusCode_200: s.Config,
 	}
 	return resp, nil

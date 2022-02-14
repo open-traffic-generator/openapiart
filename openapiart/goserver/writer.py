@@ -1,4 +1,3 @@
-
 class Writer(object):
     _indents: [str] = []
 
@@ -12,7 +11,7 @@ class Writer(object):
 
     def write_line(self, *txt: str) -> "Writer":
         for t in txt:
-            self._strings.append( ''.join(self._indents) + t)
+            self._strings.append("".join(self._indents) + t)
         return self
 
     def push_indent(self) -> "Writer":
@@ -22,4 +21,3 @@ class Writer(object):
     def pop_indent(self) -> "Writer":
         self._indents.pop()
         return self
-

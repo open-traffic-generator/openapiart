@@ -1,11 +1,9 @@
 from flask import Flask, request, Response
 import threading
 import json
-import time
 import os
 import importlib
 import sys
-import socket
 
 
 app = Flask(__name__)
@@ -70,4 +68,3 @@ class OpenApiServer(object):
         self._web_server_thread.setDaemon(True)
         self._web_server_thread.start()
         return self
-

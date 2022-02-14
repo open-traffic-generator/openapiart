@@ -1,12 +1,15 @@
 import os
-import jsonpath_ng
 from .openapiartplugin import OpenApiArtPlugin
 
 
 class OpenApiArtProtobuf(OpenApiArtPlugin):
     def __init__(self, **kwargs):
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
-        self._filename = os.path.normpath(os.path.join(self._output_dir, "{}.proto".format(self._protobuf_file_name)))
+        self._filename = os.path.normpath(
+            os.path.join(
+                self._output_dir, "{}.proto".format(self._protobuf_file_name)
+            )
+        )
         self.default_indent = "  "
         self.proto_service_name = kwargs.get("proto_service", "Openapi")
         self._init_fp(self._filename)
@@ -15,9 +18,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._openapi = openapi
         self._operations = {}
         self._write_header(self._openapi["info"])
-        for name, schema_object in self._openapi["components"]["schemas"].items():
+        for name, schema_object in self._openapi["components"][
+            "schemas"
+        ].items():
             self._write_msg(name, schema_object)
-        for name, response_object in self._openapi["components"]["responses"].items():
+        for name, response_object in self._openapi["components"][
+            "responses"
+        ].items():
             self._write_msg(name, response_object)
         for _, path_object in self._openapi["paths"].items():
             self._write_request_msg(path_object)
@@ -33,7 +40,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 operation.rpc = self._get_camel_case(operation_id)
                 operation.request = "google.protobuf.Empty"
                 operation.response = "{}Response".format(operation.rpc)
-                operation.stream = len(self._get_parser('$.."application/octet-stream"').find(path_item_object)) > 0
+                operation.stream = (
+                    len(
+                        self._get_parser('$.."application/octet-stream"').find(
+                            path_item_object
+                        )
+                    )
+                    > 0
+                )
                 self._operations[operation_id] = operation
             return self._operations[operation_id]
         return None
@@ -43,15 +57,22 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation = self._get_operation(path_item_object)
             if operation is None:
                 continue
-            if len(self._get_parser("$..requestBody").find(path_item_object)) > 0:
+            if (
+                len(self._get_parser("$..requestBody").find(path_item_object))
+                > 0
+            ):
                 operation.request = "{}Request".format(operation.rpc)
                 self._write()
                 self._write("message {} {{".format(operation.request))
-                for ref in self._get_parser('$..requestBody.."$ref"').find(path_item_object):
+                for ref in self._get_parser('$..requestBody.."$ref"').find(
+                    path_item_object
+                ):
                     message = self._get_message_name(ref.value)
                     field_type = message.replace(".", "")
                     field_name = self._lowercase(field_type)
-                    self._write("{} {} = 1;".format(field_type, field_name), indent=1)
+                    self._write(
+                        "{} {} = 1;".format(field_type, field_name), indent=1
+                    )
                 self._write("}")
 
     def _write_response_msg(self, path_object):
@@ -63,43 +84,68 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation = self._get_operation(path_item_object)
             if operation is None:
                 continue
-            for response in self._get_parser("$..responses").find(path_item_object):
+            for response in self._get_parser("$..responses").find(
+                path_item_object
+            ):
                 response_fields = []
                 for code, code_schema in response.value.items():
                     response_field = lambda: None
                     response_field.type = None
                     response_field.name = "status_code_{}".format(code)
-                    schema = self._get_parser("$..schema").find(code_schema)  # finds the first instance of schema in responses
+                    schema = self._get_parser("$..schema").find(
+                        code_schema
+                    )  # finds the first instance of schema in responses
                     if len(schema) > 0:
-                        schema_ref = self._get_parser("$..'$ref'").find(schema[0].value)  # gets a ref
+                        schema_ref = self._get_parser("$..'$ref'").find(
+                            schema[0].value
+                        )  # gets a ref
                     else:
-                        schema_ref = self._get_parser("$..'$ref'").find(code_schema)  # gets a ref
+                        schema_ref = self._get_parser("$..'$ref'").find(
+                            code_schema
+                        )  # gets a ref
                     if len(schema_ref) > 0:
                         schema = schema_ref[0].value
                     elif len(schema) > 0:
                         schema = schema[0].value
                     if "#/components/responses" in schema:
                         # lookup the response object and use the schema or ref in that object
-                        jsonpath = "$.{}..schema".format(schema[2:].replace("/", "."))
-                        schema = self._get_parser(jsonpath).find(self._openapi)[0].value
+                        jsonpath = "$.{}..schema".format(
+                            schema[2:].replace("/", ".")
+                        )
+                        schema = (
+                            self._get_parser(jsonpath)
+                            .find(self._openapi)[0]
+                            .value
+                        )
                         ref = self._get_parser("$..'$ref'").find(schema)
                         if len(ref) > 0:
                             schema = ref[0].value
                     if "$ref" in schema:
-                        response_field.type = self._get_message_name(schema["$ref"]).replace(".", "")
+                        response_field.type = self._get_message_name(
+                            schema["$ref"]
+                        ).replace(".", "")
                     elif "type" in schema:
-                        response_field.type = self._get_message_name(schema["type"]).replace(".", "")
+                        response_field.type = self._get_message_name(
+                            schema["type"]
+                        ).replace(".", "")
                         if "format" in schema and schema["format"] == "binary":
                             response_field.type = "bytes"
                     elif len(schema) > 0:
-                        response_field.type = self._get_message_name(schema).replace(".", "")
+                        response_field.type = self._get_message_name(
+                            schema
+                        ).replace(".", "")
                     else:
                         response_field.type = "string"
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             id = 1
             for response_field in response_fields:
-                self._write("optional {} {} = {};".format(response_field.type, response_field.name, id), indent=1)
+                self._write(
+                    "optional {} {} = {};".format(
+                        response_field.type, response_field.name, id
+                    ),
+                    indent=1,
+                )
                 id += 1
             self._write("}")
             self._write()
@@ -112,14 +158,22 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._custom_id
 
     def _write_header(self, info_object):
-        self._write(self._justify_desc(self._info + "\n{}".format(self._license), use_multi=True))
+        self._write(
+            self._justify_desc(
+                self._info + "\n{}".format(self._license), use_multi=True
+            )
+        )
         self._write()
         self._write('syntax = "proto3";')
         self._write()
         self._write("package {};".format(self._protobuf_package_name))
         self._write()
         if self._go_sdk_package_dir is not None:
-            self._write('option go_package = "{}/{}";'.format(self._go_sdk_package_dir, self._protobuf_package_name))
+            self._write(
+                'option go_package = "{}/{}";'.format(
+                    self._go_sdk_package_dir, self._protobuf_package_name
+                )
+            )
             self._write()
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
@@ -154,7 +208,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (max is not None and max > 2147483647):
+                if (min is not None and min > 2147483647) or (
+                    max is not None and max > 2147483647
+                ):
                     return "int64"
                 if format is not None and "int64" in format:
                     return "int64"
@@ -167,11 +223,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         return "float"
                 return "float"
             if type == "array":
-                item_type = self._get_field_type(property_name, openapi_object["items"])
+                item_type = self._get_field_type(
+                    property_name, openapi_object["items"]
+                )
                 format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (max is not None and max > 2147483647):
+                if (min is not None and min > 2147483647) or (
+                    max is not None and max > 2147483647
+                ):
                     item_type = item_type.replace("32", "64")
                 if format is not None and "int64" in format:
                     item_type = item_type.replace("32", "64")
@@ -218,7 +278,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
-        self._write("message {} {{".format(enum_msg_name.replace(".", "")), indent=1)
+        self._write(
+            "message {} {{".format(enum_msg_name.replace(".", "")), indent=1
+        )
         self._write("enum Enum {", indent=2)
         if "unspecified" not in enums:
             enums.insert(0, "unspecified")
@@ -245,9 +307,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _write_response_fields(self, msg_name, schema_object):
         try:
-            ref = schema_object["content"]["application/json"]["schema"]["$ref"]
+            ref = schema_object["content"]["application/json"]["schema"][
+                "$ref"
+            ]
             field_type = self._get_message_name(ref).replace(".", "")
-            self._write("{} {} = 1;".format(field_type, self._lowercase(field_type)), indent=1)
+            self._write(
+                "{} {} = 1;".format(field_type, self._lowercase(field_type)),
+                indent=1,
+            )
         except AttributeError as err:
             print("Failed writing response {}: {}".format(msg_name, err))
 
@@ -255,32 +322,52 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         if "properties" not in schema_object:
             return
         id = 0
-        for property_name, property_object in schema_object["properties"].items():
+        for property_name, property_object in schema_object[
+            "properties"
+        ].items():
             id += 1
             self._write()
-            property_type = self._get_field_type(property_name, property_object)
+            property_type = self._get_field_type(
+                property_name, property_object
+            )
             default = None
             if "default" in property_object:
                 default = property_object["default"]
             if property_type.endswith(".Enum"):
                 if default is not None:
-                    default = "{}.{}".format(property_type.split(" ")[-1], default.lower())
-            if "required" in schema_object and property_name in schema_object["required"] or property_type.startswith("repeated"):
+                    default = "{}.{}".format(
+                        property_type.split(" ")[-1], default.lower()
+                    )
+            if (
+                "required" in schema_object
+                and property_name in schema_object["required"]
+                or property_type.startswith("repeated")
+            ):
                 optional = ""
             else:
                 optional = "optional "
             desc = self._get_description(property_object)
             if default is not None:
                 desc += "\ndefault = {}".format(default)
-            if optional == "" and property_type.startswith("repeated") is not True:
+            if (
+                optional == ""
+                and property_type.startswith("repeated") is not True
+            ):
                 desc += "\nrequired = true"
             self._write(self._justify_desc(desc, indent=1))
-            self._write("{}{} {} = {};".format(optional, property_type, property_name.lower(), id), indent=1)
+            self._write(
+                "{}{} {} = {};".format(
+                    optional, property_type, property_name.lower(), id
+                ),
+                indent=1,
+            )
 
     def _write_service(self):
         self._write()
         paths_object = self._openapi["paths"]
-        self._write(self._justify_desc(self._get_description(paths_object), indent=1))
+        self._write(
+            self._justify_desc(self._get_description(paths_object), indent=1)
+        )
         self._write("service {name} {{".format(name=self.proto_service_name))
         self._write()
         for url, path_object in self._openapi["paths"].items():
@@ -293,7 +380,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """ """
         operation = self._get_operation(path_item_object)
         print("writing rpc {}".format(operation.rpc))
-        self._write(self._justify_desc(self._get_description(path_item_object), indent=1))
-        line = "rpc {}({}) returns ({}{});".format(operation.rpc, operation.request, "", operation.response)
+        self._write(
+            self._justify_desc(
+                self._get_description(path_item_object), indent=1
+            )
+        )
+        line = "rpc {}({}) returns ({}{});".format(
+            operation.rpc, operation.request, "", operation.response
+        )
         self._write(line, indent=1)
-

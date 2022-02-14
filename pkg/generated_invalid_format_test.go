@@ -376,7 +376,7 @@ func TestUpdateConfigResponseIncorrectFormat(t *testing.T) {
 			"e_b" : 2
 	    }`
 
-	object := openapiart.NewUpdateConfigResponse()
+	object := openapiart.NewUpdateConfigurationResponse()
 	assert.NotNil(t, object.FromYaml(incorrect_format))
 	assert.NotNil(t, object.FromJson(incorrect_format))
 	assert.NotNil(t, object.FromPbText(incorrect_format))

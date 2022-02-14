@@ -4,7 +4,6 @@ import importlib
 import shutil
 import yaml
 import subprocess
-import requests
 import platform
 
 
@@ -30,13 +29,25 @@ class OpenApiArt(object):
         extension_prefix=None,
         proto_service=None,
     ):
-        self._output_dir = os.path.abspath(artifact_dir if artifact_dir is not None else "art")
+        self._output_dir = os.path.abspath(
+            artifact_dir if artifact_dir is not None else "art"
+        )
         self._go_sdk_package_dir = None
-        self._protobuf_package_name = protobuf_name if protobuf_name is not None else "sanity"
-        self._extension_prefix = extension_prefix if extension_prefix is not None else "sanity"
-        self._proto_service = proto_service if proto_service is not None else "Openapi"
+        self._protobuf_package_name = (
+            protobuf_name if protobuf_name is not None else "sanity"
+        )
+        self._extension_prefix = (
+            extension_prefix if extension_prefix is not None else "sanity"
+        )
+        self._proto_service = (
+            proto_service if proto_service is not None else "Openapi"
+        )
 
-        print("Artifact output directory: {output_dir}".format(output_dir=self._output_dir))
+        print(
+            "Artifact output directory: {output_dir}".format(
+                output_dir=self._output_dir
+            )
+        )
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         self._bundle()
@@ -53,17 +64,25 @@ class OpenApiArt(object):
             self._info = "{} {} \n{}".format(
                 self._bundler._content["info"]["title"],
                 self._bundler._content["info"]["version"],
-                self._bundler._content["info"].get("description", "\nDescription not available")
+                self._bundler._content["info"].get(
+                    "description", "\nDescription not available"
+                ),
             )
         except Exception as e:
-            ex = Exception("The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(e))
+            ex = Exception(
+                "The following object and properties are REQUIRED: info, info.title, info.version [{}]".format(
+                    e
+                )
+            )
             raise ex
 
     def _bundle(self):
         # bundle the yaml files
         module = importlib.import_module("openapiart.bundler")
         bundler_class = getattr(module, "Bundler")
-        self._bundler = bundler_class(api_files=self._api_files, output_dir=self._output_dir)
+        self._bundler = bundler_class(
+            api_files=self._api_files, output_dir=self._output_dir
+        )
         self._bundler.bundle()
         # read the entire openapi file
         with open(self._bundler.openapi_filepath) as fp:
@@ -86,7 +105,9 @@ class OpenApiArt(object):
                 "--output",
                 os.path.join(self._output_dir, "openapi.html"),
             ]
-            subprocess.check_call(process_args, shell=platform.system() == "Windows")
+            subprocess.check_call(
+                process_args, shell=platform.system() == "Windows"
+            )
         except Exception as e:
             print("Bypassed creation of static documentation: {}".format(e))
 
@@ -126,7 +147,9 @@ class OpenApiArt(object):
             )
             python_ux.generate()
         try:
-            python_sdk_dir = os.path.normpath(os.path.join(self._output_dir, self._python_module_name))
+            python_sdk_dir = os.path.normpath(
+                os.path.join(self._output_dir, self._python_module_name)
+            )
             process_args = [
                 sys.executable,
                 "-m",
@@ -136,18 +159,24 @@ class OpenApiArt(object):
                 "--proto_path={}".format(self._output_dir),
                 "{}.proto".format(self._protobuf_package_name),
             ]
-            print("Generating python grpc stubs: {}".format(" ".join(process_args)))
+            print(
+                "Generating python grpc stubs: {}".format(
+                    " ".join(process_args)
+                )
+            )
             subprocess.check_call(process_args, shell=False)
 
-            pb2_grpc_file = os.path.join(python_sdk_dir, "{}_pb2_grpc.py".format(
-                self._protobuf_package_name
-            ))
-            current_text = "import {proto_name}_pb2 as {proto_name}__pb2".format(
-                proto_name=self._protobuf_package_name
+            pb2_grpc_file = os.path.join(
+                python_sdk_dir,
+                "{}_pb2_grpc.py".format(self._protobuf_package_name),
+            )
+            current_text = (
+                "import {proto_name}_pb2 as {proto_name}__pb2".format(
+                    proto_name=self._protobuf_package_name
+                )
             )
             new_text = "try:\n    {text}\nexcept ImportError:\n    from {pkg_name} {text}".format(
-                text=current_text,
-                pkg_name=self._python_module_name
+                text=current_text, pkg_name=self._python_module_name
             )
             with open(pb2_grpc_file) as f:
                 file_contents = f.read().replace(current_text, new_text)
@@ -155,6 +184,15 @@ class OpenApiArt(object):
                 f.write(file_contents)
         except Exception as e:
             print("Bypassed creation of python stubs: {}".format(e))
+        # Auto formatting generated python SDK with Black
+        if sys.version_info[0] == 3:
+            process_args = [
+                "{} -m black".format(sys.executable),
+                os.path.join(python_sdk_dir, self._python_module_name + ".py"),
+            ]
+            cmd = " ".join(process_args)
+            print("Formatting Generated Python SDK: {}".format(cmd))
+            subprocess.check_call(cmd, shell=True)
         return self
 
     def GenerateGoSdk(self, package_dir, package_name):
@@ -192,8 +230,16 @@ class OpenApiArt(object):
         self._go_sdk_package_name = package_name
         self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
-            go_sdk_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", os.path.split(self._go_sdk_package_dir)[-1]))
-            go_protobuffer_out_dir = os.path.normpath(os.path.join(go_sdk_output_dir, self._protobuf_package_name))
+            go_sdk_output_dir = os.path.normpath(
+                os.path.join(
+                    self._output_dir,
+                    "..",
+                    os.path.split(self._go_sdk_package_dir)[-1],
+                )
+            )
+            go_protobuffer_out_dir = os.path.normpath(
+                os.path.join(go_sdk_output_dir, self._protobuf_package_name)
+            )
             if not os.path.exists(go_protobuffer_out_dir):
                 os.makedirs(go_protobuffer_out_dir)
             process_args = [
@@ -228,9 +274,11 @@ class OpenApiArt(object):
             go_ux.generate(self._openapi)
         return self
 
-    def GenerateGoServer(self, module_path, models_prefix = '', models_path = ''):
+    def GenerateGoServer(self, module_path, models_prefix="", models_path=""):
         outputfolder = module_path.split("/")[-1]
-        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", outputfolder))
+        go_server_output_dir = os.path.normpath(
+            os.path.join(self._output_dir, "..", outputfolder)
+        )
         module = importlib.import_module("openapiart.goserver.goserver")
         servergen = getattr(module, "GoServerGenerator")(
             **{
@@ -238,14 +286,16 @@ class OpenApiArt(object):
                 "output_root_path": go_server_output_dir,
                 "module_path": module_path,
                 "models_prefix": models_prefix,
-                "models_path": models_path
+                "models_path": models_path,
             }
         )
         servergen.generate()
         return self
 
     def GoTidy(self, relative_package_dir):
-        go_server_output_dir = os.path.normpath(os.path.join(self._output_dir, "..", relative_package_dir))
+        go_server_output_dir = os.path.normpath(
+            os.path.join(self._output_dir, "..", relative_package_dir)
+        )
         module = importlib.import_module("openapiart.gotidy")
         tidy = getattr(module, "GoTidy")(
             **{
@@ -254,7 +304,6 @@ class OpenApiArt(object):
         )
         tidy.goTidy()
         return self
-
 
     def _generate_proto_file(self):
         if self._protobuf_package_name is None:

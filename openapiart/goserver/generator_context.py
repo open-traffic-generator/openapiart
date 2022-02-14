@@ -2,6 +2,7 @@ import re
 import openapiart.goserver.string_util as util
 from jsonpath_ng import parse
 
+
 class Server(object):
     @property
     def basepath(self) -> [str]:
@@ -9,10 +10,10 @@ class Server(object):
 
     def __init__(self, serverobj):
         self._obj = serverobj
-        self._basepath = ''
+        self._basepath = ""
         try:
-            self._basepath = self._obj['variables']['basePath']['default']
-            if self._basepath.startswith("/") == False:
+            self._basepath = self._obj["variables"]["basePath"]["default"]
+            if self._basepath.startswith("/") is False:
                 self._basepath = "/" + self._basepath
         except KeyError:
             pass
@@ -25,19 +26,14 @@ class Component(object):
 
     @property
     def model_name(self) -> str:
-        return re.sub('[.]', '', self._yamlname)
+        return re.sub("[.]", "", self._yamlname)
 
     @property
     def full_model_name(self) -> str:
         _ctx: GeneratorContext = self._ctx
         return f"{_ctx.models_prefix}{self.model_name}"
 
-    def __init__(
-        self,
-        yamlname: str,
-        componentobj,
-        ctx
-        ):
+    def __init__(self, yamlname: str, componentobj, ctx):
         self._ctx: GeneratorContext = ctx
         self._yamlname = yamlname
         self._obj = componentobj
@@ -70,10 +66,12 @@ class Responses(object):
 
     def _check_content(self):
         if "$ref" in self._response_obj:
-            self._response_obj = self._ctx.get_object_from_ref(self._response_obj["$ref"])
+            self._response_obj = self._ctx.get_object_from_ref(
+                self._response_obj["$ref"]
+            )
         if "content" in self._response_obj:
             content = self._response_obj["content"]
-            if 'application/json' in content:
+            if "application/json" in content:
                 self._has_json = True
             else:
                 parse_schema = parse("$..schema").find(self._response_obj)
@@ -105,7 +103,7 @@ class ControllerRoute(object):
 
     @property
     def operation_name(self) -> str:
-        name = self._obj['operationId']
+        name = self._obj["operationId"]
         name = util.pascal_case(name)
         return name
 
@@ -115,20 +113,14 @@ class ControllerRoute(object):
 
     @property
     def response_model_name(self) -> str:
-        return self.operation_name + 'Response'
+        return self.operation_name + "Response"
 
     @property
     def full_responsename(self) -> Component:
         _ctx: GeneratorContext = self._ctx
         return f"{_ctx.models_prefix}{self.response_model_name}"
 
-    def __init__(
-        self,
-        url: str,
-        method: str,
-        methodobj,
-        ctx
-        ):
+    def __init__(self, url: str, method: str, methodobj, ctx):
         self._ctx: GeneratorContext = ctx
         self._url = url
         self._method = method.upper()
@@ -141,14 +133,17 @@ class ControllerRoute(object):
     def requestBody(self) -> Component:
         _ctx: GeneratorContext = self._ctx
         try:
-            ref = self._obj['requestBody']['content']['application/json']['schema']['$ref']
-            yamlname = ref.split('/')[-1]
+            ref = self._obj["requestBody"]["content"]["application/json"][
+                "schema"
+            ]["$ref"]
+            yamlname = ref.split("/")[-1]
             for component in _ctx.components:
                 if component.yaml_name == yamlname:
                     return component
             return None
         except KeyError:
             return None
+
     def full_url(self):
         _ctx: GeneratorContext = self._ctx
         server = _ctx.servers[0]
@@ -163,18 +158,20 @@ class ControllerRoute(object):
 
     def _extract_responses(self):
         for response_value, response_obj in self._obj["responses"].items():
-            self._responses.append(Responses(response_value, response_obj, self._ctx))
+            self._responses.append(
+                Responses(response_value, response_obj, self._ctx)
+            )
 
 
 class Controller(object):
     @property
     def controller_name(self) -> str:
-        name = util.pascal_case(self.yamlname) + 'Controller'
+        name = util.pascal_case(self.yamlname) + "Controller"
         return name
 
     @property
     def service_handler_name(self) -> str:
-        name = util.pascal_case(self.yamlname) + 'Handler'
+        name = util.pascal_case(self.yamlname) + "Handler"
         return name
 
     @property
@@ -217,5 +214,3 @@ class GeneratorContext(object):
         for attr in ref.split("/")[1:]:
             leaf = leaf[attr]
         return leaf
-
-

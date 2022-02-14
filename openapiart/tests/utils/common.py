@@ -28,5 +28,5 @@ def get_root_dir():
 
 def get_test_config_path(config_name):
     return os.path.join(
-        os.path.dirname(get_root_dir()), CONFIGS_DIR, config_name)
-
+        os.path.dirname(get_root_dir()), CONFIGS_DIR, config_name
+    )

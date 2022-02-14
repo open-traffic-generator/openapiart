@@ -1,6 +1,4 @@
 import pytest
-import jsonpath_ng as jp
-import json
 
 
 def test_formats_sanity(config):
@@ -22,7 +20,9 @@ def test_formats_bad_string(config, value):
     config.l.string_param = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail("Value {value} was successfully validated".format(value))
+        pytest.fail(
+            "Value {value} was successfully validated".format(value=value)
+        )
     except TypeError:
         pass
 

@@ -1,4 +1,6 @@
-import sys, os
+import sys
+import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
 import sanity
 import time
@@ -21,7 +23,7 @@ def test_perf(api):
     config.f.f_a = "FA"
     config.g.add()
     config.h = False
-    config.i = '1010100'
+    config.i = "1010100"
     j = config.j.add()
     j.j_a.e_a = 10.1
     j.j_a.e_b = 2.1
@@ -52,7 +54,9 @@ def test_perf(api):
     config.integer_pattern.integer.decrement.start = 200
     config.integer_pattern.integer.decrement.step = 2
     config.integer_pattern.integer.decrement.count = 100
-    config.checksum_pattern.checksum.generated = config.checksum_pattern.checksum.GOOD
+    config.checksum_pattern.checksum.generated = (
+        config.checksum_pattern.checksum.GOOD
+    )
     config.validate()
     end = time.time()
     print("Time taken for the manual config %f ms" % ((end - start) * 1000))
@@ -66,7 +70,9 @@ def test_perf(api):
     c1 = sanity.Api().prefix_config()
     c1.deserialize(json)
     end = time.time()
-    print("Time elapsed to deserialize from Json %f ms" % ((end - start) * 1000))
+    print(
+        "Time elapsed to deserialize from Json %f ms" % ((end - start) * 1000)
+    )
 
     start = time.time()
     yaml = config.serialize(config.YAML)
@@ -77,7 +83,9 @@ def test_perf(api):
     c1 = sanity.Api().prefix_config()
     c1.deserialize(yaml)
     end = time.time()
-    print("Time elapsed to deserialize from yaml %f ms" % ((end - start) * 1000))
+    print(
+        "Time elapsed to deserialize from yaml %f ms" % ((end - start) * 1000)
+    )
 
     start = time.time()
     dt = config.serialize(config.DICT)
@@ -88,11 +96,13 @@ def test_perf(api):
     c1 = sanity.Api().prefix_config()
     c1.deserialize(dt)
     end = time.time()
-    print("Time elapsed to deserialize from DICT %f ms" % ((end - start) * 1000))
+    print(
+        "Time elapsed to deserialize from DICT %f ms" % ((end - start) * 1000)
+    )
 
     start = time.time()
     api.set_config(config)
     end = time.time()
-    print("Time elapsed on set_config http call %f ms" % ((end - start) * 1000))
-
-    
+    print(
+        "Time elapsed on set_config http call %f ms" % ((end - start) * 1000)
+    )

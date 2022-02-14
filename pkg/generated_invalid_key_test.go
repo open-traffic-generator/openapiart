@@ -398,7 +398,7 @@ func TestUpdateConfigResponseIncorrectKey(t *testing.T) {
             }
         }`
 
-	object := openapiart.NewUpdateConfigResponse()
+	object := openapiart.NewUpdateConfigurationResponse()
 	assert.NotNil(t, object.FromYaml(incorrect_key))
 	assert.NotNil(t, object.FromJson(incorrect_key))
 	assert.NotNil(t, object.FromPbText(incorrect_key))
