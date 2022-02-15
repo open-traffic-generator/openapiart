@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import platform
 
+BLACK_VERSION = "22.1.0"
 
 os.environ["GOPATH"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".local"
@@ -109,7 +110,7 @@ def setup():
 
 def init():
     if sys.version_info[0] == 3:
-        run([py() + " -m pip install black"])
+        run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
     run(
         [
             py() + " -m pip install -r requirements.txt",
@@ -130,7 +131,9 @@ def lint():
         py()
         + " -m black "
         + " ".join(paths)
-        + " --exclude=openapiart/common.py --check"
+        + " --exclude=openapiart/common.py --check --required-version {}".format(
+            BLACK_VERSION
+        )
     )
     if ret == 1:
         out = out.split("\n")
@@ -140,7 +143,11 @@ def lint():
             if "would reformat" in e
         ]
         print("\n".join(out))
-        raise Exception("Black formatting failed")
+        raise Exception(
+            "Black formatting failed, use black {} version to format the files".format(
+                BLACK_VERSION
+            )
+        )
     run(
         [
             py() + " -m flake8 " + " ".join(paths),
