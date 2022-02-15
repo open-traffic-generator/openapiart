@@ -2,7 +2,7 @@ import jsonpath_ng
 
 
 def test_auto_feature(openapi_yaml):
-    property = parser = jsonpath_ng.parse("$..auto").find(
+    property = jsonpath_ng.parse("$..auto").find(
         openapi_yaml.get("components").get("schemas")
     )
     for auto_field in property:

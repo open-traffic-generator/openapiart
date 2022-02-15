@@ -14,7 +14,9 @@ from .server import app
 # TBD: fix this hardcoding
 # artifacts should not be generated from here as these tests are run as sudo
 pytest.module_name = "sanity"
-pytest.artifacts_path = os.path.join(os.path.dirname(__file__), "..", "..", "art")
+pytest.artifacts_path = os.path.join(
+    os.path.dirname(__file__), "..", "..", "art"
+)
 sys.path.append(pytest.artifacts_path)
 sys.path.append(
     os.path.join(
@@ -122,7 +124,7 @@ def pb2_grpc():
 
 @pytest.fixture
 def openapi_yaml():
-    path =  os.path.join(pytest.artifacts_path, "openapi.yaml")
+    path = os.path.join(pytest.artifacts_path, "openapi.yaml")
     _openapi = None
     with open(path) as fp:
         _openapi = yaml.safe_load(fp.read())
