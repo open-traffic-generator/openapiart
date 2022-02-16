@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import platform
 
+BLACK_VERSION = "22.1.0"
 
 os.environ["GOPATH"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".local"
@@ -109,7 +110,7 @@ def setup():
 
 def init():
     if sys.version_info[0] == 3:
-        run([py() + " -m pip install black"])
+        run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
     run(
         [
             py() + " -m pip install -r requirements.txt",
@@ -126,12 +127,29 @@ def lint():
     ]
     # --check will check for any files to be formatted with black
     # if linting fails, format the files with black and commit
+    ret, out = getstatusoutput(
+        py()
+        + " -m black "
+        + " ".join(paths)
+        + " --exclude=openapiart/common.py --check --required-version {}".format(
+            BLACK_VERSION
+        )
+    )
+    if ret == 1:
+        out = out.split("\n")
+        out = [
+            e.replace("would reformat", "Black formatting failed for")
+            for e in out
+            if "would reformat" in e
+        ]
+        print("\n".join(out))
+        raise Exception(
+            "Black formatting failed, use black {} version to format the files".format(
+                BLACK_VERSION
+            )
+        )
     run(
         [
-            py()
-            + " -m black "
-            + " ".join(paths)
-            + " --exclude=openapiart/common.py --check",
             py() + " -m flake8 " + " ".join(paths),
         ]
     )
@@ -377,6 +395,13 @@ def run(commands, capture_output=False):
     except Exception:
         flush_output(fd, logfile)
         sys.exit(1)
+
+
+def getstatusoutput(command):
+    return (
+        subprocess.getstatusoutput(command)[0],
+        subprocess.getstatusoutput(command)[1],
+    )
 
 
 def main():

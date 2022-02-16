@@ -402,10 +402,10 @@ class Bundler(object):
                 description = [
                     "The OTG implementation can provide a system generated",
                     "value for this property. If the OTG is unable to generate a value",
-                    "the default value must be used."
+                    "the default value must be used.",
                 ]
                 schema["properties"]["auto"] = {
-                    "description":  "\n".join(description),
+                    "description": "\n".join(description),
                     "type": copy.deepcopy(type_name),
                 }
                 self._apply_common_x_field_pattern_properties(
