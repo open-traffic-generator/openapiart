@@ -2,6 +2,7 @@
 To build distribution: python setup.py sdist --formats=gztar bdist_wheel --universal
 """
 import os
+import sys
 import setuptools
 
 pkg_name = "openapiart"
@@ -10,6 +11,21 @@ version = "0.1.39"
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
+
+installation_requires = [
+    "grpcio",
+    "grpcio-tools",
+    "requests",
+    "pyyaml",
+    "pytest",
+    "openapi-spec-validator",
+    "jsonpath-ng",
+    "typing",
+]
+
+if sys.version_info[0] == 3:
+    installation_requires.append("black==22.1.0")
+
 
 setuptools.setup(
     name=pkg_name,
@@ -34,16 +50,7 @@ setuptools.setup(
     include_package_data=True,
     packages=[pkg_name],
     python_requires=">=2.7, <4",
-    install_requires=[
-        "grpcio",
-        "grpcio-tools",
-        "requests",
-        "pyyaml",
-        "pytest",
-        "openapi-spec-validator",
-        "jsonpath-ng",
-        "typing",
-    ],
+    install_requires=installation_requires,
     extras_require={"testing": ["pytest", "flake8", "black", "flask"]},
     test_suite="tests",
 )
