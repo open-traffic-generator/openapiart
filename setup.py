@@ -23,9 +23,6 @@ installation_requires = [
     "typing",
 ]
 
-if sys.version_info[0] == 3:
-    installation_requires.append("black==22.1.0")
-
 
 setuptools.setup(
     name=pkg_name,
