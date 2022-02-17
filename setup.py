@@ -21,6 +21,7 @@ installation_requires = [
     "openapi-spec-validator",
     "jsonpath-ng",
     "typing",
+    "black==22.1.0 ; python_version > '2.7'",
 ]
 
 
