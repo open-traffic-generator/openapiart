@@ -34,7 +34,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write_service()
         self._close_fp()
         self.generate_doc()
-    
+
     def generate_doc(self):
         if self.doc_dir is None:
             return
@@ -43,7 +43,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             "--doc_out={}".format(self.doc_dir),
             "--doc_opt=html,index.html",
             "--proto_path={}".format(self._output_dir),
-            self._filename]
+            self._filename,
+        ]
         cmd = " ".join(process_args)
         try:
             process = subprocess.Popen(cmd, shell=True)
