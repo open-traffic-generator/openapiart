@@ -2125,7 +2125,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         """.format(
             body=inner_body,
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
-            if field.isArray == True
+            if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
         )
         return body
