@@ -302,16 +302,49 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GObject'
+    
+    Metrics.Request:
+      type: object
+      properties:
+        choice:
+          type: string
+          enum: [port, flow]
+          default: port
+        port:
+          type: string
+        flow:
+          type: string
 
     Metrics:
       type: object
       properties:
+        choice:
+          type: string
+          enum: [ports, flows]
+          default: ports
         ports:
           type: array
           items:
             $ref: '#/components/schemas/Port.Metric'
+        flows:
+          type: array
+          items:
+            $ref: '#/components/schemas/Flow.Metric'
 
     Port.Metric:
+      type: object
+      required: [name, tx_frames, rx_frames]
+      properties:
+        name:
+          type: string
+        tx_frames:
+          type: number
+          format: double
+        rx_frames:
+          type: number
+          format: double
+
+    Flow.Metric:
       type: object
       required: [name, tx_frames, rx_frames]
       properties:

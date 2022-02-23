@@ -106,11 +106,25 @@ func (h *metricsHandler) GetController() interfaces.MetricsController {
 	return h.controller
 }
 
-func (h *metricsHandler) GetMetrics(r *http.Request) openapiart.GetMetricsResponse {
-	response := openapiart.NewGetMetricsResponse()
-	response.StatusCode200().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
-	response.StatusCode200().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
-	return response
+func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) openapiart.GetMetricsResponse {
+	choice := req.Msg().GetChoice().String()
+	switch choice {
+	case "port":
+		response := openapiart.NewGetMetricsResponse()
+		response.StatusCode200().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
+		response.StatusCode200().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
+		return response
+	case "flow":
+		response := openapiart.NewGetMetricsResponse()
+		response.StatusCode200().Flows().Add().SetName("f1").SetTxFrames(2000).SetRxFrames(1777)
+		response.StatusCode200().Flows().Add().SetName("f2").SetTxFrames(3000).SetRxFrames(2999)
+		return response
+	default:
+		return openapiart.NewGetMetricsResponse().SetStatusCode400(
+			openapiart.NewErrorDetails().SetErrors(
+				[]string{"Invalid choice"}))
+	}
+
 }
 
 func (h *metricsHandler) GetWarnings(r *http.Request) openapiart.GetWarningsResponse {

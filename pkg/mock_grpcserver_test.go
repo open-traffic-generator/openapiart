@@ -10,7 +10,6 @@ import (
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type GrpcServer struct {
@@ -98,24 +97,52 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 	return resp, nil
 }
 
-func (s *GrpcServer) GetMetrics(ctx context.Context, empty *emptypb.Empty) (*sanity.GetMetricsResponse, error) {
-	resp := &sanity.GetMetricsResponse{
-		StatusCode_200: &sanity.Metrics{
-			Ports: []*sanity.PortMetric{
-				&sanity.PortMetric{
-					Name:     "P2",
-					TxFrames: 3000,
-					RxFrames: 2788,
-				},
-				&sanity.PortMetric{
-					Name:     "P1",
-					TxFrames: 2323,
-					RxFrames: 2000,
+func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsRequest) (*sanity.GetMetricsResponse, error) {
+	choice := req.MetricsRequest.Choice.String()
+	switch choice {
+	case "port":
+		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_ports)
+		resp := &sanity.GetMetricsResponse{
+			StatusCode_200: &sanity.Metrics{
+				Choice: &choice_val,
+				Ports: []*sanity.PortMetric{
+					{
+						Name:     "P2",
+						TxFrames: 3000,
+						RxFrames: 2788,
+					},
+					{
+						Name:     "P1",
+						TxFrames: 2323,
+						RxFrames: 2000,
+					},
 				},
 			},
-		},
+		}
+		return resp, nil
+	case "flow":
+		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_flows)
+		resp := &sanity.GetMetricsResponse{
+			StatusCode_200: &sanity.Metrics{
+				Choice: &choice_val,
+				Flows: []*sanity.FlowMetric{
+					{
+						Name:     "F2",
+						TxFrames: 4000,
+						RxFrames: 2000,
+					},
+					{
+						Name:     "F1",
+						TxFrames: 2000,
+						RxFrames: 2000,
+					},
+				},
+			},
+		}
+		return resp, nil
+	default:
+		return nil, fmt.Errorf("Invalid choice")
 	}
-	return resp, nil
 }
 
 func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sanity.GetWarningsResponse, error) {
