@@ -103,7 +103,8 @@ func TestGetMetrics(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, metrics)
 		assert.Len(t, metrics.Ports().Items(), 2)
-		metrics.Validate()
+		m_err := metrics.Validate()
+		assert.Nil(t, m_err)
 		assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
 		for _, row := range metrics.Ports().Items() {
 			log.Println(row.ToYaml())
@@ -114,7 +115,8 @@ func TestGetMetrics(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, metResp)
 		assert.Len(t, metResp.Flows().Items(), 2)
-		metResp.Validate()
+		m_err1 := metResp.Validate()
+		assert.Nil(t, m_err1)
 		assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
 		for _, row := range metResp.Flows().Items() {
 			log.Println(row.ToYaml())
