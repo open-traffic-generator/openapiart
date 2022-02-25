@@ -139,8 +139,11 @@ def test_x_pattern_integer_good_and_bad_list(default_config, integer):
         default_config.integer_pattern.serialize(default_config.DICT)
         pytest.fail("integer values got serialize")
     except Exception as e:
-        if "`abcd::abcd::`" not in str(e) \
-            or "`256`" not in str(e) or "`ab:ab:ab:ab:ab:ab`" not in str(e):
+        if (
+            "`abcd::abcd::`" not in str(e)
+            or "`256`" not in str(e)
+            or "`ab:ab:ab:ab:ab:ab`" not in str(e)
+        ):
             pytest.fail("Invalid integer list is not proper in error message")
 
 
@@ -160,7 +163,7 @@ def test_x_pattern_good_inc_dec(default_config, index, direction):
     dir_obj.count = count[index]
     try:
         default_config.serialize(default_config.DICT)
-    except Exception as e:
+    except Exception:
         pytest.fail("%s with %s Failed to serialize" % (enum, direction))
 
 
@@ -211,4 +214,3 @@ def test_enum_setter(api, default_config):
 
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
-

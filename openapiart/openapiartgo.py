@@ -431,7 +431,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.schema_name = self._get_schema_object_name_from_ref(
                         ref[0].value
                     )
-                    new.schema_raw_name = self._get_schema_json_name_from_ref(ref[0].value)
+                    new.schema_raw_name = self._get_schema_json_name_from_ref(
+                        ref[0].value
+                    )
                     new.schema_object = self._get_schema_object_from_ref(
                         ref[0].value
                     )
@@ -1065,7 +1067,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return str
             }}
-            
+
             func (obj *{struct}) Clone() ({interface}, error) {{
                 newObj := New{interface}()
                 pbText, err := obj.ToPbText()
@@ -1086,7 +1088,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if len(internal_items) == 0
                 else "\n".join(internal_items),
                 nil_call="obj.setNil()" if len(internal_items_nil) > 0 else "",
-                obj_name=new.schema_raw_name
+                obj_name=new.schema_raw_name,
             )
         )
         if len(internal_items_nil) > 0:
@@ -1782,8 +1784,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.type == "[]byte":
                     field.name = "Bytes"
                 elif "$ref" in property_schema:
-                    schema_name = self._get_schema_object_name_from_ref(property_schema["$ref"])
-                    field.schema_name = self._get_schema_json_name_from_ref(property_schema["$ref"])
+                    schema_name = self._get_schema_object_name_from_ref(
+                        property_schema["$ref"]
+                    )
+                    field.schema_name = self._get_schema_json_name_from_ref(
+                        property_schema["$ref"]
+                    )
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
             field.isPointer = (
@@ -1988,7 +1994,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 validation = append(validation,
                 fmt.Sprintf("required field `%s.{field_name}` must not be empty", path))
             }} """.format(
-                name=field.name, intf_name=new.schema_raw_name,
+                name=field.name,
                 field_name=field.schema_name,
                 value=0 if field.isEnum and field.isArray is False else value,
                 enum=".Number()"
@@ -2020,7 +2026,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             ).format(
                 name=field.schema_name,
                 interface=new.schema_raw_name,
-                max="max({})".format(field.type.lstrip("[]")) if field.max is None else field.max,
+                max="max({})".format(field.type.lstrip("[]"))
+                if field.max is None
+                else field.max,
                 pointer="*" if field.isPointer else "",
                 min="min({})".format(field.type.lstrip("[]"))
                 if field.min is None
@@ -2059,7 +2067,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 ).format(
                     name=field.schema_name,
                     interface=new.schema_name,
-                    max_length="any" if field.max_length is None else field.max_length,
+                    max_length="any"
+                    if field.max_length is None
+                    else field.max_length,
                     pointer="*" if field.isPointer else "",
                     min_length=field.min_length
                     if field.min_length is None
@@ -2090,11 +2100,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         validation = append(validation, err.Error())
                     }}
                 """.format(
-                        name=field.name, interface=new.schema_name,
-                        field_name=field.schema_name,
-                        format=field.format.capitalize() if field.isArray is False
-                        else field.format.capitalize() + "Slice",
-                    )
+                    name=field.name,
+                    field_name=field.schema_name,
+                    format=field.format.capitalize()
+                    if field.isArray is False
+                    else field.format.capitalize() + "Slice",
+                )
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2117,12 +2128,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         validation,
                         fmt.Sprintf("required field `%s.{field_name}` must not be empty", path))
                 }}
-            """.format(name=field.name, interface=new.schema_raw_name, field_name=field.schema_name)
+            """.format(
+                name=field.name,
+                field_name=field.schema_name,
+            )
 
         inner_body = """obj.{external_name}().validateObj(
             set_default, fmt.Sprintf("%s.{json_name}", path))""".format(
             external_name=self._get_external_struct_name(field.name),
-            json_name=field.schema_name
+            json_name=field.schema_name,
         )
         if field.isArray:
             inner_body = """
@@ -2138,8 +2152,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """.format(
                 name=field.name,
                 field_name=field.schema_name,
-                field_type=field.type,
-                internal_items_name="{}Slice".format(field.struct),
                 field_internal_struct=field.struct,
             )
         body += """
@@ -2384,13 +2396,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 struct=new.struct, body=body
             )
         )
-    
+
     def _get_schema_json_name_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
         if "." in final_piece:
             return final_piece.replace(".", "_").lower()
         return self._lower_first_char(final_piece)
-    
+
     def _lower_first_char(self, word):
         return word[0].lower() + word[1:]
 

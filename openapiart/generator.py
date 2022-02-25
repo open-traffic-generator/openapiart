@@ -704,7 +704,7 @@ class Generator:
         if external in ["String"]:
             external += "_"
         return external
-    
+
     def _small_first_char(self, words):
         if isinstance(words, list):
             ret = []
@@ -732,7 +732,7 @@ class Generator:
             if "choice" in self._get_choice_names(schema_object):
                 slots.append("'_choice'")
             self._write(1, "__slots__ = (%s)" % ",".join(slots))
-            self._write(1, "_JSON_NAME = \"%s\"" % json_name)
+            self._write(1, '_JSON_NAME = "%s"' % json_name)
 
             # write _TYPES definition
             # TODO: this func won't detect whether $ref for a given property is
@@ -1081,7 +1081,11 @@ class Generator:
         self._write()
         self._write(1, "def _instanceOf(self, item):")
         self._write(2, "if not isinstance(item, %s):" % (contained_class_name))
-        self._write(3, "raise Exception(\"Item is not an instance of %s\")" % (contained_class_name))
+        self._write(
+            3,
+            'raise Exception("Item is not an instance of %s")'
+            % (contained_class_name),
+        )
 
     def _write_factory_method(
         self,

@@ -20,7 +20,7 @@ def test_formats_bad_string(config, value):
     config.l.string_param = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail("Value {value} was successfully validated".format(value))
+        pytest.fail("Value {} was successfully validated".format(value))
     except Exception:
         pass
 
@@ -50,7 +50,7 @@ def test_formats_good_ipv4(config, value):
     config.l.ipv4 = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-    except Exception as e:
+    except Exception:
         pytest.fail("Value {} was not valid".format(value))
 
 
