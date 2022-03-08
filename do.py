@@ -185,8 +185,8 @@ def generate_requirements():
 
     with open('new_requirements.txt') as f:
         new_packages = f.read().splitlines()
-        print(new_packages)
-        new_packages.remove('grpc')
+        if 'grpc' in new_packages:
+            new_packages.remove('grpc')
     
     os.remove('new_requirements.txt')
 
@@ -203,7 +203,8 @@ def generate_requirements():
 
     with open('test_requirements.txt') as fp:
         test_packages = fp.read().splitlines()
-        test_packages.remove('grpc')
+        if 'grpc' in test_packages:
+            test_packages.remove('grpc')
     
     diff_packages = list(set(test_packages) - set(packages))
     with open('test_requirements.txt', 'w+') as fp:

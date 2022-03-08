@@ -19,7 +19,8 @@ if not os.path.exists(os.path.join(base_dir, 'requirements.txt')):
 
 with open("requirements.txt") as f:
     installation_requires = f.read().splitlines()
-    installation_requires.remove('--prefer-binary')
+    if '--prefer-binary' in installation_requires:
+        installation_requires.remove('--prefer-binary')
 
 installation_requires.append("black==22.1.0 ; python_version > '2.7'")
 
