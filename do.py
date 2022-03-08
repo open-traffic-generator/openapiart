@@ -111,6 +111,7 @@ def setup():
 def init():
     if sys.version_info[0] == 3:
         run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
+    generate_requirements()
     run(
         [
             py() + " -m pip install -r requirements.txt",
@@ -165,6 +166,48 @@ def generate():
         ]
     )
 
+
+def generate_requirements():
+    lib_path = os.path.dirname(__file__)
+    test_path = os.path.join(lib_path, "openapiart", "tests")
+    test_req = os.path.join(lib_path, 'test_requirements.txt')
+    
+    run(
+        [
+            py() + " -m pip install pipreqs",
+            py() + " -m pipreqs.pipreqs --force " + lib_path + " --mode no-pin" + " --ignore " + test_path + " --savepath new_requirements.txt",
+            py() + " -m pipreqs.pipreqs --force " + test_path + " --mode no-pin --savepath " + test_req
+        ]
+    )
+
+    with open('requirements.txt', 'r') as fp:
+        packages = fp.read().splitlines()
+
+    with open('new_requirements.txt') as f:
+        new_packages = f.read().splitlines()
+        new_packages.remove('grpc')
+    
+    os.remove('new_requirements.txt')
+
+    new_packages = list(set(new_packages) - set(packages))
+
+    if new_packages:
+        with open('requirements.txt', 'a+') as fh:
+            fh.write("\n")
+            for pkg in new_packages:
+                fh.write(pkg + "\n")
+            fh.flush()
+            packages = fh.read().splitlines()
+            fh.close()
+
+    with open('test_requirements.txt') as fp:
+        test_packages = fp.read().splitlines()
+        test_packages.remove('grpc')
+    
+    diff_packages = list(set(test_packages) - set(packages))
+    with open('test_requirements.txt', 'w+') as fp:
+        for pkg in diff_packages:
+            fp.write(pkg + "\n")
 
 def testpy():
     run(

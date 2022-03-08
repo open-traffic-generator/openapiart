@@ -1,6 +1,4 @@
 --prefer-binary
-pytest
-pyyaml
 jsonpath-ng
 openapi-spec-validator
 grpcio
@@ -10,3 +8,9 @@ typing
 setuptools
 wheel
 twine
+PyYAML
+openapi_spec_validator
+typing_extensions
+protobuf
+jsonpath_ng
+urllib3
