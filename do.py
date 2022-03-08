@@ -185,6 +185,7 @@ def generate_requirements():
 
     with open('new_requirements.txt') as f:
         new_packages = f.read().splitlines()
+        print(new_packages)
         new_packages.remove('grpc')
     
     os.remove('new_requirements.txt')
