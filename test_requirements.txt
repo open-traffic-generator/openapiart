@@ -1,5 +1,7 @@
 pytest
 openapiart
-Flask
+jsonpath_ng
 sanity
+Flask
 openapiart.egg
+PyYAML

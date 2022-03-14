@@ -175,7 +175,7 @@ def generate_requirements():
     run(
         [
             py() + " -m pip install pipreqs",
-            py() + " -m pipreqs.pipreqs --force " + lib_path + " --mode no-pin" + " --ignore " + test_path + " --savepath new_requirements.txt",
+            py() + " -m pipreqs.pipreqs --force " + lib_path + " --mode no-pin --ignore " + test_path + " --savepath new_requirements.txt",
             py() + " -m pipreqs.pipreqs --force " + test_path + " --mode no-pin --savepath " + test_req
         ]
     )
@@ -183,10 +183,20 @@ def generate_requirements():
     with open('requirements.txt', 'r') as fp:
         packages = fp.read().splitlines()
 
+    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf']
+
+    version_restrict = ["grpcio==1.38.0 ; python_version > '2.7'", 
+                        "grpcio-tools==1.38.0 ; python_version > '2.7'",
+                        "grpcio==1.35.0 ; python_version == '2.7'",
+                        "grpcio-tools==1.35.0 ; python_version == '2.7'",
+                        "protobuf==3.15.0"
+                       ]
+
     with open('new_requirements.txt') as f:
         new_packages = f.read().splitlines()
         if 'grpc' in new_packages:
-            new_packages.remove('grpc')
+            new_packages = list(set(new_packages) - set(not_required_pkgs))
+        new_packages.extend(version_restrict)
     
     os.remove('new_requirements.txt')
 
@@ -204,7 +214,7 @@ def generate_requirements():
     with open('test_requirements.txt') as fp:
         test_packages = fp.read().splitlines()
         if 'grpc' in test_packages:
-            test_packages.remove('grpc')
+            test_packages = list(set(test_packages) - set(not_required_pkgs))
     
     diff_packages = list(set(test_packages) - set(packages))
     with open('test_requirements.txt', 'w+') as fp:

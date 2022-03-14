@@ -1,8 +1,6 @@
 --prefer-binary
 jsonpath-ng
 openapi-spec-validator
-grpcio
-grpcio-tools
 requests
 typing
 setuptools
@@ -11,6 +9,10 @@ twine
 PyYAML
 openapi_spec_validator
 typing_extensions
-protobuf
 jsonpath_ng
 urllib3
+grpcio==1.38.0 ; python_version > '2.7'
+grpcio==1.35.0 ; python_version == '2.7'
+grpcio-tools==1.38.0 ; python_version > '2.7'
+grpcio-tools==1.35.0 ; python_version == '2.7'
+protobuf==3.15.0
