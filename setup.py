@@ -5,7 +5,7 @@ import imp
 import os
 import sys
 import setuptools
-import do
+from openapiart.generate_requirements import *
 
 pkg_name = "openapiart"
 version = "0.1.42"
@@ -15,7 +15,11 @@ with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
 
 if not os.path.exists(os.path.join(base_dir, 'requirements.txt')):
-    do.generate_requirements()
+    base_path = os.getcwd()
+    openapiart_path = os.path.join(base_path, 'openapiart')
+    test_path = os.path.join(openapiart_path, "tests")
+    generate_requirements(openapiart_path, ignore_path=test_path, save_path="new_requirements.txt")
+    generate_requirements(test_path,save_path="test_requirements")
 
 with open("requirements.txt") as f:
     installation_requires = f.read().splitlines()

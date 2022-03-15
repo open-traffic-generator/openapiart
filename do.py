@@ -5,6 +5,7 @@ import sys
 import shutil
 import subprocess
 import platform
+from openapiart.generate_requirements import *
 
 BLACK_VERSION = "22.1.0"
 
@@ -111,7 +112,11 @@ def setup():
 def init():
     if sys.version_info[0] == 3:
         run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
-    generate_requirements()
+    base_path = os.getcwd()
+    openapiart_path = os.path.join(base_path, 'openapiart')
+    test_path = os.path.join(openapiart_path, "tests")
+    generate_requirements(openapiart_path, ignore_path=test_path, save_path=base_path, file_name="new_requirements.txt")
+    generate_requirements(test_path,save_path=base_path, file_name="test_requirements.txt")
     run(
         [
             py() + " -m pip install -r requirements.txt",
@@ -165,61 +170,9 @@ def generate():
             py() + " " + artifacts,
         ]
     )
+    artifact_path = os.path.join(os.path.dirname(__file__), "art")
+    generate_requirements(path = artifact_path)
 
-
-def generate_requirements():
-    lib_path = os.path.dirname(__file__)
-    test_path = os.path.join(lib_path, "openapiart", "tests")
-    test_req = os.path.join(lib_path, 'test_requirements.txt')
-    
-    run(
-        [
-            py() + " -m pip install pipreqs",
-            py() + " -m pipreqs.pipreqs --force " + lib_path + " --mode no-pin --ignore " + test_path + " --savepath new_requirements.txt",
-            py() + " -m pipreqs.pipreqs --force " + test_path + " --mode no-pin --savepath " + test_req
-        ]
-    )
-
-    with open('requirements.txt', 'r') as fp:
-        packages = fp.read().splitlines()
-
-    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf']
-
-    version_restrict = ["grpcio==1.38.0 ; python_version > '2.7'", 
-                        "grpcio-tools==1.38.0 ; python_version > '2.7'",
-                        "grpcio==1.35.0 ; python_version == '2.7'",
-                        "grpcio-tools==1.35.0 ; python_version == '2.7'",
-                        "protobuf==3.15.0"
-                       ]
-
-    with open('new_requirements.txt') as f:
-        new_packages = f.read().splitlines()
-        if 'grpc' in new_packages:
-            new_packages = list(set(new_packages) - set(not_required_pkgs))
-        new_packages.extend(version_restrict)
-    
-    os.remove('new_requirements.txt')
-
-    new_packages = list(set(new_packages) - set(packages))
-
-    if new_packages:
-        with open('requirements.txt', 'a+') as fh:
-            fh.write("\n")
-            for pkg in new_packages:
-                fh.write(pkg + "\n")
-            fh.flush()
-            packages = fh.read().splitlines()
-            fh.close()
-
-    with open('test_requirements.txt') as fp:
-        test_packages = fp.read().splitlines()
-        if 'grpc' in test_packages:
-            test_packages = list(set(test_packages) - set(not_required_pkgs))
-    
-    diff_packages = list(set(test_packages) - set(packages))
-    with open('test_requirements.txt', 'w+') as fp:
-        for pkg in diff_packages:
-            fp.write(pkg + "\n")
 
 def testpy():
     run(
