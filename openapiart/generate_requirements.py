@@ -52,7 +52,6 @@ def generate_requirements(path, save_path=None, ignore_path=None, file_name=None
             for pkg in new_packages:
                 fh.write(pkg + "\n")
             fh.flush()
-            packages = fh.read().splitlines()
             fh.close()
 
 
