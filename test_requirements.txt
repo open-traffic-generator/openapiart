@@ -1,5 +1,5 @@
 pytest
 openapiart.egg
-sanity
-Flask
 openapiart
+Flask
+sanity
