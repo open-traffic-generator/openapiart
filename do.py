@@ -5,7 +5,7 @@ import sys
 import shutil
 import subprocess
 import platform
-from openapiart import generate_requirements
+from openapiart.generate_requirements import *
 
 BLACK_VERSION = "22.1.0"
 
@@ -115,8 +115,8 @@ def init():
     base_path = os.getcwd()
     openapiart_path = os.path.join(base_path, 'openapiart')
     test_path = os.path.join(openapiart_path, "tests")
-    generate_requirements.generate_requirements(openapiart_path, ignore_path=test_path, save_path=base_path, file_name="new_requirements.txt")
-    generate_requirements.generate_requirements(test_path,save_path=base_path, file_name="test_requirements.txt")
+    generate_requirements(openapiart_path, ignore_path=test_path, save_path=base_path, file_name="new_requirements.txt")
+    generate_requirements(test_path,save_path=base_path, file_name="test_requirements.txt")
     run(
         [
             py() + " -m pip install -r requirements.txt",
@@ -171,7 +171,7 @@ def generate():
         ]
     )
     artifact_path = os.path.join(os.path.dirname(__file__), "art")
-    generate_requirements.generate_requirements(path = artifact_path)
+    generate_requirements(path = artifact_path)
 
 
 def testpy():
