@@ -57,6 +57,9 @@ def generate_requirements(path, save_path=None, ignore_path=None, file_name=None
 
 
 def generate_test_requirements(save_path):
+    '''
+        To generate the requirememts.txt for the test lib present in the path.
+    '''
     not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf']
 
     if os.path.exists(os.path.join(save_path, 'requirements.txt')):
