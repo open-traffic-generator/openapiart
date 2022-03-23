@@ -30,7 +30,6 @@ installation_requires.append("black==22.1.0 ; python_version > '2.7'")
 
 test_pkgs = ["flake8", "black"]
 with open("test_requirements.txt") as f:
-    import pdb; pdb.set_trace()
     test_requires = f.read().splitlines()
     test_requires.extend(test_pkgs)
 
