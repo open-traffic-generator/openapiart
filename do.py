@@ -5,7 +5,7 @@ import sys
 import shutil
 import subprocess
 import platform
-from generate_requirements import *
+from generate_requirements import generate_requirements
 
 
 BLACK_VERSION = "22.1.0"

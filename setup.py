@@ -5,7 +5,7 @@ import imp
 import os
 import sys
 import setuptools
-from generate_requirements import *
+from generate_requirements import generate_requirements
 
 pkg_name = "openapiart"
 version = "0.1.42"
