@@ -13,7 +13,7 @@ def generate_requirements(path, save_path=None, ignore_path=None, file_name=None
     new_save_path = os.path.join(save_path, file_name)
 
     if sys.version_info[0] < 3:
-        run([py() + " -m pip install pipreqs== 0.4.8"])
+        run([py() + " -m pip install pipreqs=='0.4.8'"])
     else:
         run([py() + " -m pip install pipreqs"])
     
