@@ -25,13 +25,11 @@ with open("requirements.txt") as f:
     installation_requires = f.read().splitlines()
     if '--prefer-binary' in installation_requires:
         installation_requires.remove('--prefer-binary')
+    installation_requires.append("black==22.1.0 ; python_version > '2.7'")
 
-installation_requires.append("black==22.1.0 ; python_version > '2.7'")
-
-test_pkgs = ["flake8", "black"]
 with open("test_requirements.txt") as f:
     test_requires = f.read().splitlines()
-    test_requires.extend(test_pkgs)
+    test_requires.extend(["flake8", "black"])
 
 setuptools.setup(
     name=pkg_name,
