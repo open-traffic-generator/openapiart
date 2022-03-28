@@ -13,7 +13,7 @@ def generate_requirements(path, save_path=None, ignore_path=None, file_name=None
     new_save_path = os.path.join(save_path, file_name)
 
     if sys.version_info[0] < 3:
-        print("For versions less than 3 requirements.txt will not be generated")
+        print("For python versions less than 3 requirements.txt will not be generated")
         return
     else:
         run(
