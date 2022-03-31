@@ -11,6 +11,7 @@ openapi_spec_validator
 typing_extensions
 jsonpath_ng
 urllib3
+click==8.0.4; python_version > '2.7' # this is added because of the black failure in CI
 grpcio==1.38.0 ; python_version > '2.7'
 grpcio==1.35.0 ; python_version == '2.7'
 grpcio-tools==1.38.0 ; python_version > '2.7'
