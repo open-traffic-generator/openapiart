@@ -97,11 +97,28 @@ func TestUpdateConfigSuccess(t *testing.T) {
 
 func TestGetMetrics(t *testing.T) {
 	for _, api := range apis {
-		metrics, err := api.GetMetrics()
+		metReq := openapiart.NewMetricsRequest()
+		metReq.SetChoice(openapiart.MetricsRequestChoice.PORT)
+		metrics, err := api.GetMetrics(metReq)
 		assert.Nil(t, err)
 		assert.NotNil(t, metrics)
 		assert.Len(t, metrics.Ports().Items(), 2)
+		m_err := metrics.Validate()
+		assert.Nil(t, m_err)
+		assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
 		for _, row := range metrics.Ports().Items() {
+			log.Println(row.ToYaml())
+		}
+		metReqflow := openapiart.NewMetricsRequest()
+		metReqflow.SetChoice(openapiart.MetricsRequestChoice.FLOW)
+		metResp, err := api.GetMetrics(metReqflow)
+		assert.Nil(t, err)
+		assert.NotNil(t, metResp)
+		assert.Len(t, metResp.Flows().Items(), 2)
+		m_err1 := metResp.Validate()
+		assert.Nil(t, m_err1)
+		assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
+		for _, row := range metResp.Flows().Items() {
 			log.Println(row.ToYaml())
 		}
 	}

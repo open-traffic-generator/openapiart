@@ -2119,11 +2119,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_internal_struct=field.struct,
             )
         body += """
-            if obj.obj.{name} != nil {{
+            if {condition} {{
                 {body}
             }}
         """.format(
-            name=field.name, body=inner_body
+            body=inner_body,
+            condition="len(obj.obj.{name}) != 0".format(name=field.name)
+            if field.isArray is True
+            else "obj.obj.{name} != nil".format(name=field.name),
         )
         return body
 

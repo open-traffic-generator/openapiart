@@ -1621,7 +1621,9 @@ func TestSetterWrapperHolder(t *testing.T) {
 	metricsResp := openapiart.NewGetMetricsResponse()
 	metricsResp.SetStatusCode200(openapiart.NewMetrics())
 	json1 := `{
-		"status_code_200":  {}
+		"status_code_200":  {
+			"choice": "ports"
+		}
 	}`
 	metricsrespJson, err := metricsResp.ToJson()
 	assert.Nil(t, err)
@@ -1630,6 +1632,7 @@ func TestSetterWrapperHolder(t *testing.T) {
 	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100)
 	json := `{
 		"status_code_200":  {
+		  "choice": "ports",
 		  "ports":  [
 			{
 			  "name":  "abc",
