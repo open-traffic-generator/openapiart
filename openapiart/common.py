@@ -9,6 +9,8 @@ import io
 import sys
 import time
 import grpc
+import functools
+import platform
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
@@ -20,6 +22,18 @@ except ImportError:
 
 if sys.version_info[0] == 3:
     unicode = str
+
+
+openapi_warnings = []
+
+def deprecated(message=None):
+    openapi_warnings.append(message)
+    def caller(func):
+        @functools.wraps(func)
+        def inner(self, *args, **kwargs):
+            return func(self, *args, **kwargs)
+        return inner
+    return caller
 
 
 class Transport:

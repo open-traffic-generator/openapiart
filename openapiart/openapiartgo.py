@@ -106,6 +106,7 @@ class FluentField(object):
         self.hasminmaxlength = False
         self.min_length = None
         self.max_length = None
+        self.status = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1353,6 +1354,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_enum_choice is not None
                 else "",
             )
+        status = False
+        if field.status is not None and field.status == "deprecated":
+            status = True
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
@@ -1366,12 +1370,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
+                # TODO message needs to modified once the py_go_diff PR is merged
+                # https://github.com/open-traffic-generator/openapiart/pull/281
+                status="" if status is False
+                else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
+                    interface=new.interface,
+                    fieldname=field.name
+                )
             )
         )
 
     def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
             return
+        status = False
+        if field.status is not None and field.status == "deprecated":
+            status = True
 
         if field.isArray and field.isEnum:
             body = """items := []{pb_pkg_name}.{interface}_{fieldname}_Enum{{}}
@@ -1559,6 +1573,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
+                {status}
                 {set_choice}
                 {body}
                 return obj
@@ -1572,6 +1587,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 fieldstruct=new.interface,
                 set_choice=set_choice,
+                # TODO message needs to modified once the py_go_diff PR is merged
+                # https://github.com/open-traffic-generator/openapiart/pull/281
+                status="" if status is False
+                else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
+                    interface=new.interface,
+                    fieldname=field.name
+                )
             )
         )
 
@@ -1725,6 +1747,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.name = self._get_external_field_name(property_name)
             field.schema_name = property_name
             field.type = self._get_struct_field_type(property_schema, field)
+            field.status = property_schema.get("x-status")
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2167,6 +2190,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return body
 
     def _write_validate_method(self, new):
+        # TODO add the deprecated code once the py_go_diff PR is merged
+        # https://github.com/open-traffic-generator/openapiart/pull/281
         statements = []
 
         def p():

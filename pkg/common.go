@@ -164,6 +164,12 @@ func validationResult() error {
 	return nil
 }
 
+var openapi_warnings []string
+
+func deprecated(message string) {
+	openapi_warnings = append(openapi_warnings, message)
+}
+
 func validateMac(mac string, path string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
