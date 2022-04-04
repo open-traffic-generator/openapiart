@@ -1361,6 +1361,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // {fieldname} returns a {fieldtype}\n{description}
             func (obj *{struct}) {getter_method} {{
+                {status}
                 {body}
             }}
             """.format(
@@ -1372,11 +1373,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 # TODO message needs to modified once the py_go_diff PR is merged
                 # https://github.com/open-traffic-generator/openapiart/pull/281
-                status="" if status is False
+                status=""
+                if status is False
                 else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.interface,
-                    fieldname=field.name
-                )
+                    interface=new.interface, fieldname=field.name
+                ),
             )
         )
 
@@ -1589,11 +1590,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 set_choice=set_choice,
                 # TODO message needs to modified once the py_go_diff PR is merged
                 # https://github.com/open-traffic-generator/openapiart/pull/281
-                status="" if status is False
+                status=""
+                if status is False
                 else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.interface,
-                    fieldname=field.name
-                )
+                    interface=new.interface, fieldname=field.name
+                ),
             )
         )
 

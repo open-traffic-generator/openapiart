@@ -652,7 +652,9 @@ class Generator:
             self._write(2, "return openapi_warnings")
             self._write()
             self._write(1, "def clear_api_warnings(self):")
-            self._write(2, "if \"2.7\" in platform.python_version().rsplit(\".\", 1)[0]:")
+            self._write(
+                2, 'if "2.7" in platform.python_version().rsplit(".", 1)[0]:'
+            )
             self._write(3, "del openapi_warnings[:]")
             self._write(2, "else:")
             self._write(3, "openapi_warnings.clear()")
