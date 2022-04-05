@@ -103,6 +103,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	GetApiWarnings() []string
+	ClearApiWarnings()
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -138,6 +140,14 @@ func (api *api) NewHttpTransport() HttpTransport {
 
 func (api *api) hasHttpTransport() bool {
 	return api.http != nil
+}
+
+func (api *api) GetApiWarnings() []string {
+	return openapi_warnings
+}
+
+func (api *api) ClearApiWarnings() {
+	openapi_warnings = nil
 }
 
 // HttpRequestDoer will return True for HTTP transport

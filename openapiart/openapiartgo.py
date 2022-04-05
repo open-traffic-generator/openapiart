@@ -1,3 +1,4 @@
+from ntpath import join
 from .openapiartplugin import OpenApiArtPlugin
 import os
 import subprocess
@@ -1376,7 +1377,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 status=""
                 if status is False
                 else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.interface, fieldname=field.name
+                    interface=new.schema_raw_name, fieldname=field.schema_name
                 ),
             )
         )
@@ -1593,7 +1594,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 status=""
                 if status is False
                 else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.interface, fieldname=field.name
+                    interface=new.schema_raw_name, fieldname=field.schema_name
                 ),
             )
         )
@@ -2205,9 +2206,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         req="Optional" if field.isOptional else "required",
                     )
                 )
-
+        deprecate_msgs = []
         for field in new.interface_fields:
             valid = 0
+            if field.status is not None and field.status == "deprecated":
+                deprecate_msgs.append("""
+                deprecated(fmt.Sprintf("%s.{field_name} is deprecated", path))
+                """.format(field_name=field.schema_name))
             if field.type.lstrip("[]") in self._oapi_go_types.values():
                 block = self._validate_types(new, field)
                 if block is None or block.strip() == "":
@@ -2229,10 +2234,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_default {{
                     obj.setDefault()
                 }}
+                {deprecate}
                 {body}
             }}
             """.format(
-                struct=new.struct, body=body
+                struct=new.struct, body=body,
+                deprecate="" if deprecate_msgs == [] else "\n".join(deprecate_msgs)
             )
         )
 

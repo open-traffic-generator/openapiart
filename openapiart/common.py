@@ -27,7 +27,8 @@ if sys.version_info[0] == 3:
 openapi_warnings = []
 
 def deprecated(message=None):
-    openapi_warnings.append(message)
+    if message not in openapi_warnings:
+        openapi_warnings.append(message)
     def caller(func):
         @functools.wraps(func)
         def inner(self, *args, **kwargs):
