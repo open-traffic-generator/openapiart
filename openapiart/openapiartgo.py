@@ -2206,13 +2206,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         req="Optional" if field.isOptional else "required",
                     )
                 )
+
         deprecate_msgs = []
         for field in new.interface_fields:
             valid = 0
             if field.status is not None and field.status == "deprecated":
-                deprecate_msgs.append("""
+                deprecate_msgs.append(
+                    """
                 deprecated(fmt.Sprintf("%s.{field_name} is deprecated", path))
-                """.format(field_name=field.schema_name))
+                """.format(
+                        field_name=field.schema_name
+                    )
+                )
             if field.type.lstrip("[]") in self._oapi_go_types.values():
                 block = self._validate_types(new, field)
                 if block is None or block.strip() == "":
@@ -2238,8 +2243,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {body}
             }}
             """.format(
-                struct=new.struct, body=body,
-                deprecate="" if deprecate_msgs == [] else "\n".join(deprecate_msgs)
+                struct=new.struct,
+                body=body,
+                deprecate=""
+                if deprecate_msgs == []
+                else "\n".join(deprecate_msgs),
             )
         )
 

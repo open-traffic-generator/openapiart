@@ -912,8 +912,12 @@ class Generator:
                 if "$ref" not in schema_object["properties"][choice_name]:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]
-                status = schema_object["properties"][choice_name].get("x-status")
-                self._write_factory_method(None, choice_name, ref, property_status=status)
+                status = schema_object["properties"][choice_name].get(
+                    "x-status"
+                )
+                self._write_factory_method(
+                    None, choice_name, ref, property_status=status
+                )
                 excluded_property_names.append(choice_name)
             for property_name in schema_object["properties"]:
                 if property_name in excluded_property_names:
@@ -1163,7 +1167,11 @@ class Generator:
         else:
             self._write(1, "@property")
             if property_status is not None and property_status == "deprecated":
-                self._write(1, "@deprecated(message=\"{}.%s is deprecated\".format(_JSON_NAME))" % method_name)
+                self._write(
+                    1,
+                    '@deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
+                    % method_name,
+                )
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1286,8 +1294,15 @@ class Generator:
             type_name = restriction
         self._write()
         self._write(1, "@property")
-        if property.get("x-status") is not None and property.get("x-status") == "deprecated":
-            self._write(1, "@deprecated(message=\"{}.%s is deprecated\".format(_JSON_NAME))" % name)
+        if (
+            property.get("x-status") is not None
+            and property.get("x-status") == "deprecated"
+        ):
+            self._write(
+                1,
+                '@deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
+                % name,
+            )
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1303,10 +1318,14 @@ class Generator:
             self._write(2, "return self._get_property('%s')" % (name))
             self._write()
             self._write(1, "@%s.setter" % name)
-            if property.get("x-status") is not None and property.get("x-status") == "deprecated":
+            if (
+                property.get("x-status") is not None
+                and property.get("x-status") == "deprecated"
+            ):
                 self._write(
                     1,
-                    "@deprecated(message=\"{}.%s is deprecated\".format(_JSON_NAME))" % name
+                    '@deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
+                    % name,
                 )
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
