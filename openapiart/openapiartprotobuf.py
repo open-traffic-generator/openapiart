@@ -175,7 +175,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 )
             )
             self._write()
-        self._write('import "google/protobuf/descriptor.proto";')
+        # self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
     def _get_field_type(self, property_name, openapi_object):

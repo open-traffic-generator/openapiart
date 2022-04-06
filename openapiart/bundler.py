@@ -552,8 +552,11 @@ class Bundler(object):
         """
         import jsonpath_ng
 
+        # st = self._get_parser("$..x-status").find(self._content)
+        # if st:
+        #     import pdb; pdb.set_trace()
         for xstatus in self._get_parser("$..x-status").find(self._content):
-            if xstatus.value == "current":
+            if xstatus.value.get("status") == "current":
                 continue
             print("resolving %s..." % (str(xstatus.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
@@ -561,8 +564,9 @@ class Bundler(object):
                 parent_schema_object["description"] = "TBD"
             parent_schema_object[
                 "description"
-            ] = "Status: {status}\n{description}".format(
-                status=xstatus.value,
+            ] = "Status: {status}\n{add_info}\n{description}".format(
+                status=xstatus.value.get("status"),
+                add_info=xstatus.value.get("additional_info", ""),
                 description=parent_schema_object["description"],
             )
 

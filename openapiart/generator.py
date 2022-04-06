@@ -1295,14 +1295,26 @@ class Generator:
         self._write()
         self._write(1, "@property")
         if (
-            property.get("x-status") is not None
-            and property.get("x-status") == "deprecated"
+            property.get("x-status", {}).get("status", "current")
+            == "deprecated"
         ):
-            self._write(
-                1,
-                '@deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
-                % name,
-            )
+            if "\n" in property.get("x-status")["additional_information"]:
+                self._write(1, '@deprecated(message="""')
+                [
+                    self._write(3, line)
+                    for line in property["x-status"][
+                        "additional_information"
+                    ].split("\n")
+                ]
+                self._write(2, '"""')
+                self._write(1, ")")
+            else:
+                self._write(
+                    1,
+                    '@deprecated(message="{}")'.format(
+                        property["x-status"]["additional_information"]
+                    ),
+                )
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1319,14 +1331,26 @@ class Generator:
             self._write()
             self._write(1, "@%s.setter" % name)
             if (
-                property.get("x-status") is not None
-                and property.get("x-status") == "deprecated"
+                property.get("x-status", {}).get("status", "current")
+                == "deprecated"
             ):
-                self._write(
-                    1,
-                    '@deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
-                    % name,
-                )
+                if "\n" in property.get("x-status")["additional_information"]:
+                    self._write(1, '@deprecated(message="""')
+                    [
+                        self._write(3, line)
+                        for line in property["x-status"][
+                            "additional_information"
+                        ].split("\n")
+                    ]
+                    self._write(2, '"""')
+                    self._write(1, ")")
+                else:
+                    self._write(
+                        1,
+                        '@deprecated(message="{}")'.format(
+                            property["x-status"]["additional_information"]
+                        ),
+                    )
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()

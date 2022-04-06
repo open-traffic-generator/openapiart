@@ -108,6 +108,7 @@ class FluentField(object):
         self.min_length = None
         self.max_length = None
         self.status = None
+        self.status_msg = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1376,9 +1377,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 # https://github.com/open-traffic-generator/openapiart/pull/281
                 status=""
                 if status is False
-                else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.schema_raw_name, fieldname=field.schema_name
-                ),
+                else "deprecated(`{msg}`)".format(msg=field.status_msg),
             )
         )
 
@@ -1593,9 +1592,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 # https://github.com/open-traffic-generator/openapiart/pull/281
                 status=""
                 if status is False
-                else 'deprecated("{interface}.{fieldname} is deprecated")'.format(
-                    interface=new.schema_raw_name, fieldname=field.schema_name
-                ),
+                else "deprecated(`{msg}`)".format(msg=field.status_msg),
             )
         )
 
@@ -1749,7 +1746,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.name = self._get_external_field_name(property_name)
             field.schema_name = property_name
             field.type = self._get_struct_field_type(property_schema, field)
-            field.status = property_schema.get("x-status")
+            field.status = property_schema.get("x-status", {}).get("status")
+            field.status_msg = property_schema.get("x-status", {}).get(
+                "additional_information"
+            )
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2212,11 +2212,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             valid = 0
             if field.status is not None and field.status == "deprecated":
                 deprecate_msgs.append(
-                    """
-                deprecated(fmt.Sprintf("%s.{field_name} is deprecated", path))
-                """.format(
-                        field_name=field.schema_name
-                    )
+                    "deprecated(`{msg}`)".format(msg=field.status_msg)
                 )
             if field.type.lstrip("[]") in self._oapi_go_types.values():
                 block = self._validate_types(new, field)
