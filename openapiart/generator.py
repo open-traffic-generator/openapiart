@@ -929,7 +929,11 @@ class Generator:
                     property_name in choice_names and property_name != "choice"
                 )
                 self._write_openapi_property(
-                    schema_object, property_name, property, class_name, write_set_choice
+                    schema_object,
+                    property_name,
+                    property,
+                    class_name,
+                    write_set_choice,
                 )
             for property_name, property in schema_object["properties"].items():
                 ref = self._get_parser("$..'$ref'").find(property)
@@ -1281,7 +1285,7 @@ class Generator:
         return (", ".join(property_param_string), properties, types)
 
     def _write_openapi_property(
-        self, schema_object, name, property, klass_name,write_set_choice=False
+        self, schema_object, name, property, klass_name, write_set_choice=False
     ):
         ref = self._get_parser("$..'$ref'").find(property)
         restriction = self._get_type_restriction(property)
@@ -1302,7 +1306,9 @@ class Generator:
         ):
             self._write(1, "@Deprecator.deprecated")
             key = "{}.{}".format(klass_name, name)
-            self._deprecated_properties[key] = property["x-status"]["additional_information"]
+            self._deprecated_properties[key] = property["x-status"][
+                "additional_information"
+            ]
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1324,7 +1330,9 @@ class Generator:
             ):
                 self._write(1, "@Deprecator.deprecated")
                 key = "{}.{}".format(klass_name, name)
-                self._deprecated_properties[key] = property["x-status"]["additional_information"]
+                self._deprecated_properties[key] = property["x-status"][
+                    "additional_information"
+                ]
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()
@@ -1603,15 +1611,14 @@ class Generator:
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
-    
+
     def _write_deprecator(self):
         with open(self._api_filename, "a") as self._fid:
             self._write(0, "Deprecator.messages = {")
-            for klass,msg in self._deprecated_properties.items():
+            for klass, msg in self._deprecated_properties.items():
                 if "\n" in msg:
                     print(msg)
                     self._write(1, '"{}" : """{}""",'.format(klass, msg))
                 else:
                     self._write(1, '"{}" : "{}",'.format(klass, msg))
             self._write(1, "}")
-

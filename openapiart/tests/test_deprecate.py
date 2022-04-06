@@ -20,7 +20,7 @@ def test_deprecate(api):
 
     api.clear_api_warnings()
     assert api.get_api_warnings() == []
-    
+
     data = conf.serialize(conf.DICT)
     assert api.get_api_warnings() != []
     assert len(api.get_api_warnings()) == 1
