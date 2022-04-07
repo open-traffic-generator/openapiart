@@ -1373,8 +1373,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
-                # TODO message needs to modified once the py_go_diff PR is merged
-                # https://github.com/open-traffic-generator/openapiart/pull/281
                 status=""
                 if status is False
                 else "deprecated(`{msg}`)".format(msg=field.status_msg),
@@ -1588,8 +1586,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 fieldstruct=new.interface,
                 set_choice=set_choice,
-                # TODO message needs to modified once the py_go_diff PR is merged
-                # https://github.com/open-traffic-generator/openapiart/pull/281
                 status=""
                 if status is False
                 else "deprecated(`{msg}`)".format(msg=field.status_msg),
@@ -2012,6 +2008,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
+        status_body = ""
+        if field.status is not None and field.status == "deprecated":
+            status_body = """
+            // {name} is deprecated
+            if obj.obj.{name}{enum} != {value} {{
+                deprecated(`{msg}`)
+            }}
+            """.format(
+                name=field.name,
+                field_name=field.schema_name,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()"
+                if field.isEnum and field.isArray is False
+                else "",
+                msg=field.status_msg
+            )
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
@@ -2131,6 +2143,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
+        if status_body != "":
+            body = "{} \n {}".format(body, status_body)
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2139,7 +2153,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             {body}
         }}
         """.format(
-            name=field.name, value=value, body=inner_body
+            name=field.name, value=value, body=inner_body,
         )
         return body
 
@@ -2181,6 +2195,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         body += """
             if {condition} {{
+                {msg}
                 {body}
             }}
         """.format(
@@ -2188,12 +2203,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
+            msg="deprecated(`{}`)".format(field.status_msg)
+            if field.status is not None and field.status == "deprecated"
+            else ""
         )
         return body
 
     def _write_validate_method(self, new):
-        # TODO add the deprecated code once the py_go_diff PR is merged
-        # https://github.com/open-traffic-generator/openapiart/pull/281
         statements = []
 
         def p():
@@ -2207,13 +2223,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
 
-        deprecate_msgs = []
         for field in new.interface_fields:
             valid = 0
-            if field.status is not None and field.status == "deprecated":
-                deprecate_msgs.append(
-                    "deprecated(`{msg}`)".format(msg=field.status_msg)
-                )
             if field.type.lstrip("[]") in self._oapi_go_types.values():
                 block = self._validate_types(new, field)
                 if block is None or block.strip() == "":
@@ -2235,15 +2246,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_default {{
                     obj.setDefault()
                 }}
-                {deprecate}
                 {body}
             }}
             """.format(
                 struct=new.struct,
                 body=body,
-                deprecate=""
-                if deprecate_msgs == []
-                else "\n".join(deprecate_msgs),
             )
         )
 
