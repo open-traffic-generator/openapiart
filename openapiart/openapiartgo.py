@@ -642,6 +642,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                openapi_warnings = nil
                 return &api
             }}
 
@@ -2017,12 +2018,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """.format(
                 name=field.name,
-                field_name=field.schema_name,
                 value=0 if field.isEnum and field.isArray is False else value,
                 enum=".Number()"
                 if field.isEnum and field.isArray is False
                 else "",
-                msg=field.status_msg
+                msg=field.status_msg,
             )
         if field.isOptional is False and "string" in field.type:
             body = """
@@ -2153,7 +2153,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             {body}
         }}
         """.format(
-            name=field.name, value=value, body=inner_body,
+            name=field.name,
+            value=value,
+            body=inner_body,
         )
         return body
 
@@ -2205,7 +2207,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else "obj.obj.{name} != nil".format(name=field.name),
             msg="deprecated(`{}`)".format(field.status_msg)
             if field.status is not None and field.status == "deprecated"
-            else ""
+            else "",
         )
         return body
 

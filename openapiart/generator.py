@@ -606,6 +606,7 @@ class Generator:
             self._write(1, '"""')
             self._write()
             self._write(1, "def __init__(self, **kwargs):")
+            self._write(2, "openapi_warnings = []")
             self._write(2, "pass")
 
             for method in methods:
