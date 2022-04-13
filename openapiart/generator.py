@@ -1268,6 +1268,8 @@ class Generator:
         ):
             self._write(2, "return self._get_property('%s')" % (name))
             self._write()
+            if name == "auto":
+                return
             self._write(1, "@%s.setter" % name)
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
