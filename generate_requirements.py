@@ -27,7 +27,7 @@ def generate_requirements(path, save_path=None, ignore_path=None, file_name=None
         generate_test_requirements(save_path)
         return
 
-    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf']
+    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf', 'sanity']
 
     version_restrict = ["grpcio==1.38.0 ; python_version > '2.7'", 
                         "grpcio-tools==1.38.0 ; python_version > '2.7'",
@@ -63,7 +63,7 @@ def generate_test_requirements(save_path):
     '''
         To generate the requirememts.txt for the test lib present in the path.
     '''
-    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf']
+    not_required_pkgs = ['grpc', 'grpcio', 'grpcio-tools', 'protobuf', 'sanity']
 
     if os.path.exists(os.path.join(save_path, 'requirements.txt')):
         with open(os.path.join(save_path, 'requirements.txt'), 'r')as fp:

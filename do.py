@@ -101,13 +101,27 @@ def setup_ext():
 
 
 def setup():
-    run(
-        [
-            py() + " -m pip install --upgrade pip",
-            py() + " -m pip install --upgrade virtualenv",
-            py() + " -m virtualenv .env",
-        ]
-    )
+    if platform.system().lower() == "windows":
+        pkg = (
+            "virtualenv"
+            if "2.7" in platform.python_version().rsplit(".", 1)[0]
+            else "venv"
+        )
+        run(
+            [
+                py() + " -m pip install --upgrade pip",
+                # py() + " -m pip install --upgrade {}".format(pkg),
+                py() + " -m {} .env".format(pkg),
+            ]
+        )
+    else:
+        run(
+            [
+                py() + " -m pip install --upgrade pip",
+                py() + " -m pip install --upgrade virtualenv",
+                py() + " -m virtualenv .env",
+            ]
+        )
 
 
 def init():
