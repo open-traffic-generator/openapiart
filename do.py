@@ -127,18 +127,18 @@ def setup():
 def init():
     if sys.version_info[0] == 3:
         run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
-    base_path = os.getcwd()
-    openapiart_path = os.path.join(base_path, "openapiart")
-    test_path = os.path.join(openapiart_path, "tests")
-    generate_requirements(
-        openapiart_path,
-        ignore_path=test_path,
-        save_path=base_path,
-        file_name="new_requirements.txt",
-    )
-    generate_requirements(
-        test_path, save_path=base_path, file_name="test_requirements.txt"
-    )
+    # base_path = os.getcwd()
+    # openapiart_path = os.path.join(base_path, "openapiart")
+    # test_path = os.path.join(openapiart_path, "tests")
+    # generate_requirements(
+    #     openapiart_path,
+    #     ignore_path=test_path,
+    #     save_path=base_path,
+    #     file_name="new_requirements.txt",
+    # )
+    # generate_requirements(
+    #     test_path, save_path=base_path, file_name="test_requirements.txt"
+    # )
     run(
         [
             py() + " -m pip install -r requirements.txt",
