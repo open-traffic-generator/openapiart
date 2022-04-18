@@ -17,3 +17,4 @@ grpcio==1.35.0 ; python_version == '2.7'
 grpcio-tools==1.38.0 ; python_version > '2.7'
 grpcio-tools==1.35.0 ; python_version == '2.7'
 protobuf==3.15.0
+pipreqs; python_version > '2.7'

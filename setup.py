@@ -1,11 +1,8 @@
 """
 To build distribution: python setup.py sdist --formats=gztar bdist_wheel --universal
 """
-import imp
 import os
-import sys
 import setuptools
-from generate_requirements import generate_requirements
 
 pkg_name = "openapiart"
 version = "0.1.42"
@@ -13,17 +10,6 @@ version = "0.1.42"
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
-
-if not os.path.exists(os.path.join(base_dir, "requirements.txt")):
-    base_path = os.getcwd()
-    openapiart_path = os.path.join(base_path, "openapiart")
-    test_path = os.path.join(openapiart_path, "tests")
-    generate_requirements(
-        openapiart_path,
-        ignore_path=test_path,
-        save_path="new_requirements.txt",
-    )
-    generate_requirements(test_path, save_path="test_requirements")
 
 with open("requirements.txt") as f:
     installation_requires = f.read().splitlines()
@@ -34,7 +20,6 @@ installation_requires.append("black==22.1.0 ; python_version > '2.7'")
 
 with open("test_requirements.txt") as f:
     test_requires = f.read().splitlines()
-    test_requires.extend(["flake8", "black"])
 
 setuptools.setup(
     name=pkg_name,
