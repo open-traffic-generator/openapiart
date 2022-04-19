@@ -102,16 +102,10 @@ def setup_ext():
 
 
 def setup():
-    if platform.system().lower() == "windows":
-        pkg = (
-            "virtualenv"
-            if "2.7" in platform.python_version().rsplit(".", 1)[0]
-            else "venv"
-        )
+    if platform.python_version_tuple()[0] == 3:
         run(
             [
                 py() + " -m pip install --upgrade pip",
-                # py() + " -m pip install --upgrade {}".format(pkg),
                 py() + " -m {} .env".format(pkg),
             ]
         )
@@ -126,11 +120,10 @@ def setup():
 
 
 def init():
-    if sys.version_info[0] == 3:
-        run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
     run(
         [
             py() + " -m pip install -r requirements.txt",
+            py() + " -m pip install -r test_requirements.txt",
         ]
     )
 
@@ -181,15 +174,13 @@ def generate():
             py() + " " + artifacts,
         ]
     )
-    # artifact_path = os.path.join(os.path.dirname(__file__), "art")
-    # generate_requirements(path=artifact_path)
 
 
 def testpy():
     run(
         [
-            py() + " -m pip install flask",
-            py() + " -m pip install pytest-cov",
+            # py() + " -m pip install flask",
+            # py() + " -m pip install pytest-cov",
             py()
             + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]

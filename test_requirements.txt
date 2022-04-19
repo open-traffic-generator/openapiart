@@ -1,5 +1,4 @@
 flask
-openapiart
 pytest
 flake8
-black==22.1.0 ; python_version > '2.7'
+pytest-cov

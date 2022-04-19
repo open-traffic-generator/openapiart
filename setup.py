@@ -16,8 +16,6 @@ with open("requirements.txt") as f:
     if "--prefer-binary" in installation_requires:
         installation_requires.remove("--prefer-binary")
 
-installation_requires.append("black==22.1.0 ; python_version > '2.7'")
-
 with open("test_requirements.txt") as f:
     test_requires = f.read().splitlines()
 
