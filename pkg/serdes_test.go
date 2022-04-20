@@ -335,3 +335,27 @@ func TestNestedSetMsg(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }
+
+func TestAuto(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	assert.Equal(
+		t,
+		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
+		config.AutoFieldTest().Choice())
+	assert.Equal(t, int32(0), config.AutoFieldTest().Auto())
+
+	config.AutoFieldTest().SetValue(10)
+	assert.Equal(
+		t,
+		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("value"),
+		config.AutoFieldTest().Choice())
+
+	config.AutoFieldTest().Auto()
+	assert.Equal(
+		t,
+		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
+		config.AutoFieldTest().Choice())
+}

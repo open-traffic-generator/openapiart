@@ -1948,6 +1948,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         "Warning: Default should not accept for this property ",
                         property_name,
                     )
+            if field.name.lower() == "auto":
+                field.setter_method = None
 
             fluent_new.interface_fields.append(field)
 
