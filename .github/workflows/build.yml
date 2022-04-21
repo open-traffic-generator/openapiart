@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: |
           python do.py setup
-          python do.py init true
+          python do.py init
       - uses: actions/download-artifact@v2
         id: download
         with:
