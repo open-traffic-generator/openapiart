@@ -1,5 +1,4 @@
-pytest
-openapiart.egg
 openapiart
 Flask
 sanity
+pytest

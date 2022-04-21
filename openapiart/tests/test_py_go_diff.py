@@ -77,15 +77,15 @@ def test_validation_errors():
         "required field `prefix_config.j[0].e_b` must not be empty" in errors
     )
     assert (
-        "value of `prefix_config.mac_pattern.mac.values[0]` must be a valid mac address, instead of `1`"
+        "value of `prefix_config.mac_pattern.mac.values[0]` must be a valid mac string, instead of `1`"
         in errors
     )
     assert (
-        "value of `prefix_config.mac_pattern.mac.values[1]` must be a valid mac address, instead of `20`"
+        "value of `prefix_config.mac_pattern.mac.values[1]` must be a valid mac string, instead of `20`"
         in errors
     )
     assert (
-        "value of `prefix_config.ipv4_pattern.ipv4.value` must be a valid ipv4 address, instead of `1.1`"
+        "value of `prefix_config.ipv4_pattern.ipv4.value` must be a valid ipv4 string, instead of `1.1`"
         in errors
     )
 
