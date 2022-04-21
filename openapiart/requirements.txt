@@ -5,7 +5,6 @@ requests
 typing
 setuptools
 wheel
-twine
 PyYAML
 openapi_spec_validator
 jsonpath_ng

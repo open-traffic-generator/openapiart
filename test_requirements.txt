@@ -1,3 +1,4 @@
+twine
 flask
 pytest
 flake8

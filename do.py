@@ -119,13 +119,18 @@ def setup():
         )
 
 
-def init():
-    run(
-        [
-            py() + " -m pip install -r requirements.txt",
-            py() + " -m pip install -r test_requirements.txt",
-        ]
-    )
+def init(use_sdk=False):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if use_sdk is False:
+        req = os.path.join(base_dir, "openapiart", "requirements.txt")
+        run(
+            [
+                py() + " -m pip install -r {}".format(req),
+                py() + " -m pip install -r test_requirements.txt",
+            ]
+        )
+    else:
+        art_path = os.path.join(base_dir, "art", "requirements.txt")
 
 
 def lint():
