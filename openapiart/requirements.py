@@ -33,7 +33,7 @@ def generate_requirements(path, file_name=None):
     with open(os.path.join(save_path, "requirements.txt"), "r") as fh:
         new_pkgs = fh.read().splitlines()
         new_pkgs = list(set(new_pkgs) - set(not_required_pkgs))
-    
+
     final_pkgs = []
     for n_pkg in new_pkgs:
         for pkg in orig_packages:
