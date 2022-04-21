@@ -23,6 +23,7 @@ def generate_requirements(path, file_name=None):
     subprocess.check_call(" ".join(process_args), shell=True)
 
     not_required_pkgs = [
+        "protobuf",
         "sanity",
         "typing_extensions",
     ]
@@ -39,10 +40,6 @@ def generate_requirements(path, file_name=None):
         for pkg in orig_packages:
             if n_pkg in pkg and pkg not in final_pkgs:
                 final_pkgs.append(pkg)
-    # for pkg in orig_packages:
-    #     for i, n_pkg in enumerate(new_pkgs):
-    #         if n_pkg in pkg:
-    #             new_pkgs[i] = pkg
 
     with open(os.path.join(save_path, "requirements.txt"), "w+") as fh:
         fh.write("--prefer-binary")
