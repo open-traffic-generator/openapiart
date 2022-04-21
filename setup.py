@@ -11,7 +11,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
 
-requirements_path = os.path.join(base_dir, "..", "openapiart", "requirements.txt")
+requirements_path = os.path.join(base_dir, "openapiart", "requirements.txt")
 test_req_path = os.path.join(base_dir, "test_requirements.txt")
 installation_requires = []
 test_requires = []
