@@ -17,7 +17,7 @@ installation_requires = []
 test_requires = []
 if os.path.exists(requirements_path) is False:
     raise Exception("Could not find requirements path")
-with open("requirements.txt") as f:
+with open(requirements_path) as f:
     installation_requires = f.read().splitlines()
     if "--prefer-binary" in installation_requires:
         installation_requires.remove("--prefer-binary")

@@ -119,9 +119,9 @@ def setup():
         )
 
 
-def init(use_sdk=False):
+def init(use_sdk=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    if use_sdk is False:
+    if use_sdk is None:
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
         run(
             [
@@ -131,6 +131,12 @@ def init(use_sdk=False):
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
+        run(
+            [
+                py() + " -m pip install -r {}".format(art_path),
+            ]
+        )
+
 
 
 def lint():

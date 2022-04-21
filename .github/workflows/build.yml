@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: |
           python do.py setup
-          python do.py init
+          python do.py init true
       - uses: actions/download-artifact@v2
         with:
           name: generated-artifacts
