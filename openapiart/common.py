@@ -264,7 +264,7 @@ class OpenApiValidator(object):
             self._validation_errors.clear()
 
     def validate_mac(self, path, mac):
-        msg = "value of `{}` must be a valid mac address, instead of `{}`".format(path, mac)
+        msg = "value of `{}` must be a valid mac string, instead of `{}`".format(path, mac)
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
             self._append_error(msg)
         try:
@@ -276,7 +276,7 @@ class OpenApiValidator(object):
             self._append_error(msg)
 
     def validate_ipv4(self, path, ip):
-        msg = "value of `{}` must be a valid ipv4 address, instead of `{}`".format(path, ip)
+        msg = "value of `{}` must be a valid ipv4 string, instead of `{}`".format(path, ip)
         if ip is None or not isinstance(ip, (str, unicode)) or ip.count(" ") != 0:
             self._append_error(msg)
         if len(ip.split(".")) != 4:
@@ -288,7 +288,7 @@ class OpenApiValidator(object):
             self._append_error(msg)
 
     def validate_ipv6(self, path, ip):
-        msg = "value of `{}` must be a valid ipv6 address, instead of `{}`".format(path, ip)
+        msg = "value of `{}` must be a valid ipv6 string, instead of `{}`".format(path, ip)
         if ip is None or not isinstance(ip, (str, unicode)):
             self._append_error(msg)
             return False
@@ -339,7 +339,7 @@ class OpenApiValidator(object):
         if isinstance(value, str):
             value = len(value)
         if (min is not None and value < min) or (max is not None and value > max):
-            self._append_error("length of `{}` must be in the range of [{}, {}], instead of `{}`".format(
+            self._append_error("length of field `{}` must be in the range of [{}, {}], instead of `{}`".format(
                 path,
                 min if min is not None else "",
                 max if max is not None else "",
