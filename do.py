@@ -121,10 +121,6 @@ def setup():
 
 def init(use_sdk=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    print("###########################")
-    print(os.path.abspath(__file__))
-    print(base_dir)
-    print("###########################")
     if use_sdk is None:
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
         run(
@@ -139,6 +135,7 @@ def init(use_sdk=None):
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
+                py() + " -m pip install -r test_requirements.txt",
             ]
         )
 
