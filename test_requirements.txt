@@ -3,3 +3,5 @@ flask
 pytest
 flake8
 pytest-cov
+jsonpath_ng
+openapi_spec_validator
