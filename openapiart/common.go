@@ -30,6 +30,7 @@ type GrpcTransport interface {
 	// DialTimeout get timeout in grpc dial
 	DialTimeout() time.Duration
 	// SetClientConnection set grpc DialContext
+	// SetClientConnection and (SetLocation, SetDialTimeout) are mutually exclusive
 	SetClientConnection(con *grpc.ClientConn) GrpcTransport
 	// ClientConnection get grpc DialContext
 	ClientConnection() *grpc.ClientConn
