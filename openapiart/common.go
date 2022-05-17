@@ -23,6 +23,8 @@ type GrpcTransport interface {
 	RequestTimeout() time.Duration
 	SetDialTimeout(value time.Duration) GrpcTransport
 	DialTimeout() time.Duration
+	SetClientConnection(con *grpc.ClientConn) GrpcTransport
+	ClientConnection() *grpc.ClientConn
 }
 
 // Location
@@ -52,6 +54,15 @@ func (obj *grpcTransport) DialTimeout() time.Duration {
 
 func (obj *grpcTransport) SetDialTimeout(value time.Duration) GrpcTransport {
 	obj.dialTimeout = value
+	return obj
+}
+
+func (obj *grpcTransport) ClientConnection() *grpc.ClientConn {
+	return obj.clientConnection
+}
+
+func (obj *grpcTransport) SetClientConnection(con *grpc.ClientConn) GrpcTransport {
+	obj.clientConnection = con
 	return obj
 }
 
