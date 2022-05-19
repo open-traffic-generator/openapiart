@@ -1,12 +1,17 @@
 package openapiart_test
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"testing"
+	"time"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var apis []openapiart.OpenapiartApi
@@ -20,9 +25,20 @@ func init() {
 	grpcApi := openapiart.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 	apis = append(apis, grpcApi)
+
 	httpApi := openapiart.NewApi()
 	httpApi.NewHttpTransport().SetLocation(httpServer.Location)
 	apis = append(apis, httpApi)
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancelFunc()
+	conn, err := grpc.DialContext(ctx, grpcServer.Location, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(fmt.Sprintf("failed grpc dialcontext due to %s", err.Error()))
+	}
+	clientConnApi := openapiart.NewApi()
+	clientConnApi.NewGrpcTransport().SetClientConnection(conn)
+	apis = append(apis, clientConnApi)
 }
 
 func TestSetConfigSuccess(t *testing.T) {
@@ -152,4 +168,22 @@ func TestConnectionClose(t *testing.T) {
 	assert.NotNil(t, resp)
 	err1 := api.Close()
 	assert.Nil(t, err1)
+}
+
+func TestGrpcClientConnection(t *testing.T) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancelFunc()
+	conn, err := grpc.DialContext(ctx, grpcServer.Location, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(fmt.Sprintf("failed grpc dialcontext due to %s", err.Error()))
+	}
+	api := openapiart.NewApi()
+	grpc := api.NewGrpcTransport()
+	grpc.SetClientConnection(conn)
+	assert.NotNil(t, grpc.ClientConnection())
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 }
