@@ -169,3 +169,21 @@ func TestConnectionClose(t *testing.T) {
 	err1 := api.Close()
 	assert.Nil(t, err1)
 }
+
+func TestGrpcClientConnection(t *testing.T) {
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancelFunc()
+	conn, err := grpc.DialContext(ctx, grpcServer.Location, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(fmt.Sprintf("failed grpc dialcontext due to %s", err.Error()))
+	}
+	api := openapiart.NewApi()
+	grpc := api.NewGrpcTransport()
+	grpc.SetClientConnection(conn)
+	assert.NotNil(t, grpc.ClientConnection())
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
