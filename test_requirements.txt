@@ -1,5 +1,7 @@
+twine
+flask
 pytest
-openapiart.egg
-openapiart
-Flask
-sanity
+flake8
+pytest-cov
+jsonpath_ng
+openapi_spec_validator

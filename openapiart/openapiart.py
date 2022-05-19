@@ -5,6 +5,7 @@ import shutil
 import yaml
 import subprocess
 import platform
+from .requirements import generate_requirements
 
 
 class OpenApiArt(object):
@@ -194,6 +195,9 @@ class OpenApiArt(object):
             cmd = " ".join(process_args)
             print("Formatting Generated Python SDK: {}".format(cmd))
             subprocess.check_call(cmd, shell=True)
+            generate_requirements(
+                path=os.path.normpath(os.path.join(python_sdk_dir, ".."))
+            )
         return self
 
     def GenerateGoSdk(self, package_dir, package_name):

@@ -5,7 +5,8 @@ import sys
 import shutil
 import subprocess
 import platform
-from generate_requirements import generate_requirements
+
+# from openapiart.generate_requirements import generate_requirements
 
 
 BLACK_VERSION = "22.1.0"
@@ -101,35 +102,42 @@ def setup_ext():
 
 
 def setup():
-    run(
-        [
-            py() + " -m pip install --upgrade pip",
-            py() + " -m pip install --upgrade virtualenv",
-            py() + " -m virtualenv .env",
-        ]
-    )
+    if platform.python_version_tuple()[0] == 3:
+        run(
+            [
+                py() + " -m pip install --upgrade pip",
+                py() + " -m {} .env".format(pkg),
+            ]
+        )
+    else:
+        run(
+            [
+                py() + " -m pip install --upgrade pip",
+                py() + " -m pip install --upgrade virtualenv",
+                py() + " -m virtualenv .env",
+            ]
+        )
 
 
-def init():
-    if sys.version_info[0] == 3:
-        run([py() + " -m pip install black=={}".format(BLACK_VERSION)])
-    base_path = os.getcwd()
-    openapiart_path = os.path.join(base_path, "openapiart")
-    test_path = os.path.join(openapiart_path, "tests")
-    generate_requirements(
-        openapiart_path,
-        ignore_path=test_path,
-        save_path=base_path,
-        file_name="new_requirements.txt",
-    )
-    generate_requirements(
-        test_path, save_path=base_path, file_name="test_requirements.txt"
-    )
-    run(
-        [
-            py() + " -m pip install -r requirements.txt",
-        ]
-    )
+def init(use_sdk=None):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if use_sdk is None:
+        req = os.path.join(base_dir, "openapiart", "requirements.txt")
+        run(
+            [
+                py() + " -m pip install -r {}".format(req),
+                py() + " -m pip install -r test_requirements.txt",
+            ]
+        )
+    else:
+        art_path = os.path.join(base_dir, "art", "requirements.txt")
+        # import pdb; pdb.set_trace()
+        run(
+            [
+                py() + " -m pip install -r {}".format(art_path),
+                py() + " -m pip install -r test_requirements.txt",
+            ]
+        )
 
 
 def lint():
@@ -178,15 +186,13 @@ def generate():
             py() + " " + artifacts,
         ]
     )
-    artifact_path = os.path.join(os.path.dirname(__file__), "art")
-    generate_requirements(path=artifact_path)
 
 
 def testpy():
     run(
         [
-            py() + " -m pip install flask",
-            py() + " -m pip install pytest-cov",
+            # py() + " -m pip install flask",
+            # py() + " -m pip install pytest-cov",
             py()
             + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
