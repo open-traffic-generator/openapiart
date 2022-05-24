@@ -1,13 +1,19 @@
 package openapiart_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+
+	"runtime"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -158,6 +164,41 @@ func TestClearWarnings(t *testing.T) {
 	}
 }
 
+func NetStat(state string) []string {
+	var grep string
+	grep = "grep"
+	if runtime.GOOS == "windows" {
+		grep = "findstr"
+	}
+	c1 := exec.Command("netstat", "-n")
+	c2 := exec.Command(grep, "127.0.0.1:50051")
+	c3 := exec.Command(grep, state)
+	r1, w1 := io.Pipe()
+	r2, w2 := io.Pipe()
+
+	c1.Stdout = w1
+	c2.Stdin = r1
+	c2.Stdout = w2
+	c3.Stdin = r2
+	var b3 bytes.Buffer
+	c3.Stdout = &b3
+	c1.Start()
+	c2.Start()
+	c3.Start()
+	c1.Wait()
+	w1.Close()
+	c2.Wait()
+	w2.Close()
+	c3.Wait()
+	var data []string
+	for _, val := range strings.Split(b3.String(), "\n") {
+		if val != "" {
+			data = append(data, val)
+		}
+	}
+	return data
+}
+
 func TestConnectionClose(t *testing.T) {
 	api := openapiart.NewApi()
 	api.NewGrpcTransport().SetLocation(grpcServer.Location)
@@ -166,8 +207,27 @@ func TestConnectionClose(t *testing.T) {
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	err1 := api.Close()
+
+	httpApi := openapiart.NewApi()
+	httpApi.NewHttpTransport().SetLocation(httpServer.Location)
+	config1 := NewFullyPopulatedPrefixConfig(httpApi)
+	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp1, err1 := httpApi.SetConfig(config1)
 	assert.Nil(t, err1)
+	assert.NotNil(t, resp1)
+
+	err2 := api.Close()
+	assert.Nil(t, err2)
+	data := NetStat("ESTABLISHED")
+	fmt.Println(len(data))
+	fmt.Println(data)
+	assert.NotEqual(t, len(data), 0)
+	err3 := httpApi.Close()
+	assert.Nil(t, err3)
+	data1 := NetStat("ESTABLISHED")
+	fmt.Println(len(data1))
+	fmt.Println(data1)
+	assert.Equal(t, len(data1), 0)
 }
 
 func TestGrpcClientConnection(t *testing.T) {

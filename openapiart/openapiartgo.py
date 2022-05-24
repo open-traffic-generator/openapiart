@@ -627,8 +627,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return err
                 }}
                 if api.hasHttpTransport() {{
+                    resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
+                    if err != nil {{
+                        return err
+                    }}
+                    err1 := resp.Body.Close()
                     api.http = nil
                     api.httpClient.client = nil
+                    return err1
                 }}
                 return nil
             }}
@@ -671,7 +677,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
-                return httpClient.client.Do(req)
+                response, err := httpClient.client.Do(req)
+                return response, err
             }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
