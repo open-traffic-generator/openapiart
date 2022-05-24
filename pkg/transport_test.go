@@ -164,7 +164,7 @@ func TestClearWarnings(t *testing.T) {
 	}
 }
 
-func NetStat(state string) []string {
+func NetStat(state string, t *testing.T) []string {
 	var grep string
 	grep = "grep"
 	if runtime.GOOS == "windows" {
@@ -182,14 +182,24 @@ func NetStat(state string) []string {
 	c3.Stdin = r2
 	var b3 bytes.Buffer
 	c3.Stdout = &b3
-	c1.Start()
-	c2.Start()
-	c3.Start()
-	c1.Wait()
-	w1.Close()
-	c2.Wait()
-	w2.Close()
-	c3.Wait()
+	e1 := c1.Start()
+	e2 := c2.Start()
+	e3 := c3.Start()
+	e4 := c1.Wait()
+	e5 := w1.Close()
+	e6 := c2.Wait()
+	e7 := w2.Close()
+	e8 := c3.Wait()
+
+	assert.Nil(t, e1)
+	assert.Nil(t, e2)
+	assert.Nil(t, e3)
+	assert.Nil(t, e4)
+	assert.Nil(t, e5)
+	assert.Nil(t, e6)
+	assert.Nil(t, e7)
+	assert.Nil(t, e8)
+
 	var data []string
 	for _, val := range strings.Split(b3.String(), "\n") {
 		if val != "" {
@@ -218,13 +228,13 @@ func TestConnectionClose(t *testing.T) {
 
 	err2 := api.Close()
 	assert.Nil(t, err2)
-	data := NetStat("ESTABLISHED")
+	data := NetStat("ESTABLISHED", t)
 	fmt.Println(len(data))
 	fmt.Println(data)
 	assert.NotEqual(t, len(data), 0)
 	err3 := httpApi.Close()
 	assert.Nil(t, err3)
-	data1 := NetStat("ESTABLISHED")
+	data1 := NetStat("ESTABLISHED", t)
 	fmt.Println(len(data1))
 	fmt.Println(data1)
 	assert.Equal(t, len(data1), 0)
