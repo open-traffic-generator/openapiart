@@ -177,13 +177,19 @@ def lint():
     )
 
 
-def generate():
+def generate(sdk=None, cicd=False):
     artifacts = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "artifacts.py")
     )
+    if cicd:
+        run (
+            [
+                py() + " -m pip install openapiart"
+            ]
+        )
     run(
         [
-            py() + " " + artifacts,
+            py() + " " + artifacts + " " + sdk + " " + cicd,
         ]
     )
 
