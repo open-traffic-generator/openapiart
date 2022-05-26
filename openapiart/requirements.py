@@ -23,7 +23,6 @@ def generate_requirements(path, file_name=None):
     subprocess.check_call(" ".join(process_args), shell=True)
 
     not_required_pkgs = [
-        "protobuf",
         "sanity",
         "typing_extensions",
     ]
