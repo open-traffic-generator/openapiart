@@ -131,7 +131,6 @@ def init(use_sdk=None):
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
-        # import pdb; pdb.set_trace()
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
@@ -182,11 +181,7 @@ def generate(sdk=None, cicd=False):
         os.path.join(os.path.dirname(__file__), "artifacts.py")
     )
     if cicd:
-        run (
-            [
-                py() + " -m pip install openapiart"
-            ]
-        )
+        run([py() + " -m pip install openapiart"])
     run(
         [
             py() + " " + artifacts + " " + sdk + " " + cicd,
