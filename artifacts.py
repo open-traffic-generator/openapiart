@@ -68,12 +68,15 @@ if __name__ == "__main__":
     if len(sys.argv) == 3:
         sdk = sys.argv[1]
         cicd = sys.argv[2]
-    if not cicd:
-        sys.path.append(
-            os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-        )
-        module = importlib.import_module("openapiart.openapiart")
-        openapiart_class = getattr(module, "OpenApiArt")
-    else:
+    try:
         from openapiart.openapiart import OpenApiArt as openapiart_class
+    except:
+        if not cicd:
+            sys.path.append(
+                os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+            )
+            module = importlib.import_module("openapiart.openapiart")
+            openapiart_class = getattr(module, "OpenApiArt")
+        else:
+            raise Exception("Error: Not able to import openapiart module with the generated sdk")
     create_openapi_artifacts(openapiart_class, sdk)
