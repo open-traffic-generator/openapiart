@@ -176,7 +176,7 @@ def lint():
     )
 
 
-def generate(sdk=None, cicd=False):
+def generate(sdk="", cicd=""):
     artifacts = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "artifacts.py")
     )
