@@ -627,13 +627,37 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return err
                 }}
                 if api.hasHttpTransport() {{
-                    resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
+                    // -----------response.Body.Close() call---------
+                    resp, err := api.httpSendRecv("api/", `{}`, "GET")
                     if err != nil {{
                         return err
                     }}
                     err1 := resp.Body.Close()
                     api.http = nil
                     api.httpClient.client = nil
+                    // -----------------------------------------------
+
+                    // -------------TCP connection close call-----------
+                    // err1 := api.http.conn.Close()
+                    // -------------------------------------------------
+
+                    // ------------------- Request Header Close call --------------
+                    // var bodyReader = bytes.NewReader([]byte(`{{}}`))
+                    // queryUrl, err := url.Parse(api.http.location)
+                    // if err != nil {{
+                    // 	return err
+                    // }}
+                    // queryUrl, _ = queryUrl.Parse("api/config")
+                    // req, _ := http.NewRequest("GET", queryUrl.String(), bodyReader)
+                    // req.Header.Set("Content-Type", "application/json")
+                    // req.Header.Set("Connection", "close")
+                    // req = req.WithContext(api.httpClient.ctx)
+                    // _, err1 := api.httpClient.client.Do(req)
+                    // ------------------------------------------------
+
+                    // -------------------- With TCP conn.SetLinger() ----------------
+                    // err1 := api.http.conn.(*net.TCPConn).SetLinger(0)
+                    // api.http.conn.Close()
                     return err1
                 }}
                 return nil

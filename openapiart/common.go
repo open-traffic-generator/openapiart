@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net"
 	"regexp"
 	"google.golang.org/grpc"
 )
@@ -78,6 +79,7 @@ func (obj *grpcTransport) SetClientConnection(con *grpc.ClientConn) GrpcTranspor
 type httpTransport struct {
 	location string
 	verify   bool
+	conn     net.Conn
 }
 
 type HttpTransport interface {
