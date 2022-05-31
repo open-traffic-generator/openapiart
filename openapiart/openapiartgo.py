@@ -628,7 +628,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 if api.hasHttpTransport() {{
                     // -----------response.Body.Close() call---------
-                    resp, err := api.httpSendRecv("api/", `{}`, "GET")
+                    resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
                     if err != nil {{
                         return err
                     }}
@@ -673,11 +673,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (api *{internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
                     var verify = !api.http.verify
+                    // tr := http.Transport{{
+                    // 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
+                    // 		tcpConn, err := (&net.Dialer{{}}).DialContext(
+                    // 			ctx, network, addr,
+                    // 		)
+                    // 		if err != nil {{
+                    // 			return nil, err
+                    // 		}}
+                    // 		api.http.conn = tcpConn
+                    // 		return tcpConn, nil
+                    // 	}},
+                    // }}
                     client := httpClient{{
                         client: &http.Client{{
                             Transport: &http.Transport{{
                                 TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
                             }},
+                            // Transport: &tr,
                         }},
                         ctx: context.Background(),
                     }}
