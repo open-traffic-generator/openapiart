@@ -18,37 +18,65 @@ import os
 import importlib
 
 
-def create_openapi_artifacts(openapiart_class):
-    openapiart_class(
+def create_openapi_artifacts(openapiart_class, sdk=None):
+    open_api = openapiart_class(
         api_files=[
-        os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"),
-        os.path.join(os.path.dirname(__file__), "./openapiart/tests/common/common.yaml"),
-        os.path.join(os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"),
-
-        # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
-        os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_a.api.yaml"),
-        os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/service_b.api.yaml"),
-    ],
+            os.path.join(
+                os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"
+            ),
+            os.path.join(
+                os.path.dirname(__file__),
+                "./openapiart/tests/common/common.yaml",
+            ),
+            os.path.join(
+                os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"
+            ),
+            # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
+            os.path.join(
+                os.path.dirname(__file__),
+                "./openapiart/goserver/api/service_a.api.yaml",
+            ),
+            os.path.join(
+                os.path.dirname(__file__),
+                "./openapiart/goserver/api/service_b.api.yaml",
+            ),
+        ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
         proto_service="Openapi",
-    ).GeneratePythonSdk(
-        package_name="sanity"
-    ).GenerateGoSdk(
-        package_dir="github.com/open-traffic-generator/openapiart/pkg",
-        package_name="openapiart"
-    ).GenerateGoServer(
-        module_path="github.com/open-traffic-generator/openapiart/pkg",
-        models_prefix="openapiart",
-        models_path="github.com/open-traffic-generator/openapiart/pkg"
-    ).GoTidy(
-        relative_package_dir="pkg",
     )
+    if sdk == "python" or sdk == None:
+        open_api.GeneratePythonSdk(package_name="sanity")
 
+    if sdk == "go" or sdk == None:
+        open_api.GenerateGoSdk(
+            package_dir="github.com/open-traffic-generator/openapiart/pkg",
+            package_name="openapiart",
+        )
+        open_api.GenerateGoServer(
+            module_path="github.com/open-traffic-generator/openapiart/pkg",
+            models_prefix="openapiart",
+            models_path="github.com/open-traffic-generator/openapiart/pkg",
+        )
+        open_api.GoTidy(
+            relative_package_dir="pkg",
+        )
 
 
 if __name__ == "__main__":
-    sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), "..")))
-    module = importlib.import_module("openapiart.openapiart")
-    openapiart_class = getattr(module, "OpenApiArt")
-    create_openapi_artifacts(openapiart_class)
+    sdk = None
+    if len(sys.argv) == 3:
+        sdk = sys.argv[1]
+        cicd = sys.argv[2]
+    try:
+        from openapiart.openapiart import OpenApiArt as openapiart_class
+    except:
+        if not cicd:
+            sys.path.append(
+                os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+            )
+            module = importlib.import_module("openapiart.openapiart")
+            openapiart_class = getattr(module, "OpenApiArt")
+        else:
+            raise Exception("Error: Not able to import openapiart module with the generated sdk")
+    create_openapi_artifacts(openapiart_class, sdk)
