@@ -544,7 +544,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if getattr(self, "_REQUIRED", None) is None:
             return
         for name in self._REQUIRED:
-            if getattr(self, name, None) is None:
+            if self._properties.get(name) is None:
                 msg = "{} is a mandatory property of {}" " and should not be set to None".format(
                     name,
                     self.__class__,
