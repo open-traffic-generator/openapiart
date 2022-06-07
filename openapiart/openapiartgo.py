@@ -104,6 +104,8 @@ class FluentField(object):
         self.hasminmaxlength = False
         self.min_length = None
         self.max_length = None
+        self.status = None
+        self.status_msg = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -261,6 +263,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
+        self._write('import "google.golang.org/grpc/credentials/insecure"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(
@@ -636,6 +639,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                openapi_warnings = nil
                 return &api
             }}
 
@@ -1399,10 +1403,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_enum_choice is not None
                 else "",
             )
+        status = False
+        if field.status is not None and field.status == "deprecated":
+            status = True
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
             func (obj *{struct}) {getter_method} {{
+                {status}
                 {body}
             }}
             """.format(
@@ -1412,12 +1420,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
+                status=""
+                if status is False
+                else "deprecated(`{msg}`)".format(msg=field.status_msg),
             )
         )
 
     def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
             return
+        status = False
+        if field.status is not None and field.status == "deprecated":
+            status = True
 
         if field.isArray and field.isEnum:
             body = """items := []{pb_pkg_name}.{interface}_{fieldname}_Enum{{}}
@@ -1605,6 +1619,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
+                {status}
                 {set_choice}
                 {body}
                 return obj
@@ -1618,6 +1633,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 fieldstruct=new.interface,
                 set_choice=set_choice,
+                status=""
+                if status is False
+                else "deprecated(`{msg}`)".format(msg=field.status_msg),
             )
         )
 
@@ -1770,6 +1788,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+            field.status = property_schema.get("x-status", {}).get("status")
+            field.status_msg = property_schema.get("x-status", {}).get(
+                "additional_information"
+            )
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2031,6 +2053,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
+        status_body = ""
+        if field.status is not None and field.status == "deprecated":
+            status_body = """
+            // {name} is deprecated
+            if obj.obj.{name}{enum} != {value} {{
+                deprecated(`{msg}`)
+            }}
+            """.format(
+                name=field.name,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()"
+                if field.isEnum and field.isArray is False
+                else "",
+                msg=field.status_msg,
+            )
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
@@ -2148,6 +2185,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
+        if status_body != "":
+            body = "{} \n {}".format(body, status_body)
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2192,6 +2231,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         body += """
             if {condition} {{
+                {msg}
                 {body}
             }}
         """.format(
@@ -2199,6 +2239,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
+            msg="deprecated(`{}`)".format(field.status_msg)
+            if field.status is not None and field.status == "deprecated"
+            else "",
         )
         return body
 

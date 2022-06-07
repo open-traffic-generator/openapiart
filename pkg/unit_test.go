@@ -1665,3 +1665,48 @@ func TestClone(t *testing.T) {
 	fmt.Println(&lObj1, &lObj2)
 	assert.NotSame(t, &lObj1, &lObj2)
 }
+
+func TestDeprecationWarning(t *testing.T) {
+
+	// Warning by config
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(10).SetEB(20)
+	config.SetA("abc")
+	config.SetB(20)
+	config.SetC(30)
+
+	warnings := api.GetApiWarnings()
+
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 1)
+	api.ClearApiWarnings()
+
+	assert.Len(t, api.GetApiWarnings(), 0)
+
+	// Warning by ToJson
+	data, err := config.ToJson()
+
+	assert.Nil(t, err)
+	warnings1 := api.GetApiWarnings()
+
+	assert.NotNil(t, warnings1)
+	assert.Len(t, warnings1, 1)
+	api.ClearApiWarnings()
+
+	assert.Len(t, api.GetApiWarnings(), 0)
+
+	config1 := api.NewPrefixConfig()
+
+	// Warning by FromJson
+	err1 := config1.FromJson(data)
+	assert.Nil(t, err1)
+	warnings2 := api.GetApiWarnings()
+
+	assert.NotNil(t, warnings2)
+	assert.Len(t, warnings2, 1)
+	api.ClearApiWarnings()
+
+	assert.Len(t, api.GetApiWarnings(), 0)
+
+}

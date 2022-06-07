@@ -43,13 +43,18 @@ components:
             status_500:
               x-field-uid: 4
         a:
-          x-status: under-review
+          x-status:
+            status: under-review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status: deprecated
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Deprecated message and use instead information and
+              deprecated from version and lib names can be provided
           description: |-
             Longer multi-line description
             Second line is here
@@ -172,7 +177,8 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: under-review
+          x-status:
+            status: under-review
           description: |-
             string minimum&maximum Length
           type: string
@@ -180,7 +186,8 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: under-review
+          x-status:
+            status: under-review
           description: |-
             Array of Hex
           type: array
