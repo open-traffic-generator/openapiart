@@ -381,7 +381,7 @@ func TestBadMacValidation(t *testing.T) {
 		macObj := config.MacPattern().Mac().SetValue(mac)
 		err := macObj.Validate()
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "Invalid Mac")
+			assert.Contains(t, err.Error(), "value of `pattern_macpattern_mac.value` must be a valid mac")
 		}
 	}
 }
@@ -401,7 +401,7 @@ func TestBadMacValues(t *testing.T) {
 	err := mac.Validate()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid mac string")
 	}
 }
 
@@ -414,7 +414,7 @@ func TestBadMacIncrement(t *testing.T) {
 	err := mac.Validate()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid mac string")
 	}
 }
 
@@ -427,7 +427,7 @@ func TestBadMacDecrement(t *testing.T) {
 	err := mac.Validate()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid mac string")
 	}
 }
 
@@ -449,7 +449,7 @@ func TestBadIpv4Validation(t *testing.T) {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
 		err := ipv4.Validate()
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "Invalid Ipv4")
+			assert.Contains(t, err.Error(), "must be a valid ipv4 string")
 		}
 	}
 }
@@ -460,7 +460,7 @@ func TestBadIpv4Values(t *testing.T) {
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid ipv4 addresses")
+		assert.Contains(t, err.Error(), "must be a valid ipv4 string")
 	}
 }
 
@@ -472,7 +472,7 @@ func TestBadIpv4Increment(t *testing.T) {
 	ipv4.SetCount(10)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid Ipv4")
+		assert.Contains(t, err.Error(), "must be a valid ipv4 string")
 	}
 }
 
@@ -484,7 +484,7 @@ func TestBadIpv4Decrement(t *testing.T) {
 	ipv4.SetCount(10)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "Invalid Ipv4")
+		assert.Contains(t, err.Error(), "must be a valid ipv4 string")
 	}
 }
 
@@ -506,7 +506,7 @@ func TestBadIpv6Validation(t *testing.T) {
 		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
 		err := ipv6.Validate()
 		if assert.Error(t, err) {
-			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+			assert.Contains(t, strings.ToLower(err.Error()), "must be a valid ipv6 string")
 		}
 	}
 }
@@ -517,7 +517,7 @@ func TestBadIpv6Values(t *testing.T) {
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValues(BadIpv6)
 	err := ipv6.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6 address")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid ipv6 string")
 	}
 }
 
@@ -529,7 +529,7 @@ func TestBadIpv6Increment(t *testing.T) {
 	ipv6.SetCount(10)
 	err := ipv6.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid ipv6 string")
 	}
 }
 
@@ -541,7 +541,7 @@ func TestBadIpv6Decrement(t *testing.T) {
 	ipv6.SetCount(10)
 	err := ipv6.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+		assert.Contains(t, strings.ToLower(err.Error()), "must be a valid ipv6 string")
 	}
 }
 
@@ -670,7 +670,7 @@ func TestRequiredField(t *testing.T) {
 	mandate := openapiart.NewMandate()
 	err := mandate.Validate()
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "RequiredParam is required field")
+	assert.Contains(t, err.Error(), "required field `mandate.required_param` must not be empty")
 }
 
 func TestOptionalDefault(t *testing.T) {
@@ -757,7 +757,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	}`
 	err1 := config.FromJson(new_json1)
 	assert.NotNil(t, err1)
-	assert.Contains(t, err1.Error(), "A is required field")
+	assert.Contains(t, err1.Error(), "required field `FromJson -> prefix_config.a` must not be empty")
 }
 
 func TestChoiceStale(t *testing.T) {
@@ -980,7 +980,8 @@ func TestStringLengthError(t *testing.T) {
 	config.Name()
 	err := config.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "3 <= length of prefixconfig.strlen <= 6 but got 8")
+		assert.Contains(t, err.Error(),
+			"length of field `prefix_config.str_len` must be in range [3, 6], instead of `8`")
 	}
 }
 
@@ -1015,7 +1016,7 @@ func TestMObjectValidation(t *testing.T) {
 	mObject := openapiart.NewMObject()
 	err := mObject.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "required field on interface mobject")
+		assert.Contains(t, err.Error(), "required field")
 	}
 }
 
@@ -1037,13 +1038,14 @@ func TestMobjectValidationError(t *testing.T) {
 		SetIpv4("1.1.1.1.2")
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
 	err := config.Validate()
+	fmt.Println(err.Error())
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()),
-			"invalid mac address",
-			"invalid ipv4 address",
-			"invalid hex value",
-			"invalid ipv6 address")
+		assert.Contains(t, err.Error(), "must be in range [10, 90], instead of `120`")
+		assert.Contains(t, err.Error(), "must be a valid hex")
+		assert.Contains(t, err.Error(), "must be a valid mac")
+		assert.Contains(t, err.Error(), "must be a valid ipv4")
+		assert.Contains(t, err.Error(), "must be a valid ipv6")
 	}
 }
 
@@ -1062,11 +1064,10 @@ func TestLObjectError(t *testing.T) {
 	err := config.Validate()
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()),
-			"invalid mac address",
-			"invalid ipv4 address",
-			"invalid hex value",
-			"invalid ipv6 address")
+		assert.Contains(t, err.Error(), "must be a valid hex")
+		assert.Contains(t, err.Error(), "must be a valid mac")
+		assert.Contains(t, err.Error(), "must be a valid ipv4")
+		assert.Contains(t, err.Error(), "must be a valid ipv6")
 	}
 }
 
