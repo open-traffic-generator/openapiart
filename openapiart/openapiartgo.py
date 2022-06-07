@@ -1751,6 +1751,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.schema = property_schema
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
+            field.schema_name = property_name
             field.type = self._get_struct_field_type(property_schema, field)
             if (
                 len(choice_enums) == 1
