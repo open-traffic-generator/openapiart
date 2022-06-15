@@ -628,13 +628,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 if api.hasHttpTransport() {{
                     // -----------response.Body.Close() call---------
-                    resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
-                    if err != nil {{
-                        return err
-                    }}
-                    err1 := resp.Body.Close()
-                    api.http = nil
-                    api.httpClient.client = nil
+                    // resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
+                    // if err != nil {{
+                        // return err
+                    // }}
+                    // err1 := resp.Body.Close()
+                    // api.http = nil
+                    // api.httpClient.client = nil
                     // -----------------------------------------------
 
                     // -------------TCP connection close call-----------
@@ -656,8 +656,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     // ------------------------------------------------
 
                     // -------------------- With TCP conn.SetLinger() ----------------
-                    // err1 := api.http.conn.(*net.TCPConn).SetLinger(0)
-                    // api.http.conn.Close()
+                    err1 := api.http.conn.(*net.TCPConn).SetLinger(0)
+                    api.http.conn.Close()
+                    api.http.conn = nil
+                    api.http = nil
+                    api.httpClient.client = nil
                     return err1
                 }}
                 return nil
@@ -672,25 +675,43 @@ class OpenApiArtGo(OpenApiArtPlugin):
             // httpConnect builds up a http connection
             func (api *{internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
-                    var verify = !api.http.verify
-                    // tr := http.Transport{{
-                    // 	DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
-                    // 		tcpConn, err := (&net.Dialer{{}}).DialContext(
-                    // 			ctx, network, addr,
-                    // 		)
-                    // 		if err != nil {{
-                    // 			return nil, err
-                    // 		}}
-                    // 		api.http.conn = tcpConn
-                    // 		return tcpConn, nil
-                    // 	}},
-                    // }}
+                    var tr http.Transport
+                    if api.http.verify {{
+                        tr = http.Transport{{
+                            DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
+                                tcpConn, err := (&net.Dialer{{}}).DialContext(ctx, network, addr)
+                                if err != nil {{
+                                    return nil, err
+                                }}
+                                tlsConn := tls.Client(tcpConn, &tls.Config{{}})
+                                err = tlsConn.Handshake()
+                                if err != nil {{
+                                    return nil, err
+                                }}
+                                api.http.conn = tcpConn
+                                return tcpConn, nil
+                            }},
+                        }}
+                    }} else {{
+                        tr = http.Transport{{
+                            DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
+                                tcpConn, err := (&net.Dialer{{}}).DialContext(
+                                    ctx, network, addr,
+                                )
+                                if err != nil {{
+                                    return nil, err
+                                }}
+                                api.http.conn = tcpConn
+                                return tcpConn, nil
+                            }},
+                        }}
+                    }}
                     client := httpClient{{
                         client: &http.Client{{
-                            Transport: &http.Transport{{
-                                TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
-                            }},
-                            // Transport: &tr,
+                            // Transport: &http.Transport{{
+                               // TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
+                            // }},
+                            Transport: &tr,
                         }},
                         ctx: context.Background(),
                     }}
