@@ -687,7 +687,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                                 return nil, err
                             }}
                             api.http.conn = tcpConn
-                            return tcpConn, nil
+                            return tlsConn, nil
                         }},
                         DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
                             tcpConn, err := (&net.Dialer{{}}).DialContext(ctx, network, addr)
