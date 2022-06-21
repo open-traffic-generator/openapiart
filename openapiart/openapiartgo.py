@@ -165,10 +165,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
-            # "stringmac": "StringMac",
-            # "stringipv4": "StringIpv4",
-            # "stringipv6": "StringIpv6",
-            # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
 
@@ -627,41 +623,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return err
                 }}
                 if api.hasHttpTransport() {{
-                    // -----------response.Body.Close() call---------
-                    // resp, err := api.httpSendRecv("api/", `{{}}`, "GET")
-                    // if err != nil {{
-                        // return err
-                    // }}
-                    // err1 := resp.Body.Close()
-                    // api.http = nil
-                    // api.httpClient.client = nil
-                    // -----------------------------------------------
-
-                    // -------------TCP connection close call-----------
-                    // err1 := api.http.conn.Close()
-                    // -------------------------------------------------
-
-                    // ------------------- Request Header Close call --------------
-                    // var bodyReader = bytes.NewReader([]byte(`{{}}`))
-                    // queryUrl, err := url.Parse(api.http.location)
-                    // if err != nil {{
-                    // 	return err
-                    // }}
-                    // queryUrl, _ = queryUrl.Parse("api/config")
-                    // req, _ := http.NewRequest("GET", queryUrl.String(), bodyReader)
-                    // req.Header.Set("Content-Type", "application/json")
-                    // req.Header.Set("Connection", "close")
-                    // req = req.WithContext(api.httpClient.ctx)
-                    // _, err1 := api.httpClient.client.Do(req)
-                    // ------------------------------------------------
-
-                    // -------------------- With TCP conn.SetLinger() ----------------
-                    err1 := api.http.conn.(*net.TCPConn).SetLinger(0)
+                    err := api.http.conn.(*net.TCPConn).SetLinger(0)
                     api.http.conn.Close()
                     api.http.conn = nil
                     api.http = nil
                     api.httpClient.client = nil
-                    return err1
+                    return err
                 }}
                 return nil
             }}
@@ -700,9 +667,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     client := httpClient{{
                         client: &http.Client{{
-                            // Transport: &http.Transport{{
-                               // TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
-                            // }},
                             Transport: &tr,
                         }},
                         ctx: context.Background(),
