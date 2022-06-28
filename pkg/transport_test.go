@@ -164,48 +164,33 @@ func TestClearWarnings(t *testing.T) {
 	}
 }
 
-func NetStat(state string, t *testing.T) []string {
+func NetStat(t *testing.T) []string {
 	var grep string
 	grep = "grep"
 	if runtime.GOOS == "windows" {
 		grep = "findstr"
 	}
-	c1 := exec.Command("netstat", "-no")
+	c1 := exec.Command("netstat", "-n")
 	c2 := exec.Command(grep, "127.0.0.1:50051")
-	c3 := exec.Command(grep, state)
 	r1, w1 := io.Pipe()
-	r2, w2 := io.Pipe()
 
 	c1.Stdout = w1
 	c2.Stdin = r1
-	c2.Stdout = w2
-	c3.Stdin = r2
-	var b3 bytes.Buffer
-	c3.Stdout = &b3
+	var b2 bytes.Buffer
+	c2.Stdout = &b2
 	e1 := c1.Start()
 	e2 := c2.Start()
-	e3 := c3.Start()
 	e4 := c1.Wait()
 	e5 := w1.Close()
-	e6 := c2.Wait()
-	e7 := w2.Close()
-	e8 := c3.Wait()
+	_ = c2.Wait()
 
 	assert.Nil(t, e1)
 	assert.Nil(t, e2)
-	assert.Nil(t, e3)
 	assert.Nil(t, e4)
 	assert.Nil(t, e5)
-	assert.Nil(t, e6)
-	assert.Nil(t, e7)
-	if e8 != nil {
-		fmt.Println(e8.Error())
-	}
-	// assert.Nil(t, e8)
-	// fmt.Println(e8.Error())
 
 	var data []string
-	for _, val := range strings.Split(b3.String(), "\n") {
+	for _, val := range strings.Split(b2.String(), "\n") {
 		if val != "" {
 			data = append(data, val)
 		}
@@ -232,14 +217,14 @@ func TestConnectionClose(t *testing.T) {
 
 	err2 := api.Close()
 	assert.Nil(t, err2)
-	data := NetStat("ESTABLISHED", t)
+	data := NetStat(t)
 	fmt.Println(len(data))
 	fmt.Println(data)
 	assert.NotEqual(t, len(data), 0)
 	err3 := httpApi.Close()
 	assert.Nil(t, err3)
 	// time.Sleep(10 * time.Second)
-	data1 := NetStat("ESTABLISHED", t)
+	data1 := NetStat(t)
 	fmt.Println(len(data1))
 	fmt.Println(data1)
 	assert.Equal(t, len(data1), len(data)-2)
