@@ -64,7 +64,7 @@ def get_go_deps(version="1.17"):
     print("Getting Go libraries for grpc / protobuf ...")
     cmd = "GO111MODULE=on CGO_ENABLED=0 go get"
     if minor > 17:
-        cmd.replace("go get", "go install")
+        cmd = cmd.replace("go get", "go install")
     run(
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
