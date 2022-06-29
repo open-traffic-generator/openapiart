@@ -1086,12 +1086,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) Clone() ({interface}, error) {{
+                vErr := obj.Validate()
+                if vErr != nil {{
+                    return nil, vErr
+                }}
                 newObj := New{interface}()
-                pbText, err := obj.ToPbText()
+                data, err :=  proto.Marshal(obj.Msg())
                 if err != nil {{
                     return nil, err
                 }}
-                pbErr := newObj.FromPbText(pbText)
+                pbErr := proto.Unmarshal(data, newObj.Msg())
                 if pbErr != nil {{
                     return nil, pbErr
                 }}
