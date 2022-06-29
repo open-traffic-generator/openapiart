@@ -69,9 +69,9 @@ def get_go_deps(version="1.17"):
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
             cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " -v golang.org/x/tools/cmd/goimports",
+            cmd + " -v golang.org/x/tools/cmd/goimports@latest",
             cmd
-            + " -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc",
+            + " -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
         ]
     )
 
