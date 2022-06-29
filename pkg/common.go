@@ -3,6 +3,7 @@ package openapiart
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -20,12 +21,23 @@ type grpcTransport struct {
 }
 
 type GrpcTransport interface {
+	// SetLocation set client connection to the given grpc target
 	SetLocation(value string) GrpcTransport
+	// Location get grpc target
 	Location() string
+	// SetRequestTimeout set timeout in grpc request
 	SetRequestTimeout(value time.Duration) GrpcTransport
+	// RequestTimeout get timeout in grpc request
 	RequestTimeout() time.Duration
+	// SetDialTimeout set timeout in grpc dial
 	SetDialTimeout(value time.Duration) GrpcTransport
+	// DialTimeout get timeout in grpc dial
 	DialTimeout() time.Duration
+	// SetClientConnection set grpc DialContext
+	// SetClientConnection and (SetLocation, SetDialTimeout) are mutually exclusive
+	SetClientConnection(con *grpc.ClientConn) GrpcTransport
+	// ClientConnection get grpc DialContext
+	ClientConnection() *grpc.ClientConn
 }
 
 // Location
@@ -58,9 +70,19 @@ func (obj *grpcTransport) SetDialTimeout(value time.Duration) GrpcTransport {
 	return obj
 }
 
+func (obj *grpcTransport) ClientConnection() *grpc.ClientConn {
+	return obj.clientConnection
+}
+
+func (obj *grpcTransport) SetClientConnection(con *grpc.ClientConn) GrpcTransport {
+	obj.clientConnection = con
+	return obj
+}
+
 type httpTransport struct {
 	location string
 	verify   bool
+	conn     net.Conn
 }
 
 type HttpTransport interface {
