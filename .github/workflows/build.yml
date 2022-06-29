@@ -41,9 +41,9 @@ jobs:
           rm -rf .env
           python do.py setup
           python do.py install
-      - name: Run artifact generation
-        run: |
-          python do.py generate go
+      # - name: Run artifact generation
+      #   run: |
+      #     python do.py generate go
       - name: Run python lint
         run: |
           python do.py lint
@@ -56,7 +56,6 @@ jobs:
           name: generated-artifacts
           path: |
             dist
-            pkg
 
   python_tests:
     needs: build
