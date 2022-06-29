@@ -59,9 +59,12 @@ def get_go(go_version="1.17"):
     run([cmd])
 
 
-def get_go_deps():
+def get_go_deps(version="1.17"):
+    minor = int(version.split(".")[1])
     print("Getting Go libraries for grpc / protobuf ...")
     cmd = "GO111MODULE=on CGO_ENABLED=0 go get"
+    if minor > 17:
+        cmd.replace("go get", "go install")
     run(
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
@@ -98,7 +101,7 @@ def setup_ext(go_version="1.17"):
     if on_linux():
         get_go(go_version)
         get_protoc()
-        get_go_deps()
+        get_go_deps(go_version)
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
