@@ -77,7 +77,8 @@ jobs:
         id: download
         with:
           name: generated-artifacts
-          run: ls -lrt
+      - name: path data
+        run: ls -lrt
       - name: Install dependencies
         run: |
           python do.py setup
