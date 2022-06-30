@@ -40,7 +40,7 @@ func init() {
 	defer cancelFunc()
 	conn, err := grpc.DialContext(ctx, grpcServer.Location, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatal(fmt.Sprintf("failed grpc dialcontext due to %s", err.Error()))
+		log.Fatalf("failed grpc dialcontext due to %s", err.Error())
 	}
 	clientConnApi := openapiart.NewApi()
 	clientConnApi.NewGrpcTransport().SetClientConnection(conn)
@@ -235,7 +235,7 @@ func TestGrpcClientConnection(t *testing.T) {
 	defer cancelFunc()
 	conn, err := grpc.DialContext(ctx, grpcServer.Location, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatal(fmt.Sprintf("failed grpc dialcontext due to %s", err.Error()))
+		log.Fatalf("failed grpc dialcontext due to %s", err.Error())
 	}
 	api := openapiart.NewApi()
 	grpc := api.NewGrpcTransport()
