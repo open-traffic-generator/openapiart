@@ -138,6 +138,23 @@ components:
               default: 0
               length: 8
               features: [count, auto]
+        z_object:
+          $ref: '#/components/schemas/ZObject'
+        y_object:
+          $ref: '#/components/schemas/YObject'
+
+    ZObject:
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    YObject:
+      properties:
+        y_name:
+          type: string
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
 
     Layer1Ieee802x:
       type: object
