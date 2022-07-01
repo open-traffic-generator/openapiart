@@ -23,7 +23,9 @@ except ImportError:
 __constraints__ = {
     "global": []
 }
-__validate_latter__ = []
+__validate_latter__ = {
+    "unique": [], "constraint": []
+}
 
 if sys.version_info[0] == 3:
     unicode = str
@@ -241,13 +243,15 @@ class OpenApiBase(object):
             the dict encoding will return a python dict object.
         """
         if encoding == OpenApiBase.JSON:
-            return json.dumps(self._encode(), indent=2, sort_keys=True)
+            data = json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
-            return yaml.safe_dump(self._encode())
+            data = yaml.safe_dump(self._encode())
         elif encoding == OpenApiBase.DICT:
-            return self._encode()
+            data = self._encode()
         else:
             raise NotImplementedError("Encoding %s not supported" % encoding)
+        self._validate_coded()
+        return data
 
     def _encode(self):
         raise NotImplementedError()
@@ -272,10 +276,18 @@ class OpenApiBase(object):
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
+        self._validate_coded()
         return self
 
     def _decode(self, dict_object):
         raise NotImplementedError()
+    
+
+    def _validate_coded(self):
+        for item in __validate_latter__["unique"]:
+            item[0](item[1], item[2])
+        for item in __validate_latter__["constraint"]:
+            item[0](item[1], item[2])
 
 
 class OpenApiValidator(object):
@@ -488,7 +500,7 @@ class OpenApiValidator(object):
         if name != "name" or value is None:
             return
         if latter is True:
-            __validate_latter__.append(
+            __validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
             )
             return
@@ -509,7 +521,7 @@ class OpenApiValidator(object):
         if cons is None:
             return
         if latter is True:
-            __validate_latter__.append(
+            __validate_latter__["constraint"].append(
                 (self._validate_constraint, name, value)
             )
             return
@@ -677,6 +689,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 self._properties[property_name] = property_value
                 Deprecator.deprecate("{}.{}".format(type(self).__name__, property_name))
             self._validate_types(property_name, property_value)
+            self._validate_unique_and_name(property_name, property_value, True)
+            self._validate_constraint(property_name, property_value, True)
         self._validate_required()
         return self
 
