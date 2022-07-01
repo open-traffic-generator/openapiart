@@ -19,6 +19,12 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+
+__constraints__ = {
+    "global": []
+}
+__validate_latter__ = []
+
 if sys.version_info[0] == 3:
     unicode = str
 
@@ -478,6 +484,48 @@ class OpenApiValidator(object):
         if verdict is False:
             raise TypeError(err_msg)
 
+    def _validate_unique_and_name(self, name, value, latter=False):
+        if name != "name" or value is None:
+            return
+        if latter is True:
+            __validate_latter__.append(
+                (self._validate_unique_and_name, name, value)
+            )
+            return
+        if self._TYPES[name].get("unique") is None:
+            return
+        values = __constraints__["global"]
+        if self._TYPES[name].get("unique", "") == "global":
+            if value in values:
+                raise Exception("{} shall be globally unique".format(name))
+        values = __constraints__.get(type(self).__name__, {})
+        if value in values:
+            raise Exception("{} with {} already exists".format(name, value))
+        values.update({value: self})
+        __constraints__[type(self).__name__] = values
+
+    def _validate_constraint(self, name, value, latter=False):
+        cons = self._TYPES[name].get("constraint")
+        if cons is None:
+            return
+        if latter is True:
+            __validate_latter__.append(
+                (self._validate_constraint, name, value)
+            )
+            return
+        found = False
+        for c in cons:
+            klass, prop = c.split(".")
+            names = __constraints__.get(klass, {})
+            props = [obj._properties.get(prop) for obj in names.values()]
+            if value in names or value in props:
+                found = True
+                break
+        if found is not True:
+            raise Exception("{} is not a valid type of {}".format(
+                name, "||".join(cons)
+            ))
+
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
     """Base class for any /components/schemas object
@@ -570,6 +618,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
+            self._validate_unique_and_name(key, value, True)
+            self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
@@ -754,6 +804,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
+            self._validate_unique_and_name(key, value)
+            self._validate_constraint(key, value)
 
     def get(self, name, with_default=False):
         """
