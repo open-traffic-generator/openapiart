@@ -24,7 +24,9 @@ except ImportError:
 __constraints__ = {
     "global": []
 }
-__validate_latter__ = []
+__validate_latter__ = {
+    "unique": [], "constraint": []
+}
 
 if sys.version_info[0] == 3:
     unicode = str
@@ -287,6 +289,13 @@ class OpenApiBase(object):
 
     def _decode(self, dict_object):
         raise NotImplementedError()
+    
+
+    def _validate_coded(self):
+        for item in __validate_latter__["unique"]:
+            item[0](item[1], item[2])
+        for item in __validate_latter__["constraint"]:
+            item[0](item[1], item[2])
 
 
 
@@ -509,7 +518,7 @@ class OpenApiValidator(object):
         if name != "name" or value is None:
             return
         if latter is True:
-            self.__validate_latter__["unique"].append(
+            __validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
             )
             return
@@ -530,7 +539,7 @@ class OpenApiValidator(object):
         if cons is None:
             return
         if latter is True:
-            self.__validate_latter__["constraint"].append(
+            __validate_latter__["constraint"].append(
                 (self._validate_constraint, name, value)
             )
             return
