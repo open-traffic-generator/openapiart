@@ -21,6 +21,11 @@ except ImportError:
     from typing_extensions import Literal
 
 
+__constraints__ = {
+    "global": []
+}
+__validate_latter__ = []
+
 if sys.version_info[0] == 3:
     unicode = str
 
