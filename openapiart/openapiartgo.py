@@ -1084,6 +1084,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return str
             }}
+
+            func (obj *{struct}) Clone() ({interface}, error) {{
+                vErr := obj.Validate()
+                if vErr != nil {{
+                    return nil, vErr
+                }}
+                newObj := New{interface}()
+                data, err :=  proto.Marshal(obj.Msg())
+                if err != nil {{
+                    return nil, err
+                }}
+                pbErr := proto.Unmarshal(data, newObj.Msg())
+                if pbErr != nil {{
+                    return nil, pbErr
+                }}
+                return newObj, nil
+            }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1122,6 +1139,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "Validate() error",
             "// A stringer function",
             "String() string",
+            "// Clones the object",
+            "Clone() ({interface}, error)",
             "validateFromText() error",
             "validateObj(set_default bool)",
             "setDefault()",
