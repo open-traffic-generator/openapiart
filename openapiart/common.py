@@ -1,6 +1,7 @@
 import importlib
 import logging
 import json
+import platform
 import yaml
 import requests
 import urllib3
@@ -17,13 +18,6 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-
-__constraints__ = {
-    "global": []
-}
-__validate_latter__ = {
-    "unique": [], "constraint": []
-}
 
 if sys.version_info[0] == 3:
     unicode = str
@@ -164,6 +158,13 @@ class OpenApiBase(object):
     DICT = "dict"
 
     __slots__ = ()
+    
+    __constraints__ = {
+        "global": []
+    }
+    __validate_latter__ = {
+        "unique": [], "constraint": []
+    }
 
     def __init__(self):
         pass
@@ -225,10 +226,18 @@ class OpenApiBase(object):
     
 
     def _validate_coded(self):
-        for item in __validate_latter__["unique"]:
+        for item in self.__validate_latter__["unique"]:
             item[0](item[1], item[2])
-        for item in __validate_latter__["constraint"]:
+        for item in self.__validate_latter__["constraint"]:
             item[0](item[1], item[2])
+        self._clear_vars()
+        
+    def _clear_vars(self):
+        if platform.python_version_tuple()[0] == 2:
+            self.__validate_latter__["unique"] = []
+            self.__validate_latter__["constraint"] = []
+        self.__validate_latter__["unique"].clear()
+        self.__validate_latter__["constraint"].clear()
 
 
 class OpenApiValidator(object):
@@ -382,35 +391,30 @@ class OpenApiValidator(object):
         if name != "name" or value is None:
             return
         if latter is True:
-            __validate_latter__["unique"].append(
+            self.__validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
             )
             return
-        if self._TYPES[name].get("unique") is None:
-            return
-        values = __constraints__["global"]
-        if self._TYPES[name].get("unique", "") == "global":
-            if value in values:
-                raise Exception("{} shall be globally unique".format(name))
-        values = __constraints__.get(type(self).__name__, {})
+        values = self.__constraints__["global"]
+        values = self.__constraints__.get(type(self).__name__, {})
         if value in values:
             raise Exception("{} with {} already exists".format(name, value))
         values.update({value: self})
-        __constraints__[type(self).__name__] = values
+        self.__constraints__[type(self).__name__] = values
 
     def _validate_constraint(self, name, value, latter=False):
         cons = self._TYPES[name].get("constraint")
         if cons is None:
             return
         if latter is True:
-            __validate_latter__["constraint"].append(
+            self.__validate_latter__["constraint"].append(
                 (self._validate_constraint, name, value)
             )
             return
         found = False
         for c in cons:
             klass, prop = c.split(".")
-            names = __constraints__.get(klass, {})
+            names = self.__constraints__.get(klass, {})
             props = [obj._properties.get(prop) for obj in names.values()]
             if value in names or value in props:
                 found = True
@@ -478,6 +482,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
+        self._validate_unique_and_name(name, value)
+        self._validate_constraint(name, value)
         if name in self._DEFAULTS and value is None:
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
@@ -611,8 +617,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
-            self._validate_unique_and_name(key, value)
-            self._validate_constraint(key, value)
+        self._validate_coded()
 
     def get(self, name, with_default=False):
         """

@@ -138,6 +138,10 @@ components:
               default: 0
               length: 8
               features: [count, auto]
+        x_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZObject'
         z_object:
           $ref: '#/components/schemas/ZObject'
         y_object:
