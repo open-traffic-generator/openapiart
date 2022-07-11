@@ -187,10 +187,10 @@ type httpClient struct {
 var validation []string
 var constraints map[string]map[string]interface{}
 
-// func emptyVars() {
-// 	validation = nil
-// 	constraints = make(map[string]map[string]interface{})
-// }
+func emptyVars() {
+	validation = nil
+	constraints = make(map[string]map[string]interface{})
+}
 
 func validationResult() error {
 	constraints = make(map[string]map[string]interface{})
