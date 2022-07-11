@@ -282,29 +282,24 @@ class OpenApiBase(object):
 
     def _decode(self, dict_object):
         raise NotImplementedError()
-    
 
-    def _validate_coded(self):
-        for item in self.__validate_latter__["unique"]:
-            item[0](item[1], item[2])
-        for item in self.__validate_latter__["constraint"]:
-            item[0](item[1], item[2])
-        self._clear_vars()
-        
-    def _clear_vars(self):
-        if platform.python_version_tuple()[0] == 2:
-            self.__validate_latter__["unique"] = []
-            self.__validate_latter__["constraint"] = []
-        self.__validate_latter__["unique"].clear()
-        self.__validate_latter__["constraint"].clear()
 
 
 class OpenApiValidator(object):
 
     __slots__ = ()
 
+    _validation_errors = []
+
     def __init__(self):
         pass
+
+    def _clear_errors(self):
+        import platform
+        if '2.7' in platform.python_version().rsplit(".", 1)[0]:
+            del self._validation_errors[:]
+        else:
+            self._validation_errors.clear()
 
     def validate_mac(self, mac):
         if (
@@ -514,11 +509,13 @@ class OpenApiValidator(object):
             )
             return
         values = self.__constraints__["global"]
-        values = self.__constraints__.get(type(self).__name__, {})
         if value in values:
-            raise Exception("{} with {} already exists".format(name, value))
-        values.update({value: self})
-        self.__constraints__[type(self).__name__] = values
+            self._validation_errors.append("{} with {} already exists".format(name, value))
+            return
+        values.append(value)
+        self.__constraints__["global"] = values
+        data = self.__constraints__.get(type(self).__name__, {}).update({value : self})
+        self.__constraints__[type(self).__name__] = data
 
     def _validate_constraint(self, name, value, latter=False):
         cons = self._TYPES[name].get("constraint")
@@ -538,9 +535,34 @@ class OpenApiValidator(object):
                 found = True
                 break
         if found is not True:
-            raise Exception("{} is not a valid type of {}".format(
+            self._validation_errors.append("{} is not a valid type of {}".format(
                 name, "||".join(cons)
             ))
+            return
+    
+    def _validate_coded(self):
+        for item in self.__validate_latter__["unique"]:
+            item[0](item[1], item[2])
+        for item in self.__validate_latter__["constraint"]:
+            item[0](item[1], item[2])
+        self._clear_vars()
+        if len(self._validation_errors) > 0:
+            errors = "\n".join(self._validation_errors)
+            self._clear_errors()
+            raise Exception(errors)
+        
+    def _clear_vars(self):
+        if platform.python_version_tuple()[0] == 2:
+            self.__validate_latter__["unique"] = []
+            self.__validate_latter__["constraint"] = []
+        self.__validate_latter__["unique"].clear()
+        self.__validate_latter__["constraint"].clear()
+        keys = list(self.__constraints__.keys())
+        for k in keys:
+            if k == "global":
+                self.__constraints__["global"] = []
+                continue
+            del self.__constraints__[k]
 
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
@@ -615,8 +637,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
-        self._validate_unique_and_name(name, value)
-        self._validate_constraint(name, value)
         if name in self._DEFAULTS and value is None:
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
