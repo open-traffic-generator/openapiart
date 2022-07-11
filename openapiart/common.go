@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
+	"github.com/rs/zerolog"
 )
 
 type grpcTransport struct {
@@ -304,4 +305,23 @@ func validateIpv6Slice(ip []string) error {
 
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
+}
+
+var Logger zerolog.Logger
+
+func getLogger(loglevel string) {
+	setlevel := zerolog.InfoLevel
+	if loglevel == "debug" {
+		setlevel = zerolog.DebugLevel
+	}
+	zerolog.SetGlobalLevel(setlevel)
+
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	output.FormatLevel = func(i interface{}) string {
+		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+	}
+	output.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s", i)
+	}
+	Logger = zerolog.New(output).With().Timestamp().Logger()
 }
