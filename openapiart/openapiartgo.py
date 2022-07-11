@@ -1069,13 +1069,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) validateFromText() error {{
-                emptyVars()
+                // emptyVars()
                 obj.validateObj(true)
                 return validationResult()
             }}
 
             func (obj *{struct}) Validate() error {{
-                emptyVars()
+                // emptyVars()
                 obj.validateObj(false)
                 return validationResult()
             }}
@@ -1356,7 +1356,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if obj.obj.{fieldname} == nil {{
                     return ""
                 }}
-                """.format(fieldname=field.name)
+                """.format(
+                    fieldname=field.name
+                )
             body += """{set_enum_choice}
                 return *obj.obj.{fieldname}
                 """.format(
@@ -2029,9 +2031,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             validation = append(validation, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
         }}
         """.format(
-            data="\"" + ", \"".join([c[0] for c in field.x_constraints]) + "\",",
+            data='"' + ', "'.join([c[0] for c in field.x_constraints]) + '",',
             name=field.name,
-            cons="|".join([c[0] for c in field.x_constraints])
+            cons="|".join([c[0] for c in field.x_constraints]),
         )
         return body
 
@@ -2041,8 +2043,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if !isUnique("{struct}", obj.Name(), obj) {{
                 validation = append(validation, fmt.Sprintf("{name} with %s already exists", obj.Name()))
             }}""".format(
-                struct=new.struct,
-                name=field.name
+                struct=new.struct, name=field.name
             )
         return body
 
