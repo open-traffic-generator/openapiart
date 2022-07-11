@@ -440,8 +440,9 @@ class OpenApiValidator(object):
         if platform.python_version_tuple()[0] == 2:
             self.__validate_latter__["unique"] = []
             self.__validate_latter__["constraint"] = []
-        self.__validate_latter__["unique"].clear()
-        self.__validate_latter__["constraint"].clear()
+        else:
+            self.__validate_latter__["unique"].clear()
+            self.__validate_latter__["constraint"].clear()
         keys = list(self.__constraints__.keys())
         for k in keys:
             if k == "global":
