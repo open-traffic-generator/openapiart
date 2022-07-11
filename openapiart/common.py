@@ -515,7 +515,10 @@ class OpenApiValidator(object):
             return
         values.append(value)
         self.__constraints__["global"] = values
-        data = self.__constraints__.get(type(self).__name__, {}).update({value : self})
+        data = self.__constraints__.get(type(self).__name__, {})
+        data.update(
+            {value: self}
+        )
         self.__constraints__[type(self).__name__] = data
 
     def _validate_constraint(self, name, value, latter=False):
