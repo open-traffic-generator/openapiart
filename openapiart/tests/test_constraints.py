@@ -8,18 +8,16 @@ def test_constraints_and_unique(config):
     try:
         config.validate()
     except Exception as e:
-        if (
-            "abc already exists" not in str(e)
-            or "y_name is not a valid type" not in str(e)
-        ):
+        if "abc already exists" not in str(
+            e
+        ) or "y_name is not a valid type" not in str(e):
             pytest.fail("validation failed")
     try:
         config.serialize()
     except Exception as e:
-        if (
-            "abc already exists" not in str(e)
-            or "y_name is not a valid type" not in str(e)
-        ):
+        if "abc already exists" not in str(
+            e
+        ) or "y_name is not a valid type" not in str(e):
             pytest.fail("validation failed")
 
     config.x_list[0].name = "bcd"
@@ -30,8 +28,7 @@ def test_constraints_and_unique(config):
     try:
         config.deserialize(data)
     except Exception as e:
-        if (
-            "bcd already exists" not in str(e)
-            or "y_name is not a valid type" not in str(e)
-        ):
+        if "bcd already exists" not in str(
+            e
+        ) or "y_name is not a valid type" not in str(e):
             pytest.fail("validation failed")
