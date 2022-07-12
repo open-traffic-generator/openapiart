@@ -1374,7 +1374,7 @@ class Generator:
                     if cons_lst != []:
                         pt.update({"constraint": cons_lst})
                 if "x-unique" in yproperty:
-                    pt.update({"unique": "\"%s\"" % yproperty["x-unique"]})
+                    pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
 
     def _get_required_and_defaults(self, yobject):

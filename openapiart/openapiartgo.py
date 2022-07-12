@@ -2020,7 +2020,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             ref = self._get_schema_object_name_from_ref(ref)
             prop = prop.strip("/")
             field.x_constraints.append((self._get_internal_name(ref), prop))
-    
+
     def _parse_x_unique(self, field, schema):
         if "x-unique" not in schema:
             return
@@ -2050,8 +2050,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """if !isUnique("{struct}", obj.{name}(), "{unique}", obj) {{
                 validation = append(validation, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
-                struct=new.struct, name=field.name,
-                unique=field.x_unique
+                struct=new.struct, name=field.name, unique=field.x_unique
             )
         return body
 
