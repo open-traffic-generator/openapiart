@@ -155,10 +155,10 @@ class OpenApiBase(object):
     YAML = "yaml"
     DICT = "dict"
 
-    __slots__ = ()
+    __slots__ = ("logger")
 
     def __init__(self):
-        pass
+        self.logger = logging.getLogger(self.__module__)
 
     def serialize(self, encoding=JSON):
         """Serialize the current object according to a specified encoding.

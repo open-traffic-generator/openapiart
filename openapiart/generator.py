@@ -604,7 +604,18 @@ class Generator:
             self._write(1, '"""')
             self._write()
             self._write(1, "def __init__(self, **kwargs):")
-            self._write(2, "pass")
+            self._write(2, "self.logger = kwargs[\"logger\"] if \"logger\" in kwargs else None")
+            self._write(2, "self.loglevel = kwargs[\"loglevel\"] if \"loglevel\" in kwargs else logging.INFO")
+            self._write(2, "if self.logger is None:")
+            self._write(3, "self.logger = logging.getLogger(self.__module__)")        
+            self._write(3, "self.logger.setLevel(self.loglevel)")
+            self._write(3, "formatter = logging.Formatter(fmt=\"%(asctime)s [%(name)s] [%(levelname)s] %(message)s\", \
+                datefmt=\"%Y-%m-%d %H:%M:%S\")")
+            self._write(3, "sh = logging.StreamHandler(sys.stdout)")
+            self._write(3, "sh.setFormatter(formatter)")
+            self._write(3, "if len(self.logger.handlers) > 0:")
+            self._write(4, "del self.logger.handlers[:]")
+            self._write(3, "self.logger.addHandler(sh)")
 
             for method in methods:
                 print("generating method %s" % method["name"])
