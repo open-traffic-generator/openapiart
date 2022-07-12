@@ -820,10 +820,10 @@ class Bundler(object):
                 add_info=xstatus.value.get("additional_info", ""),
                 description=parent_schema_object["description"],
             )
-    
+
     def _resolve_x_unique(self):
-        """ validate the x-unique field and make sure it is oneOf
-            [global, local]
+        """validate the x-unique field and make sure it is oneOf
+        [global, local]
         """
         for xunique in self._get_parser("$..x-unique").find(self._content):
             if xunique.value in ["global", "local"]:

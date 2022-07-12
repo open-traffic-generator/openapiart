@@ -42,7 +42,7 @@ def test_constraints_and_unique(config):
             e
         ) or "y_name is not a valid type" not in str(e):
             pytest.fail("validation failed")
-    
+
     config.name = "global_local_same_name_check"
     config.x_list.zobject(name="global_local_same_name_check")
     try:
