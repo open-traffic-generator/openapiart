@@ -6,6 +6,7 @@ components:
         name:
           type: string
           x-field-uid: 1
+          x-unique: global
     ListObject:
       type: object
       properties:

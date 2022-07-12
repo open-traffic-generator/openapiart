@@ -107,6 +107,7 @@ class FluentField(object):
         self.status = None
         self.status_msg = None
         self.x_constraints = []
+        self.x_unique = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1805,6 +1806,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "additional_information"
             )
             self._parse_x_constraints(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2066,6 +2068,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             ref = self._get_schema_object_name_from_ref(ref)
             prop = prop.strip("/")
             field.x_constraints.append((self._get_internal_name(ref), prop))
+    
+    def _parse_x_unique(self, field, schema):
+        if "x-unique" not in schema:
+            return
+        field.x_unique = schema["x-unique"]
 
     def _validate_x_constraint(self, field):
         body = ""
@@ -2087,11 +2094,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _validate_unique(self, new, field):
         body = ""
-        if field.name.lower() == "name":
-            body = """if !isUnique("{struct}", obj.Name(), obj) {{
-                validation = append(validation, fmt.Sprintf("{name} with %s already exists", obj.Name()))
+        if field.x_unique is not None:
+            body = """if !isUnique("{struct}", obj.{name}(), "{unique}", obj) {{
+                validation = append(validation, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
-                struct=new.struct, name=field.name
+                struct=new.struct, name=field.name,
+                unique=field.x_unique
             )
         return body
 

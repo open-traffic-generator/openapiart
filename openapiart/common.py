@@ -502,24 +502,27 @@ class OpenApiValidator(object):
             raise TypeError(err_msg)
 
     def _validate_unique_and_name(self, name, value, latter=False):
-        if name != "name" or value is None:
+        if self._TYPES[name].get("unique") is None or value is None:
             return
         if latter is True:
             self.__validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
             )
             return
-        values = self.__constraints__["global"]
+        class_name = type(self).__name__
+        unique_type = self._TYPES[name]["unique"]
+        if class_name not in self.__constraints__:
+            self.__constraints__[class_name] = dict()
+        if unique_type == "global":
+            values = self.__constraints__["global"]
+        else:
+            values = self.__constraints__[class_name]
         if value in values:
             self._validation_errors.append("{} with {} already exists".format(name, value))
             return
-        values.append(value)
-        self.__constraints__["global"] = values
-        data = self.__constraints__.get(type(self).__name__, {})
-        data.update(
-            {value: self}
-        )
-        self.__constraints__[type(self).__name__] = data
+        if isinstance(values, list):
+            values.append(value)
+        self.__constraints__[class_name].update({value: self})
 
     def _validate_constraint(self, name, value, latter=False):
         cons = self._TYPES[name].get("constraint")
