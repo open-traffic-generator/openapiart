@@ -82,6 +82,7 @@ class Bundler(object):
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
         self._resolve_x_status()
+        self._resolve_x_unique()
         self._remove_x_include()
         self._resolve_license()
         self._validate_required_responses()
@@ -565,6 +566,15 @@ class Bundler(object):
                 status=xstatus.value,
                 description=parent_schema_object["description"],
             )
+    
+    def _resolve_x_unique(self):
+        """ validate the x-unique field and make sure it is oneOf
+            [global, local]
+        """
+        for xunique in self._get_parser("$..x-unique").find(self._content):
+            if xunique.value in ["global", "local"]:
+                continue
+            raise Exception("x-unique shall be oneOf ['global', 'unique']")
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content

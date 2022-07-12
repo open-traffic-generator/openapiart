@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -175,7 +176,8 @@ type httpClient struct {
 // All methods that perform validation will add errors here
 // All api rpcs MUST call Validate
 var validation []string
-var constraints map[string]map[string]interface{}
+var unique_global []string
+var constraints = make(map[string]map[string]interface{})
 
 // func emptyVars() {
 // 	validation = nil
@@ -184,6 +186,7 @@ var constraints map[string]map[string]interface{}
 
 func validationResult() error {
 	constraints = make(map[string]map[string]interface{})
+	unique_global = nil
 	if len(validation) > 0 {
 		validation = append(validation, "validation errors")
 		errors := strings.Join(validation, "\n")
@@ -316,31 +319,42 @@ func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
 }
 
-func isUnique(objectName, value string, object interface{}) bool {
+func isUnique(objectName, value, unique string, object interface{}) bool {
 	if value == "" {
 		return true
 	}
-	values, ok := constraints["globals"]
-	if !ok {
-		constraints = make(map[string]map[string]interface{})
-		constraints["globals"] = make(map[string]interface{})
-		constraints["globals"][value] = object
-		constraints[objectName] = make(map[string]interface{})
-		constraints[objectName][value] = object
-		return true
-	}
-	_, ok1 := values[value]
-	if !ok1 {
-		values[value] = object
-		constraints["globals"] = values
-		_, ok = constraints[objectName]
+
+	var create = func(objName string) {
+		_, ok := constraints[objName]
 		if !ok {
-			constraints[objectName] = make(map[string]interface{})
+			constraints[objName] = make(map[string]interface{})
 		}
-		constraints[objectName][value] = object
-		return true
 	}
-	return false
+
+	if unique == "global" {
+		sort.Strings(unique_global)
+		i := sort.SearchStrings(unique_global, value)
+		there := i < len(unique_global) && unique_global[i] == value
+		if !there {
+			unique_global = append(unique_global, value)
+			create(objectName)
+			constraints[objectName][value] = object
+			return !there
+		}
+		return !there
+	}
+	values, ok := constraints[objectName]
+	if !ok {
+		create(objectName)
+		constraints[objectName][value] = object
+		return !ok
+	}
+	_, ok = values[value]
+	if !ok {
+		constraints[objectName][value] = object
+		return !ok
+	}
+	return !ok
 }
 
 func validateConstraint(objectName []string, value string) bool {

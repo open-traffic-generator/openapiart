@@ -5,6 +5,7 @@ components:
       properties:
         name:
           type: string
+          x-unique: global
     ListObject:
       type: object
       properties:
