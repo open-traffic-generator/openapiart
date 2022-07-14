@@ -613,7 +613,7 @@ class Generator:
                 'self.loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.INFO',
             )
             self._write(2, "if self.logger is None:")
-            self._write(3, "self.logger = logging.getLogger(self.__module__)")        
+            self._write(3, "self.logger = logging.getLogger(self.__module__)")
             self._write(3, "self.logger.setLevel(self.loglevel)")
             self._write(
                 3,
