@@ -145,6 +145,7 @@ class HttpTransport(object):
                 # content types
                 return response
         else:
+            self.logger.debug('Status code: {} ; reason: {} ; data: {}'.format(response.status_code, response.reason, response.text))
             raise Exception(response.status_code, yaml.safe_load(response.text))
 
 
