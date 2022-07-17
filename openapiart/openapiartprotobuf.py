@@ -4,6 +4,7 @@ from .openapiartplugin import OpenApiArtPlugin
 
 class OpenApiArtProtobuf(OpenApiArtPlugin):
     def __init__(self, **kwargs):
+        self._errors = []
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
         self._filename = os.path.normpath(
             os.path.join(
@@ -15,6 +16,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._init_fp(self._filename)
 
     def generate(self, openapi):
+        self._errors = []
         self._openapi = openapi
         self._operations = {}
         self._write_header(self._openapi["info"])
@@ -29,8 +31,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         for _, path_object in self._openapi["paths"].items():
             self._write_request_msg(path_object)
             self._write_response_msg(path_object)
+        self._validate_error()
         self._write_service()
         self._close_fp()
+
+    def _validate_error(self):
+        if len(self._errors) > 0:
+            raise TypeError("\n".join(
+                self._errors
+            ))
 
     def _get_operation(self, path_item_object):
         if "operationId" in path_item_object:
@@ -153,10 +162,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _get_message_name(self, ref):
         return ref.split("/")[-1]
 
-    def _next_custom_id(self):
-        self._custom_id += 1
-        return self._custom_id
-
     def _write_header(self, info_object):
         self._write(
             self._justify_desc(
@@ -199,9 +204,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 if "format" in openapi_object:
                     if openapi_object["format"] == "binary":
                         return "bytes"
-                elif "enum" in openapi_object:
+                elif "x-enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
-                    self._write_enum_msg(enum_msg, openapi_object["enum"])
+                    self._write_x_enum_msg(
+                        enum_msg, openapi_object["x-enum"], property_name, openapi_object
+                    )
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
@@ -274,7 +281,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         else:
             return "Description missing in models"
 
-    def _write_enum_msg(self, enum_msg_name, enums):
+    def _write_x_enum_msg(self, enum_msg_name, enums, property_name, property_object):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
@@ -283,11 +290,17 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         )
         self._write("enum Enum {", indent=2)
         if "unspecified" not in enums:
-            enums.insert(0, "unspecified")
-        id = 0
-        for enum in enums:
-            self._write("{} = {};".format(enum.lower(), id), indent=3)
-            id += 1
+            enums["unspecified"] = {
+                "x-field-uid": 0
+            }
+
+        for key, value in enums.items():
+            if "x-field-uid" not in value:
+                self._errors.append("x-field-uid is missing in %s" % key)
+                continue
+            self._write("{} = {};".format(
+                key.lower(), value["x-field-uid"]
+            ), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
 
@@ -355,9 +368,16 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             ):
                 desc += "\nrequired = true"
             self._write(self._justify_desc(desc, indent=1))
+            if "x-field-uid" not in property_object:
+                self._errors.append(
+                    "x-field-uid is missing in %s:%s" % (name, property_name)
+                )
+                continue
             self._write(
                 "{}{} {} = {};".format(
-                    optional, property_type, property_name.lower(), id
+                    optional, property_type, property_name.lower(), property_object[
+                        "x-field-uid"
+                    ]
                 ),
                 indent=1,
             )

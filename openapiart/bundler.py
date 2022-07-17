@@ -15,6 +15,15 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+class AutoFieldUid(object):
+    def __init__(self):
+        self._field_uid = 1
+    
+    @property
+    def uid(self):
+        self._field_uid += 1
+        return self._field_uid
+
 
 class Bundler(object):
     """Bundles OpenAPI yaml files into a single API document
@@ -85,6 +94,7 @@ class Bundler(object):
         self._remove_x_include()
         self._resolve_license()
         self._validate_required_responses()
+        self._resolve_x_enmu(self._content)
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         self._validate_errors()
@@ -104,6 +114,37 @@ class Bundler(object):
     def _validate_errors(self):
         if len(self._errors) > 0:
             raise TypeError("\n".join(self._errors))
+
+    def _inject_enum(self, property_name, property_object, schema_name):
+        if "enum" in property_object.keys():
+            self._errors.append("Please modify enum with x-enum within %s:%s" % (
+                schema_name, property_name
+            ))
+            return
+        if "x-enum" in property_object.keys():
+            property_object["enum"] = list(
+                property_object["x-enum"].keys()
+            )
+
+    def _resolve_x_enmu(self, content):
+        for schema_name, schema_object in content["components"][
+            "schemas"
+        ].items():
+            if "properties" not in schema_object:
+                continue
+            for property_name, property_object in schema_object[
+                "properties"
+            ].items():
+                if "type" not in property_object.keys():
+                    continue
+                if property_object["type"] == "string":
+                    self._inject_enum(
+                        property_name, property_object, schema_name
+                    )
+                if property_object["type"] == "array" and "items" in property_object:
+                    self._inject_enum(
+                        property_name, property_object["items"], schema_name
+                    )
 
     def _validate_required_responses(self):
         """Ensure all paths include a 400 and 500 response.
@@ -314,7 +355,7 @@ class Bundler(object):
             )
             format = None
             type_name = xpattern["format"]
-            if type_name in ["ipv4", "ipv6", "mac", "enum"]:
+            if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
                 format = type_name
                 type_name = "string"
             description = "TBD"
@@ -337,8 +378,13 @@ class Bundler(object):
             )
             del property_schema[pattern_extension]
 
+    # def _get_field_uid(self):
+    #     self._field_uid += 1
+    #     return self._field_uid
+
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
+        auto_field = AutoFieldUid()
         schema = {
             "description": description,
             "type": "object",
@@ -346,20 +392,37 @@ class Bundler(object):
                 "choice": {
                     "description": "The type of checksum",
                     "type": "string",
-                    "enum": ["generated", "custom"],
+                    "x-enum": {
+                        "generated" : {
+                            "x-field-uid": 1
+                        },
+                        "custom": {
+                            "x-field-uid": 2
+                        }
+                    },
                     "default": "generated",
+                    "x-field-uid": auto_field.uid,
                 },
                 "generated": {
                     "description": "A system generated checksum value",
                     "type": "string",
-                    "enum": ["good", "bad"],
+                    "x-enum": {
+                        "good": {
+                            "x-field-uid": 1
+                        },
+                        "bad": {
+                            "x-field-uid": 2
+                        }
+                    },
                     "default": "good",
+                    "x-field-uid": auto_field.uid,
                 },
                 "custom": {
                     "description": "A custom checksum value",
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
+                    "x-field-uid": auto_field.uid
                 },
             },
         }
@@ -368,6 +431,7 @@ class Bundler(object):
     def _generate_value_schema(
         self, xpattern, schema_name, description, type_name, format
     ):
+        auto_field = AutoFieldUid()
         xconstants = (
             xpattern["x-constants"] if "x-constants" in xpattern else None
         )
@@ -377,13 +441,25 @@ class Bundler(object):
             "properties": {
                 "choice": {
                     "type": "string",
-                    "enum": ["value", "values"],
+                    "x-enum": {
+                        "value": {
+                            "x-field-uid": 2
+                        },
+                        "values": {
+                            "x-field-uid": 3
+                        }
+                    },
                     "default": "value",
+                    "x-field-uid": auto_field.uid,
                 },
-                "value": {"type": copy.deepcopy(type_name)},
+                "value": {
+                    "type": copy.deepcopy(type_name),
+                    "x-field-uid": auto_field.uid
+                },
                 "values": {
                     "type": "array",
                     "items": {"type": copy.deepcopy(type_name)},
+                    "x-field-uid": auto_field.uid
                 },
             },
         }
@@ -397,7 +473,9 @@ class Bundler(object):
                             schema_name
                         )
                     )
-                schema["properties"]["choice"]["enum"].append("auto")
+                schema["properties"]["choice"]["x-enum"]["auto"] = {
+                    "x-field-uid": 1
+                }
                 schema["properties"]["choice"]["default"] = "auto"
                 description = [
                     "The OTG implementation can provide a system generated",
@@ -407,6 +485,7 @@ class Bundler(object):
                 schema["properties"]["auto"] = {
                     "description": "\n".join(description),
                     "type": copy.deepcopy(type_name),
+                    "x-field-uid": auto_field.uid
                 }
                 self._apply_common_x_field_pattern_properties(
                     schema["properties"]["auto"],
@@ -423,6 +502,7 @@ class Bundler(object):
                     """metric request allows for the metric_group value to be specified """
                     """as part of the request.""",
                     "type": "string",
+                    "x-field-uid": auto_field.uid
                 }
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
@@ -433,27 +513,40 @@ class Bundler(object):
             )
         if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
             counter_pattern_name = "{}.Counter".format(schema_name)
-            schema["properties"]["choice"]["enum"].extend(
-                ["increment", "decrement"]
-            )
+            schema["properties"]["choice"]["x-enum"]["increment"] = {
+                "x-field-uid": 3
+            }
+            schema["properties"]["choice"]["x-enum"]["decrement"] = {
+                "x-field-uid": 4
+            }
             schema["properties"]["increment"] = {
                 "$ref": "#/components/schemas/{}".format(counter_pattern_name)
             }
+            schema["properties"]["increment"]["x-field-uid"] = auto_field.uid
             schema["properties"]["decrement"] = {
                 "$ref": "#/components/schemas/{}".format(counter_pattern_name)
             }
+            schema["properties"]["decrement"]["x-field-uid"] = auto_field.uid
+            counter_auto_field = AutoFieldUid()
             counter_schema = {
                 "description": "{} counter pattern".format(xpattern["format"]),
                 "type": "object",
                 "properties": {
-                    "start": {"type": type_name},
-                    "step": {"type": type_name},
+                    "start": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid
+                    },
+                    "step": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid
+                    },
                 },
             }
             if "features" in xpattern and "count" in xpattern["features"]:
                 counter_schema["properties"]["count"] = {
                     "type": "integer",
                     "default": 1,
+                    "x-field-uid": counter_auto_field.uid
                 }
             self._apply_common_x_field_pattern_properties(
                 counter_schema["properties"]["start"],
