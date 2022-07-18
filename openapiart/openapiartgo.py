@@ -810,6 +810,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     success_method = response.request_return_type
                 else:
                     error_handling += """if resp.StatusCode == {status_code} {{
+                            Logger.Error().Msgf(string(bodyBytes))
                             return nil, fmt.Errorf(string(bodyBytes))
                         }}
                         """.format(
