@@ -168,5 +168,6 @@ def test_int64_list(config, default_config):
     for d in default_config.integer64_list:
         assert isinstance(d, int)
 
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
