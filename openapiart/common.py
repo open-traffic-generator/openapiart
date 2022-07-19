@@ -436,8 +436,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
-                if key in self._TYPES and "format" in self._TYPES[key] and self._TYPES[key]["format"] == "int64":
+                if self._TYPES.get(key, {}).get("format", "") == "int64":
                     value = str(value)
+                elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
+                    value = [str(v) for v in value]
                 output[key] = value
         return output
 
@@ -464,8 +466,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     if isinstance(self._DEFAULTS[property_name], tuple(dtypes)):
                         property_value = self._DEFAULTS[property_name]
                 self._set_choice(property_name)
-                if "format" in self._TYPES[property_name] and self._TYPES[property_name]["format"] == "int64":
+                # convert int64(will be string on wire) to to int
+                if self._TYPES[property_name].get("format", "") == "int64":
                     property_value = int(property_value)
+                elif self._TYPES[property_name].get("itemformat", "") == "int64":
+                    property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
             self._validate_types(property_name, property_value)
         self._validate_required()

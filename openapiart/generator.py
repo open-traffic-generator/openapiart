@@ -1355,6 +1355,10 @@ class Generator:
                     pt.update(
                         {"itemtype": self._get_data_types(yproperty["items"])}
                     )
+                    if "format" in yproperty["items"]:
+                        pt.update({
+                            "itemformat": "'%s'" % yproperty["items"]["format"]
+                        })
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:
