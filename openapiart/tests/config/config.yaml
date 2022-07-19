@@ -111,6 +111,12 @@ components:
           description: int64 type
           type: integer
           format: int64
+        integer64_list:
+          description: int64 type list
+          type: array
+          items:
+            type: integer
+            format: int64
         header_checksum:
           x-field-pattern:
             description: >-
