@@ -1665,3 +1665,8 @@ func TestClone(t *testing.T) {
 	fmt.Println(&lObj1, &lObj2)
 	assert.NotSame(t, &lObj1, &lObj2)
 }
+
+func TestLogging(t *testing.T) {
+	api := openapiart.NewApi()
+	openapiart.Logger.Info().Msg("Start configuring test")
+}
