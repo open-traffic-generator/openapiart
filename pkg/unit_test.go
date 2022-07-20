@@ -1667,7 +1667,6 @@ func TestClone(t *testing.T) {
 }
 
 func TestLogging(t *testing.T) {
-	api := openapiart.NewApi()
+	openapiart.NewApi()
 	openapiart.Logger.Info().Msg("Start configuring test")
-	api.NewConfig()
 }
