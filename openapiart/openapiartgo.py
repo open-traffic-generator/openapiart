@@ -634,8 +634,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             //  NewApi returns a new instance of the top level interface hierarchy
-            func NewApi() {interface} {{
-                getLogger("Info")
+            func NewApi(logparams ...string) {interface} {{
+                getLogger(logparams)
                 api := {internal_struct_name}{{}}
                 return &api
             }}

@@ -320,19 +320,42 @@ func validateHexSlice(hex []string) error {
 
 var Logger zerolog.Logger
 
-func getLogger(loglevel string) {
+func getLogger(logparams []string) {
+	if len(logparams) == 0 {
+		setLogger("info")
+		setLogFormat("readable")
+	} else if len(logparams) == 2 {
+		setLogger(logparams[0])
+		setLogFormat(logparams[1])
+	} else {
+		setLogger(logparams[0])
+		setLogFormat("readable")
+	}	
+}
+
+func setLogger(loglevel string) {
 	setlevel := zerolog.InfoLevel
-	if loglevel == "debug" {
+	if loglevel == "info" {
+		setlevel = zerolog.InfoLevel
+	} else if loglevel == "debug" {
 		setlevel = zerolog.DebugLevel
+	} else if loglevel == "error" {
+		setlevel = zerolog.ErrorLevel
 	}
 	zerolog.SetGlobalLevel(setlevel)
+}
 
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	output.FormatLevel = func(i interface{}) string {
-		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
-	}
-	output.FormatMessage = func(i interface{}) string {
-		return fmt.Sprintf("%s", i)
-	}
-	Logger = zerolog.New(output).With().Timestamp().Logger()
+func setLogFormat(logFormat string) {
+	if logFormat == "readable" {
+		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		output.FormatLevel = func(i interface{}) string {
+			return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+		}
+		output.FormatMessage = func(i interface{}) string {
+			return fmt.Sprintf("%s", i)
+		}
+		Logger = zerolog.New(output).With().Timestamp().Logger()
+	} else {
+		Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	} 
 }

@@ -1670,3 +1670,8 @@ func TestLogging(t *testing.T) {
 	openapiart.NewApi()
 	openapiart.Logger.Info().Msg("Start configuring test")
 }
+
+func TestLoggingWithParams(t *testing.T) {
+	openapiart.NewApi("info", "json")
+	openapiart.Logger.Info().Msg("Start configuring test")
+}
