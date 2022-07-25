@@ -123,6 +123,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	SetLoggerLevel(value string)
+	SetLogFormat(value string)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -158,6 +160,34 @@ func (api *api) NewHttpTransport() HttpTransport {
 
 func (api *api) hasHttpTransport() bool {
 	return api.http != nil
+}
+
+var Logger zerolog.Logger
+
+func (api *api) SetLoggerLevel(value string) {
+	setlevel := zerolog.InfoLevel
+	if value == "info" {
+		setlevel = zerolog.InfoLevel
+	} else if value == "debug" {
+		setlevel = zerolog.DebugLevel
+	} else if value == "error" {
+		setlevel = zerolog.ErrorLevel
+	}
+	zerolog.SetGlobalLevel(setlevel)
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	output.FormatLevel = func(i interface{}) string {
+		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+	}
+	output.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s", i)
+	}
+	Logger = zerolog.New(output).With().Timestamp().Logger()
+}
+
+func (api *api) SetLogFormat(value string) {
+	if value == "json" {
+		Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	}
 }
 
 // HttpRequestDoer will return True for HTTP transport
@@ -316,46 +346,4 @@ func validateIpv6Slice(ip []string) error {
 
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
-}
-
-var Logger zerolog.Logger
-
-func getLogger(logparams []string) {
-	if len(logparams) == 0 {
-		setLogger("info")
-		setLogFormat("readable")
-	} else if len(logparams) == 2 {
-		setLogger(logparams[0])
-		setLogFormat(logparams[1])
-	} else {
-		setLogger(logparams[0])
-		setLogFormat("readable")
-	}	
-}
-
-func setLogger(loglevel string) {
-	setlevel := zerolog.InfoLevel
-	if loglevel == "info" {
-		setlevel = zerolog.InfoLevel
-	} else if loglevel == "debug" {
-		setlevel = zerolog.DebugLevel
-	} else if loglevel == "error" {
-		setlevel = zerolog.ErrorLevel
-	}
-	zerolog.SetGlobalLevel(setlevel)
-}
-
-func setLogFormat(logFormat string) {
-	if logFormat == "readable" {
-		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-		output.FormatLevel = func(i interface{}) string {
-			return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
-		}
-		output.FormatMessage = func(i interface{}) string {
-			return fmt.Sprintf("%s", i)
-		}
-		Logger = zerolog.New(output).With().Timestamp().Logger()
-	} else {
-		Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
-	} 
 }
