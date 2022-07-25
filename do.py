@@ -98,7 +98,7 @@ def setup_ext(go_version="1.17"):
     if on_linux():
         get_go(go_version)
         get_protoc()
-        get_go_deps(go_version)
+        get_go_deps()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
