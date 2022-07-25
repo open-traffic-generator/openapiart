@@ -1069,6 +1069,14 @@ class Generator:
         self._write(1, "def next(self):")
         self._write(2, "# type: () -> %s" % contained_class_name)
         self._write(2, "return self._next()")
+        self._write()
+        self._write(1, "def _instanceOf(self, item):")
+        self._write(2, "if not isinstance(item, %s):" % (contained_class_name))
+        self._write(
+            3,
+            'raise Exception("Item is not an instance of %s")'
+            % (contained_class_name),
+        )
 
     def _write_factory_method(
         self,

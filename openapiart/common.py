@@ -646,14 +646,18 @@ class OpenApiIter(OpenApiBase):
         """Append an item to the end of OpenApiIter
         TBD: type check, raise error on mismatch
         """
-        if isinstance(item, OpenApiObject) is False:
-            raise Exception("Item is not an instance of OpenApiObject")
+        self._instanceOf(item)
         self._add(item)
         return self
 
     def clear(self):
         del self._items[:]
         self._index = -1
+    
+    def set(self, index, item):
+        self._instanceOf(item)
+        self._items[index] = item
+        return self
 
     def _encode(self):
         return [item._encode() for item in self._items]
@@ -677,3 +681,6 @@ class OpenApiIter(OpenApiBase):
 
     def __eq__(self, other):
         return self.__str__() == other.__str__()
+    
+    def _instanceOf(self, item):
+        raise NotImplementedError("validating an OpenApiIter object is not supported")
