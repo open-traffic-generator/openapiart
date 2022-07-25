@@ -1667,11 +1667,8 @@ func TestClone(t *testing.T) {
 }
 
 func TestLogging(t *testing.T) {
-	openapiart.NewApi()
-	openapiart.Logger.Info().Msg("Start configuring test")
-}
-
-func TestLoggingWithParams(t *testing.T) {
-	openapiart.NewApi("info", "json")
+	api := openapiart.NewApi()
+	api.SetLoggerLevel("info")
+	api.SetLogFormat("json")
 	openapiart.Logger.Info().Msg("Start configuring test")
 }
