@@ -45,7 +45,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         extension_prefix="sanity",
         proto_service="Openapi",
     )
-    if sdk == "python" or sdk == None:
+    if sdk == "python" or sdk is None:
         open_api.GeneratePythonSdk(package_name="sanity")
 
     if sdk == "go" or sdk is None:
