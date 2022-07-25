@@ -479,7 +479,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _get_child_class(self, property_name, is_property_list=False):
         list_class = None
         class_name = self._TYPES[property_name]["type"]
-        module = importlib.import_module(self.__module__)
+        module = globals().get(self.__module__)
+        if module is None:
+            module = importlib.import_module(self.__module__)
+            globals()[self.__module__] = module
         object_class = getattr(module, class_name)
         if is_property_list is True:
             list_class = object_class
