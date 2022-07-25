@@ -36,8 +36,8 @@ def on_linux():
     return "linux" in sys.platform
 
 
-def get_go():
-    version = "1.17"
+def get_go(go_version="1.17"):
+    version = go_version
     targz = None
 
     if on_arm():
@@ -61,12 +61,14 @@ def get_go():
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go get -v"
+    cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
     run(
         [
-            cmd + " google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
-            cmd + " google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " golang.org/x/tools/cmd/goimports",
+            cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
+            cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
+            cmd + " -v golang.org/x/tools/cmd/goimports@latest",
+            cmd
+            + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
         ]
     )
 
@@ -92,9 +94,9 @@ def get_protoc():
     run([cmd])
 
 
-def setup_ext():
+def setup_ext(go_version="1.17"):
     if on_linux():
-        get_go()
+        get_go(go_version)
         get_protoc()
         get_go_deps()
     else:
@@ -243,11 +245,12 @@ def testgo():
 
 
 def go_lint():
-    run(
-        [
-            "GO111MODULE=on CGO_ENABLED=0 go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0"
-        ]
+    pkg = "{env_set}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2".format(
+        env_set=""
+        if sys.platform == "win32"
+        else "GO111MODULE=on CGO_ENABLED=0 "
     )
+    run([pkg])
     os.chdir("pkg")
     run(["golangci-lint run -v"])
 
