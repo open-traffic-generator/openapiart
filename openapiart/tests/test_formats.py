@@ -20,10 +20,8 @@ def test_formats_bad_string(config, value):
     config.l.string_param = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-        pytest.fail(
-            "Value {value} was successfully validated".format(value=value)
-        )
-    except TypeError:
+        pytest.fail("Value {} was successfully validated".format(value))
+    except Exception:
         pass
 
 
@@ -33,7 +31,7 @@ def test_formats_bad_integer(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -43,7 +41,7 @@ def test_formats_integer_to_be_removed(config, value):
         config.l.integer = value
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -52,7 +50,7 @@ def test_formats_good_ipv4(config, value):
     config.l.ipv4 = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-    except TypeError:
+    except Exception:
         pytest.fail("Value {} was not valid".format(value))
 
 
@@ -75,7 +73,7 @@ def test_formats_bad_ipv4(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -85,7 +83,7 @@ def test_formats_ipv4_to_be_removed(config, value):
         config.l.ipv4 = value
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -108,7 +106,7 @@ def test_formats_bad_ipv6(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -130,7 +128,7 @@ def test_formats_bad_mac(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -142,7 +140,7 @@ def test_formats_bad_hex(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
@@ -152,7 +150,7 @@ def test_string_length(config, value):
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
-    except TypeError:
+    except Exception:
         pass
 
 
