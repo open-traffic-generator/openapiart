@@ -53,8 +53,8 @@ components:
           x-status:
             status: deprecated
             additional_information: |-
-              Deprecated message and use instead information and
-              deprecated from version and lib names can be provided
+              Property b is being deprecated from the sdk version x.x.x
+              and property x shall be used instead
           description: |-
             Longer multi-line description
             Second line is here

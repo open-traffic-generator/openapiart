@@ -1678,6 +1678,8 @@ func TestDeprecationWarning(t *testing.T) {
 
 	warnings := api.GetApiWarnings()
 
+	t.Log(warnings)
+
 	assert.NotNil(t, warnings)
 	assert.Len(t, warnings, 1)
 	api.ClearApiWarnings()
@@ -1689,6 +1691,8 @@ func TestDeprecationWarning(t *testing.T) {
 
 	assert.Nil(t, err)
 	warnings1 := api.GetApiWarnings()
+
+	t.Log(warnings1)
 
 	assert.NotNil(t, warnings1)
 	assert.Len(t, warnings1, 1)
@@ -1702,6 +1706,8 @@ func TestDeprecationWarning(t *testing.T) {
 	err1 := config1.FromJson(data)
 	assert.Nil(t, err1)
 	warnings2 := api.GetApiWarnings()
+
+	t.Log(warnings)
 
 	assert.NotNil(t, warnings2)
 	assert.Len(t, warnings2, 1)
