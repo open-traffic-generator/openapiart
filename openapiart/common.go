@@ -123,8 +123,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
-	SetLoggerLevel(value string)
-	SetLogFormat(value string)
+	SetLoggerLevel(level LogLevelEnum)
+	SetLogFormat(logFormat LogFormatEnum)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -162,15 +162,27 @@ func (api *api) hasHttpTransport() bool {
 	return api.http != nil
 }
 
+type LogLevelEnum string
+
+var LogLevel = struct {
+	INFO  LogLevelEnum
+	DEBUG LogLevelEnum
+	ERROR LogLevelEnum
+}{
+	INFO:  LogLevelEnum("Info"),
+	DEBUG: LogLevelEnum("debug"),
+	ERROR: LogLevelEnum("error"),
+}
+
 var Logger zerolog.Logger
 
-func (api *api) SetLoggerLevel(value string) {
+func (api *api) SetLoggerLevel(level LogLevelEnum) {
 	setlevel := zerolog.InfoLevel
-	if value == "info" {
+	if level == "info" {
 		setlevel = zerolog.InfoLevel
-	} else if value == "debug" {
+	} else if level == "debug" {
 		setlevel = zerolog.DebugLevel
-	} else if value == "error" {
+	} else if level == "error" {
 		setlevel = zerolog.ErrorLevel
 	}
 	zerolog.SetGlobalLevel(setlevel)
@@ -184,9 +196,28 @@ func (api *api) SetLoggerLevel(value string) {
 	Logger = zerolog.New(output).With().Timestamp().Logger()
 }
 
-func (api *api) SetLogFormat(value string) {
-	if value == "json" {
+type LogFormatEnum string
+
+var LogFormat = struct {
+	JSON LogFormatEnum
+	TEXT LogFormatEnum
+}{
+	JSON: LogFormatEnum("Json"),
+	TEXT: LogFormatEnum("Text"),
+}
+
+func (api *api) SetLogFormat(logFormat LogFormatEnum) {
+	if logFormat == "Json" {
 		Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	} else if logFormat == "Text" {
+		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		output.FormatLevel = func(i interface{}) string {
+			return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+		}
+		output.FormatMessage = func(i interface{}) string {
+			return fmt.Sprintf("%s", i)
+		}
+		Logger = zerolog.New(output).With().Timestamp().Logger()
 	}
 }
 
