@@ -172,8 +172,17 @@ type httpClient struct {
 // All methods that perform validation will add errors here
 // All api rpcs MUST call Validate
 var validation []string
+var unique_global []string
+var constraints = make(map[string]map[string]interface{})
+
+// func emptyVars() {
+// 	validation = nil
+// 	constraints = make(map[string]map[string]interface{})
+// }
 
 func validationResult() error {
+	constraints = make(map[string]map[string]interface{})
+	unique_global = nil
 	if len(validation) > 0 {
 		validation = append(validation, "validation errors")
 		errors := strings.Join(validation, "\n")
@@ -304,4 +313,56 @@ func validateIpv6Slice(ip []string) error {
 
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
+}
+
+func isUnique(objectName, value, unique string, object interface{}) bool {
+	if value == "" {
+		return true
+	}
+
+	var create = func(objName string) {
+		_, ok := constraints[objName]
+		if !ok {
+			constraints[objName] = make(map[string]interface{})
+		}
+	}
+
+	if unique == "global" {
+		sort.Strings(unique_global)
+		i := sort.SearchStrings(unique_global, value)
+		there := i < len(unique_global) && unique_global[i] == value
+		if !there {
+			unique_global = append(unique_global, value)
+			create(objectName)
+			constraints[objectName][value] = object
+			return !there
+		}
+		return !there
+	}
+	values, ok := constraints[objectName]
+	if !ok {
+		create(objectName)
+		constraints[objectName][value] = object
+		return !ok
+	}
+	_, ok = values[value]
+	if !ok {
+		constraints[objectName][value] = object
+		return !ok
+	}
+	return !ok
+}
+
+func validateConstraint(objectName []string, value string) bool {
+	if value == "" {
+		return true
+	}
+	found := false
+	for _, obj := range objectName {
+		_, ok := constraints[obj][value]
+		if ok {
+			found = true
+		}
+	}
+	return found
 }

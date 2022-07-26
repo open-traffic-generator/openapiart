@@ -144,6 +144,39 @@ components:
               default: 0
               length: 8
               features: [count, auto]
+        w_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/WObject'
+        x_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZObject'
+        z_object:
+          $ref: '#/components/schemas/ZObject'
+        y_object:
+          $ref: '#/components/schemas/YObject'
+
+    WObject:
+      required: [w_name]
+      properties:
+        w_name:
+          type: string
+          x-unique: global
+
+    ZObject:
+      required: [name]
+      properties:
+        name:
+          type: string
+          x-unique: local
+
+    YObject:
+      properties:
+        y_name:
+          type: string
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
 
     Layer1Ieee802x:
       type: object

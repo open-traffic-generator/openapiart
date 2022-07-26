@@ -104,6 +104,8 @@ class FluentField(object):
         self.hasminmaxlength = False
         self.min_length = None
         self.max_length = None
+        self.x_constraints = []
+        self.x_unique = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1068,11 +1070,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) validateFromText() error {{
+                // emptyVars()
                 obj.validateObj(true)
                 return validationResult()
             }}
 
             func (obj *{struct}) Validate() error {{
+                // emptyVars()
                 obj.validateObj(false)
                 return validationResult()
             }}
@@ -1347,7 +1351,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
-            body = """{set_enum_choice}
+            body = ""
+            if field.type == "string":
+                body = """
+                if obj.obj.{fieldname} == nil {{
+                    return ""
+                }}
+                """.format(
+                    fieldname=field.name
+                )
+            body += """{set_enum_choice}
                 return *obj.obj.{fieldname}
                 """.format(
                 fieldname=field.name,
@@ -1744,6 +1757,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+            self._parse_x_constraints(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -1997,6 +2012,48 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             fluent_new.interface_fields.append(field)
 
+    def _parse_x_constraints(self, field, schema):
+        if "x-constraint" not in schema:
+            return
+        for con in schema["x-constraint"]:
+            ref, prop = con.split("/properties/")
+            ref = self._get_schema_object_name_from_ref(ref)
+            prop = prop.strip("/")
+            field.x_constraints.append((self._get_internal_name(ref), prop))
+
+    def _parse_x_unique(self, field, schema):
+        if "x-unique" not in schema:
+            return
+        field.x_unique = schema["x-unique"]
+
+    def _validate_x_constraint(self, field):
+        body = ""
+        if field.x_constraints == []:
+            return body
+        body = """
+        xCons := []string{{
+            {data}
+        }}
+        if !validateConstraint(xCons, obj.{name}()) {{
+            validation = append(validation, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
+        }}
+        """.format(
+            data='"' + ', "'.join([c[0] for c in field.x_constraints]) + '",',
+            name=field.name,
+            cons="|".join([c[0] for c in field.x_constraints]),
+        )
+        return body
+
+    def _validate_unique(self, new, field):
+        body = ""
+        if field.x_unique is not None:
+            body = """if !isUnique("{struct}", obj.{name}(), "{unique}", obj) {{
+                validation = append(validation, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
+            }}""".format(
+                struct=new.struct, name=field.name, unique=field.x_unique
+            )
+        return body
+
     def _validate_types(self, new, field):
         body = ""
         if field.isPointer or "[]" in field.type:
@@ -2018,7 +2075,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else "",
             )
-
+            unique = self._validate_unique(new, field)
+            body += "else " + unique if unique != "" else unique
+        if field.isOptional is True:
+            body += self._validate_unique(new, field)
+        body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
