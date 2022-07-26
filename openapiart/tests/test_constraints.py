@@ -12,11 +12,11 @@ def test_constraints_and_unique(config):
     except Exception as e:
         if "global_unique already exists" not in str(e):
             pytest.fail("global_unique validation failed")
-    
+
     # Two similar objects with different name
     config.w_list[1].w_name = "global_unique_similar_obj1"
     config.validate()
-    
+
     # Two different objects with same name
     config.name = "global_unique"
     config.w_list.wobject(w_name="global_unique")
@@ -25,7 +25,7 @@ def test_constraints_and_unique(config):
     except Exception as e:
         if "global_unique already exists" not in str(e):
             pytest.fail("global_unique validation failed")
-    
+
     #  Two different objects with different name
     config.name = "global_unique1"
     config.validate()
@@ -39,7 +39,7 @@ def test_constraints_and_unique(config):
     except Exception as e:
         if "local_unique_similar already exists" not in str(e):
             pytest.fail("local_unique_similar validation failed")
-    
+
     # Two similar objects with different name
     config.x_list[1].name = "local_unique_similar1"
     config.validate()
@@ -49,11 +49,6 @@ def test_constraints_and_unique(config):
     config.x_list.zobject(name="local_global_mix")
     config.validate()
     # **********************************************
-
-
-
-
-
 
     # config.z_object.name = "local_unique"
     # config.y_object.y_name = "123"
