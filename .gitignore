@@ -24,3 +24,5 @@ __pycache__
 /pkg/httpapi
 _debug_bin
 .env*
+/doc
+/doc/*
