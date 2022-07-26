@@ -1720,36 +1720,68 @@ func TestConstraintAndUnique(t *testing.T) {
 	prefix := openapiart.NewPrefixConfig()
 	prefix.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10)
 
-	prefix.SetName("global_unique")
-	prefix.WList().Add().SetWName("global_unique")
+	// *************** global unique ****************
+	// Two similar objects with same Name.
+	prefix.WList().Add().SetWName("global_unique_similar_obj")
+	prefix.WList().Add().SetWName("global_unique_similar_obj")
 	_, err := prefix.ToJson()
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "global_unique already exists")
-	prefix.SetName("global_unique1")
+	assert.Contains(t, err.Error(), "global_unique_similar_obj already exists")
 
-	prefix.ZObject().SetName("local_unique")
+	// Two similar objects with different name
+	prefix.WList().Items()[1].SetWName("global_unique_similar_obj1")
+	_, err = prefix.ToJson()
+	assert.Nil(t, err)
+
+	// Two different objects with same name
+	prefix.SetName("global_unique")
+	prefix.WList().Add().SetWName("global_unique")
+	_, err = prefix.ToJson()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "global_unique already exists")
+
+	// Two different objects with different name
+	prefix.SetName("global_unique1")
+	_, err = prefix.ToJson()
+	assert.Nil(t, err)
+	// ********************************************
+
+	// *************** local unique ****************
+
+	// prefix.ZObject().SetName("local_unique")
+	// Two similar objects with same Name.
+	prefix.XList().Add().SetName("local_unique")
 	prefix.XList().Add().SetName("local_unique")
 	_, err = prefix.ToJson()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "local_unique already exists")
 
+	// Two similar objects with different name
 	prefix.XList().Items()[0].SetName("local_unique1")
 	_, err = prefix.ToJson()
 	assert.Nil(t, err)
-	prefix.YObject().SetYName("123")
-	_, err = prefix.ToJson()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "123 is not a valid")
 
-	prefix.YObject().SetYName("local_unique")
-	prefix.SetName("global_and_local_same_name")
-	prefix.XList().Add().SetName("global_and_local_same_name")
-	data, err1 := prefix.ToJson()
-	assert.Nil(t, err1)
-	prefix1 := openapiart.NewPrefixConfig()
-	res := make(map[string]interface{})
-	err = json.Unmarshal([]byte(data), &res)
+	// Two different objects with same name
+	prefix.SetName("local_global_mix")
+	prefix.ZObject().SetName("local_global_mix")
+	_, err = prefix.ToJson()
 	assert.Nil(t, err)
-	err = prefix1.FromJson(data)
-	assert.Nil(t, err)
+	// ************************************************
+
+	// prefix.YObject().SetYName("123")
+	// _, err = prefix.ToJson()
+	// assert.NotNil(t, err)
+	// assert.Contains(t, err.Error(), "123 is not a valid")
+
+	// prefix.YObject().SetYName("local_unique")
+	// prefix.SetName("global_and_local_same_name")
+	// prefix.XList().Add().SetName("global_and_local_same_name")
+	// data, err1 := prefix.ToJson()
+	// assert.Nil(t, err1)
+	// prefix1 := openapiart.NewPrefixConfig()
+	// res := make(map[string]interface{})
+	// err = json.Unmarshal([]byte(data), &res)
+	// assert.Nil(t, err)
+	// err = prefix1.FromJson(data)
+	// assert.Nil(t, err)
 }
