@@ -125,6 +125,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	GetApiWarnings() []string
+	ClearApiWarnings()
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -162,6 +164,14 @@ func (api *api) hasHttpTransport() bool {
 	return api.http != nil
 }
 
+func (api *api) GetApiWarnings() []string {
+	return openapi_warnings
+}
+
+func (api *api) ClearApiWarnings() {
+	openapi_warnings = nil
+}
+
 // HttpRequestDoer will return True for HTTP transport
 type httpRequestDoer interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -184,6 +194,12 @@ func validationResult() error {
 		return fmt.Errorf(errors)
 	}
 	return nil
+}
+
+var openapi_warnings []string
+
+func deprecated(message string) {
+	openapi_warnings = append(openapi_warnings, message)
 }
 
 func validateMac(mac string) error {
