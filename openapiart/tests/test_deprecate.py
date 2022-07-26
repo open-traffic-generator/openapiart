@@ -7,8 +7,8 @@ def test_deprecate(api):
     conf.c = 30
 
     msg = (
-        "Deprecated message and use instead information and "
-        "deprecated from version and lib names can be provided"
+        "Property b is being deprecated from the sdk version x.x.x "
+        "and property x shall be used instead"
     )
 
     def strip_data(message):
