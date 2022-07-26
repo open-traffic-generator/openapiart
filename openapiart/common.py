@@ -559,7 +559,7 @@ class OpenApiValidator(object):
             raise Exception(errors)
         
     def _clear_vars(self):
-        if platform.python_version_tuple()[0] == 2:
+        if platform.python_version_tuple()[0] == "2":
             self.__validate_latter__["unique"] = []
             self.__validate_latter__["constraint"] = []
         else:
