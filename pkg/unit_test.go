@@ -1666,9 +1666,25 @@ func TestClone(t *testing.T) {
 	assert.NotSame(t, &lObj1, &lObj2)
 }
 
-func TestLogging(t *testing.T) {
+func TestLoggingInfo(t *testing.T) {
 	api := openapiart.NewApi()
 	api.SetLoggerLevel(openapiart.LogLevel.INFO)
 	api.SetLogFormat(openapiart.LogFormat.JSON)
+	openapiart.Logger.Info().Msg("Start configuring test")
+}
+
+func TestLoggingDebug(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
+	api.SetLogFormat(openapiart.LogFormat.JSON)
+	openapiart.Logger.Info().Msg("Start configuring test")
+	openapiart.Logger.Debug().Msg("Validating debug message")
+	openapiart.Logger.Error().Msg("Validating error message")
+}
+
+func TestLoggingTextFromat(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetLoggerLevel(openapiart.LogLevel.INFO)
+	api.SetLogFormat(openapiart.LogFormat.TEXT)
 	openapiart.Logger.Info().Msg("Start configuring test")
 }
