@@ -689,6 +689,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
+                Logger.Info().Msgf("method: %s || url: %s || data: %s", method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
                 response, err := httpClient.client.Do(req)

@@ -1684,7 +1684,11 @@ func TestLoggingDebug(t *testing.T) {
 
 func TestLoggingTextFromat(t *testing.T) {
 	api := openapiart.NewApi()
-	api.SetLoggerLevel(openapiart.LogLevel.INFO)
-	api.SetLogFormat(openapiart.LogFormat.TEXT)
-	openapiart.Logger.Info().Msg("Start configuring test")
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config1)
+	// api.SetConfig(config)
+	// api.SetLoggerLevel(openapiart.LogLevel.INFO)
+	// api.SetLogFormat(openapiart.LogFormat.TEXT)
+	// openapiart.Logger.Info().Msg("Start configuring test")
 }
