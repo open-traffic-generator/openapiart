@@ -59,6 +59,7 @@ class Bundler(object):
         self.__python = os.path.normpath(sys.executable)
         self._content = {}
         self._includes = {}
+        self._include_objects = {}
         self._resolved = []
         self._errors = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
@@ -81,6 +82,7 @@ class Bundler(object):
         self._json_filename = os.path.join(self._output_dir, "openapi.json")
         self._content = {}
         self._includes = {}
+        self._include_objects = {}
         self._resolved = []
         for api_filename in self._api_files:
             api_filename = os.path.normpath(os.path.abspath(api_filename))
@@ -93,11 +95,11 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         self._resolve_license()
+        self._validate_errors()
         self._validate_required_responses()
         self._resolve_x_enmu(self._content)
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
-        self._validate_errors()
         with open(self._output_filename, "w") as fp:
             yaml.dump(
                 self._content,
@@ -260,13 +262,29 @@ class Bundler(object):
                     inline = self._get_inline_ref(base_dir, refs[0], refs[1])
                     yobject[key] = inline
                 elif key == "x-include":
-                    for include_ref in value:
-                        if include_ref not in self._includes:
-                            include = self._get_schema_object(
+                    if not isinstance(value, str):
+                        self._errors.append("x-include should be part of properties and responses for %s"
+                                            % value)
+                        continue
+                    if value not in self._includes:
+                        file_name, include_path = value.split("#")
+                        paths = include_path.split("/")
+                        obj_path = "/".join(paths[:4])
+                        include_ref = "{}#{}".format(file_name, obj_path)
+                        if include_ref in self._include_objects:
+                            include_object = self._include_objects[include_ref]
+                        else:
+                            include_object = self._get_schema_object(
                                 base_dir, include_ref
                             )
-                            self._resolve_refs(base_dir, include)
-                            self._includes[include_ref] = include
+                            self._include_objects[include_ref] = include_object
+                        for node in paths[4:]:
+                            tmp = include_object.get(node)
+                            if tmp is None and node.isdigit():
+                                tmp = include_object.get(
+                                    int(node))
+                            include_object = tmp
+                        self._includes[value] = include_object
                 else:
                     self._length_restriction(value)
                     self._required_restriction(key, value)
@@ -377,10 +395,6 @@ class Bundler(object):
                 schema_name
             )
             del property_schema[pattern_extension]
-
-    # def _get_field_uid(self):
-    #     self._field_uid += 1
-    #     return self._field_uid
 
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
@@ -514,10 +528,10 @@ class Bundler(object):
         if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
             counter_pattern_name = "{}.Counter".format(schema_name)
             schema["properties"]["choice"]["x-enum"]["increment"] = {
-                "x-field-uid": 3
+                "x-field-uid": 4
             }
             schema["properties"]["choice"]["x-enum"]["decrement"] = {
-                "x-field-uid": 4
+                "x-field-uid": 5
             }
             schema["properties"]["increment"] = {
                 "$ref": "#/components/schemas/{}".format(counter_pattern_name)
@@ -608,23 +622,26 @@ class Bundler(object):
         and merge the x-include content into the parent object
         Remove the x-include and the included content
         """
-        include_schemas = []
-        for xincludes in self._get_parser("$..x-include").find(self._content):
+        for xinclude in self._get_parser("$..x-include").find(self._content):
             parent_schema_object = (
-                jsonpath_ng.Parent().find(xincludes)[0].value
+                jsonpath_ng.Parent().find(xinclude)[0].value
             )
-            for xinclude in xincludes.value:
-                print("resolving %s..." % (str(xinclude)))
-                include_schemas.append(xinclude)
-                include_schema_object = self._includes[xinclude]
-                self._merge(
-                    copy.deepcopy(include_schema_object), parent_schema_object
-                )
+            xinclude_value = xinclude.value
+            print("resolving %s..." % (str(xinclude_value)))
+            if xinclude_value not in self._includes:
+                self._errors.append("x-include %s missing in internal object."
+                             "Probably not decleared within properties" % xinclude_value)
+                continue
+            include_schema_object = self._includes[xinclude_value]
+            self._merge(
+                copy.deepcopy(include_schema_object),
+                parent_schema_object
+            )
             del parent_schema_object["x-include"]
 
     def _remove_x_include(self):
         refs = self._get_parser('$.."$ref"').find(self._content)
-        for item in set(self._includes):
+        for item in set(self._include_objects):
             pieces = item.split("#/")[1].split("/")
             value = "#/{}".format("/".join(pieces))
             match = False
@@ -688,6 +705,8 @@ class Bundler(object):
         for key, value in src.items():
             if key not in dst:
                 dst[key] = value
+            elif key == "x-field-uid":
+                continue
             elif isinstance(value, list):
                 for item in value:
                     if item not in dst[key]:

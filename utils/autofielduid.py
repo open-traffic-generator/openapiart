@@ -5,23 +5,19 @@ from ruamel import yaml
 
 
 class AutoFieldUid(object):
-    """This utility will use to fill x-field-uid and x-enum-values
-
-        Args
-    ----
-        parent_folders (list): Parent or top level folder of entire yaml
-        output_dir (str): Output directory
+    """This utility will use to fill x-field-uid, x-enum and x-include
     """
 
     _FIELD_UID = "x-field-uid"
 
-    def __init__(self, parent_folders):
+    def __init__(self, parent_folder):
         self._files = []
-        for path in parent_folders:
-            for r, d, f in os.walk(path):
-                for file in f:
-                    if fnmatch.fnmatch(file, '*.yaml'):
-                        self._files.append(os.path.join(r, file))
+        self._parent_folder = parent_folder
+        self._include_files = {}
+        for r, d, f in os.walk(parent_folder):
+            for file in f:
+                if fnmatch.fnmatch(file, '*.yaml'):
+                    self._files.append(os.path.join(r, file))
 
     def annotate(self):
         for filename in self._files:
@@ -43,12 +39,18 @@ class AutoFieldUid(object):
         path_object = yobject.get("paths")
         if path_object is None:
             return
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
         for response in jsonpath_ng.parse("$..responses").find(
                 path_object
         ):
-            for code, code_schema in response.value.items():
-                print(code)
+            rsp_value = response.value
+            if "x-include" in rsp_value:
+                self._update_x_incude_response(yobject, rsp_value)
+            idx = 1
+            for code, code_schema in rsp_value.items():
+                code_schema.update({
+                    "x-filed-uid": idx
+                })
+                idx += 1
 
     def _annotate_enum_fields(self, property_object):
         if "type" in property_object:
@@ -77,6 +79,8 @@ class AutoFieldUid(object):
             # ignore content field as it always contain single value
             if "properties" not in schema_object:
                 continue
+            if "x-include" in schema_object:
+                self._update_x_incude_properties(yobject, schema_object)
             id = 0
             for property_name, property_object in schema_object["properties"].items():
                 id += 1
@@ -90,16 +94,103 @@ class AutoFieldUid(object):
                     property_object
                 )
 
+    def _get_include_response(self, yobject, object_path):
+        include_response = yobject
+        for node_name in object_path.split("/"):
+            if node_name == str():
+                continue
+            include_response = include_response.get(
+                node_name)
+        return include_response
+
+    def _update_x_incude_response(self, yobject, rsp_value):
+        include_names = rsp_value["x-include"]
+        for include_name in include_names:
+            file_name, object_path = include_name.split("#")
+            if file_name == str():
+                include_respones = self._get_include_properties(
+                    yobject, object_path
+                )
+            else:
+                file_name = "/".join([
+                    x for x in file_name.split("/") if x != ".."
+                ])
+                if file_name in self._include_files:
+                    file_obj = self._include_files[file_name]
+                else:
+                    abs_path = os.path.join(
+                        self._parent_folder, file_name
+                    )
+                    with open(abs_path) as fid:
+                        file_obj = yaml.load(
+                            fid, Loader=yaml.RoundTripLoader, preserve_quotes=True
+                        )
+                    self._include_files[file_name] = file_obj
+                include_respones = self._get_include_response(
+                    file_obj, object_path)
+            for response_name in include_respones:
+                rsp_value.update({
+                    response_name: {
+                        "x-include": "{include_name}/{property_name}".format(
+                            include_name=include_name, property_name=response_name
+                        )
+                    }
+                })
+        rsp_value.pop("x-include")
+
+    def _get_include_properties(self, yobject, object_path):
+        include_properties = yobject
+        for node_name in object_path.split("/"):
+            if node_name == str():
+                continue
+            include_properties = include_properties.get(
+                node_name)
+        return include_properties.get(
+            "properties")
+
+    def _update_x_incude_properties(self, yobject, schema_object):
+        include_names = schema_object["x-include"]
+        properties = schema_object["properties"]
+        for include_name in include_names:
+            file_name, object_path = include_name.split("#")
+            if file_name == str():
+                include_properties = self._get_include_properties(
+                    yobject, object_path
+                )
+            else:
+                file_name = "/".join([
+                    x for x in file_name.split("/") if x != ".."
+                ])
+                if file_name in self._include_files:
+                    file_obj = self._include_files[file_name]
+                else:
+                    abs_path = os.path.join(
+                        self._parent_folder, file_name
+                    )
+                    with open(abs_path) as fid:
+                        file_obj = yaml.load(
+                            fid, Loader=yaml.RoundTripLoader, preserve_quotes=True
+                        )
+
+                    file_schema = file_obj["components"]["schemas"]
+                    if "x-include" in file_schema:
+                        file_obj = self._update_x_incude_properties(
+                            file_obj, file_schema)
+                    self._include_files[file_name] = file_obj
+                include_properties = self._get_include_properties(
+                    file_obj, object_path)
+            for property_name in include_properties:
+                properties.update({
+                    property_name: {
+                        "x-include": "{include_name}/properties/{property_name}".format(
+                            include_name=include_name, property_name=property_name
+                        )
+                    }
+                })
+        schema_object.pop("x-include")
+        return yobject
+
 
 if __name__ == "__main__":
-    # api_files = [
-    #     "D:/OTG/Codebase/openapiart/openapiart/tests/api/info.yaml",
-    #     "D:/OTG/Codebase/openapiart/openapiart/tests/common/common.yaml",
-    #     "D:/OTG/Codebase/openapiart/openapiart/tests/api/api.yaml"
-    # ]
-    parent_folders = [
-        # "D:/OTG/Codebase/models"
-        "D:/OTG/Codebase/openapiart/openapiart/tests"
-    ]
-    # AutoFieldUid(parent_folders, output_dir="D:/OTG/Codebase/openapiart/mmmm").annotate()
-    AutoFieldUid(parent_folders).annotate()
+    parent_folder = "D:/OTG/Codebase/openapiart/openapiart/tests"
+    AutoFieldUid(parent_folder).annotate()

@@ -293,16 +293,21 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             enums["unspecified"] = {
                 "x-field-uid": 0
             }
-
+        field_uids = []
         for key, value in enums.items():
             if "x-field-uid" not in value:
                 self._errors.append("x-field-uid is missing in %s" % key)
                 continue
+            x_field_uid = value["x-field-uid"]
+            field_uids.append(x_field_uid)
             self._write("{} = {};".format(
-                key.lower(), value["x-field-uid"]
+                key.lower(), x_field_uid
             ), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
+        self._check_duplicate_uid(
+            field_uids, enum_msg_name
+        )
 
     def _write_msg(self, name, schema_object):
         msg_name = name.replace(".", "")
@@ -331,14 +336,22 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         except AttributeError as err:
             print("Failed writing response {}: {}".format(msg_name, err))
 
+    def _check_duplicate_uid(self, fields_uid, name):
+        dup_values = set([
+            x for x in fields_uid if fields_uid.count(x) > 1
+        ])
+        if len(dup_values) > 0:
+            self._errors.append("%s configured with %s duplicate x-field-uid." % (
+                name, dup_values
+            ))
+
     def _write_msg_fields(self, name, schema_object):
         if "properties" not in schema_object:
             return
-        id = 0
+        field_uids = []
         for property_name, property_object in schema_object[
             "properties"
         ].items():
-            id += 1
             self._write()
             property_type = self._get_field_type(
                 property_name, property_object
@@ -373,14 +386,18 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     "x-field-uid is missing in %s:%s" % (name, property_name)
                 )
                 continue
+
+            field_uid = property_object["x-field-uid"]
+            field_uids.append(field_uid)
             self._write(
                 "{}{} {} = {};".format(
-                    optional, property_type, property_name.lower(), property_object[
-                        "x-field-uid"
-                    ]
+                    optional, property_type, property_name.lower(), field_uid
                 ),
                 indent=1,
             )
+        self._check_duplicate_uid(
+            field_uids, name
+        )
 
     def _write_service(self):
         self._write()
