@@ -118,6 +118,7 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
+        self.logger.info("method: {}; url: {}; payload: {}".format(method, url, data))
         response = self._session.request(
             method=method,
             url=url,
