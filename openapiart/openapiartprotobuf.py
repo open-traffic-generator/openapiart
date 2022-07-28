@@ -285,23 +285,31 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
+        reserved_field_uids = []
+        if "x-reserved-field-uids" in property_object:
+            reserved_field_uids = property_object[
+                "x-reserved-field-uids"
+            ]
         self._write(
             "message {} {{".format(enum_msg_name.replace(".", "")), indent=1
         )
         self._write("enum Enum {", indent=2)
         if "unspecified" not in enums:
-            enums["unspecified"] = {
-                "x-field-uid": 0
-            }
+            self._write("{} = {};".format("unspecified", 0), indent=3)
         field_uids = []
         for key, value in enums.items():
             if "x-field-uid" not in value:
                 self._errors.append("x-field-uid is missing in %s" % key)
                 continue
-            x_field_uid = value["x-field-uid"]
-            field_uids.append(x_field_uid)
+            field_uid = value["x-field-uid"]
+            field_uids.append(field_uid)
+            if field_uid in reserved_field_uids:
+                self._errors.append(
+                    "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
+                    % (field_uid, enum_msg_name, key)
+                )
             self._write("{} = {};".format(
-                key.lower(), x_field_uid
+                key.lower(), field_uid
             ), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
@@ -349,6 +357,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         if "properties" not in schema_object:
             return
         field_uids = []
+        reserved_field_uids = []
+        if "x-reserved-field-uids" in schema_object:
+            reserved_field_uids = schema_object[
+                "x-reserved-field-uids"
+            ]
         for property_name, property_object in schema_object[
             "properties"
         ].items():
@@ -386,9 +399,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     "x-field-uid is missing in %s:%s" % (name, property_name)
                 )
                 continue
-
             field_uid = property_object["x-field-uid"]
             field_uids.append(field_uid)
+            if field_uid in reserved_field_uids:
+                self._errors.append(
+                    "x-field-uid %s within properties %s:%s conflict with x-reserved-field-uids"
+                    % (field_uid, name, property_name)
+                )
             self._write(
                 "{}{} {} = {};".format(
                     optional, property_type, property_name.lower(), field_uid

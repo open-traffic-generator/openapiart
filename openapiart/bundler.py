@@ -17,7 +17,7 @@ except ImportError:
 
 class AutoFieldUid(object):
     def __init__(self):
-        self._field_uid = 1
+        self._field_uid = 0
     
     @property
     def uid(self):
@@ -628,7 +628,7 @@ class Bundler(object):
             )
             xinclude_value = xinclude.value
             print("resolving %s..." % (str(xinclude_value)))
-            if xinclude_value not in self._includes:
+            if len(self._includes) == 0 or xinclude_value not in self._includes:
                 self._errors.append("x-include %s missing in internal object."
                              "Probably not decleared within properties" % xinclude_value)
                 continue
