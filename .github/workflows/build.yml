@@ -21,12 +21,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.17.5"
-      - name: Setup protoc
-        run: |
-          python do.py setup_ext
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -41,15 +35,9 @@ jobs:
           rm -rf .env
           python do.py setup
           python do.py install
-      - name: Run artifact generation
-        run: |
-          python do.py generate go
       - name: Run python lint
         run: |
           python do.py lint
-      - name: Run go lint
-        run: |
-          python do.py go_lint
       - name: Archive generated artifacts
         uses: actions/upload-artifact@v2
         with:
@@ -92,13 +80,43 @@ jobs:
           sudo python do.py testpy
 
   go_tests:
-    needs: python_tests
+    needs: build
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 2
+      matrix:
+        go-version: ["1.17.5", "1.18.3"]
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python do.py setup
+          python do.py init
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Setup Go and protoc
+        run: |
+          python do.py setup_ext ${{ matrix.go-version }}
+      - name: Run artifact generation
+        run: |
+          python do.py generate go
+      - name: Run go lint
+        run: |
+          python do.py go_lint
+      - name: Archive generated artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated-artifacts
+          path: |
+            pkg
       - uses: actions/download-artifact@v2
         with:
           name: generated-artifacts
@@ -106,18 +124,14 @@ jobs:
         run: ls -R
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.17.5"
+          go-version: ${{ matrix.go-version }}
       - name: Run go tests
         run: |
           python do.py testgo
 
   publish_python_package:
-    needs: go_tests
+    needs: [python_tests, go_tests]
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 2
-      matrix:
-        go-version: ["1.16.13", "1.17.5"]
     steps:
       - name: Checkout source
         uses: actions/checkout@v2

@@ -34,11 +34,11 @@ func StartMockGrpcServer() error {
 
 	lis, err := net.Listen("tcp", grpcServer.Location)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("MockGrpcServer: Server failed to listen on address %s", grpcServer.Location))
+		log.Fatalf("MockGrpcServer: Server failed to listen on address %s", grpcServer.Location)
 	}
 
 	grpcServer.Server = grpc.NewServer()
-	log.Print(fmt.Sprintf("MockGrpcServer: Server started and listening on address %s", grpcServer.Location))
+	log.Printf("MockGrpcServer: Server started and listening on address %s", grpcServer.Location)
 
 	sanity.RegisterOpenapiServer(grpcServer.Server, &grpcServer)
 	log.Print("MockGrpcServer: Server subscribed with gRPC Protocol Service")

@@ -1,3 +1,4 @@
+import subprocess
 import os
 from .openapiartplugin import OpenApiArtPlugin
 
@@ -13,6 +14,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         )
         self.default_indent = "  "
         self.proto_service_name = kwargs.get("proto_service", "Openapi")
+        self.doc_dir = kwargs.get("doc_dir")
         self._init_fp(self._filename)
 
     def generate(self, openapi):
@@ -34,6 +36,25 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._validate_error()
         self._write_service()
         self._close_fp()
+        self.generate_doc()
+
+    def generate_doc(self):
+        if self.doc_dir is None:
+            return
+        process_args = [
+            "protoc",
+            "--doc_out={}".format(self.doc_dir),
+            "--doc_opt=html,index.html",
+            "--proto_path={}".format(self._output_dir),
+            self._filename,
+        ]
+        cmd = " ".join(process_args)
+        try:
+            process = subprocess.Popen(cmd, shell=True)
+            process.wait()
+        except Exception:
+            print("Bypassed generating proto document")
+        # protoc --plugin=protoc-gen-doc=./protoc-gen-doc --doc_out=./doc --doc_opt=html,index.html sanity.proto
 
     def _validate_error(self):
         if len(self._errors) > 0:

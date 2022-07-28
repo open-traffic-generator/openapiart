@@ -156,5 +156,18 @@ def test_string_length(config, value):
         pass
 
 
+def test_int64_list(config, default_config):
+    config.integer64 = 10
+    config.integer64_list = [1, 2]
+    data = config.serialize("dict")
+    assert isinstance(data["integer64"], str)
+    for d in data["integer64_list"]:
+        assert isinstance(d, str)
+    default_config.deserialize(data)
+    assert isinstance(default_config.integer64, int)
+    for d in default_config.integer64_list:
+        assert isinstance(d, int)
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

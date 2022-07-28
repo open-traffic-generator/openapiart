@@ -33,6 +33,11 @@ class OpenApiArt(object):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
         )
+        self._doc_dir = os.path.abspath(
+            os.path.join(artifact_dir, "..", "doc")
+            if artifact_dir is not None
+            else "doc"
+        )
         self._go_sdk_package_dir = None
         self._protobuf_package_name = (
             protobuf_name if protobuf_name is not None else "sanity"
@@ -322,6 +327,7 @@ class OpenApiArt(object):
                 "go_sdk_package_dir": self._go_sdk_package_dir,
                 "output_dir": self._output_dir,
                 "proto_service": self._proto_service,
+                "doc_dir": self._doc_dir,
             }
         )
         protobuf.generate(self._openapi)

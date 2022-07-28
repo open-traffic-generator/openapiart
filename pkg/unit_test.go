@@ -1657,3 +1657,11 @@ func TestStringer(t *testing.T) {
 	lObj.SetDouble(10.1).SetFloat(20.1).SetStringParam("abc")
 	fmt.Println(lObj)
 }
+
+func TestClone(t *testing.T) {
+	lObj1 := openapiart.NewLObject()
+	lObj2, err := lObj1.Clone()
+	assert.Nil(t, err)
+	fmt.Println(&lObj1, &lObj2)
+	assert.NotSame(t, &lObj1, &lObj2)
+}

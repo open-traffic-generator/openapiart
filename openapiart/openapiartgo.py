@@ -165,10 +165,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
-            # "stringmac": "StringMac",
-            # "stringipv4": "StringIpv4",
-            # "stringipv6": "StringIpv6",
-            # "stringhex": "StringHex",
             "stringbinary": "[]byte",
         }
 
@@ -627,8 +623,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return err
                 }}
                 if api.hasHttpTransport() {{
+                    err := api.http.conn.(*net.TCPConn).SetLinger(0)
+                    api.http.conn.Close()
+                    api.http.conn = nil
                     api.http = nil
                     api.httpClient.client = nil
+                    return err
                 }}
                 return nil
             }}
@@ -642,12 +642,32 @@ class OpenApiArtGo(OpenApiArtPlugin):
             // httpConnect builds up a http connection
             func (api *{internal_struct_name}) httpConnect() error {{
                 if api.httpClient.client == nil {{
-                    var verify = !api.http.verify
+                    tr := http.Transport{{
+                        DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
+                            tcpConn, err := (&net.Dialer{{}}).DialContext(ctx, network, addr)
+                            if err != nil {{
+                                return nil, err
+                            }}
+                            tlsConn := tls.Client(tcpConn, &tls.Config{{InsecureSkipVerify: !api.http.verify}})
+                            err = tlsConn.Handshake()
+                            if err != nil {{
+                                return nil, err
+                            }}
+                            api.http.conn = tcpConn
+                            return tlsConn, nil
+                        }},
+                        DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
+                            tcpConn, err := (&net.Dialer{{}}).DialContext(ctx, network, addr)
+                            if err != nil {{
+                                return nil, err
+                            }}
+                            api.http.conn = tcpConn
+                            return tcpConn, nil
+                        }},
+                    }}
                     client := httpClient{{
                         client: &http.Client{{
-                            Transport: &http.Transport{{
-                                TLSClientConfig: &tls.Config{{InsecureSkipVerify: verify}},
-                            }},
+                            Transport: &tr,
                         }},
                         ctx: context.Background(),
                     }}
@@ -671,7 +691,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
-                return httpClient.client.Do(req)
+                response, err := httpClient.client.Do(req)
+                return response, err
             }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
@@ -1063,6 +1084,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return str
             }}
+
+            func (obj *{struct}) Clone() ({interface}, error) {{
+                vErr := obj.Validate()
+                if vErr != nil {{
+                    return nil, vErr
+                }}
+                newObj := New{interface}()
+                data, err :=  proto.Marshal(obj.Msg())
+                if err != nil {{
+                    return nil, err
+                }}
+                pbErr := proto.Unmarshal(data, newObj.Msg())
+                if pbErr != nil {{
+                    return nil, pbErr
+                }}
+                return newObj, nil
+            }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1101,6 +1139,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "Validate() error",
             "// A stringer function",
             "String() string",
+            "// Clones the object",
+            "Clone() ({interface}, error)",
             "validateFromText() error",
             "validateObj(set_default bool)",
             "setDefault()",

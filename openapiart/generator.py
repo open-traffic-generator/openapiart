@@ -1069,6 +1069,14 @@ class Generator:
         self._write(1, "def next(self):")
         self._write(2, "# type: () -> %s" % contained_class_name)
         self._write(2, "return self._next()")
+        self._write()
+        self._write(1, "def _instanceOf(self, item):")
+        self._write(2, "if not isinstance(item, %s):" % (contained_class_name))
+        self._write(
+            3,
+            'raise Exception("Item is not an instance of %s")'
+            % (contained_class_name),
+        )
 
     def _write_factory_method(
         self,
@@ -1355,6 +1363,13 @@ class Generator:
                     pt.update(
                         {"itemtype": self._get_data_types(yproperty["items"])}
                     )
+                    if "format" in yproperty["items"]:
+                        pt.update(
+                            {
+                                "itemformat": "'%s'"
+                                % yproperty["items"]["format"]
+                            }
+                        )
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:
