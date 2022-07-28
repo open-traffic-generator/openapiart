@@ -363,7 +363,7 @@ class Generator:
         self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
         if self._logger is None:
             stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+            formatter = logging.Formatter(fmt="%(asctime)-8s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
             formatter.converter = time.gmtime
             stdout_handler.setFormatter(formatter)
             self._logger = logging.Logger(self.__module__, level=self._loglevel)
@@ -433,6 +433,12 @@ class Generator:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
+                    self._write(
+                        2,
+                        """self._logger.debug("Calling method: {}")""".format(
+                            rpc_method.method
+                        ),
+                    )
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
@@ -498,6 +504,16 @@ class Generator:
                         """if response.get("status_code_{code}") is not None:""".format(
                             code=rsp_code
                         ),
+                    )
+                    self._write(
+                        3,
+                        """resp_code = response.get("status_code_{code}")""".format(
+                            code=rsp_code
+                        ),
+                    )
+                    self._write(
+                        3,
+                        """self._logger.error("response: {}".format(resp_code))""",
                     )
                     self._write(
                         3,
@@ -578,7 +594,12 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
-
+                self._write(
+                    2,
+                    """self.logger.debug("Calling method ==> {}")""".format(
+                        method["name"]
+                    ),
+                )
                 self._write(2, "return self._transport.send_recv(")
                 self._write(3, '"%s",' % method["http_method"])
                 self._write(3, '"%s",' % method["url"])
@@ -625,7 +646,7 @@ class Generator:
             self._write(3, "self.logger.setLevel(self.loglevel)")
             self._write(
                 3,
-                'formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")',
+                'formatter = logging.Formatter(fmt="%(asctime)-8s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")',
             )
             self._write(3, "sh = logging.StreamHandler(sys.stdout)")
             self._write(3, "sh.setFormatter(formatter)")
@@ -1453,6 +1474,11 @@ class Generator:
             )
             self._write(
                 3,
+                """self.logger.error('choice must be of type: %s')"""
+                % (", ".join(choices)),
+            )
+            self._write(
+                3,
                 "raise TypeError('choice must be of type: %s')"
                 % (", ".join(choices)),
             )
@@ -1497,6 +1523,11 @@ class Generator:
                             )
                         self._write(3, "self.%s = %s" % (name, name))
                     self._write(2, "else:")
+                    self._write(
+                        3,
+                        """self.logger.error(''%s must be an instance of %s')"""
+                        % (name, restriction),
+                    )
                     self._write(
                         3,
                         "raise TypeError('%s must be an instance of %s')"
