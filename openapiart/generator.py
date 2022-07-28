@@ -446,7 +446,8 @@ class Generator:
                         ),
                     )
                     self._write(
-                        2, """self._logger.debug(f"Request data: {req_obj}")"""
+                        2,
+                        """self._logger.debug("Request data: {}".format(req_obj))""",
                     )
                     self._write(2, "stub = self._get_stub()")
                     self._write(
@@ -461,7 +462,8 @@ class Generator:
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
                 self._write(
-                    2, """self._logger.debug(f"Response data: {response}")"""
+                    2,
+                    """self._logger.debug("Response data: {}".format(response))""",
                 )
                 self._write(
                     2, 'status_code_200 = response.get("status_code_200")'
