@@ -89,7 +89,7 @@ class HttpTransport(object):
         self.loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
         if self.logger is None:
             stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+            formatter = logging.Formatter(fmt="%(asctime)-8s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
             formatter.converter = time.gmtime
             stdout_handler.setFormatter(formatter)
             self.logger = logging.Logger(self.__module__, level=self.loglevel)
@@ -118,6 +118,7 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
+        self.logger.debug("Request call ==> Method: {} || url: {} || payload: {}".format(method.upper(), url, data))
         response = self._session.request(
             method=method,
             url=url,
@@ -127,6 +128,7 @@ class HttpTransport(object):
             # TODO: add a timeout here
             headers=headers,
         )
+        self.logger.debug('Response ==> Status code: {} || Error: {}'.format(response.status_code, response.reason))
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
@@ -145,6 +147,7 @@ class HttpTransport(object):
                 # content types
                 return response
         else:
+            self.logger.error('Response ==> Status code: {} || reason: {} || data: {}'.format(response.status_code, response.reason, response.text))
             raise Exception(response.status_code, yaml.safe_load(response.text))
 
 
@@ -155,10 +158,10 @@ class OpenApiBase(object):
     YAML = "yaml"
     DICT = "dict"
 
-    __slots__ = ()
+    __slots__ = ("logger")
 
     def __init__(self):
-        pass
+        self.logger = logging.getLogger(self.__module__)
 
     def serialize(self, encoding=JSON):
         """Serialize the current object according to a specified encoding.
