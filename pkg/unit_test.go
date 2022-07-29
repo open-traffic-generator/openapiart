@@ -1686,4 +1686,6 @@ func TestLoggingErrorMsg(t *testing.T) {
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
 	api.SetConfig(config)
+	err := config.Validate()
+	assert.Nil(t, err)
 }
