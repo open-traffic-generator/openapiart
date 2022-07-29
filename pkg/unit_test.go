@@ -1666,29 +1666,24 @@ func TestClone(t *testing.T) {
 	assert.NotSame(t, &lObj1, &lObj2)
 }
 
-// func TestLoggingInfo(t *testing.T) {
-// 	api := openapiart.NewApi()
-// 	api.SetLoggerLevel(openapiart.LogLevel.INFO)
-// 	api.SetLogFormat(openapiart.LogFormat.JSON)
-// 	openapiart.Logger.Info().Msg("Start configuring test")
-// }
-
-// func TestLoggingDebug(t *testing.T) {
-// 	api := openapiart.NewApi()
-// 	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
-// 	api.SetLogFormat(openapiart.LogFormat.JSON)
-// 	openapiart.Logger.Info().Msg("Start configuring test")
-// 	openapiart.Logger.Debug().Msg("Validating debug message")
-// 	openapiart.Logger.Error().Msg("Validating error message")
-// }
-
-func TestLoggingTextFromat(t *testing.T) {
+func TestLoggingMsg(t *testing.T) {
 	api := openapiart.NewApi()
-	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 	config := api.NewPrefixConfig()
 	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetConfig(config)
+}
+
+func TestLoggingErrorMsg(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(3.0).SetEB(47.234)
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
 	api.SetConfig(config)
 }

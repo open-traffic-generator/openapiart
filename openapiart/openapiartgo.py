@@ -592,6 +592,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         defer cancelFunc()
                         conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithTransportCredentials(insecure.NewCredentials()))
                         if err != nil {{
+                            Logger.Error().Msgf("Grpc client connection error: %s", err)
                             return err
                         }}
                         api.grpcClient = {pb_pkg_name}.New{proto_service}Client(conn)
@@ -608,6 +609,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if api.grpc.clientConnection != nil {{
                         err := api.grpc.clientConnection.Close()
                         if err != nil {{
+                            Logger.Error().Msgf("Grpc client connection close error: %s", err)
                             return err
                         }}
                     }}
@@ -645,7 +647,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     tr := http.Transport{{
                         DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
                             tcpConn, err := (&net.Dialer{{}}).DialContext(ctx, network, addr)
+                            Logger.Debug().Msgf("Http connection: %s", tcpConn)
                             if err != nil {{
+                                Logger.Error().Msgf("Http connection error: %s", err)
                                 return nil, err
                             }}
                             tlsConn := tls.Client(tcpConn, &tls.Config{{InsecureSkipVerify: !api.http.verify}})
@@ -689,13 +693,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
-                Logger.Debug().Msgf("Request: method: %s || url: %s || data: %s", method, queryUrl.String(), bodyReader)
+                Logger.Debug().Msgf("Request ==> method: %s || url: %s || data: %s", method, queryUrl.String(), jsonBody)
                 req.Header.Set("Content-Type", "application/json")
                 req = req.WithContext(httpClient.ctx)
                 response, err := httpClient.client.Do(req)
-                // response.status --> info
-                Logger.Debug().Msgf("Response: %s || Err: %s", response.Body, err)
-                // add err nil
+                Logger.Debug().Msgf("Response ==> status: %s || body: %s || Err: %s", response.Status, response.Body, err)
+                if err != nil {{
+                    Logger.Error().Msgf("Response error ==> %s", err)
+                }}
                 return response, err
             }}
             """.format(
@@ -750,6 +755,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     continue
                 error_handling += """if resp.GetStatusCode_{status_code}() != nil {{
                         data, _ := yaml.Marshal(resp.GetStatusCode_{status_code}())
+                        Logger.Error().Msgf("Error ==> %s", string(data))
                         return nil, fmt.Errorf(string(data))
                     }}
                     """.format(
@@ -773,9 +779,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
+
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {validate}
+                    Logger.Debug().Msgf("Calling Method ==> {operation_name}")
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
@@ -787,7 +795,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
                     resp, err := api.grpcClient.{operation_name}(ctx, &request)
+                    Logger.Debug().Msgf("Response ==> %s", resp)
                     if err != nil {{
+                        Logger.Debug().Msgf("Response Error ==> %s", err)
                         return nil, err
                     }}
                     {return_value}
