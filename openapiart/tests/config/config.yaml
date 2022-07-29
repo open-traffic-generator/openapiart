@@ -1,6 +1,7 @@
 components:
   schemas:
     Prefix.Config:
+      type: object
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       required: [a, b, c, required_object]
@@ -152,6 +153,7 @@ components:
           type: boolean
           
     GObject:
+      type: object
       x-include:
       - '../common/common.yaml#/components/schemas/ListObject'
       properties:
@@ -183,6 +185,7 @@ components:
           default: a
 
     EObject:
+      type: object
       x-include:
       - '../common/common.yaml#/components/schemas/GlobalObject'
       - '../common/common.yaml#/components/schemas/MultiParamObject'
