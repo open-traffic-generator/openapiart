@@ -1676,16 +1676,3 @@ func TestLoggingMsg(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	api.SetConfig(config)
 }
-
-func TestLoggingErrorMsg(t *testing.T) {
-	api := openapiart.NewApi()
-	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
-	api.NewGrpcTransport().SetLocation(grpcServer.Location)
-	config := api.NewPrefixConfig()
-	config.RequiredObject().SetEA(3.0).SetEB(47.234)
-	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
-	api.SetConfig(config)
-	err := config.Validate()
-	assert.Nil(t, err)
-}
