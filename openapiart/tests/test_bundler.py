@@ -6,6 +6,8 @@ def test_auto_feature(openapi_yaml):
         openapi_yaml.get("components").get("schemas")
     )
     for auto_field in property:
+        if len(auto_field.value) == 1 and 'x-field-uid' in auto_field.value:
+            continue
         assert auto_field.value.get("description") is not None
         assert auto_field.value.get("type") is not None
         assert auto_field.value.get("default") is not None
