@@ -58,9 +58,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
 
     def _validate_error(self):
         if len(self._errors) > 0:
-            raise TypeError("\n".join(
-                self._errors
-            ))
+            raise TypeError("\n".join(self._errors))
 
     def _get_operation(self, path_item_object):
         if "operationId" in path_item_object:
@@ -228,7 +226,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 elif "x-enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
                     self._write_x_enum_msg(
-                        enum_msg, openapi_object["x-enum"], property_name, openapi_object
+                        enum_msg,
+                        openapi_object["x-enum"],
+                        property_name,
+                        openapi_object,
                     )
                     return enum_msg + ".Enum"
                 return "string"
@@ -302,15 +303,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         else:
             return "Description missing in models"
 
-    def _write_x_enum_msg(self, enum_msg_name, enums, property_name, property_object):
+    def _write_x_enum_msg(
+        self, enum_msg_name, enums, property_name, property_object
+    ):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
         reserved_field_uids = []
         if "x-reserved-field-uids" in property_object:
-            reserved_field_uids = property_object[
-                "x-reserved-field-uids"
-            ]
+            reserved_field_uids = property_object["x-reserved-field-uids"]
         self._write(
             "message {} {{".format(enum_msg_name.replace(".", "")), indent=1
         )
@@ -329,14 +330,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
                     % (field_uid, enum_msg_name, key)
                 )
-            self._write("{} = {};".format(
-                key.lower(), field_uid
-            ), indent=3)
+            self._write("{} = {};".format(key.lower(), field_uid), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
-        self._check_duplicate_uid(
-            field_uids, enum_msg_name
-        )
+        self._check_duplicate_uid(field_uids, enum_msg_name)
 
     def _write_msg(self, name, schema_object):
         msg_name = name.replace(".", "")
@@ -366,13 +363,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             print("Failed writing response {}: {}".format(msg_name, err))
 
     def _check_duplicate_uid(self, fields_uid, name):
-        dup_values = set([
-            x for x in fields_uid if fields_uid.count(x) > 1
-        ])
+        dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
         if len(dup_values) > 0:
-            self._errors.append("%s configured with %s duplicate x-field-uid." % (
-                name, dup_values
-            ))
+            self._errors.append(
+                "%s configured with %s duplicate x-field-uid."
+                % (name, dup_values)
+            )
 
     def _write_msg_fields(self, name, schema_object):
         if "properties" not in schema_object:
@@ -380,9 +376,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         field_uids = []
         reserved_field_uids = []
         if "x-reserved-field-uids" in schema_object:
-            reserved_field_uids = schema_object[
-                "x-reserved-field-uids"
-            ]
+            reserved_field_uids = schema_object["x-reserved-field-uids"]
         for property_name, property_object in schema_object[
             "properties"
         ].items():
@@ -433,9 +427,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 ),
                 indent=1,
             )
-        self._check_duplicate_uid(
-            field_uids, name
-        )
+        self._check_duplicate_uid(field_uids, name)
 
     def _write_service(self):
         self._write()

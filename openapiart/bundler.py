@@ -15,10 +15,11 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+
 class AutoFieldUid(object):
     def __init__(self):
         self._field_uid = 0
-    
+
     @property
     def uid(self):
         self._field_uid += 1
@@ -119,14 +120,13 @@ class Bundler(object):
 
     def _inject_enum(self, property_name, property_object, schema_name):
         if "enum" in property_object.keys():
-            self._errors.append("Please modify enum with x-enum within %s:%s" % (
-                schema_name, property_name
-            ))
+            self._errors.append(
+                "Please modify enum with x-enum within %s:%s"
+                % (schema_name, property_name)
+            )
             return
         if "x-enum" in property_object.keys():
-            property_object["enum"] = list(
-                property_object["x-enum"].keys()
-            )
+            property_object["enum"] = list(property_object["x-enum"].keys())
 
     def _resolve_x_enmu(self, content):
         for schema_name, schema_object in content["components"][
@@ -143,7 +143,10 @@ class Bundler(object):
                     self._inject_enum(
                         property_name, property_object, schema_name
                     )
-                if property_object["type"] == "array" and "items" in property_object:
+                if (
+                    property_object["type"] == "array"
+                    and "items" in property_object
+                ):
                     self._inject_enum(
                         property_name, property_object["items"], schema_name
                     )
@@ -263,8 +266,10 @@ class Bundler(object):
                     yobject[key] = inline
                 elif key == "x-include":
                     if not isinstance(value, str):
-                        self._errors.append("x-include should be part of properties and responses for %s"
-                                            % value)
+                        self._errors.append(
+                            "x-include should be part of properties and responses for %s"
+                            % value
+                        )
                         continue
                     if value not in self._includes:
                         file_name, include_path = value.split("#")
@@ -281,8 +286,7 @@ class Bundler(object):
                         for node in paths[4:]:
                             tmp = include_object.get(node)
                             if tmp is None and node.isdigit():
-                                tmp = include_object.get(
-                                    int(node))
+                                tmp = include_object.get(int(node))
                             include_object = tmp
                         self._includes[value] = include_object
                 else:
@@ -407,12 +411,8 @@ class Bundler(object):
                     "description": "The type of checksum",
                     "type": "string",
                     "x-enum": {
-                        "generated" : {
-                            "x-field-uid": 1
-                        },
-                        "custom": {
-                            "x-field-uid": 2
-                        }
+                        "generated": {"x-field-uid": 1},
+                        "custom": {"x-field-uid": 2},
                     },
                     "default": "generated",
                     "x-field-uid": auto_field.uid,
@@ -421,12 +421,8 @@ class Bundler(object):
                     "description": "A system generated checksum value",
                     "type": "string",
                     "x-enum": {
-                        "good": {
-                            "x-field-uid": 1
-                        },
-                        "bad": {
-                            "x-field-uid": 2
-                        }
+                        "good": {"x-field-uid": 1},
+                        "bad": {"x-field-uid": 2},
                     },
                     "default": "good",
                     "x-field-uid": auto_field.uid,
@@ -436,7 +432,7 @@ class Bundler(object):
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
-                    "x-field-uid": auto_field.uid
+                    "x-field-uid": auto_field.uid,
                 },
             },
         }
@@ -456,24 +452,20 @@ class Bundler(object):
                 "choice": {
                     "type": "string",
                     "x-enum": {
-                        "value": {
-                            "x-field-uid": 2
-                        },
-                        "values": {
-                            "x-field-uid": 3
-                        }
+                        "value": {"x-field-uid": 2},
+                        "values": {"x-field-uid": 3},
                     },
                     "default": "value",
                     "x-field-uid": auto_field.uid,
                 },
                 "value": {
                     "type": copy.deepcopy(type_name),
-                    "x-field-uid": auto_field.uid
+                    "x-field-uid": auto_field.uid,
                 },
                 "values": {
                     "type": "array",
                     "items": {"type": copy.deepcopy(type_name)},
-                    "x-field-uid": auto_field.uid
+                    "x-field-uid": auto_field.uid,
                 },
             },
         }
@@ -499,7 +491,7 @@ class Bundler(object):
                 schema["properties"]["auto"] = {
                     "description": "\n".join(description),
                     "type": copy.deepcopy(type_name),
-                    "x-field-uid": auto_field.uid
+                    "x-field-uid": auto_field.uid,
                 }
                 self._apply_common_x_field_pattern_properties(
                     schema["properties"]["auto"],
@@ -516,7 +508,7 @@ class Bundler(object):
                     """metric request allows for the metric_group value to be specified """
                     """as part of the request.""",
                     "type": "string",
-                    "x-field-uid": auto_field.uid
+                    "x-field-uid": auto_field.uid,
                 }
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
@@ -548,11 +540,11 @@ class Bundler(object):
                 "properties": {
                     "start": {
                         "type": type_name,
-                        "x-field-uid": counter_auto_field.uid
+                        "x-field-uid": counter_auto_field.uid,
                     },
                     "step": {
                         "type": type_name,
-                        "x-field-uid": counter_auto_field.uid
+                        "x-field-uid": counter_auto_field.uid,
                     },
                 },
             }
@@ -560,7 +552,7 @@ class Bundler(object):
                 counter_schema["properties"]["count"] = {
                     "type": "integer",
                     "default": 1,
-                    "x-field-uid": counter_auto_field.uid
+                    "x-field-uid": counter_auto_field.uid,
                 }
             self._apply_common_x_field_pattern_properties(
                 counter_schema["properties"]["start"],
@@ -623,19 +615,21 @@ class Bundler(object):
         Remove the x-include and the included content
         """
         for xinclude in self._get_parser("$..x-include").find(self._content):
-            parent_schema_object = (
-                jsonpath_ng.Parent().find(xinclude)[0].value
-            )
+            parent_schema_object = jsonpath_ng.Parent().find(xinclude)[0].value
             xinclude_value = xinclude.value
             print("resolving %s..." % (str(xinclude_value)))
-            if len(self._includes) == 0 or xinclude_value not in self._includes:
-                self._errors.append("x-include %s missing in internal object."
-                             "Probably not decleared within properties" % xinclude_value)
+            if (
+                len(self._includes) == 0
+                or xinclude_value not in self._includes
+            ):
+                self._errors.append(
+                    "x-include %s missing in internal object."
+                    "Probably not decleared within properties" % xinclude_value
+                )
                 continue
             include_schema_object = self._includes[xinclude_value]
             self._merge(
-                copy.deepcopy(include_schema_object),
-                parent_schema_object
+                copy.deepcopy(include_schema_object), parent_schema_object
             )
             del parent_schema_object["x-include"]
 
