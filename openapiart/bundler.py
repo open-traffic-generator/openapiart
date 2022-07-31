@@ -624,7 +624,8 @@ class Bundler(object):
             ):
                 self._errors.append(
                     "x-include %s missing in internal object."
-                    "Probably not decleared within properties" % xinclude_value
+                    "x-include should define within properties"
+                    % xinclude_value
                 )
                 continue
             include_schema_object = self._includes[xinclude_value]

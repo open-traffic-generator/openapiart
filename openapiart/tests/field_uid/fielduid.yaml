@@ -1,0 +1,106 @@
+paths:
+  /config:
+    post:
+      tags: ['Bundler']
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Field.Config'
+      responses:
+        '200':
+          x-filed-uid: 1
+          description: 'Standard success binary payload'
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          x-filed-uid: 2
+          description: 'error 4xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+        '500':
+          x-filed-uid: 4
+          description: 'error 5xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+components:
+  schemas:
+    Field.Config:
+      type: object
+      x-reserved-field-uids: [2,3]
+      description: |-
+        This is a field uid object
+      properties:
+        field1:
+          type: boolean
+          x-field-uid: 1
+        smaefieldid:
+          type: integer
+          x-field-uid: 1
+        usereserved:
+          type: integer
+          x-field-uid: 2
+        missinguid:
+          type: integer
+        minrange:
+          type: integer
+          x-field-uid: -1
+        maxrange:
+          type: integer
+          x-field-uid: 536870912
+        fieldenum:
+          type: string
+          x-field-uid: 4
+          x-reserved-field-uids: [2,4]
+          x-enum:
+            enum1:
+              x-field-uid: 1
+            dupenum:
+              x-field-uid: 1
+            missingenum:
+              description: |-
+                missing enum
+            conflictenum:
+              x-field-uid: 4
+            minenum:
+              x-field-uid: -3
+            maxenum:
+              x-field-uid: 536870912
+        a:
+          x-status: under-review
+          description: |-
+            Small single line description
+          type: string
+          x-field-uid: 7
+        b:
+          x-status: deprecated
+          description: |-
+            Longer multi-line description
+            Second line is here
+            Third line
+          type: number
+          format: float
+          x-field-uid: 8

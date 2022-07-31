@@ -330,6 +330,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
                     % (field_uid, enum_msg_name, key)
                 )
+            self._check_range_uid(
+                field_uid, "{}:{}".format(enum_msg_name, key)
+            )
             self._write("{} = {};".format(key.lower(), field_uid), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
@@ -366,8 +369,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
         if len(dup_values) > 0:
             self._errors.append(
-                "%s configured with %s duplicate x-field-uid."
+                "%s contain duplicate %s x-field-uid. x-field-uid should be unique."
                 % (name, dup_values)
+            )
+
+    def _check_range_uid(self, fields_uid, name):
+        if fields_uid < 0 or fields_uid > 536870911:
+            self._errors.append(
+                "x-field-uid %s of %s not in range (1 to 2^29)"
+                % (fields_uid, name)
             )
 
     def _write_msg_fields(self, name, schema_object):
@@ -418,9 +428,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             field_uids.append(field_uid)
             if field_uid in reserved_field_uids:
                 self._errors.append(
-                    "x-field-uid %s within properties %s:%s conflict with x-reserved-field-uids"
+                    "x-field-uid %s of %s:%s should not conflict with x-reserved-field-uids"
                     % (field_uid, name, property_name)
                 )
+            self._check_range_uid(
+                field_uid, "{}:{}".format(name, property_name)
+            )
             self._write(
                 "{}{} {} = {};".format(
                     optional, property_type, property_name.lower(), field_uid
