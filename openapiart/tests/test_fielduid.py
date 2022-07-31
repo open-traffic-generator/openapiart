@@ -23,21 +23,21 @@ def str_compare(validte_str, entire_str):
 
 def test_validate_field_uid():
     dup_error = "Field.Config contain duplicate {1} x-field-uid"
-    reserved_error = "x-field-uid 2 of Field.Config:usereserved should not conflict with x-reserved-field-uids"
-    missing_error = "x-field-uid is missing in Field.Config:missinguid"
-    min_range_error = (
-        "x-field-uid -1 of Field.Config:minrange not in range (1 to 2^29)"
-    )
-    max_range_error = "x-field-uid 536870912 of Field.Config:maxrange not in range (1 to 2^29)"
-    dup_enum_error = "Field.Config contain duplicate {1} x-field-uid. x-field-uid should be unique."
-    reserved_enum_error = "x-field-uid 4 within enum Fieldenum:conflictenum conflict with x-reserved-field-uids"
-    missing_enum_error = "x-field-uid is missing in missingenum"
-    min_enum_range_error = (
-        "x-field-uid -3 of Fieldenum:minenum not in range (1 to 2^29)"
-    )
-    max_enum_range_error = (
-        "x-field-uid 536870912 of Fieldenum:maxenum not in range (1 to 2^29)"
-    )
+    # reserved_error = "x-field-uid 2 of Field.Config:usereserved should not conflict with x-reserved-field-uids"
+    # missing_error = "x-field-uid is missing in Field.Config:missinguid"
+    # min_range_error = (
+    #     "x-field-uid -1 of Field.Config:minrange not in range (1 to 2^29)"
+    # )
+    # max_range_error = "x-field-uid 536870912 of Field.Config:maxrange not in range (1 to 2^29)"
+    # dup_enum_error = "Field.Config contain duplicate {1} x-field-uid. x-field-uid should be unique."
+    # reserved_enum_error = "x-field-uid 4 within enum Fieldenum:conflictenum conflict with x-reserved-field-uids"
+    # missing_enum_error = "x-field-uid is missing in missingenum"
+    # min_enum_range_error = (
+    #     "x-field-uid -3 of Fieldenum:minenum not in range (1 to 2^29)"
+    # )
+    # max_enum_range_error = (
+    #     "x-field-uid 536870912 of Fieldenum:maxenum not in range (1 to 2^29)"
+    # )
 
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
