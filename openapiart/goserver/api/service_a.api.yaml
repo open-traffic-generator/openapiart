@@ -24,18 +24,21 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+          x-filed-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 3
     delete:
       tags: [ApiTest]
       operationId: dummyResponseTest
@@ -47,18 +50,21 @@ paths:
             text/plain:
               schema:
                 type: string
+          x-filed-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 3
     post:
       tags: [ApiTest]
       operationId: PostRootResponse
@@ -75,15 +81,18 @@ paths:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+          x-filed-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-filed-uid: 3

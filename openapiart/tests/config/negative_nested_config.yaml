@@ -20,25 +20,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RootComponentWithNested'
+          x-filed-uid: 1
         400:
           description: 'error 4xx'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error.Details'
+          x-filed-uid: 2
         500:
           description: 'error 5xx'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error.Details'
-
+          x-filed-uid: 3
 components:
   schemas:
     ComponentWithNoProperties:
       type: object
       description: Component with no properties
-
     Error.Details:
       type: object
       properties:
@@ -46,7 +47,7 @@ components:
           type: array
           items:
             type: string
-
+          x-field-uid: 1
     RootComponentWithNested:
       type: object
       description: |-
@@ -55,13 +56,16 @@ components:
       properties:
         name:
           type: string
+          x-field-uid: 1
         nested_component_1:
           type: object
           properties:
             name:
               type: string
+          x-field-uid: 2
         nested_component_2:
           type: object
           properties:
             name:
               type: string
+          x-field-uid: 3

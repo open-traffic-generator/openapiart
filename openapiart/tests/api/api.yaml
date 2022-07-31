@@ -1,4 +1,4 @@
-paths: 
+paths:
   /config:
     post:
       tags: ['Bundler']
@@ -12,12 +12,18 @@ paths:
             schema:
               $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Success'
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error.404'
-        - '../common/common.yaml#/components/responses/Error500'
-
+        200:
+          x-include: ../common/common.yaml#/components/responses/Success/200
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '404':
+          x-include: ../common/common.yaml#/components/responses/Error.404/404
+          x-filed-uid: 3
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 4
     patch:
       tags: ['Bundler']
       operationId: update_configuration
@@ -30,9 +36,6 @@ paths:
             schema:
               $ref: '../config/config.yaml#/components/schemas/Update.Config'
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: |-
             success 2xx
@@ -40,23 +43,32 @@ paths:
             application/json:
               schema:
                 $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
-  
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 3
     get:
       tags: ['Bundler']
       operationId: get_config
       description: >-
         Gets the configuration resources.
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: Config response
           content:
             application/json:
               schema:
                 $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
-
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 3
   /metrics:
     get:
       tags: ['Metrics']
@@ -70,16 +82,19 @@ paths:
             schema:
               $ref: '../config/config.yaml#/components/schemas/Metrics.Request'
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: Unique metrics response
           content:
             application/json:
               schema:
                 $ref: '../config/config.yaml#/components/schemas/Metrics'
-
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 3
   /warnings:
     get:
       tags: ['Metrics']
@@ -87,19 +102,27 @@ paths:
       description: >-
         Gets warnings.
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error500'
         '200':
           $ref: '../common/common.yaml#/components/responses/Warnings'
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 3
     delete:
       tags: ['Metrics']
       operationId: clear_warnings
       description: >-
         Clears warnings.
       responses:
-        x-include:
-        - '../common/common.yaml#/components/responses/Error.400'
-        - '../common/common.yaml#/components/responses/Error500'
         '200':
           description: 'OK'
+          x-filed-uid: 1
+        '400':
+          x-include: ../common/common.yaml#/components/responses/Error.400/400
+          x-filed-uid: 2
+        '500':
+          x-include: ../common/common.yaml#/components/responses/Error500/500
+          x-filed-uid: 3
