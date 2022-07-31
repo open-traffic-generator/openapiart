@@ -96,9 +96,9 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         self._resolve_license()
+        self._resolve_x_enmu(self._content)
         self._validate_errors()
         self._validate_required_responses()
-        self._resolve_x_enmu(self._content)
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         with open(self._output_filename, "w") as fp:
