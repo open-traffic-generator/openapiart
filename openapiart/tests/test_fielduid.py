@@ -22,7 +22,7 @@ def str_compare(validte_str, entire_str):
 
 
 def test_validate_field_uid():
-    dup_error = 'Field.Config contain duplicate {1} x-field-uid'
+    dup_error = """Field.Config contain duplicate {1} x-field-uid"""
     # reserved_error = "x-field-uid 2 of Field.Config:usereserved should not conflict with x-reserved-field-uids"
     # missing_error = "x-field-uid is missing in Field.Config:missinguid"
     # min_range_error = (
