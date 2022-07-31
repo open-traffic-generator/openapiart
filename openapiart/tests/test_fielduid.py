@@ -18,11 +18,14 @@ def create_openapi_artifacts(openapiart_class, sdk=None, file_name=None):
 
 
 def str_compare(validte_str, entire_str):
-    return validte_str in entire_str
+    for err_value in entire_str.split("\n"):
+        if validte_str in err_value:
+            return True
+    return False
 
 
 def test_validate_field_uid():
-    dup_error = """Field.Config contain duplicate {1} x-field-uid"""
+    dup_error = "Field.Config contain duplicate {1} x-field-uid"
     # reserved_error = "x-field-uid 2 of Field.Config:usereserved should not conflict with x-reserved-field-uids"
     # missing_error = "x-field-uid is missing in Field.Config:missinguid"
     # min_range_error = (
