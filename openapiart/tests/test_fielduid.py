@@ -19,6 +19,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None, file_name=None):
 
 def str_compare(validte_str, entire_str):
     for err_value in entire_str.split("\n"):
+        print("--------- ", err_value)
         if validte_str in err_value:
             return True
     return False
