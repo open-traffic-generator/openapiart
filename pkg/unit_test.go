@@ -1674,5 +1674,6 @@ func TestLoggingMsg(t *testing.T) {
 	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
-	api.SetConfig(config)
+	_, set_err := api.SetConfig(config)
+	assert.Nil(t, set_err)
 }
