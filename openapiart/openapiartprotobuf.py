@@ -370,7 +370,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         if len(dup_values) > 0:
             self._errors.append(
                 "%s contain duplicate %s x-field-uid. x-field-uid should be unique."
-                % (name, dup_values)
+                % (name, list(dup_values))
             )
 
     def _check_range_uid(self, fields_uid, name):
