@@ -612,17 +612,13 @@ class Bundler(object):
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:
-            include_schema_object = self._includes[
-                include_value["x-include"]
-            ]
+            include_schema_object = self._includes[include_value["x-include"]]
             if "x-include" in include_schema_object:
                 self._resolve_recursive_x_include(include_schema_object)
                 include_schema_object = self._includes[
                     include_value["x-include"]
                 ]
-            self._merge(
-                copy.deepcopy(include_schema_object), include_value
-            )
+            self._merge(copy.deepcopy(include_schema_object), include_value)
 
     def _resolve_x_include(self):
         """Find all instances of x-include in the openapi content
@@ -630,9 +626,7 @@ class Bundler(object):
         Remove the x-include and the included content
         """
         for include_key, include_value in self._includes.items():
-            self._resolve_recursive_x_include(
-                include_value
-            )
+            self._resolve_recursive_x_include(include_value)
 
         for xinclude in self._get_parser("$..x-include").find(self._content):
             parent_schema_object = jsonpath_ng.Parent().find(xinclude)[0].value
