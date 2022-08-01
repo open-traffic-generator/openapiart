@@ -289,6 +289,7 @@ class Bundler(object):
                                 tmp = include_object.get(int(node))
                             include_object = tmp
                         self._includes[value] = include_object
+                        self._resolve_refs(base_dir, include_object)
                 else:
                     self._length_restriction(value)
                     self._required_restriction(key, value)

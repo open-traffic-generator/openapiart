@@ -24,7 +24,7 @@ class AutoFieldUid(object):
                 yobject = yaml.load(
                     fid, Loader=yaml.RoundTripLoader, preserve_quotes=True
                 )
-            self._annotate_msg_fields(yobject)
+            self._annotate_msg_fields(yobject, filename)
             self._annnotate_response_fields(yobject)
             self._dump_file(filename, yobject)
 
@@ -57,7 +57,7 @@ class AutoFieldUid(object):
             elif type == "array" and "items" in property_object:
                 self._annotate_enum_fields(property_object["items"])
 
-    def _annotate_msg_fields(self, yobject):
+    def _annotate_msg_fields(self, yobject, filename):
         components_object = yobject.get("components")
         if components_object is None:
             return
@@ -66,10 +66,10 @@ class AutoFieldUid(object):
             return
         for schema_name, schema_object in schema_objects.items():
             # ignore content field as it always contain single value
+            if "x-include" in schema_object:
+                self._update_x_incude_properties(yobject, schema_object, filename)
             if "properties" not in schema_object:
                 continue
-            if "x-include" in schema_object:
-                self._update_x_incude_properties(yobject, schema_object)
             id = 0
             for property_name, property_object in schema_object[
                 "properties"
@@ -139,23 +139,31 @@ class AutoFieldUid(object):
             include_properties = include_properties.get(node_name)
         return include_properties.get("properties")
 
-    def _update_x_incude_properties(self, yobject, schema_object):
+    def _update_x_incude_properties(self, yobject, schema_object, file_path):
         include_names = schema_object["x-include"]
-        properties = schema_object["properties"]
+        properties = schema_object.get("properties")
+        if properties is None:
+            schema_object.update({
+                "properties": {}
+            })
+            properties = schema_object.get("properties")
         for include_name in include_names:
             file_name, object_path = include_name.split("#")
-            if file_name == str():
+            if file_name == str() or file_name == '.':
                 include_properties = self._get_include_properties(
                     yobject, object_path
                 )
             else:
-                file_name = "/".join(
-                    [x for x in file_name.split("/") if x != ".."]
-                )
                 if file_name in self._include_files:
                     file_obj = self._include_files[file_name]
                 else:
-                    abs_path = os.path.join(self._parent_folder, file_name)
+                    (parent_path, _) = os.path.split(file_path)
+                    abs_path = os.path.join(parent_path, file_name)
+                    if not os.path.exists(abs_path):
+                        file_name = "/".join(
+                            [x for x in file_name.split("/") if x != ".."])
+
+                        abs_path = os.path.join(self._parent_folder, file_name)
                     with open(abs_path) as fid:
                         file_obj = yaml.load(
                             fid,
@@ -163,10 +171,11 @@ class AutoFieldUid(object):
                             preserve_quotes=True,
                         )
 
-                    file_schema = file_obj["components"]["schemas"]
+                    file_schema = self._get_include_response(
+                        file_obj, object_path)
                     if "x-include" in file_schema:
                         file_obj = self._update_x_incude_properties(
-                            file_obj, file_schema
+                            file_obj, file_schema, abs_path
                         )
                     self._include_files[file_name] = file_obj
                 include_properties = self._get_include_properties(
@@ -188,5 +197,5 @@ class AutoFieldUid(object):
 
 
 if __name__ == "__main__":
-    parent_folder = "D:/OTG/Codebase/openapiart/openapiart"
+    parent_folder = "D:/OTG/Codebase/models"
     AutoFieldUid(parent_folder).annotate()
