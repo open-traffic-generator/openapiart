@@ -14,9 +14,10 @@ components:
       properties:
         message:
           type: string
-
+          x-field-uid: 1
     Common.ResponseError:
       type: object
       properties:
         message:
           type: string
+          x-field-uid: 1

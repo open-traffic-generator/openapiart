@@ -9,6 +9,7 @@ components:
             format: ipv4
             default: 0.0.0.0
             features: [count]
+          x-field-uid: 1
     Ipv6Pattern:
       description: Test ipv6 pattern
       type: object
@@ -18,6 +19,7 @@ components:
             format: ipv6
             default: "::"
             features: [count]
+          x-field-uid: 1
     MacPattern:
       description: Test mac pattern
       type: object
@@ -27,6 +29,7 @@ components:
             format: mac
             default: "00:00:00:00:00:00"
             features: [count, auto]
+          x-field-uid: 1
     IntegerPattern:
       description: Test integer pattern
       type: object
@@ -37,6 +40,7 @@ components:
             default: 0
             length: 8
             features: [count]
+          x-field-uid: 1
     ChecksumPattern:
       description: Test checksum pattern
       type: object
@@ -44,3 +48,4 @@ components:
         checksum:
           x-field-pattern:
             format: checksum
+          x-field-uid: 1

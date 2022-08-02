@@ -12,13 +12,16 @@ components:
       properties:
         some_id:
           type: string
+          x-field-uid: 1
         some_string:
           type: string
+          x-field-uid: 2
         path_id:
           type: string
+          x-field-uid: 3
         level_2:
           type: string
-
+          x-field-uid: 4
     ServiceB.ItemList:
       type: object
       properties:
@@ -26,3 +29,4 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ServiceB.Item'
+          x-field-uid: 1

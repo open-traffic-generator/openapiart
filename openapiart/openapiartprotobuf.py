@@ -5,6 +5,7 @@ from .openapiartplugin import OpenApiArtPlugin
 
 class OpenApiArtProtobuf(OpenApiArtPlugin):
     def __init__(self, **kwargs):
+        self._errors = []
         super(OpenApiArtProtobuf, self).__init__(**kwargs)
         self._filename = os.path.normpath(
             os.path.join(
@@ -17,6 +18,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._init_fp(self._filename)
 
     def generate(self, openapi):
+        self._errors = []
         self._openapi = openapi
         self._operations = {}
         self._write_header(self._openapi["info"])
@@ -31,6 +33,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         for _, path_object in self._openapi["paths"].items():
             self._write_request_msg(path_object)
             self._write_response_msg(path_object)
+        self._validate_error()
         self._write_service()
         self._close_fp()
         self.generate_doc()
@@ -52,6 +55,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         except Exception:
             print("Bypassed generating proto document")
         # protoc --plugin=protoc-gen-doc=./protoc-gen-doc --doc_out=./doc --doc_opt=html,index.html sanity.proto
+
+    def _validate_error(self):
+        if len(self._errors) > 0:
+            raise TypeError("\n".join(self._errors))
 
     def _get_operation(self, path_item_object):
         if "operationId" in path_item_object:
@@ -113,6 +120,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     response_field = lambda: None
                     response_field.type = None
                     response_field.name = "status_code_{}".format(code)
+                    response_field.field_uid = code_schema["x-field-uid"]
                     schema = self._get_parser("$..schema").find(
                         code_schema
                     )  # finds the first instance of schema in responses
@@ -159,24 +167,20 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         response_field.type = "string"
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
-            id = 1
             for response_field in response_fields:
                 self._write(
                     "optional {} {} = {};".format(
-                        response_field.type, response_field.name, id
+                        response_field.type,
+                        response_field.name,
+                        response_field.field_uid,
                     ),
                     indent=1,
                 )
-                id += 1
             self._write("}")
             self._write()
 
     def _get_message_name(self, ref):
         return ref.split("/")[-1]
-
-    def _next_custom_id(self):
-        self._custom_id += 1
-        return self._custom_id
 
     def _write_header(self, info_object):
         self._write(
@@ -220,9 +224,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 if "format" in openapi_object:
                     if openapi_object["format"] == "binary":
                         return "bytes"
-                elif "enum" in openapi_object:
+                elif "x-enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
-                    self._write_enum_msg(enum_msg, openapi_object["enum"])
+                    self._write_x_enum_msg(
+                        enum_msg,
+                        openapi_object["x-enum"],
+                        property_name,
+                        openapi_object,
+                    )
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
@@ -295,7 +304,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         else:
             return "Description missing in models"
 
-    def _write_enum_msg(self, enum_msg_name, enums):
+    def _write_x_enum_msg(
+        self, enum_msg_name, enums, property_name, property_object
+    ):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
@@ -304,11 +315,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         )
         self._write("enum Enum {", indent=2)
         if "unspecified" not in enums:
-            enums.insert(0, "unspecified")
-        id = 0
-        for enum in enums:
-            self._write("{} = {};".format(enum.lower(), id), indent=3)
-            id += 1
+            self._write("{} = {};".format("unspecified", 0), indent=3)
+        for key, value in enums.items():
+            field_uid = value["x-field-uid"]
+            self._write("{} = {};".format(key.lower(), field_uid), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
 
@@ -342,11 +352,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _write_msg_fields(self, name, schema_object):
         if "properties" not in schema_object:
             return
-        id = 0
         for property_name, property_object in schema_object[
             "properties"
         ].items():
-            id += 1
             self._write()
             property_type = self._get_field_type(
                 property_name, property_object
@@ -376,9 +384,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             ):
                 desc += "\nrequired = true"
             self._write(self._justify_desc(desc, indent=1))
+            field_uid = property_object["x-field-uid"]
             self._write(
                 "{}{} {} = {};".format(
-                    optional, property_type, property_name.lower(), id
+                    optional, property_type, property_name.lower(), field_uid
                 ),
                 indent=1,
             )

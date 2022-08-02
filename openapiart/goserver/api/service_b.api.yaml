@@ -19,19 +19,21 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
+          x-field-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-field-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
-
+          x-field-uid: 3
   /serviceb/{item_id}:
     get:
       tags: [ServiceB]
@@ -50,19 +52,21 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+          x-field-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-field-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
-
+          x-field-uid: 3
   /serviceb/{item_id}/{level_2}:
     get:
       tags: [ServiceB]
@@ -87,15 +91,18 @@ paths:
             application/json:
               schema:
                 $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+          x-field-uid: 1
         '400':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-field-uid: 2
         '500':
           description: Error500
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseError'
+          x-field-uid: 3

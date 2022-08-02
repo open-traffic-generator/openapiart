@@ -12,3 +12,4 @@ components:
       properties:
         some_string:
           type: string
+          x-field-uid: 1
