@@ -122,6 +122,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	GetApiWarnings() []string
+	ClearApiWarnings()
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -159,6 +161,14 @@ func (api *api) hasHttpTransport() bool {
 	return api.http != nil
 }
 
+func (api *api) GetApiWarnings() []string {
+	return openapi_warnings
+}
+
+func (api *api) ClearApiWarnings() {
+	openapi_warnings = nil
+}
+
 // HttpRequestDoer will return True for HTTP transport
 type httpRequestDoer interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -172,8 +182,17 @@ type httpClient struct {
 // All methods that perform validation will add errors here
 // All api rpcs MUST call Validate
 var validation []string
+var unique_global []string
+var constraints = make(map[string]map[string]interface{})
+
+// func emptyVars() {
+// 	validation = nil
+// 	constraints = make(map[string]map[string]interface{})
+// }
 
 func validationResult() error {
+	constraints = make(map[string]map[string]interface{})
+	unique_global = nil
 	if len(validation) > 0 {
 		validation = append(validation, "validation errors")
 		errors := strings.Join(validation, "\n")
@@ -181,6 +200,16 @@ func validationResult() error {
 		return fmt.Errorf(errors)
 	}
 	return nil
+}
+
+var openapi_warnings []string
+
+func deprecated(message string) {
+	openapi_warnings = append(openapi_warnings, message)
+}
+
+func under_review(message string) {
+	openapi_warnings = append(openapi_warnings, message)
 }
 
 func validateMac(mac string) error {
@@ -304,4 +333,56 @@ func validateIpv6Slice(ip []string) error {
 
 func validateHexSlice(hex []string) error {
 	return validateSlice(hex, "hex")
+}
+
+func isUnique(objectName, value, unique string, object interface{}) bool {
+	if value == "" {
+		return true
+	}
+
+	var create = func(objName string) {
+		_, ok := constraints[objName]
+		if !ok {
+			constraints[objName] = make(map[string]interface{})
+		}
+	}
+
+	if unique == "global" {
+		sort.Strings(unique_global)
+		i := sort.SearchStrings(unique_global, value)
+		there := i < len(unique_global) && unique_global[i] == value
+		if !there {
+			unique_global = append(unique_global, value)
+			create(objectName)
+			constraints[objectName][value] = object
+			return !there
+		}
+		return !there
+	}
+	values, ok := constraints[objectName]
+	if !ok {
+		create(objectName)
+		constraints[objectName][value] = object
+		return !ok
+	}
+	_, ok = values[value]
+	if !ok {
+		constraints[objectName][value] = object
+		return !ok
+	}
+	return !ok
+}
+
+func validateConstraint(objectName []string, value string) bool {
+	if value == "" {
+		return true
+	}
+	found := false
+	for _, obj := range objectName {
+		_, ok := constraints[obj][value]
+		if ok {
+			found = true
+		}
+	}
+	return found
 }

@@ -65,9 +65,11 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
 
 if __name__ == "__main__":
     sdk = None
-    if len(sys.argv) == 3:
+    # import pdb; pdb.set_trace()
+    if len(sys.argv) >= 2:
         sdk = sys.argv[1]
-        cicd = sys.argv[2]
+    if len(sys.argv) == 3:
+        cicd = sys.argv
     try:
         from openapiart.openapiart import OpenApiArt as openapiart_class
     except:

@@ -1,3 +1,4 @@
+/proto_doc
 .env*
 .mypy_cache
 .pytest_cache

@@ -34,7 +34,8 @@ class OpenApiArt(object):
             artifact_dir if artifact_dir is not None else "art"
         )
         self._doc_dir = os.path.abspath(
-            os.path.join(artifact_dir, "..", "doc")
+            # doc dir name is not getting ignored by git
+            os.path.join(artifact_dir, "..", "proto_doc")
             if artifact_dir is not None
             else "doc"
         )

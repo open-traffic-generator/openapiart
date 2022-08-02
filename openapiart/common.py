@@ -1,6 +1,7 @@
 import importlib
 import logging
 import json
+import platform
 import yaml
 import requests
 import urllib3
@@ -8,6 +9,8 @@ import io
 import sys
 import time
 import grpc
+import types
+import platform
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
@@ -17,8 +20,12 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
+
 if sys.version_info[0] == 3:
     unicode = str
+
+
+openapi_warnings = []
 
 
 class Transport:
@@ -148,6 +155,43 @@ class HttpTransport(object):
             raise Exception(response.status_code, yaml.safe_load(response.text))
 
 
+class OpenApiStatus:
+    messages = {}
+    logger = logging.getLogger(__module__)
+
+    @classmethod
+    def warn(cls, key):
+        if cls.messages.get(key) is not None:
+            if cls.messages[key] in openapi_warnings:
+                return
+            cls.logger.warning(cls.messages[key])
+            openapi_warnings.append(cls.messages[key])
+
+    @staticmethod
+    def deprecated(func_or_data):
+        def inner(self, *args, **kwargs):
+            OpenApiStatus.warn(
+                "{}.{}".format(type(self).__name__, func_or_data.__name__)
+            )
+            return func_or_data(self, *args, **kwargs)
+
+        if isinstance(func_or_data, types.FunctionType):
+            return inner
+        OpenApiStatus.warn(func_or_data)
+    
+    @staticmethod
+    def under_review(func_or_data):
+        def inner(self, *args, **kwargs):
+            OpenApiStatus.warn(
+                "{}.{}".format(type(self).__name__, func_or_data.__name__)
+            )
+            return func_or_data(self, *args, **kwargs)
+
+        if isinstance(func_or_data, types.FunctionType):
+            return inner
+        OpenApiStatus.warn(func_or_data)
+
+
 class OpenApiBase(object):
     """Base class for all generated classes"""
 
@@ -156,6 +200,13 @@ class OpenApiBase(object):
     DICT = "dict"
 
     __slots__ = ()
+    
+    __constraints__ = {
+        "global": []
+    }
+    __validate_latter__ = {
+        "unique": [], "constraint": []
+    }
 
     def __init__(self):
         pass
@@ -176,13 +227,15 @@ class OpenApiBase(object):
             the dict encoding will return a python dict object.
         """
         if encoding == OpenApiBase.JSON:
-            return json.dumps(self._encode(), indent=2, sort_keys=True)
+            data = json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
-            return yaml.safe_dump(self._encode())
+            data = yaml.safe_dump(self._encode())
         elif encoding == OpenApiBase.DICT:
-            return self._encode()
+            data = self._encode()
         else:
             raise NotImplementedError("Encoding %s not supported" % encoding)
+        self._validate_coded()
+        return data
 
     def _encode(self):
         raise NotImplementedError()
@@ -207,18 +260,30 @@ class OpenApiBase(object):
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
+        self._validate_coded()
         return self
 
     def _decode(self, dict_object):
         raise NotImplementedError()
 
 
+
+
 class OpenApiValidator(object):
 
     __slots__ = ()
 
+    _validation_errors = []
+
     def __init__(self):
         pass
+
+    def _clear_errors(self):
+        import platform
+        if '2.7' in platform.python_version().rsplit(".", 1)[0]:
+            del self._validation_errors[:]
+        else:
+            self._validation_errors.clear()
 
     def validate_mac(self, mac):
         if mac is None or not isinstance(mac, (str, unicode)) or mac.count(" ") != 0:
@@ -360,6 +425,77 @@ class OpenApiValidator(object):
         if verdict is False:
             raise TypeError(err_msg)
 
+    def _validate_unique_and_name(self, name, value, latter=False):
+        if self._TYPES[name].get("unique") is None or value is None:
+            return
+        if latter is True:
+            self.__validate_latter__["unique"].append(
+                (self._validate_unique_and_name, name, value)
+            )
+            return
+        class_name = type(self).__name__
+        unique_type = self._TYPES[name]["unique"]
+        if class_name not in self.__constraints__:
+            self.__constraints__[class_name] = dict()
+        if unique_type == "global":
+            values = self.__constraints__["global"]
+        else:
+            values = self.__constraints__[class_name]
+        if value in values:
+            self._validation_errors.append("{} with {} already exists".format(name, value))
+            return
+        if isinstance(values, list):
+            values.append(value)
+        self.__constraints__[class_name].update({value: self})
+
+    def _validate_constraint(self, name, value, latter=False):
+        cons = self._TYPES[name].get("constraint")
+        if cons is None:
+            return
+        if latter is True:
+            self.__validate_latter__["constraint"].append(
+                (self._validate_constraint, name, value)
+            )
+            return
+        found = False
+        for c in cons:
+            klass, prop = c.split(".")
+            names = self.__constraints__.get(klass, {})
+            props = [obj._properties.get(prop) for obj in names.values()]
+            if value in names or value in props:
+                found = True
+                break
+        if found is not True:
+            self._validation_errors.append("{} is not a valid type of {}".format(
+                name, "||".join(cons)
+            ))
+            return
+    
+    def _validate_coded(self):
+        for item in self.__validate_latter__["unique"]:
+            item[0](item[1], item[2])
+        for item in self.__validate_latter__["constraint"]:
+            item[0](item[1], item[2])
+        self._clear_vars()
+        if len(self._validation_errors) > 0:
+            errors = "\n".join(self._validation_errors)
+            self._clear_errors()
+            raise Exception(errors)
+        
+    def _clear_vars(self):
+        if platform.python_version_tuple()[0] == "2":
+            self.__validate_latter__["unique"] = []
+            self.__validate_latter__["constraint"] = []
+        else:
+            self.__validate_latter__["unique"].clear()
+            self.__validate_latter__["constraint"].clear()
+        keys = list(self.__constraints__.keys())
+        for k in keys:
+            if k == "global":
+                self.__constraints__["global"] = []
+                continue
+            del self.__constraints__[k]
+
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
     """Base class for any /components/schemas object
@@ -424,6 +560,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         else:
             self._set_choice(name)
             self._properties[name] = value
+        self._validate_unique_and_name(name, value)
+        # self._validate_constraint(name, value)
         if self._parent is not None and self._choice is not None and value is not None:
             self._parent._set_property("choice", self._choice)
 
@@ -433,6 +571,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
+            self._validate_unique_and_name(key, value, True)
+            # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
@@ -441,6 +581,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
                     value = [str(v) for v in value]
                 output[key] = value
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, key))
         return output
 
     def _decode(self, obj):
@@ -472,7 +613,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif self._TYPES[property_name].get("itemformat", "") == "int64":
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, property_name))
             self._validate_types(property_name, property_value)
+            self._validate_unique_and_name(property_name, property_value, True)
+            # self._validate_constraint(property_name, property_value, True)
         self._validate_required()
         return self
 
@@ -514,7 +658,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if getattr(self, "_REQUIRED", None) is None:
             return
         for name in self._REQUIRED:
-            if getattr(self, name, None) is None:
+            if self._properties.get(name) is None:
                 msg = "{} is a mandatory property of {}" " and should not be set to None".format(
                     name,
                     self.__class__,
@@ -555,6 +699,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
+        self._validate_coded()
 
     def get(self, name, with_default=False):
         """

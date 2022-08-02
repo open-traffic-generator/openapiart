@@ -1,0 +1,29 @@
+components:
+  schemas:
+    Prefix.Config:
+      properties:
+        w_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/WObject'
+        x_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZObject'
+        name:
+          type: string
+          x-unique: global
+
+    ZObject:
+      required: [name]
+      properties:
+        name:
+          type: string
+          x-unique: local
+
+    WObject:
+      required: [w_name]
+      properties:
+        w_name:
+          type: string
+          x-unique: global
