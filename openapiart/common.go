@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
+	"github.com/rs/zerolog"
 )
 
 type grpcTransport struct {
@@ -122,6 +123,8 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	SetLoggerLevel(level LogLevelEnum)
+	SetLogFormat(logFormat LogFormatEnum)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -157,6 +160,65 @@ func (api *api) NewHttpTransport() HttpTransport {
 
 func (api *api) hasHttpTransport() bool {
 	return api.http != nil
+}
+
+type LogLevelEnum string
+
+var LogLevel = struct {
+	INFO  LogLevelEnum
+	DEBUG LogLevelEnum
+	ERROR LogLevelEnum
+}{
+	INFO:  LogLevelEnum("Info"),
+	DEBUG: LogLevelEnum("debug"),
+	ERROR: LogLevelEnum("error"),
+}
+
+var Logger zerolog.Logger
+
+func (api *api) SetLoggerLevel(level LogLevelEnum) {
+	setlevel := zerolog.InfoLevel
+	if level == "info" {
+		setlevel = zerolog.InfoLevel
+	} else if level == "debug" {
+		setlevel = zerolog.DebugLevel
+	} else if level == "error" {
+		setlevel = zerolog.ErrorLevel
+	}
+	zerolog.SetGlobalLevel(setlevel)
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+	output.FormatLevel = func(i interface{}) string {
+		return strings.ToUpper(fmt.Sprintf(" %-8s", i))
+	}
+	output.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s", i)
+	}
+	Logger = zerolog.New(output).With().Timestamp().Logger()
+}
+
+type LogFormatEnum string
+
+var LogFormat = struct {
+	JSON LogFormatEnum
+	TEXT LogFormatEnum
+}{
+	JSON: LogFormatEnum("Json"),
+	TEXT: LogFormatEnum("Text"),
+}
+
+func (api *api) SetLogFormat(logFormat LogFormatEnum) {
+	if logFormat == "Json" {
+		Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	} else if logFormat == "Text" {
+		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		output.FormatLevel = func(i interface{}) string {
+			return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+		}
+		output.FormatMessage = func(i interface{}) string {
+			return fmt.Sprintf("%s", i)
+		}
+		Logger = zerolog.New(output).With().Timestamp().Logger()
+	}
 }
 
 // HttpRequestDoer will return True for HTTP transport

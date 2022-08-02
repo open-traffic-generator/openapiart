@@ -1665,3 +1665,15 @@ func TestClone(t *testing.T) {
 	fmt.Println(&lObj1, &lObj2)
 	assert.NotSame(t, &lObj1, &lObj2)
 }
+
+func TestLoggingMsg(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
+	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(3.0).SetEB(47.234)
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	_, set_err := api.SetConfig(config)
+	assert.Nil(t, set_err)
+}
