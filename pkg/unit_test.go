@@ -1718,7 +1718,8 @@ func TestDeprecationWarning(t *testing.T) {
 
 	u_config := api.NewUpdateConfig()
 	u_config.G().Add().SetGA("abcd")
-	api.UpdateConfiguration(u_config)
+	_, err = api.UpdateConfiguration(u_config)
+	assert.Nil(t, err)
 
 	warnings = api.GetApiWarnings()
 
