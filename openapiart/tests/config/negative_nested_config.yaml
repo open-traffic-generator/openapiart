@@ -20,21 +20,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RootComponentWithNested'
-          x-filed-uid: 1
+          x-field-uid: 1
         400:
           description: 'error 4xx'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error.Details'
-          x-filed-uid: 2
+          x-field-uid: 2
         500:
           description: 'error 5xx'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error.Details'
-          x-filed-uid: 3
+          x-field-uid: 3
 components:
   schemas:
     ComponentWithNoProperties:

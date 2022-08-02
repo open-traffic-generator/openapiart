@@ -120,6 +120,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     response_field = lambda: None
                     response_field.type = None
                     response_field.name = "status_code_{}".format(code)
+                    response_field.field_uid = code_schema["x-field-uid"]
                     schema = self._get_parser("$..schema").find(
                         code_schema
                     )  # finds the first instance of schema in responses
@@ -166,15 +167,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                         response_field.type = "string"
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
-            id = 1
             for response_field in response_fields:
                 self._write(
                     "optional {} {} = {};".format(
-                        response_field.type, response_field.name, id
+                        response_field.type, response_field.name, response_field.field_uid
                     ),
                     indent=1,
                 )
-                id += 1
             self._write("}")
             self._write()
 
@@ -309,34 +308,17 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         """Follow google developers style guide for enums
         - reference: https://developers.google.com/protocol-buffers/docs/style#enums
         """
-        reserved_field_uids = []
-        if "x-reserved-field-uids" in property_object:
-            reserved_field_uids = property_object["x-reserved-field-uids"]
         self._write(
             "message {} {{".format(enum_msg_name.replace(".", "")), indent=1
         )
         self._write("enum Enum {", indent=2)
         if "unspecified" not in enums:
             self._write("{} = {};".format("unspecified", 0), indent=3)
-        field_uids = []
         for key, value in enums.items():
-            if "x-field-uid" not in value:
-                self._errors.append("x-field-uid is missing in %s" % key)
-                continue
             field_uid = value["x-field-uid"]
-            field_uids.append(field_uid)
-            if field_uid in reserved_field_uids:
-                self._errors.append(
-                    "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
-                    % (field_uid, enum_msg_name, key)
-                )
-            self._check_range_uid(
-                field_uid, "{}:{}".format(enum_msg_name, key)
-            )
             self._write("{} = {};".format(key.lower(), field_uid), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
-        self._check_duplicate_uid(field_uids, enum_msg_name)
 
     def _write_msg(self, name, schema_object):
         msg_name = name.replace(".", "")
@@ -365,28 +347,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         except AttributeError as err:
             print("Failed writing response {}: {}".format(msg_name, err))
 
-    def _check_duplicate_uid(self, fields_uid, name):
-        dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
-        if len(dup_values) > 0:
-            self._errors.append(
-                "%s contain duplicate %s x-field-uid. x-field-uid should be unique."
-                % (name, list(dup_values))
-            )
-
-    def _check_range_uid(self, fields_uid, name):
-        if fields_uid < 0 or fields_uid > 536870911:
-            self._errors.append(
-                "x-field-uid %s of %s not in range (1 to 2^29)"
-                % (fields_uid, name)
-            )
-
     def _write_msg_fields(self, name, schema_object):
         if "properties" not in schema_object:
             return
-        field_uids = []
-        reserved_field_uids = []
-        if "x-reserved-field-uids" in schema_object:
-            reserved_field_uids = schema_object["x-reserved-field-uids"]
         for property_name, property_object in schema_object[
             "properties"
         ].items():
@@ -419,28 +382,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             ):
                 desc += "\nrequired = true"
             self._write(self._justify_desc(desc, indent=1))
-            if "x-field-uid" not in property_object:
-                self._errors.append(
-                    "x-field-uid is missing in %s:%s" % (name, property_name)
-                )
-                continue
             field_uid = property_object["x-field-uid"]
-            field_uids.append(field_uid)
-            if field_uid in reserved_field_uids:
-                self._errors.append(
-                    "x-field-uid %s of %s:%s should not conflict with x-reserved-field-uids"
-                    % (field_uid, name, property_name)
-                )
-            self._check_range_uid(
-                field_uid, "{}:{}".format(name, property_name)
-            )
             self._write(
                 "{}{} {} = {};".format(
                     optional, property_type, property_name.lower(), field_uid
                 ),
                 indent=1,
             )
-        self._check_duplicate_uid(field_uids, name)
 
     def _write_service(self):
         self._write()

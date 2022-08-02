@@ -97,6 +97,8 @@ class Bundler(object):
         self._remove_x_include()
         self._resolve_license()
         self._resolve_x_enmu(self._content)
+        self._validate_field_uid()
+        self._validate_response_uid()
         self._validate_errors()
         self._validate_required_responses()
         self._resolve_strings(self._content)
@@ -150,6 +152,107 @@ class Bundler(object):
                     self._inject_enum(
                         property_name, property_object["items"], schema_name
                     )
+
+    def _check_duplicate_uid(self, fields_uid, name):
+        dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
+        if len(dup_values) > 0:
+            self._errors.append(
+                "%s contain duplicate %s x-field-uid. x-field-uid should be unique."
+                % (name, list(dup_values))
+            )
+
+    def _check_range_uid(self, fields_uid, name):
+        if fields_uid < 0 or fields_uid > 536870911:
+            self._errors.append(
+                "x-field-uid %s of %s not in range (1 to 2^29)"
+                % (fields_uid, name)
+            )
+
+    def _validate_xenum_field_uid(self, property_name, property_object):
+        reserved_field_uids = []
+        enums = property_object["x-enum"]
+        if "x-reserved-field-uids" in property_object:
+            reserved_field_uids = property_object["x-reserved-field-uids"]
+        field_uids = []
+        for key, value in enums.items():
+            if "x-field-uid" not in value:
+                self._errors.append("x-field-uid is missing in %s" % key)
+                continue
+            field_uid = value["x-field-uid"]
+            field_uids.append(field_uid)
+            if field_uid in reserved_field_uids:
+                self._errors.append(
+                    "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
+                    % (field_uid, property_name, key)
+                )
+            self._check_range_uid(
+                field_uid, "{}:{}".format(property_name, key)
+            )
+        self._check_duplicate_uid(field_uids, property_name)
+
+    def _validate_field_uid(self):
+        for schema_name, schema_object in self._content["components"][
+            "schemas"
+        ].items():
+            if "properties" not in schema_object:
+                continue
+            field_uids = []
+            reserved_field_uids = []
+            if "x-reserved-field-uids" in schema_object:
+                reserved_field_uids = schema_object["x-reserved-field-uids"]
+            for property_name, property_object in schema_object[
+                "properties"
+            ].items():
+                field_uid = property_object.get("x-field-uid")
+                if field_uid is None:
+                    self._errors.append(
+                        "x-field-uid is missing in %s:%s" % (schema_name, property_name)
+                    )
+                    continue
+                self._check_range_uid(
+                    field_uid, "{}:{}".format(schema_name, property_name)
+                )
+                field_uids.append(field_uid)
+                if field_uid in reserved_field_uids:
+                    self._errors.append(
+                        "x-field-uid %s of %s:%s should not conflict with x-reserved-field-uids"
+                        % (field_uid, schema_name, property_name)
+                    )
+                if "x-enum" in property_object:
+                    self._validate_xenum_field_uid(
+                        property_name, property_object
+                    )
+            self._check_duplicate_uid(field_uids, schema_name)
+
+    def _validate_response_uid(self):
+        for path_key, path_object in self._content["paths"].items():
+            for path_item_key, path_item_object in path_object.items():
+                field_uids = []
+                reserved_field_uids = []
+                if "x-reserved-field-uids" in path_item_object:
+                    reserved_field_uids = path_item_object["x-reserved-field-uids"]
+                for response in self._get_parser("$..responses").find(
+                        path_item_object
+                ):
+                    for code, code_schema in response.value.items():
+                        field_uid = code_schema.get("x-field-uid")
+                        common_name = "{}:{}:{}".format(
+                            path_key, path_item_key, code
+                        )
+                        if field_uid is None:
+                            self._errors.append("x-field-uid is missing in %s response"
+                                                % common_name)
+                            continue
+                        field_uids.append(field_uid)
+                        self._check_range_uid(field_uid, common_name)
+                        if field_uid in reserved_field_uids:
+                            self._errors.append(
+                                "x-field-uid %s of %s should not conflict with x-reserved-field-uids"
+                                % (field_uid, common_name)
+                            )
+                    self._check_duplicate_uid(field_uids, "{}:{}".format(
+                        path_key, path_item_key
+                    ))
 
     def _validate_required_responses(self):
         """Ensure all paths include a 400 and 500 response.

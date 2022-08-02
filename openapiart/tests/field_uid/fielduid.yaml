@@ -11,9 +11,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Field.Config'
+      x-reserved-field-uids: [5, 8]
       responses:
         '200':
-          x-filed-uid: 1
+          x-field-uid: 1
           description: 'Standard success binary payload'
           content:
             application/octet-stream:
@@ -21,7 +22,20 @@ paths:
                 type: string
                 format: binary
         '400':
-          x-filed-uid: 2
+          x-field-uid: 2
+          description: 'error 4xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+        '404':
+          x-field-uid: 2
           description: 'error 4xx'
           content:
             application/json:
@@ -34,8 +48,46 @@ paths:
                       type: string
                     x-field-uid: 1
         '500':
-          x-filed-uid: 4
           description: 'error 5xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+        '501':
+          x-field-uid: -4
+          description: 'error 4xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+        '502':
+          x-field-uid: 536870998
+          description: 'error 4xx'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    x-field-uid: 1
+        '503':
+          x-field-uid: 5
+          description: 'error 4xx'
           content:
             application/json:
               schema:

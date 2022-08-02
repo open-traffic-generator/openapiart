@@ -42,7 +42,7 @@ class AutoFieldUid(object):
                 self._update_x_incude_response(yobject, rsp_value)
             idx = 1
             for code, code_schema in rsp_value.items():
-                code_schema.update({"x-filed-uid": idx})
+                code_schema.update({"x-field-uid": idx})
                 idx += 1
 
     def _annotate_enum_fields(self, property_object):
@@ -223,6 +223,6 @@ class AutoFieldUid(object):
 
 
 if __name__ == "__main__":
-    parent_folder = "D:/OTG/Codebase/models"
-    # parent_folder = "D:/OTG/Codebase/openapiart/"
+    # parent_folder = "D:/OTG/Codebase/models"
+    parent_folder = "D:/OTG/Codebase/openapiart/"
     AutoFieldUid(parent_folder).annotate()
