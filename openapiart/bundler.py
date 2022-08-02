@@ -380,23 +380,6 @@ class Bundler(object):
                         )
                         continue
                     if value not in self._includes:
-                        # file_name, include_path = value.split("#")
-                        # paths = include_path.split("/")
-                        # obj_path = "/".join(paths[:4])
-                        # include_ref = "{}#{}".format(file_name, obj_path)
-                        # if include_ref in self._include_objects:
-                        #     include_object = self._include_objects[include_ref]
-                        # else:
-                        #     include_object = self._get_schema_object(
-                        #         base_dir, include_ref
-                        #     )
-                        #     self._include_objects[include_ref] = include_object
-                        # for node in paths[4:]:
-                        #     tmp = include_object.get(node)
-                        #     if tmp is None and node.isdigit():
-                        #         tmp = include_object.get(int(node))
-                        #     include_object = tmp
-
                         file_name, include_path = value.split("#")
                         if "properties" in include_path:
                             obj_path, path_name = include_path.split(
