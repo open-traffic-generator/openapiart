@@ -375,15 +375,51 @@ class Bundler(object):
                 elif key == "x-include":
                     if not isinstance(value, str):
                         self._errors.append(
-                            "x-include should be part of properties and responses for %s"
+                            "%s of x-include shall be a path of any property or response"
                             % value
                         )
                         continue
                     if value not in self._includes:
+                        # file_name, include_path = value.split("#")
+                        # paths = include_path.split("/")
+                        # obj_path = "/".join(paths[:4])
+                        # include_ref = "{}#{}".format(file_name, obj_path)
+                        # if include_ref in self._include_objects:
+                        #     include_object = self._include_objects[include_ref]
+                        # else:
+                        #     include_object = self._get_schema_object(
+                        #         base_dir, include_ref
+                        #     )
+                        #     self._include_objects[include_ref] = include_object
+                        # for node in paths[4:]:
+                        #     tmp = include_object.get(node)
+                        #     if tmp is None and node.isdigit():
+                        #         tmp = include_object.get(int(node))
+                        #     include_object = tmp
+
                         file_name, include_path = value.split("#")
-                        paths = include_path.split("/")
-                        obj_path = "/".join(paths[:4])
-                        include_ref = "{}#{}".format(file_name, obj_path)
+                        if "properties" in include_path:
+                            obj_path, path_name = include_path.split(
+                                "properties"
+                            )
+                            include_ref = "{}#{}".format(
+                                file_name, obj_path[:-1]
+                            )
+                            path_name = "properties{}".format(path_name)
+                        elif "responses" in include_path:
+                            obj_path, path_name = include_path.split(
+                                "responses"
+                            )
+                            path_list = path_name[1:].split("/")
+                            include_ref = "{}#{}responses/{}".format(
+                                file_name, obj_path, path_list[0]
+                            )
+                            path_name = "/".join(path_list[1:])
+                        else:
+                            self._errors.append(
+                                "x-include should ref some properties/ responses"
+                            )
+                            continue
                         if include_ref in self._include_objects:
                             include_object = self._include_objects[include_ref]
                         else:
@@ -391,13 +427,11 @@ class Bundler(object):
                                 base_dir, include_ref
                             )
                             self._include_objects[include_ref] = include_object
-                        for node in paths[4:]:
-                            tmp = include_object.get(node)
-                            if tmp is None and node.isdigit():
-                                tmp = include_object.get(int(node))
-                            include_object = tmp
-                        self._includes[value] = include_object
-                        self._resolve_refs(base_dir, include_object)
+                        field_object = self._get_field_object(
+                            include_object, path_name
+                        )
+                        self._includes[value] = field_object
+                        self._resolve_refs(base_dir, field_object)
                 else:
                     self._length_restriction(value)
                     self._required_restriction(key, value)
@@ -405,6 +439,15 @@ class Bundler(object):
         elif isinstance(yobject, list):
             for item in yobject:
                 self._resolve_refs(base_dir, item)
+
+    def _get_field_object(self, yobject, field_path):
+        field_object = yobject
+        for node in field_path.split("/"):
+            tmp = field_object.get(node)
+            if tmp is None and node.isdigit():
+                tmp = field_object.get(int(node))
+            field_object = tmp
+        return field_object
 
     def _length_restriction(self, value):
         restricted_keys = {
