@@ -1669,7 +1669,7 @@ func TestClone(t *testing.T) {
 func TestLoggingMsg(t *testing.T) {
 	api := openapiart.NewApi()
 	api.SetLoggerLevel(openapiart.LogLevel.DEBUG)
-	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
 	config := api.NewPrefixConfig()
 	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
