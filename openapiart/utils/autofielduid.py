@@ -2,6 +2,7 @@ import os
 import fnmatch
 import jsonpath_ng
 from ruamel import yaml
+from copy import deepcopy
 
 
 class AutoFieldUid(object):
@@ -140,24 +141,17 @@ class AutoFieldUid(object):
         return include_properties.get("properties")
 
     def _merge(self, src, dst):
-        """
-        Recursively update a dict.
-        Subdict's won't be overwritten but also updated.
-        """
         for key, value in src.items():
             if key in ['x-include', 'properties', "x-field-uid"]:
                 continue
             if key not in dst:
-                dst[key] = value
+                dst[key] = deepcopy(value)
             elif isinstance(value, list):
                 for item in value:
                     if item not in dst[key]:
                         dst[key].append(item)
             elif isinstance(value, dict):
                 self._merge(value, dst[key])
-            elif key == "description":
-                dst[key] = "{}\n{}".format(dst[key], value)
-        return dst
 
     def _update_x_incude_properties(self, yobject, schema_object, file_path):
         include_names = schema_object["x-include"]
@@ -223,6 +217,5 @@ class AutoFieldUid(object):
 
 
 if __name__ == "__main__":
-    # parent_folder = "D:/OTG/Codebase/models"
-    parent_folder = "D:/OTG/Codebase/openapiart/"
+    parent_folder = "D:/OTG/Codebase/models"
     AutoFieldUid(parent_folder).annotate()
