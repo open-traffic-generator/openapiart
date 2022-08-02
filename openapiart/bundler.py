@@ -811,7 +811,7 @@ class Bundler(object):
                 continue
 
             assert (
-                xstatus.value.get("additional_information") != None
+                xstatus.value.get("additional_information") is not None
             ), "attribute additional_info can't be " "None for %s" % (
                 str(xstatus.full_path)
             )
