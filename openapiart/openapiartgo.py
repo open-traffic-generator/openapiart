@@ -595,10 +595,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if api.grpc.clientConnection == nil {{
                         ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
                         defer cancelFunc()
-                        Logger.Debug().Msgf("Grpc connection details ==> listening on address: %s requestTimeout: %s dialTimeout: %s",
-				            api.grpc.location,
-				            api.grpc.requestTimeout,
-				            api.grpc.dialTimeout)
+                        Logger.Debug().Msgf("Grpc connection details ==> listening on address: %s requestTimeout: %s dialTimeout: %s", api.grpc.location, \
+                            api.grpc.requestTimeout, \
+                            api.grpc.dialTimeout)
                         Logger.Debug().Msgf("Grpc listening on address %s", api.grpc.location)
                         conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithTransportCredentials(insecure.NewCredentials()))
                         if err != nil {{
