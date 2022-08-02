@@ -45,6 +45,7 @@ components:
         a:
           x-status:
             status: under-review
+            additional_information: property under review
           description: |-
             Small single line description
           type: string
@@ -66,6 +67,11 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Property d_values is being deprecated from the sdk version x.x.x
+              and property d shall be used instead
           description: A list of enum values
           type: array
           items:
@@ -79,6 +85,11 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Property 'e' is being deprecated from the sdk version x.x.x
+              and property 'ep' shall be used instead
           description: A child object
           $ref: '#/components/schemas/EObject'
           x-field-uid: 11
@@ -179,6 +190,7 @@ components:
         str_len:
           x-status:
             status: under-review
+            additional_information: property under review
           description: |-
             string minimum&maximum Length
           type: string
@@ -188,6 +200,7 @@ components:
         hex_slice:
           x-status:
             status: under-review
+            additional_information: property under review
           description: |-
             Array of Hex
           type: array
@@ -230,7 +243,7 @@ components:
       properties:
         name:
           type: string
-          x-unique: local
+          x-unique: global
 
     YObject:
       properties:

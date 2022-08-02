@@ -34,6 +34,7 @@ class FluentRpc(object):
         self.description = None
         self.http_method = None
         self.good_response_property = None
+        self.x_status = None
 
 
 class Generator:
@@ -302,6 +303,11 @@ class Generator:
 
             rpc.good_response_type = response_type
             rpc.http_method = path["method"]
+            if "x-status" in path['operation']:
+                rpc.x_status = (
+                    path["operation"]["x-status"]["status"],
+                    path["operation"]["x-status"]["additional_information"]
+                )
             methods.append(
                 {
                     "name": method_name,
@@ -312,6 +318,10 @@ class Generator:
                     "url": self._base_url + path["url"],
                     "description": self._get_description(operation),
                     "response_type": response_type,
+                    "x_status": (
+                        path["operation"]["x-status"]["status"],
+                        path["operation"]["x-status"]["additional_information"]
+                    ) if "x-status" in path["operation"] else None
                 }
             )
             rpc_methods.append(rpc)
@@ -346,7 +356,7 @@ class Generator:
 
         return methods, factories, rpc_methods
 
-    def _write_rpc_api_class(self, rpc_methods):
+    def _write_rpc_api_class(self, rpc_methods : list[FluentRpc]):
         class_code = """class GrpcApi(Api):
     # OpenAPI gRPC Api
     def __init__(self, **kwargs):
@@ -419,6 +429,10 @@ class Generator:
             self._write(0, class_code)
             for rpc_method in rpc_methods:
                 self._write()
+                if rpc_method.x_status is not None and rpc_method.x_status[0] == "deprecated":
+                    self._write(1, '@OpenApiStatus.deprecated')
+                    key = "{}.{}".format("HttpApi", rpc_method.method)
+                    self._deprecated_properties[key] = rpc_method.x_status[1]
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
                     self._write(2, "stub = self._get_stub()")
@@ -557,6 +571,10 @@ class Generator:
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
+                if method["x_status"] is not None and method["x_status"][0] == "deprecated":
+                    self._write(1, '@OpenApiStatus.deprecated')
+                    key = "{}.{}".format("HttpApi", method["name"])
+                    self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -598,20 +616,24 @@ class Generator:
 
     def _write_api_class(self, methods, factories):
         self._generated_classes.append("Api")
+        factory_class_name = "Api"
         with open(self._api_filename, "a") as self._fid:
             self._write()
             self._write()
-            self._write(0, "class Api(object):")
+            self._write(0, "class %s(object):" % factory_class_name)
             self._write(1, '"""%s' % "OpenApi Abstract API")
             self._write(1, '"""')
             self._write()
             self._write(1, "def __init__(self, **kwargs):")
             self._write(2, "openapi_warnings = []")
             self._write(2, "pass")
-
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
+                if method["x_status"] is not None and method["x_status"][0] == "deprecated":
+                    self._write(1, '@OpenApiStatus.deprecated')
+                    key = "{}.{}".format("%s" % factory_class_name, method["name"])
+                    self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -1167,9 +1189,12 @@ class Generator:
             if property_status is not None and property_status == "deprecated":
                 self._write(
                     1,
-                    '@Deprecator.deprecated(message="{}.%s is deprecated".format(_JSON_NAME))'
-                    % method_name,
+                    '@OpenApiStatus.deprecated'
                 )
+                key = "{}.{}".format(class_name, method_name)
+                self._deprecated_properties[key] = property["x-status"][
+                    "additional_information"
+                ]
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1296,7 +1321,7 @@ class Generator:
             property.get("x-status", {}).get("status", "current")
             == "deprecated"
         ):
-            self._write(1, "@Deprecator.deprecated")
+            self._write(1, "@OpenApiStatus.deprecated")
             key = "{}.{}".format(klass_name, name)
             self._deprecated_properties[key] = property["x-status"][
                 "additional_information"
@@ -1322,7 +1347,7 @@ class Generator:
                 property.get("x-status", {}).get("status", "current")
                 == "deprecated"
             ):
-                self._write(1, "@Deprecator.deprecated")
+                self._write(1, "@OpenApiStatus.deprecated")
                 key = "{}.{}".format(klass_name, name)
                 self._deprecated_properties[key] = property["x-status"][
                     "additional_information"
@@ -1632,7 +1657,7 @@ class Generator:
 
     def _write_deprecator(self):
         with open(self._api_filename, "a") as self._fid:
-            self._write(0, "Deprecator.messages = {")
+            self._write(0, "OpenApiStatus.messages = {")
             for klass, msg in self._deprecated_properties.items():
                 if "\n" in msg:
                     print(msg)

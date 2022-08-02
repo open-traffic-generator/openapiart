@@ -186,27 +186,29 @@ class HttpTransport(object):
             )
 
 
-class Deprecator:
+class OpenApiStatus:
     messages = {}
+    logger = logging.getLogger(__module__)
 
     @classmethod
     def deprecate(cls, key):
         if cls.messages.get(key) is not None:
             if cls.messages[key] in openapi_warnings:
                 return
+            cls.logger.warning(cls.messages[key])
             openapi_warnings.append(cls.messages[key])
 
     @staticmethod
     def deprecated(func_or_data):
         def inner(self, *args, **kwargs):
-            Deprecator.deprecate(
-                "{{}}.{{}}".format(type(self).__name__, func_or_data.__name__)
+            OpenApiStatus.deprecate(
+                "{}.{}".format(type(self).__name__, func_or_data.__name__)
             )
-            func_or_data(self, *args, **kwargs)
+            return func_or_data(self, *args, **kwargs)
 
         if isinstance(func_or_data, types.FunctionType):
             return inner
-        Deprecator.deprecate(func_or_data)
+        OpenApiStatus.deprecate(func_or_data)
 
 
 class OpenApiBase(object):
@@ -674,7 +676,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
                     value = [str(v) for v in value]
                 output[key] = value
-                Deprecator.deprecate("{}.{}".format(type(self).__name__, key))
+                OpenApiStatus.deprecate("{}.{}".format(type(self).__name__, key))
         return output
 
     def _decode(self, obj):
@@ -721,7 +723,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
-                Deprecator.deprecate("{}.{}".format(type(self).__name__, property_name))
+                OpenApiStatus.deprecate("{}.{}".format(type(self).__name__, property_name))
             self._validate_types(property_name, property_value)
             self._validate_unique_and_name(property_name, property_value, True)
             self._validate_constraint(property_name, property_value, True)

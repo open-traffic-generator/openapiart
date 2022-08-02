@@ -1,4 +1,5 @@
 def test_deprecate(api):
+    api.clear_api_warnings()
     conf = api.prefix_config()
     conf.required_object.e_a = 10
     conf.required_object.e_b = 20
@@ -37,3 +38,11 @@ def test_deprecate(api):
 
     api.clear_api_warnings()
     assert api.get_api_warnings() == []
+
+    u_conf = api.update_config()
+    u_conf.g.gobject(g_a="abcd")
+
+    api.update_configuration(u_conf)
+    assert api.get_api_warnings() != []
+    assert len(api.get_api_warnings()) == 1
+    

@@ -809,6 +809,13 @@ class Bundler(object):
         for xstatus in self._get_parser("$..x-status").find(self._content):
             if xstatus.value.get("status") == "current":
                 continue
+            
+            assert xstatus.value.get("additional_information") != None, \
+                "attribute additional_info can't be "\
+                "None for %s" % (str(xstatus.full_path))
+            
+            
+            
             print("resolving %s..." % (str(xstatus.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
             if "description" not in parent_schema_object:
@@ -817,7 +824,7 @@ class Bundler(object):
                 "description"
             ] = "Status: {status}\n{add_info}\n{description}".format(
                 status=xstatus.value.get("status"),
-                add_info=xstatus.value.get("additional_info", ""),
+                add_info=xstatus.value.get("additional_information", ""),
                 description=parent_schema_object["description"],
             )
 
@@ -826,9 +833,9 @@ class Bundler(object):
         [global, local]
         """
         for xunique in self._get_parser("$..x-unique").find(self._content):
-            if xunique.value in ["global", "local"]:
+            if xunique.value in ["global"]:
                 continue
-            raise Exception("x-unique shall be oneOf ['global', 'unique']")
+            raise Exception("x-unique can have only 'global'")
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content
