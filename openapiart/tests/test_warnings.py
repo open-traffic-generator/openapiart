@@ -1,4 +1,4 @@
-def test_deprecate(api):
+def test_warnings(api):
     api.clear_api_warnings()
     conf = api.prefix_config()
     conf.required_object.e_a = 10
@@ -16,16 +16,18 @@ def test_deprecate(api):
         return " ".join([ln.strip() for ln in message.split("\n")]).strip()
 
     assert api.get_api_warnings() != []
-    assert len(api.get_api_warnings()) == 1
-    assert strip_data(api.get_api_warnings()[0]) == msg
+    assert len(api.get_api_warnings()) == 2
+    assert strip_data(api.get_api_warnings()[0]) == "property under review"
+    assert strip_data(api.get_api_warnings()[1]) == msg
 
     api.clear_api_warnings()
     assert api.get_api_warnings() == []
 
     data = conf.serialize(conf.DICT)
     assert api.get_api_warnings() != []
-    assert len(api.get_api_warnings()) == 1
-    assert strip_data(api.get_api_warnings()[0]) == msg
+    assert len(api.get_api_warnings()) == 2
+    assert strip_data(api.get_api_warnings()[0]) == "property under review"
+    assert strip_data(api.get_api_warnings()[1]) == msg
 
     api.clear_api_warnings()
     assert api.get_api_warnings() == []
@@ -33,8 +35,9 @@ def test_deprecate(api):
     conf1 = api.prefix_config()
     conf1.deserialize(data)
     assert api.get_api_warnings() != []
-    assert len(api.get_api_warnings()) == 1
-    assert strip_data(api.get_api_warnings()[0]) == msg
+    assert len(api.get_api_warnings()) == 2
+    assert strip_data(api.get_api_warnings()[0]) == "property under review"
+    assert strip_data(api.get_api_warnings()[1]) == msg
 
     api.clear_api_warnings()
     assert api.get_api_warnings() == []
@@ -45,4 +48,3 @@ def test_deprecate(api):
     api.update_configuration(u_conf)
     assert api.get_api_warnings() != []
     assert len(api.get_api_warnings()) == 1
-    
