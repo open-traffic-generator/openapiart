@@ -363,7 +363,7 @@ class Generator:
 
         return methods, factories, rpc_methods
 
-    def _write_rpc_api_class(self, rpc_methods: list[FluentRpc]):
+    def _write_rpc_api_class(self, rpc_methods):
         class_code = """class GrpcApi(Api):
     # OpenAPI gRPC Api
     def __init__(self, **kwargs):
