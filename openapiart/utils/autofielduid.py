@@ -68,7 +68,9 @@ class AutoFieldUid(object):
         for schema_name, schema_object in schema_objects.items():
             # ignore content field as it always contain single value
             if "x-include" in schema_object:
-                self._update_x_incude_properties(yobject, schema_object, filename)
+                self._update_x_incude_properties(
+                    yobject, schema_object, filename
+                )
             if "properties" not in schema_object:
                 continue
             id = 0
@@ -142,7 +144,7 @@ class AutoFieldUid(object):
 
     def _merge(self, src, dst):
         for key, value in src.items():
-            if key in ['x-include', 'properties', "x-field-uid"]:
+            if key in ["x-include", "properties", "x-field-uid"]:
                 continue
             if key not in dst:
                 dst[key] = deepcopy(value)
@@ -157,18 +159,15 @@ class AutoFieldUid(object):
         include_names = schema_object["x-include"]
         properties = schema_object.get("properties")
         if properties is None:
-            schema_object.update({
-                "properties": {}
-            })
+            schema_object.update({"properties": {}})
             properties = schema_object.get("properties")
         for include_name in include_names:
             file_name, object_path = include_name.split("#")
-            if file_name == str() or file_name == '.':
+            if file_name == str() or file_name == ".":
                 include_properties = self._get_include_properties(
                     yobject, object_path
                 )
-                include_obj = self._get_include_response(
-                    yobject, object_path)
+                include_obj = self._get_include_response(yobject, object_path)
             else:
                 if file_name in self._include_files:
                     file_obj = self._include_files[file_name]
@@ -177,7 +176,8 @@ class AutoFieldUid(object):
                     abs_path = os.path.join(parent_path, file_name)
                     if not os.path.exists(abs_path):
                         file_name = "/".join(
-                            [x for x in file_name.split("/") if x != ".."])
+                            [x for x in file_name.split("/") if x != ".."]
+                        )
 
                         abs_path = os.path.join(self._parent_folder, file_name)
                     with open(abs_path) as fid:
@@ -188,7 +188,8 @@ class AutoFieldUid(object):
                         )
 
                     file_schema = self._get_include_response(
-                        file_obj, object_path)
+                        file_obj, object_path
+                    )
                     if "x-include" in file_schema:
                         file_obj = self._update_x_incude_properties(
                             file_obj, file_schema, abs_path
@@ -197,8 +198,7 @@ class AutoFieldUid(object):
                 include_properties = self._get_include_properties(
                     file_obj, object_path
                 )
-                include_obj = self._get_include_response(
-                    file_obj, object_path)
+                include_obj = self._get_include_response(file_obj, object_path)
 
             self._merge(include_obj, schema_object)
             for property_name in include_properties:
