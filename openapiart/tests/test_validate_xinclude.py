@@ -24,7 +24,7 @@ def str_compare(validte_str, entire_str):
 
 
 def test_validate_xinclude():
-    include_error = "x-include should be part of properties and responses"
+    include_error = "x-include shall be a path of any property or response"
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
             openapiart_class, file_name="./field_uid/xinclude.yaml"
