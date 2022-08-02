@@ -654,8 +654,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             // httpConnect builds up a http connection
             func (api *{internal_struct_name}) httpConnect() error {{
-                Logger.Debug().Msgf("Calling Method ==> httpConnect")
-                Logger.Debug().Msgf("Http connection details ==> location: %s secure verify: %v", api.http.location, api.http.verify)
+                Logger.Debug().Msgf("HttpTransport args: location= %s; secure verify= %v", api.http.location, api.http.verify)
                 if api.httpClient.client == nil {{
                     tr := http.Transport{{
                         DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {{
