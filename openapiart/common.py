@@ -191,7 +191,7 @@ class OpenApiStatus:
     logger = logging.getLogger(__module__)
 
     @classmethod
-    def deprecate(cls, key):
+    def warn(cls, key):
         if cls.messages.get(key) is not None:
             if cls.messages[key] in openapi_warnings:
                 return
@@ -201,14 +201,26 @@ class OpenApiStatus:
     @staticmethod
     def deprecated(func_or_data):
         def inner(self, *args, **kwargs):
-            OpenApiStatus.deprecate(
+            OpenApiStatus.warn(
                 "{}.{}".format(type(self).__name__, func_or_data.__name__)
             )
             return func_or_data(self, *args, **kwargs)
 
         if isinstance(func_or_data, types.FunctionType):
             return inner
-        OpenApiStatus.deprecate(func_or_data)
+        OpenApiStatus.warn(func_or_data)
+    
+    @staticmethod
+    def under_review(func_or_data):
+        def inner(self, *args, **kwargs):
+            OpenApiStatus.warn(
+                "{}.{}".format(type(self).__name__, func_or_data.__name__)
+            )
+            return func_or_data(self, *args, **kwargs)
+
+        if isinstance(func_or_data, types.FunctionType):
+            return inner
+        OpenApiStatus.warn(func_or_data)
 
 
 class OpenApiBase(object):
@@ -653,11 +665,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         else:
             self._set_choice(name)
             self._properties[name] = value
-        if (
-            self._parent is not None
-            and self._choice is not None
-            and value is not None
-        ):
+        self._validate_unique_and_name(name, value)
+        # self._validate_constraint(name, value)
+        if self._parent is not None and self._choice is not None and value is not None:
             self._parent._set_property("choice", self._choice)
 
     def _encode(self):
@@ -667,7 +677,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         for key, value in self._properties.items():
             self._validate_types(key, value)
             self._validate_unique_and_name(key, value, True)
-            self._validate_constraint(key, value, True)
+            # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
@@ -676,7 +686,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
                     value = [str(v) for v in value]
                 output[key] = value
-                OpenApiStatus.deprecate("{}.{}".format(type(self).__name__, key))
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, key))
         return output
 
     def _decode(self, obj):
@@ -723,10 +733,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
-                OpenApiStatus.deprecate("{}.{}".format(type(self).__name__, property_name))
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, property_name))
             self._validate_types(property_name, property_value)
             self._validate_unique_and_name(property_name, property_value, True)
-            self._validate_constraint(property_name, property_value, True)
+            # self._validate_constraint(property_name, property_value, True)
         self._validate_required()
         return self
 

@@ -1670,6 +1670,7 @@ func TestDeprecationWarning(t *testing.T) {
 
 	// Warning by config
 	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 	config := api.NewPrefixConfig()
 	config.RequiredObject().SetEA(10).SetEB(20)
 	config.SetA("abc")
@@ -1681,7 +1682,7 @@ func TestDeprecationWarning(t *testing.T) {
 	t.Log(warnings)
 
 	assert.NotNil(t, warnings)
-	assert.Len(t, warnings, 1)
+	assert.Len(t, warnings, 2)
 	api.ClearApiWarnings()
 
 	assert.Len(t, api.GetApiWarnings(), 0)
@@ -1695,7 +1696,7 @@ func TestDeprecationWarning(t *testing.T) {
 	t.Log(warnings1)
 
 	assert.NotNil(t, warnings1)
-	assert.Len(t, warnings1, 1)
+	assert.Len(t, warnings1, 2)
 	api.ClearApiWarnings()
 
 	assert.Len(t, api.GetApiWarnings(), 0)
@@ -1710,10 +1711,23 @@ func TestDeprecationWarning(t *testing.T) {
 	t.Log(warnings)
 
 	assert.NotNil(t, warnings2)
-	assert.Len(t, warnings2, 1)
+	assert.Len(t, warnings2, 2)
 	api.ClearApiWarnings()
 
 	assert.Len(t, api.GetApiWarnings(), 0)
+
+	u_config := api.NewUpdateConfig()
+	u_config.G().Add().SetGA("abcd")
+	api.UpdateConfiguration(u_config)
+
+	warnings = api.GetApiWarnings()
+
+	t.Log(warnings)
+
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 1)
+	api.ClearApiWarnings()
+
 }
 
 func TestConstraintAndUnique(t *testing.T) {
@@ -1765,7 +1779,7 @@ func TestConstraintAndUnique(t *testing.T) {
 	prefix.SetName("local_global_mix")
 	prefix.ZObject().SetName("local_global_mix")
 	_, err = prefix.ToJson()
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 	// ************************************************
 
 	// prefix.YObject().SetYName("123")

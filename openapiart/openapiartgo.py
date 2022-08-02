@@ -23,6 +23,7 @@ class FluentRpc(object):
         self.responses = []
         self.http_call = None
         self.method_description = None
+        self.status = {}
 
 
 class FluentRpcResponse(object):
@@ -370,6 +371,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
+                if path_item_object.get("x-status", {}).get("status") in [
+                    "deprecated",
+                    "under-review",
+                ]:
+                    rpc.status = path_item_object.get("x-status", {})
+                    rpc.status["status"] = rpc.status["status"].replace(
+                        "-", "_"
+                    )
                 http.description = self._get_description(path_item_object)
                 if (
                     len(
@@ -775,8 +784,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
+            info = rpc.status.get("additional_information")
+            status_str = "{func}{msg}".format(
+                func=rpc.status.get("status", ""),
+                msg="(`%s`)" % info if info is not None else "",
+            )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    {status}
                     {validate}
                     if api.hasHttpTransport() {{
                             {http_call}
@@ -804,6 +819,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
+                    status=status_str,
                 )
             )
 
@@ -1416,9 +1432,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_enum_choice is not None
                 else "",
             )
-        status = False
-        if field.status is not None and field.status == "deprecated":
-            status = True
         self._write(
             """
             // {fieldname} returns a {fieldtype}\n{description}
@@ -1434,17 +1447,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 description=field.description,
                 fieldtype=field.type,
                 status=""
-                if status is False
-                else "deprecated(`{msg}`)".format(msg=field.status_msg),
+                if field.status is None
+                else "{func}(`{msg}`)".format(
+                    func=field.status, msg=field.status_msg
+                ),
             )
         )
 
     def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
             return
-        status = False
-        if field.status is not None and field.status == "deprecated":
-            status = True
 
         if field.isArray and field.isEnum:
             body = """items := []{pb_pkg_name}.{interface}_{fieldname}_Enum{{}}
@@ -1647,8 +1659,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldstruct=new.interface,
                 set_choice=set_choice,
                 status=""
-                if status is False
-                else "deprecated(`{msg}`)".format(msg=field.status_msg),
+                if field.status is None
+                else "{func}(`{msg}`)".format(
+                    func=field.status, msg=field.status_msg
+                ),
             )
         )
 
@@ -1801,10 +1815,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
-            field.status = property_schema.get("x-status", {}).get("status")
-            field.status_msg = property_schema.get("x-status", {}).get(
-                "additional_information"
-            )
+            if property_schema.get("x-status", {}).get("status") in [
+                "deprecated",
+                "under-review",
+            ]:
+                field.status = property_schema["x-status"]["status"].replace(
+                    "-", "_"
+                )
+                field.status_msg = property_schema["x-status"].get(
+                    "additional_information"
+                )
             self._parse_x_constraints(field, property_schema)
             self._parse_x_unique(field, property_schema)
             if (
@@ -2111,11 +2131,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         else:
             value = 0
         status_body = ""
-        if field.status is not None and field.status == "deprecated":
+        if field.status is not None:
             status_body = """
-            // {name} is deprecated
+            // {name} is {func}
             if obj.obj.{name}{enum} != {value} {{
-                deprecated(`{msg}`)
+                {func}(`{msg}`)
             }}
             """.format(
                 name=field.name,
@@ -2124,6 +2144,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else "",
                 msg=field.status_msg,
+                func=field.status,
             )
         if field.isOptional is False and "string" in field.type:
             body = """
@@ -2300,8 +2321,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
-            msg="deprecated(`{}`)".format(field.status_msg)
-            if field.status is not None and field.status == "deprecated"
+            msg="{func}(`{msg}`)".format(
+                func=field.status, msg=field.status_msg
+            )
+            if field.status is not None
             else "",
         )
         return body

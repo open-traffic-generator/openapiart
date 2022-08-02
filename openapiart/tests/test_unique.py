@@ -1,17 +1,21 @@
 import pytest
 
 
-def test_constraints_and_unique(config):
+def test_unique(config):
 
+    # Update: There is no global and local diff
+    # everything is considered as global now
     # *************** global unique ****************
     # Two similar objects with same Name.
     config.w_list.wobject(w_name="global_unique_similar_obj")
     config.w_list.wobject(w_name="global_unique_similar_obj")
     try:
         config.validate()
+        pytest.fail("validation failed")
     except Exception as e:
-        if "global_unique already exists" not in str(e):
-            pytest.fail("global_unique validation failed")
+
+        if "global_unique_similar_obj already exists" not in str(e):
+            pytest.fail("global_unique_similar_obj validation failed")
 
     # Two similar objects with different name
     config.w_list[1].w_name = "global_unique_similar_obj1"
@@ -22,6 +26,7 @@ def test_constraints_and_unique(config):
     config.w_list.wobject(w_name="global_unique")
     try:
         config.validate()
+        pytest.fail("validation failed")
     except Exception as e:
         if "global_unique already exists" not in str(e):
             pytest.fail("global_unique validation failed")
@@ -36,6 +41,7 @@ def test_constraints_and_unique(config):
     config.x_list.zobject(name="local_unique_similar")
     try:
         config.validate()
+        pytest.fail("validation failed")
     except Exception as e:
         if "local_unique_similar already exists" not in str(e):
             pytest.fail("local_unique_similar validation failed")
@@ -47,7 +53,18 @@ def test_constraints_and_unique(config):
     # Two different objects with same name
     config.name = "local_global_mix"
     config.x_list.zobject(name="local_global_mix")
-    config.validate()
+    try:
+        config.validate()
+        pytest.fail("validation failed")
+    except Exception as e:
+        if "local_global_mix already exists" not in str(e):
+            pytest.fail("local_unique_similar validation failed")
+    try:
+        config.serialize()
+        pytest.fail("serialization failed")
+    except Exception as e:
+        if "local_global_mix already exists" not in str(e):
+            pytest.fail("local_unique_similar validation failed")
     # **********************************************
 
     # config.z_object.name = "local_unique"

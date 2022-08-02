@@ -809,13 +809,13 @@ class Bundler(object):
         for xstatus in self._get_parser("$..x-status").find(self._content):
             if xstatus.value.get("status") == "current":
                 continue
-            
-            assert xstatus.value.get("additional_information") != None, \
-                "attribute additional_info can't be "\
-                "None for %s" % (str(xstatus.full_path))
-            
-            
-            
+
+            assert (
+                xstatus.value.get("additional_information") != None
+            ), "attribute additional_info can't be " "None for %s" % (
+                str(xstatus.full_path)
+            )
+
             print("resolving %s..." % (str(xstatus.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
             if "description" not in parent_schema_object:
@@ -829,9 +829,7 @@ class Bundler(object):
             )
 
     def _resolve_x_unique(self):
-        """validate the x-unique field and make sure it is oneOf
-        [global, local]
-        """
+        """validate the x-unique field and make sure it is [global]"""
         for xunique in self._get_parser("$..x-unique").find(self._content):
             if xunique.value in ["global"]:
                 continue
