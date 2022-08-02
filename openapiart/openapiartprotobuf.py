@@ -170,7 +170,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             for response_field in response_fields:
                 self._write(
                     "optional {} {} = {};".format(
-                        response_field.type, response_field.name, response_field.field_uid
+                        response_field.type,
+                        response_field.name,
+                        response_field.field_uid,
                     ),
                     indent=1,
                 )

@@ -206,7 +206,8 @@ class Bundler(object):
                 field_uid = property_object.get("x-field-uid")
                 if field_uid is None:
                     self._errors.append(
-                        "x-field-uid is missing in %s:%s" % (schema_name, property_name)
+                        "x-field-uid is missing in %s:%s"
+                        % (schema_name, property_name)
                     )
                     continue
                 self._check_range_uid(
@@ -230,9 +231,11 @@ class Bundler(object):
                 field_uids = []
                 reserved_field_uids = []
                 if "x-reserved-field-uids" in path_item_object:
-                    reserved_field_uids = path_item_object["x-reserved-field-uids"]
+                    reserved_field_uids = path_item_object[
+                        "x-reserved-field-uids"
+                    ]
                 for response in self._get_parser("$..responses").find(
-                        path_item_object
+                    path_item_object
                 ):
                     for code, code_schema in response.value.items():
                         field_uid = code_schema.get("x-field-uid")
@@ -240,8 +243,10 @@ class Bundler(object):
                             path_key, path_item_key, code
                         )
                         if field_uid is None:
-                            self._errors.append("x-field-uid is missing in %s response"
-                                                % common_name)
+                            self._errors.append(
+                                "x-field-uid is missing in %s response"
+                                % common_name
+                            )
                             continue
                         field_uids.append(field_uid)
                         self._check_range_uid(field_uid, common_name)
@@ -250,9 +255,9 @@ class Bundler(object):
                                 "x-field-uid %s of %s should not conflict with x-reserved-field-uids"
                                 % (field_uid, common_name)
                             )
-                    self._check_duplicate_uid(field_uids, "{}:{}".format(
-                        path_key, path_item_key
-                    ))
+                    self._check_duplicate_uid(
+                        field_uids, "{}:{}".format(path_key, path_item_key)
+                    )
 
     def _validate_required_responses(self):
         """Ensure all paths include a 400 and 500 response.

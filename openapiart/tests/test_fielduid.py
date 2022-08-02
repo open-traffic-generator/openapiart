@@ -38,8 +38,12 @@ def test_validate_field_uid():
     )
     missing_rsp_error = "x-field-uid is missing in /config:post:500 response"
     dup_rsp_error = "/config:post contain duplicate [2] x-field-uid. x-field-uid should be unique."
-    min_rsp_error = "x-field-uid -4 of /config:post:501 not in range (1 to 2^29)"
-    max_rsp_error = "x-field-uid 536870998 of /config:post:502 not in range (1 to 2^29)"
+    min_rsp_error = (
+        "x-field-uid -4 of /config:post:501 not in range (1 to 2^29)"
+    )
+    max_rsp_error = (
+        "x-field-uid 536870998 of /config:post:502 not in range (1 to 2^29)"
+    )
     reserved_rsp_error = "x-field-uid 5 of /config:post:503 should not conflict with x-reserved-field-uids"
 
     with pytest.raises(Exception) as execinfo:
