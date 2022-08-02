@@ -1217,7 +1217,7 @@ class Generator:
                 self._write(
                     1,
                     "@OpenApiStatus.{func}".format(
-                        property_status.replace("-", "_")
+                        func=property_status.replace("-", "_")
                     ),
                 )
                 key = "{}.{}".format(class_name, method_name)
