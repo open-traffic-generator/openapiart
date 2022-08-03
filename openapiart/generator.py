@@ -477,6 +477,10 @@ class Generator:
                 self._write(2, "if status_code_200 is not None:")
                 if return_byte:
                     self._write(
+                        3,
+                        """self._logger.debug("Response data: {}".format(io.BytesIO(res_obj.status_code_200)))""",
+                    )
+                    self._write(
                         3, "return io.BytesIO(res_obj.status_code_200)"
                     )
                 elif rpc_method.good_response_type:
@@ -497,6 +501,10 @@ class Generator:
                     self._write(4, "status_code_200")
                     self._write(3, ")")
                 else:
+                    self._write(
+                        3,
+                        """self._logger.debug("Response data: {}".format(response.get("status_code_200")))""",
+                    )
                     self._write(3, 'return response.get("status_code_200")')
                 for rsp_code in rpc_method.bad_responses:
                     self._write(
@@ -596,7 +604,7 @@ class Generator:
                 self._write(2, '"""')
                 self._write(
                     2,
-                    """self.logger.debug("Calling method ==> {}")""".format(
+                    """self.logger.debug("Calling method: {}")""".format(
                         method["name"]
                     ),
                 )

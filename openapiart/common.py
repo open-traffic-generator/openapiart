@@ -118,7 +118,7 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
-        self.logger.debug("Request call ==> Method: {} || url: {} || payload: {}".format(method.upper(), url, data))
+        self.logger.debug("Request call: Method: {} ; url: {} ; payload: {}".format(method.upper(), url, data))
         response = self._session.request(
             method=method,
             url=url,
@@ -128,7 +128,7 @@ class HttpTransport(object):
             # TODO: add a timeout here
             headers=headers,
         )
-        self.logger.debug('Response ==> Status code: {} || Error: {}'.format(response.status_code, response.reason))
+        self.logger.debug('Response: Status code: {} ; Error: {}'.format(response.status_code, response.reason))
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
@@ -137,17 +137,20 @@ class HttpTransport(object):
                 if return_object is None:
                     # if response type is not provided, return dictionary
                     # instead of python object
+                    self.logger.debug("Response data: {}".format(response_dict))
                     return response_dict
                 else:
+                    self.logger.debug("Response data: {}".format(return_object.deserialize(response_dict)))
                     return return_object.deserialize(response_dict)
             elif "application/octet-stream" in response.headers["content-type"]:
+                self.logger.debug("Response data: {}".format(io.BytesIO(response.content)))
                 return io.BytesIO(response.content)
             else:
                 # TODO: for now, return bare response object for unknown
                 # content types
                 return response
         else:
-            self.logger.error('Response ==> Status code: {} || reason: {} || data: {}'.format(response.status_code, response.reason, response.text))
+            self.logger.error('Response: Status code: {} ; reason: {} ; data: {}'.format(response.status_code, response.reason, response.text))
             raise Exception(response.status_code, yaml.safe_load(response.text))
 
 
