@@ -92,7 +92,7 @@ class AutoFieldUid(object):
         for node_name in object_path.split("/"):
             if node_name == str():
                 continue
-            include_response = include_response.get(node_name)
+            include_response = include_response.get(node_name, {})
         return include_response
 
     def _update_x_incude_response(self, yobject, rsp_value):
@@ -139,8 +139,8 @@ class AutoFieldUid(object):
         for node_name in object_path.split("/"):
             if node_name == str():
                 continue
-            include_properties = include_properties.get(node_name)
-        return include_properties.get("properties")
+            include_properties = include_properties.get(node_name, {})
+        return include_properties.get("properties", {})
 
     def _merge(self, src, dst):
         for key, value in src.items():
