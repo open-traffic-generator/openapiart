@@ -23,6 +23,7 @@ def str_compare(validte_str, entire_str):
     return validte_str in entire_str
 
 
+@pytest.mark.skip(reason="waiting for disjoint of bundle and sdk ")
 def test_validate_xenum():
     include_error = (
         "Please modify enum with x-enum within Field.Config:enumfield"

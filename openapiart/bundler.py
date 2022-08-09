@@ -121,12 +121,12 @@ class Bundler(object):
             raise TypeError("\n".join(self._errors))
 
     def _inject_enum(self, property_name, property_object, schema_name):
-        if "enum" in property_object.keys():
-            self._errors.append(
-                "Please modify enum with x-enum within %s:%s"
-                % (schema_name, property_name)
-            )
-            return
+        # if "enum" in property_object.keys():
+        #     self._errors.append(
+        #         "Please modify enum with x-enum within %s:%s"
+        #         % (schema_name, property_name)
+        #     )
+        #     return
         if "x-enum" in property_object.keys():
             property_object["enum"] = list(property_object["x-enum"].keys())
 
