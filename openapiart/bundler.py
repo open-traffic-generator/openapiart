@@ -16,6 +16,16 @@ except ImportError:
     from typing_extensions import Literal
 
 
+class AutoFieldUid(object):
+    def __init__(self):
+        self._field_uid = 0
+
+    @property
+    def uid(self):
+        self._field_uid += 1
+        return self._field_uid
+
+
 class Bundler(object):
     """Bundles OpenAPI yaml files into a single API document
 
@@ -50,6 +60,7 @@ class Bundler(object):
         self.__python = os.path.normpath(sys.executable)
         self._content = {}
         self._includes = {}
+        self._include_objects = {}
         self._resolved = []
         self._errors = []
         yaml.add_representer(Bundler.description, Bundler.literal_representer)
@@ -72,6 +83,7 @@ class Bundler(object):
         self._json_filename = os.path.join(self._output_dir, "openapi.json")
         self._content = {}
         self._includes = {}
+        self._include_objects = {}
         self._resolved = []
         for api_filename in self._api_files:
             api_filename = os.path.normpath(os.path.abspath(api_filename))
@@ -84,10 +96,13 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         self._resolve_license()
+        self._resolve_x_enmu(self._content)
+        self._validate_field_uid()
+        self._validate_response_uid()
+        self._validate_errors()
         self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
-        self._validate_errors()
         with open(self._output_filename, "w") as fp:
             yaml.dump(
                 self._content,
@@ -104,6 +119,145 @@ class Bundler(object):
     def _validate_errors(self):
         if len(self._errors) > 0:
             raise TypeError("\n".join(self._errors))
+
+    def _inject_enum(self, property_name, property_object, schema_name):
+        # if "enum" in property_object.keys():
+        #     self._errors.append(
+        #         "Please modify enum with x-enum within %s:%s"
+        #         % (schema_name, property_name)
+        #     )
+        #     return
+        if "x-enum" in property_object.keys():
+            property_object["enum"] = list(property_object["x-enum"].keys())
+
+    def _resolve_x_enmu(self, content):
+        for schema_name, schema_object in content["components"][
+            "schemas"
+        ].items():
+            if "properties" not in schema_object:
+                continue
+            for property_name, property_object in schema_object[
+                "properties"
+            ].items():
+                if "type" not in property_object.keys():
+                    continue
+                if property_object["type"] == "string":
+                    self._inject_enum(
+                        property_name, property_object, schema_name
+                    )
+                if (
+                    property_object["type"] == "array"
+                    and "items" in property_object
+                ):
+                    self._inject_enum(
+                        property_name, property_object["items"], schema_name
+                    )
+
+    def _check_duplicate_uid(self, fields_uid, name):
+        dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
+        if len(dup_values) > 0:
+            self._errors.append(
+                "%s contain duplicate %s x-field-uid. x-field-uid should be unique."
+                % (name, list(dup_values))
+            )
+
+    def _check_range_uid(self, fields_uid, name):
+        if fields_uid < 0 or fields_uid > 536870911:
+            self._errors.append(
+                "x-field-uid %s of %s not in range (1 to 2^29)"
+                % (fields_uid, name)
+            )
+
+    def _validate_xenum_field_uid(self, property_name, property_object):
+        reserved_field_uids = []
+        enums = property_object["x-enum"]
+        if "x-reserved-field-uids" in property_object:
+            reserved_field_uids = property_object["x-reserved-field-uids"]
+        field_uids = []
+        for key, value in enums.items():
+            if "x-field-uid" not in value:
+                self._errors.append("x-field-uid is missing in %s" % key)
+                continue
+            field_uid = value["x-field-uid"]
+            field_uids.append(field_uid)
+            if field_uid in reserved_field_uids:
+                self._errors.append(
+                    "x-field-uid %s within enum %s:%s conflict with x-reserved-field-uids"
+                    % (field_uid, property_name, key)
+                )
+            self._check_range_uid(
+                field_uid, "{}:{}".format(property_name, key)
+            )
+        self._check_duplicate_uid(field_uids, property_name)
+
+    def _validate_field_uid(self):
+        for schema_name, schema_object in self._content["components"][
+            "schemas"
+        ].items():
+            if "properties" not in schema_object:
+                continue
+            field_uids = []
+            reserved_field_uids = []
+            if "x-reserved-field-uids" in schema_object:
+                reserved_field_uids = schema_object["x-reserved-field-uids"]
+            for property_name, property_object in schema_object[
+                "properties"
+            ].items():
+                field_uid = property_object.get("x-field-uid")
+                if field_uid is None:
+                    self._errors.append(
+                        "x-field-uid is missing in %s:%s"
+                        % (schema_name, property_name)
+                    )
+                    continue
+                self._check_range_uid(
+                    field_uid, "{}:{}".format(schema_name, property_name)
+                )
+                field_uids.append(field_uid)
+                if field_uid in reserved_field_uids:
+                    self._errors.append(
+                        "x-field-uid %s of %s:%s should not conflict with x-reserved-field-uids"
+                        % (field_uid, schema_name, property_name)
+                    )
+                if "x-enum" in property_object:
+                    self._validate_xenum_field_uid(
+                        property_name, property_object
+                    )
+            self._check_duplicate_uid(field_uids, schema_name)
+
+    def _validate_response_uid(self):
+        for path_key, path_object in self._content["paths"].items():
+            for path_item_key, path_item_object in path_object.items():
+                field_uids = []
+                reserved_field_uids = []
+                if "x-reserved-field-uids" in path_item_object:
+                    reserved_field_uids = path_item_object[
+                        "x-reserved-field-uids"
+                    ]
+                for response in self._get_parser("$..responses").find(
+                    path_item_object
+                ):
+                    for code, code_schema in response.value.items():
+                        field_uid = code_schema.get("x-field-uid")
+                        common_name = "{}:{}:{}".format(
+                            path_key, path_item_key, code
+                        )
+                        if field_uid is None:
+                            self._errors.append(
+                                "x-field-uid is missing in %s response"
+                                % common_name
+                            )
+                            continue
+                        field_uids.append(field_uid)
+                        self._check_range_uid(field_uid, common_name)
+                        if field_uid in reserved_field_uids:
+                            self._errors.append(
+                                "x-field-uid %s of %s should not conflict with x-reserved-field-uids"
+                                % (field_uid, common_name)
+                            )
+                    self._check_duplicate_uid(
+                        field_uids, "{}:{}".format(path_key, path_item_key)
+                    )
 
     def _validate_required_responses(self):
         """Ensure all paths include a 400 and 500 response.
@@ -219,13 +373,48 @@ class Bundler(object):
                     inline = self._get_inline_ref(base_dir, refs[0], refs[1])
                     yobject[key] = inline
                 elif key == "x-include":
-                    for include_ref in value:
-                        if include_ref not in self._includes:
-                            include = self._get_schema_object(
+                    if not isinstance(value, str):
+                        self._errors.append(
+                            "%s of x-include shall be a path of any property or response"
+                            % value
+                        )
+                        continue
+                    if value not in self._includes:
+                        file_name, include_path = value.split("#")
+                        if "properties" in include_path:
+                            obj_path, path_name = include_path.split(
+                                "properties"
+                            )
+                            include_ref = "{}#{}".format(
+                                file_name, obj_path[:-1]
+                            )
+                            path_name = "properties{}".format(path_name)
+                        elif "responses" in include_path:
+                            obj_path, path_name = include_path.split(
+                                "responses"
+                            )
+                            path_list = path_name[1:].split("/")
+                            include_ref = "{}#{}responses/{}".format(
+                                file_name, obj_path, path_list[0]
+                            )
+                            path_name = "/".join(path_list[1:])
+                        else:
+                            self._errors.append(
+                                "x-include should ref some properties/ responses"
+                            )
+                            continue
+                        if include_ref in self._include_objects:
+                            include_object = self._include_objects[include_ref]
+                        else:
+                            include_object = self._get_schema_object(
                                 base_dir, include_ref
                             )
-                            self._resolve_refs(base_dir, include)
-                            self._includes[include_ref] = include
+                            self._include_objects[include_ref] = include_object
+                        field_object = self._get_field_object(
+                            include_object, path_name
+                        )
+                        self._includes[value] = field_object
+                        self._resolve_refs(base_dir, field_object)
                 else:
                     self._length_restriction(value)
                     self._required_restriction(key, value)
@@ -233,6 +422,15 @@ class Bundler(object):
         elif isinstance(yobject, list):
             for item in yobject:
                 self._resolve_refs(base_dir, item)
+
+    def _get_field_object(self, yobject, field_path):
+        field_object = yobject
+        for node in field_path.split("/"):
+            tmp = field_object.get(node)
+            if tmp is None and node.isdigit():
+                tmp = field_object.get(int(node))
+            field_object = tmp
+        return field_object
 
     def _length_restriction(self, value):
         restricted_keys = {
@@ -314,7 +512,7 @@ class Bundler(object):
             )
             format = None
             type_name = xpattern["format"]
-            if type_name in ["ipv4", "ipv6", "mac", "enum"]:
+            if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
                 format = type_name
                 type_name = "string"
             description = "TBD"
@@ -339,6 +537,7 @@ class Bundler(object):
 
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
+        auto_field = AutoFieldUid()
         schema = {
             "description": description,
             "type": "object",
@@ -346,20 +545,29 @@ class Bundler(object):
                 "choice": {
                     "description": "The type of checksum",
                     "type": "string",
-                    "enum": ["generated", "custom"],
+                    "x-enum": {
+                        "generated": {"x-field-uid": 1},
+                        "custom": {"x-field-uid": 2},
+                    },
                     "default": "generated",
+                    "x-field-uid": auto_field.uid,
                 },
                 "generated": {
                     "description": "A system generated checksum value",
                     "type": "string",
-                    "enum": ["good", "bad"],
+                    "x-enum": {
+                        "good": {"x-field-uid": 1},
+                        "bad": {"x-field-uid": 2},
+                    },
                     "default": "good",
+                    "x-field-uid": auto_field.uid,
                 },
                 "custom": {
                     "description": "A custom checksum value",
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
+                    "x-field-uid": auto_field.uid,
                 },
             },
         }
@@ -368,6 +576,7 @@ class Bundler(object):
     def _generate_value_schema(
         self, xpattern, schema_name, description, type_name, format
     ):
+        auto_field = AutoFieldUid()
         xconstants = (
             xpattern["x-constants"] if "x-constants" in xpattern else None
         )
@@ -377,13 +586,21 @@ class Bundler(object):
             "properties": {
                 "choice": {
                     "type": "string",
-                    "enum": ["value", "values"],
+                    "x-enum": {
+                        "value": {"x-field-uid": 2},
+                        "values": {"x-field-uid": 3},
+                    },
                     "default": "value",
+                    "x-field-uid": auto_field.uid,
                 },
-                "value": {"type": copy.deepcopy(type_name)},
+                "value": {
+                    "type": copy.deepcopy(type_name),
+                    "x-field-uid": auto_field.uid,
+                },
                 "values": {
                     "type": "array",
                     "items": {"type": copy.deepcopy(type_name)},
+                    "x-field-uid": auto_field.uid,
                 },
             },
         }
@@ -397,7 +614,9 @@ class Bundler(object):
                             schema_name
                         )
                     )
-                schema["properties"]["choice"]["enum"].append("auto")
+                schema["properties"]["choice"]["x-enum"]["auto"] = {
+                    "x-field-uid": 1
+                }
                 schema["properties"]["choice"]["default"] = "auto"
                 description = [
                     "The OTG implementation can provide a system generated",
@@ -407,6 +626,7 @@ class Bundler(object):
                 schema["properties"]["auto"] = {
                     "description": "\n".join(description),
                     "type": copy.deepcopy(type_name),
+                    "x-field-uid": auto_field.uid,
                 }
                 self._apply_common_x_field_pattern_properties(
                     schema["properties"]["auto"],
@@ -423,6 +643,7 @@ class Bundler(object):
                     """metric request allows for the metric_group value to be specified """
                     """as part of the request.""",
                     "type": "string",
+                    "x-field-uid": auto_field.uid,
                 }
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
@@ -433,27 +654,40 @@ class Bundler(object):
             )
         if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
             counter_pattern_name = "{}.Counter".format(schema_name)
-            schema["properties"]["choice"]["enum"].extend(
-                ["increment", "decrement"]
-            )
+            schema["properties"]["choice"]["x-enum"]["increment"] = {
+                "x-field-uid": 4
+            }
+            schema["properties"]["choice"]["x-enum"]["decrement"] = {
+                "x-field-uid": 5
+            }
             schema["properties"]["increment"] = {
                 "$ref": "#/components/schemas/{}".format(counter_pattern_name)
             }
+            schema["properties"]["increment"]["x-field-uid"] = auto_field.uid
             schema["properties"]["decrement"] = {
                 "$ref": "#/components/schemas/{}".format(counter_pattern_name)
             }
+            schema["properties"]["decrement"]["x-field-uid"] = auto_field.uid
+            counter_auto_field = AutoFieldUid()
             counter_schema = {
                 "description": "{} counter pattern".format(xpattern["format"]),
                 "type": "object",
                 "properties": {
-                    "start": {"type": type_name},
-                    "step": {"type": type_name},
+                    "start": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid,
+                    },
+                    "step": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid,
+                    },
                 },
             }
             if "features" in xpattern and "count" in xpattern["features"]:
                 counter_schema["properties"]["count"] = {
                     "type": "integer",
                     "default": 1,
+                    "x-field-uid": counter_auto_field.uid,
                 }
             self._apply_common_x_field_pattern_properties(
                 counter_schema["properties"]["start"],
@@ -510,28 +744,47 @@ class Bundler(object):
             schema["minimum"] = 0
             schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
+    def _resolve_recursive_x_include(self, include_value):
+        if "x-include" in include_value:
+            include_schema_object = self._includes[include_value["x-include"]]
+            if "x-include" in include_schema_object:
+                self._resolve_recursive_x_include(include_schema_object)
+                include_schema_object = self._includes[
+                    include_value["x-include"]
+                ]
+            self._merge(copy.deepcopy(include_schema_object), include_value)
+
     def _resolve_x_include(self):
         """Find all instances of x-include in the openapi content
         and merge the x-include content into the parent object
         Remove the x-include and the included content
         """
-        include_schemas = []
-        for xincludes in self._get_parser("$..x-include").find(self._content):
-            parent_schema_object = (
-                jsonpath_ng.Parent().find(xincludes)[0].value
-            )
-            for xinclude in xincludes.value:
-                print("resolving %s..." % (str(xinclude)))
-                include_schemas.append(xinclude)
-                include_schema_object = self._includes[xinclude]
-                self._merge(
-                    copy.deepcopy(include_schema_object), parent_schema_object
+        for include_key, include_value in self._includes.items():
+            self._resolve_recursive_x_include(include_value)
+
+        for xinclude in self._get_parser("$..x-include").find(self._content):
+            parent_schema_object = jsonpath_ng.Parent().find(xinclude)[0].value
+            xinclude_value = xinclude.value
+            print("resolving %s..." % (str(xinclude_value)))
+            if (
+                len(self._includes) == 0
+                or xinclude_value not in self._includes
+            ):
+                self._errors.append(
+                    "x-include %s missing in internal object."
+                    "x-include should define within properties"
+                    % xinclude_value
                 )
+                continue
+            include_schema_object = self._includes[xinclude_value]
+            self._merge(
+                copy.deepcopy(include_schema_object), parent_schema_object
+            )
             del parent_schema_object["x-include"]
 
     def _remove_x_include(self):
         refs = self._get_parser('$.."$ref"').find(self._content)
-        for item in set(self._includes):
+        for item in set(self._include_objects):
             pieces = item.split("#/")[1].split("/")
             value = "#/{}".format("/".join(pieces))
             match = False
@@ -595,6 +848,8 @@ class Bundler(object):
         for key, value in src.items():
             if key not in dst:
                 dst[key] = value
+            elif key == "x-field-uid":
+                continue
             elif isinstance(value, list):
                 for item in value:
                     if item not in dst[key]:

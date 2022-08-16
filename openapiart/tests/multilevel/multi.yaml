@@ -7,27 +7,29 @@ components:
         l1_p1:
           description: Level one
           $ref: '#/components/schemas/Level.Two'
+          x-field-uid: 1
         l1_p2:
           description: Level one to four
           $ref: '#/components/schemas/Level.Four'
-
+          x-field-uid: 2
     Level.Two:
       description: Test Level 2
       properties:
         l2_p1:
           description: Level Two
           $ref: '#/components/schemas/Level.Three'
-    
+          x-field-uid: 1
     Level.Three:
       description: Test Level3
       properties:
         l3_p1:
           description: Set value at Level 3
           type: string
-    
+          x-field-uid: 1
     Level.Four:
       description: Test level4 redundant junk testing
       properties:
         l4_p1:
           description: loop over level 1
           $ref: '#/components/schemas/Level.One'
+          x-field-uid: 1

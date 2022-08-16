@@ -1,22 +1,26 @@
 components:
   schemas:
     GlobalObject:
-      type: object 
+      type: object
       properties:
         name:
           type: string
+          x-field-uid: 1
     ListObject:
       type: object
       properties:
         name:
           type: string
+          x-field-uid: 1
     MultiParamObject:
       type: object
       properties:
         m_param1:
           type: string
+          x-field-uid: 1
         m_param2:
           type: string
+          x-field-uid: 2
     Error:
       type: object
       properties:
@@ -24,6 +28,7 @@ components:
           type: array
           items:
             type: string
+          x-field-uid: 1
     Error.Details:
       type: object
       properties:
@@ -31,6 +36,7 @@ components:
           type: array
           items:
             type: string
+          x-field-uid: 1
     Warning.Details:
       type: object
       properties:
@@ -38,7 +44,7 @@ components:
           type: array
           items:
             type: string
-
+          x-field-uid: 1
   responses:
     Success:
       200:

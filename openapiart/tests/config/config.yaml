@@ -1,8 +1,7 @@
 components:
   schemas:
     Prefix.Config:
-      x-include:
-      - '../common/common.yaml#/components/schemas/GlobalObject'
+      type: object
       required: [a, b, c, required_object]
       description: |-
         Container which retains the configuration
@@ -11,27 +10,42 @@ components:
           description: |-
             A required object that MUST be generated as such.
           $ref: '#/components/schemas/EObject'
+          x-field-uid: 1
         optional_object:
           description: |-
             An optional object that MUST be generated as such.
           $ref: '#/components/schemas/EObject'
+          x-field-uid: 2
         ieee_802_1qbb:
           type: boolean
+          x-field-uid: 3
         space_1:
           type: integer
+          x-field-uid: 4
         full_duplex_100_mb:
           type: integer
+          x-field-uid: 5
         response:
           description: |-
             Indicate to the server what response should be returned
           type: string
-          enum: [status_200, status_400, status_404, status_500]
           default: status_200
+          x-field-uid: 6
+          x-enum:
+            status_200:
+              x-field-uid: 1
+            status_400:
+              x-field-uid: 2
+            status_404:
+              x-field-uid: 3
+            status_500:
+              x-field-uid: 4
         a:
           x-status: under-review
           description: |-
             Small single line description
           type: string
+          x-field-uid: 7
         b:
           x-status: deprecated
           description: |-
@@ -40,89 +54,120 @@ components:
             Third line
           type: number
           format: float
+          x-field-uid: 8
         c:
           type: integer
+          x-field-uid: 9
         d_values:
           description: A list of enum values
           type: array
           items:
             type: string
-            enum: [a, b, c]
+            x-enum:
+              a:
+                x-field-uid: 1
+              b:
+                x-field-uid: 2
+              c:
+                x-field-uid: 3
+          x-field-uid: 10
         e:
           description: A child object
           $ref: '#/components/schemas/EObject'
+          x-field-uid: 11
         f:
           description: An object with only choice(s)
           $ref: '#/components/schemas/FObject'
+          x-field-uid: 12
         g:
           description: A list of objects with choice and properties
           type: array
           items:
             $ref: '#/components/schemas/GObject'
+          x-field-uid: 13
         h:
           description: A boolean value
           type: boolean
           default: true
+          x-field-uid: 14
         i:
           description: A byte string
           type: string
           format: binary
+          x-field-uid: 15
         j:
           description: A list of objects with only choice
           type: array
           items:
             $ref: '#/components/schemas/JObject'
+          x-field-uid: 16
         k:
           description: A nested object with only one property which is a choice object
           $ref: '#/components/schemas/KObject'
+          x-field-uid: 17
         l:
           $ref: '#/components/schemas/LObject'
+          x-field-uid: 18
         list_of_string_values:
           description: |-
             A list of string values
           type: array
           items:
             type: string
+          x-field-uid: 19
         list_of_integer_values:
           description: |-
             A list of integer values
           type: array
           items:
             type: integer
+          x-field-uid: 20
         level:
           $ref: '../multilevel/multi.yaml#/components/schemas/Level.One'
+          x-field-uid: 21
         mandatory:
           $ref: '#/components/schemas/Mandate'
+          x-field-uid: 22
         ipv4_pattern:
           $ref: '../pattern/pattern.yaml#/components/schemas/Ipv4Pattern'
+          x-field-uid: 23
         ipv6_pattern:
           $ref: '../pattern/pattern.yaml#/components/schemas/Ipv6Pattern'
+          x-field-uid: 24
         mac_pattern:
           $ref: '../pattern/pattern.yaml#/components/schemas/MacPattern'
+          x-field-uid: 25
         integer_pattern:
           $ref: '../pattern/pattern.yaml#/components/schemas/IntegerPattern'
+          x-field-uid: 26
         checksum_pattern:
           $ref: '../pattern/pattern.yaml#/components/schemas/ChecksumPattern'
+          x-field-uid: 27
         case:
           $ref: '#/components/schemas/Layer1Ieee802x'
+          x-field-uid: 28
         m_object:
           $ref: '#/components/schemas/MObject'
+          x-field-uid: 29
         integer64:
           description: int64 type
           type: integer
           format: int64
+          x-field-uid: 30
         integer64_list:
           description: int64 type list
           type: array
           items:
             type: integer
             format: int64
+          x-field-uid: 31
         header_checksum:
           x-field-pattern:
             description: >-
               Header checksum
             format: checksum
             length: 16
+          x-field-uid: 32
         str_len:
           x-status: under-review
           description: |-
@@ -130,6 +175,7 @@ components:
           type: string
           minLength: 3
           maxLength: 6
+          x-field-uid: 33
         hex_slice:
           x-status: under-review
           description: |-
@@ -138,98 +184,141 @@ components:
           items:
             type: string
             format: hex
+          x-field-uid: 34
         auto_field_test:
-            x-field-pattern:
-              format: integer
-              default: 0
-              length: 8
-              features: [count, auto]
-
+          x-field-pattern:
+            format: integer
+            default: 0
+            length: 8
+            features: [count, auto]
+          x-field-uid: 35
+        name:
+          x-include: ../common/common.yaml#/components/schemas/GlobalObject/properties/name
+          x-field-uid: 36
     Layer1Ieee802x:
       type: object
       properties:
         flow_control:
           type: boolean
-          
+          x-field-uid: 1
     GObject:
-      x-include:
-      - '../common/common.yaml#/components/schemas/ListObject'
+      type: object
       properties:
         g_a:
           type: string
-          default: asdf 
+          default: asdf
+          x-field-uid: 1
         g_b:
           type: integer
           default: 6
+          x-field-uid: 2
         g_c:
           type: number
           default: 77.7
+          x-field-uid: 3
         choice:
           type: string
-          enum: [g_d, g_e]
           default: 'g_d'
+          x-field-uid: 4
+          x-enum:
+            g_d:
+              x-field-uid: 1
+            g_e:
+              x-field-uid: 2
         g_d:
           type: string
           default: 'some string'
+          x-field-uid: 5
         g_e:
           type: number
           format: double
           default: 3.0
+          x-field-uid: 6
         g_f:
           description: |-
             Another enum to test protbuf enum generation 
           type: string
-          enum: [a, b, c]
           default: a
-
+          x-field-uid: 7
+          x-enum:
+            a:
+              x-field-uid: 1
+            b:
+              x-field-uid: 2
+            c:
+              x-field-uid: 3
+        name:
+          x-include: ../common/common.yaml#/components/schemas/ListObject/properties/name
+          x-field-uid: 8
     EObject:
-      x-include:
-      - '../common/common.yaml#/components/schemas/GlobalObject'
-      - '../common/common.yaml#/components/schemas/MultiParamObject'
+      type: object
       required: [e_a, e_b]
       properties:
         e_a:
           type: number
           format: float
+          x-field-uid: 1
         e_b:
           type: number
           format: double
-
+          x-field-uid: 2
+        name:
+          x-include: ../common/common.yaml#/components/schemas/GlobalObject/properties/name
+          x-field-uid: 3
+        m_param1:
+          x-include: ../common/common.yaml#/components/schemas/MultiParamObject/properties/m_param1
+          x-field-uid: 4
+        m_param2:
+          x-include: ../common/common.yaml#/components/schemas/MultiParamObject/properties/m_param2
+          x-field-uid: 5
     FObject:
       type: object
       properties:
         choice:
           type: string
-          enum: [f_a, f_b]
           default: 'f_a'
+          x-field-uid: 1
+          x-enum:
+            f_a:
+              x-field-uid: 1
+            f_b:
+              x-field-uid: 2
         f_a:
           type: string
           default: 'some string'
+          x-field-uid: 2
         f_b:
           type: number
           format: double
           default: 3.0
-
+          x-field-uid: 3
     JObject:
       type: object
       properties:
         choice:
           type: string
-          enum: [j_a, j_b]
           default: j_a
+          x-field-uid: 1
+          x-enum:
+            j_a:
+              x-field-uid: 1
+            j_b:
+              x-field-uid: 2
         j_a:
           $ref: '#/components/schemas/EObject'
+          x-field-uid: 2
         j_b:
           $ref: '#/components/schemas/FObject'
-
+          x-field-uid: 3
     KObject:
       type: object
       properties:
         e_object:
           $ref: '#/components/schemas/EObject'
+          x-field-uid: 1
         f_object:
           $ref: '#/components/schemas/FObject'
-
+          x-field-uid: 2
     LObject:
       description: |-
         Format validation object
@@ -237,29 +326,36 @@ components:
       properties:
         string_param:
           type: string
+          x-field-uid: 1
         integer:
           type: integer
           minimum: 10
           maximum: 90
+          x-field-uid: 2
         float:
           type: number
           format: float
+          x-field-uid: 3
         double:
           type: number
           format: double
+          x-field-uid: 4
         mac:
           type: string
           format: mac
+          x-field-uid: 5
         ipv4:
           type: string
           format: ipv4
+          x-field-uid: 6
         ipv6:
           type: string
           format: ipv6
+          x-field-uid: 7
         hex:
           type: string
           format: hex
-
+          x-field-uid: 8
     MObject:
       description: |-
         Required format validation object
@@ -268,29 +364,36 @@ components:
       properties:
         string_param:
           type: string
+          x-field-uid: 1
         integer:
           type: integer
           minimum: 10
           maximum: 90
+          x-field-uid: 2
         float:
           type: number
           format: float
+          x-field-uid: 3
         double:
           type: number
           format: double
+          x-field-uid: 4
         mac:
           type: string
           format: mac
+          x-field-uid: 5
         ipv4:
           type: string
           format: ipv4
+          x-field-uid: 6
         ipv6:
           type: string
           format: ipv6
+          x-field-uid: 7
         hex:
           type: string
           format: hex
-
+          x-field-uid: 8
     Mandate:
       description: "Object to Test required Parameter"
       type: object
@@ -298,7 +401,7 @@ components:
       properties:
         required_param:
           type: string
-
+          x-field-uid: 1
     Update.Config:
       description: "Object to Test required Parameter"
       type: object
@@ -308,57 +411,74 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GObject'
-    
+          x-field-uid: 1
     Metrics.Request:
       type: object
       properties:
         choice:
           type: string
-          enum: [port, flow]
           default: port
+          x-field-uid: 1
+          x-enum:
+            port:
+              x-field-uid: 1
+            flow:
+              x-field-uid: 2
         port:
           type: string
+          x-field-uid: 2
         flow:
           type: string
-
+          x-field-uid: 3
     Metrics:
       type: object
       properties:
         choice:
           type: string
-          enum: [ports, flows]
           default: ports
+          x-field-uid: 1
+          x-enum:
+            ports:
+              x-field-uid: 1
+            flows:
+              x-field-uid: 2
         ports:
           type: array
           items:
             $ref: '#/components/schemas/Port.Metric'
+          x-field-uid: 2
         flows:
           type: array
           items:
             $ref: '#/components/schemas/Flow.Metric'
-
+          x-field-uid: 3
     Port.Metric:
       type: object
       required: [name, tx_frames, rx_frames]
       properties:
         name:
           type: string
+          x-field-uid: 1
         tx_frames:
           type: number
           format: double
+          x-field-uid: 2
         rx_frames:
           type: number
           format: double
-
+          x-field-uid: 3
     Flow.Metric:
       type: object
       required: [name, tx_frames, rx_frames]
       properties:
         name:
           type: string
+          x-field-uid: 1
         tx_frames:
           type: number
           format: double
+          x-field-uid: 2
         rx_frames:
           type: number
           format: double
+          x-field-uid: 3
