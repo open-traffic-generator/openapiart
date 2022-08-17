@@ -44,14 +44,20 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
         proto_service="Openapi",
+        skip_bundle=True
     )
+    openapi_yaml = open_api.bundle()
     if sdk == "python" or sdk is None:
-        open_api.GeneratePythonSdk(package_name="sanity")
+        open_api.GeneratePythonSdk(
+            package_name="sanity",
+            openapi_yaml=openapi_yaml,
+        )
 
     if sdk == "go" or sdk is None:
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",
+            openapi_yaml=openapi_yaml,
         )
         open_api.GenerateGoServer(
             module_path="github.com/open-traffic-generator/openapiart/pkg",

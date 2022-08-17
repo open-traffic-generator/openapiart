@@ -29,6 +29,7 @@ class OpenApiArt(object):
         artifact_dir=None,
         extension_prefix=None,
         proto_service=None,
+        skip_bundle=False
     ):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
@@ -48,15 +49,37 @@ class OpenApiArt(object):
         self._proto_service = (
             proto_service if proto_service is not None else "Openapi"
         )
+        self._api_files = api_files
 
         print(
             "Artifact output directory: {output_dir}".format(
                 output_dir=self._output_dir
             )
         )
-        shutil.rmtree(self._output_dir, ignore_errors=True)
-        self._api_files = api_files
+        self.skip_bundle = skip_bundle
+
+        if skip_bundle is True:
+            return
+        self.bundle()
+    
+    def bundle(self):
         self._bundle()
+        self._get_info()
+        self._get_license()
+        self._document()
+        self._generate_proto_file()
+        return self._bundler.openapi_filepath
+    
+    def _bundle_openapi_yaml(self, openapi_yaml_file_path):
+        if openapi_yaml_file_path is None:
+            raise Exception("openapi.yaml path can't be none when bundling is skipped")
+        self._bundler = lambda x: x
+        self._bundler.openapi_filepath = openapi_yaml_file_path
+        with open(openapi_yaml_file_path, "r") as fd:
+            self._bundler._content = yaml.safe_load(fd.read())
+        self._openapi = self._bundler._content
+        if os.path.exists(self._output_dir) is False:
+            os.makedirs(self._output_dir)
         self._get_info()
         self._get_license()
         self._document()
@@ -117,7 +140,7 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of static documentation: {}".format(e))
 
-    def GeneratePythonSdk(self, package_name):
+    def GeneratePythonSdk(self, package_name, openapi_yaml=None):
         """Generates a Python UX Sdk
         Args
         ----
@@ -141,6 +164,8 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
+        if self.skip_bundle is True:
+            self._bundle_openapi_yaml(openapi_yaml)
         self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
@@ -205,7 +230,7 @@ class OpenApiArt(object):
             )
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name):
+    def GenerateGoSdk(self, package_dir, package_name, openapi_yaml=None):
         """Generates a Go UX Sdk
 
         Args
@@ -238,6 +263,8 @@ class OpenApiArt(object):
 
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
+        if self.skip_bundle is True:
+            self._bundle_openapi_yaml(openapi_yaml)
         self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(
