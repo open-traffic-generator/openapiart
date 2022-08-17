@@ -29,7 +29,7 @@ class OpenApiArt(object):
         artifact_dir=None,
         extension_prefix=None,
         proto_service=None,
-        skip_bundle=False
+        skip_bundle=False,
     ):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
@@ -61,7 +61,7 @@ class OpenApiArt(object):
         if skip_bundle is True:
             return
         self.bundle()
-    
+
     def bundle(self):
         self._bundle()
         self._get_info()
@@ -69,10 +69,12 @@ class OpenApiArt(object):
         self._document()
         self._generate_proto_file()
         return self._bundler.openapi_filepath
-    
+
     def _bundle_openapi_yaml(self, openapi_yaml_file_path):
         if openapi_yaml_file_path is None:
-            raise Exception("openapi.yaml path can't be none when bundling is skipped")
+            raise Exception(
+                "openapi.yaml path can't be none when bundling is skipped"
+            )
         self._bundler = lambda x: x
         self._bundler.openapi_filepath = openapi_yaml_file_path
         with open(openapi_yaml_file_path, "r") as fd:
