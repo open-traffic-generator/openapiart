@@ -963,8 +963,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj
             }}
 
+            func (obj *{struct}) ToProto() (*{pb_pkg_name}.{interface}, error) {{
+                err := obj.validateToAndFrom()
+                if err != nil {{
+                    return nil, err
+                }}
+                return obj.Msg(), nil
+            }}
+
+            func (obj *{struct}) FromProto(msg *{pb_pkg_name}.{interface}) ({interface}, error) {{
+                newObj := obj.SetMsg(msg)
+                err := newObj.validateToAndFrom()
+                if err != nil {{
+                    return nil, err
+                }}
+                return newObj, nil
+            }}
+
             func (obj *{struct}) ToPbText() (string, error) {{
-                vErr := obj.Validate()
+                vErr := obj.validateToAndFrom()
                 if vErr != nil {{
                     return "", vErr
                 }}
@@ -981,7 +998,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return retObj
                 }}
                 {nil_call}
-                vErr := obj.validateFromText()
+                vErr := obj.validateToAndFrom()
                 if vErr != nil {{
                     return vErr
                 }}
@@ -989,7 +1006,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToYaml() (string, error) {{
-                vErr := obj.Validate()
+                vErr := obj.validateToAndFrom()
                 if vErr != nil {{
                     return "", vErr
                 }}
@@ -1023,7 +1040,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
                 {nil_call}
-                vErr := obj.validateFromText()
+                vErr := obj.validateToAndFrom()
                 if vErr != nil {{
                     return vErr
                 }}
@@ -1031,7 +1048,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) ToJson() (string, error) {{
-                vErr := obj.Validate()
+                vErr := obj.validateToAndFrom()
                 if vErr != nil {{
                     return "", vErr
                 }}
@@ -1060,14 +1077,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         uError.Error(), "\\u00a0", " ", -1)[7:])
                 }}
                 {nil_call}
-                err := obj.validateFromText()
+                err := obj.validateToAndFrom()
                 if err != nil {{
                     return err
                 }}
                 return nil
             }}
 
-            func (obj *{struct}) validateFromText() error {{
+            func (obj *{struct}) validateToAndFrom() error {{
                 obj.validateObj(true)
                 return validationResult()
             }}
@@ -1123,12 +1140,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
 
         interfaces = [
+            "// ToProto marshals {interface} to protobuf object *{pb_pkg_name}.{interface}",
+            "ToProto() (*{pb_pkg_name}.{interface}, error)",
             "// ToPbText marshals {interface} to protobuf text",
             "ToPbText() (string, error)",
             "// ToYaml marshals {interface} to YAML text",
             "ToYaml() (string, error)",
             "// ToJson marshals {interface} to JSON text",
             "ToJson() (string, error)",
+            "// FromProto unmarshals {interface} from protobuf object *{pb_pkg_name}.{interface}",
+            "FromProto(msg *{pb_pkg_name}.{interface}) ({interface}, error)",
             "// FromPbText unmarshals {interface} from protobuf text",
             "FromPbText(value string) error",
             "// FromYaml unmarshals {interface} from YAML text",
@@ -1141,7 +1162,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "String() string",
             "// Clones the object",
             "Clone() ({interface}, error)",
-            "validateFromText() error",
+            "validateToAndFrom() error",
             "validateObj(set_default bool)",
             "setDefault()",
         ]
@@ -1170,7 +1191,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
                 pb_pkg_name=self._protobuf_package_name,
                 interface_signatures=interface_signatures.format(
-                    interface=new.interface
+                    interface=new.interface,
+                    pb_pkg_name=self._protobuf_package_name,
                 ),
                 description=""
                 if new.description is None
