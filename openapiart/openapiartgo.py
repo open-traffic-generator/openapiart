@@ -1182,7 +1182,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             {description}
             type {interface} interface {{
+                // Msg marshals {interface} to protobuf object *{pb_pkg_name}.{interface}
+                // and doesn't set defaults
                 Msg() *{pb_pkg_name}.{interface}
+                // SetMsg unmarshals {interface} from protobuf object *{pb_pkg_name}.{interface}
+                // and doesn't set defaults
                 SetMsg(*{pb_pkg_name}.{interface}) {interface}
                 {interface_signatures}
                 {nil_call}
