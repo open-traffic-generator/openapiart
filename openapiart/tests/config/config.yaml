@@ -24,6 +24,8 @@ components:
           x-field-uid: 4
         full_duplex_100_mb:
           type: integer
+          minimum: 0
+          maximum: 4261412864
           x-field-uid: 5
         response:
           description: |-
@@ -159,7 +161,8 @@ components:
           type: array
           items:
             type: integer
-            format: int64
+            minimum: 0
+            maximum: 4261412864
           x-field-uid: 31
         header_checksum:
           x-field-pattern:

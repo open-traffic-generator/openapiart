@@ -1355,11 +1355,13 @@ class Generator:
                     if "type" in yproperty and yproperty["type"] == "array":
                         class_name += "Iter"
                     pt.update({"type": "'%s'" % class_name})
+                sub_properties = yproperty
                 if (
                     len(ref) == 0
                     and "items" in yproperty
                     and "type" in yproperty["items"]
                 ):
+                    sub_properties = yproperty["items"]
                     pt.update(
                         {"itemtype": self._get_data_types(yproperty["items"])}
                     )
@@ -1370,14 +1372,18 @@ class Generator:
                                 % yproperty["items"]["format"]
                             }
                         )
-                if len(ref) == 0 and "minimum" in yproperty:
-                    pt.update({"minimum": yproperty["minimum"]})
-                if len(ref) == 0 and "maximum" in yproperty:
-                    pt.update({"maximum": yproperty["maximum"]})
-                if len(ref) == 0 and "minLength" in yproperty:
-                    pt.update({"minLength": yproperty["minLength"]})
-                if len(ref) == 0 and "maxLength" in yproperty:
-                    pt.update({"maxLength": yproperty["maxLength"]})
+                min_max = sub_properties.get("maximum", sub_properties.get("minimum", 0))
+                key = "itemformat" if pt.get("itemtype") is not None else "format"
+                if min_max > 2147483647 and pt.get("itemtype") is None:
+                    pt.update({key: r"'int64'"})
+                if len(ref) == 0 and "minimum" in sub_properties:
+                    pt.update({"minimum": sub_properties["minimum"]})
+                if len(ref) == 0 and "maximum" in sub_properties:
+                    pt.update({"maximum": sub_properties["maximum"]})
+                if len(ref) == 0 and "minLength" in sub_properties:
+                    pt.update({"minLength": sub_properties["minLength"]})
+                if len(ref) == 0 and "maxLength" in sub_properties:
+                    pt.update({"maxLength": sub_properties["maxLength"]})
                 if len(pt) > 0:
                     types.append((name, pt))
 
