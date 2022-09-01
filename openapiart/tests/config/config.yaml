@@ -161,8 +161,8 @@ components:
           type: array
           items:
             type: integer
-            minimum: 0
-            maximum: 4261412864
+          minimum: 0
+          maximum: 4261412864
           x-field-uid: 31
         header_checksum:
           x-field-pattern:
