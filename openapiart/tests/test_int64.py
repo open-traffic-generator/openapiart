@@ -2,6 +2,7 @@ import importlib
 
 module = importlib.import_module("sanity")
 
+
 def test_int64(default_config):
     value1 = default_config._TYPES.get("full_duplex_100_mb")
     value2 = default_config._TYPES.get("integer64_list")
@@ -19,6 +20,3 @@ def test_int64(default_config):
     config.deserialize(data)
     assert isinstance(config.full_duplex_100_mb, int)
     assert isinstance(config.integer64_list[0], int)
-
-
-    

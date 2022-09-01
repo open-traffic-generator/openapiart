@@ -1372,8 +1372,14 @@ class Generator:
                                 % yproperty["items"]["format"]
                             }
                         )
-                min_max = sub_properties.get("maximum", sub_properties.get("minimum", 0))
-                key = "itemformat" if pt.get("itemtype") is not None else "format"
+                min_max = sub_properties.get(
+                    "maximum", sub_properties.get("minimum", 0)
+                )
+                key = (
+                    "itemformat"
+                    if pt.get("itemtype") is not None
+                    else "format"
+                )
                 if min_max > 2147483647 and pt.get("itemtype") is None:
                     pt.update({key: r"'int64'"})
                 if len(ref) == 0 and "minimum" in sub_properties:
