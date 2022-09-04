@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -1784,48 +1785,53 @@ func TestUnique(t *testing.T) {
 }
 
 func TestXConstraint(t *testing.T) {
-	prefix := openapiart.NewPrefixConfig()
-	prefix.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10).SetName("pc1")
+	prefix_ := openapiart.NewPrefixConfig()
+	prefix_.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10).SetName("pc1")
 
 	// set the non existing name to y_object
-	prefix.WList().Add().SetWName("wObj1")
-	prefix.WList().Add().SetWName("wObj2")
-	prefix.ZObject().SetName("zObj")
-	prefix.YObject().SetYName("wObj3")
-	err := prefix.Validate()
-	assert.NotNil(t, err)
+	prefix_.WList().Add().SetWName("wObj1")
+	prefix_.WList().Add().SetWName("wObj2")
+	prefix_.ZObject().SetName("zObj")
+	prefix_.YObject().SetYName("wObj3")
+	prefix_err := prefix_.Validate()
+	assert.NotNil(t, prefix_err)
 
 	// set the name with invalid object name
-	prefix.YObject().SetYName("pc1")
-	err = prefix.Validate()
+	prefix_.YObject().SetYName("pc1")
+	err := prefix_.Validate()
 	assert.NotNil(t, err)
 
 	// validate with valid data
-	prefix.YObject().SetYName("wObj1")
-	err = prefix.Validate()
+	prefix_.YObject().SetYName("wObj1")
+	err = prefix_.Validate()
 	assert.Nil(t, err)
 
 	// serialize with non existing name
-	prefix.YObject().SetYName("wObj3")
-	_, err = prefix.ToJson()
+	prefix_.YObject().SetYName("wObj3")
+	_, err = prefix_.ToJson()
 	assert.NotNil(t, err)
 
 	// serialize with valid data
-	prefix.YObject().SetYName("wObj1")
-	data, j_err := prefix.ToJson()
+	prefix_.YObject().SetYName("wObj1")
+	data, j_err := prefix_.ToJson()
 	assert.Nil(t, j_err)
-	fmt.Println(data)
 
-	data = strings.Replace(data, `"y_name": "wObj1"`, `"y_name": "wObj3"`, 1)
+	re := regexp.MustCompile(`y_name.+wObj1`)
+	data = re.ReplaceAllString(data, `y_name": "wObj3`)
+	// data = strings.Replace(data, `"y_name": "wObj1"`, `"y_name": "wObj3"`, 1)
 
 	// Deserialize with non-existing name
 	prefix1 := openapiart.NewPrefixConfig()
-	err = prefix1.FromJson(data)
-	assert.NotNil(t, err)
+	fmt.Println(data)
+	err1 := prefix1.FromJson(data)
+	assert.NotNil(t, err1)
+	fmt.Println(err1.Error())
 
-	data = strings.Replace(data, `"y_name": "wObj3"`, `"y_name": "wObj1"`, 1)
+	re = regexp.MustCompile(`y_name.+wObj3`)
+	data = re.ReplaceAllString(data, `y_name": "wObj1`)
+	// data = strings.Replace(data, `"y_name": "wObj3"`, `"y_name": "wObj1"`, 1)
 
 	// Deserialize with valid name
-	err = prefix1.FromJson(data)
-	assert.Nil(t, err)
+	err2 := prefix1.FromJson(data)
+	assert.Nil(t, err2)
 }
