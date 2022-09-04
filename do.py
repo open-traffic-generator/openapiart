@@ -71,10 +71,6 @@ def get_go_deps():
             + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
         ]
     )
-    os.chdir("pkg")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go get"
-    run([cmd + " -v github.com/tidwall/sjson@latest"])
-    os.chdir("..")
 
 
 def get_protoc():

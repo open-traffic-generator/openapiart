@@ -11,7 +11,6 @@ import (
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tidwall/sjson"
 )
 
 // JSONBytesEqual compares the JSON in two byte slices.
@@ -1815,20 +1814,18 @@ func TestXConstraint(t *testing.T) {
 	prefix.YObject().SetYName("wObj1")
 	data, j_err := prefix.ToJson()
 	assert.Nil(t, j_err)
-	// fmt.Println(data)
+	fmt.Println(data)
 
-	val, err_j := sjson.Set(data, "y_object.y_name", "wObj3")
-	assert.Nil(t, err_j)
+	data = strings.Replace(data, `"y_name": "wObj1"`, `"y_name": "wObj3"`, 1)
 
 	// Deserialize with non-existing name
 	prefix1 := openapiart.NewPrefixConfig()
-	err = prefix1.FromJson(val)
+	err = prefix1.FromJson(data)
 	assert.NotNil(t, err)
 
-	val, err_j = sjson.Set(data, "y_object.y_name", "wObj1")
-	assert.Nil(t, err_j)
+	data = strings.Replace(data, `"y_name": "wObj3"`, `"y_name": "wObj1"`, 1)
 
 	// Deserialize with valid name
-	err = prefix1.FromJson(val)
+	err = prefix1.FromJson(data)
 	assert.Nil(t, err)
 }
