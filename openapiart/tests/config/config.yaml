@@ -222,14 +222,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WObject'
+          x-field-uid: 37
         x_list:
           type: array
           items:
             $ref: '#/components/schemas/ZObject'
+          x-field-uid: 38
         z_object:
           $ref: '#/components/schemas/ZObject'
+          x-field-uid: 39
         y_object:
           $ref: '#/components/schemas/YObject'
+          x-field-uid: 40
 
     WObject:
       required: [w_name]
@@ -237,6 +241,7 @@ components:
         w_name:
           type: string
           x-unique: global
+          x-field-uid: 1
 
     ZObject:
       required: [name]
@@ -244,11 +249,13 @@ components:
         name:
           type: string
           x-unique: global
+          x-field-uid: 1
 
     YObject:
       properties:
         y_name:
           type: string
+          x-field-uid: 1
           x-constraint:
             - /components/schemas/ZObject/properties/name
             - /components/schemas/WObject/properties/w_name
