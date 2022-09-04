@@ -292,8 +292,8 @@ class Bundler(object):
         print("validating {}...".format(self._output_filename))
         with open(self._output_filename) as fid:
             yobject = yaml.safe_load(fid)
-            # openapi_spec_validator.validate_v3_spec(yobject)
-            openapi_spec_validator.validate_spec(yobject)
+            openapi_spec_validator.validate_v3_spec(yobject)
+            # openapi_spec_validator.validate_spec(yobject)
         print("validating complete")
 
     def _read_file(self, base_dir, filename):
