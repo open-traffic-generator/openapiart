@@ -393,17 +393,17 @@ func validateConstraint(objectName []string, value string) bool {
 			// fmt.Printf("%v", object)
 			typ := reflect.TypeOf(object)
 			val := reflect.ValueOf(object)
-			if typ.Kind() == reflect.Pointer {
+			if typ.Kind() == reflect.Ptr {
 				val = val.Elem()
 			}
 			pb_obj := val.FieldByName("obj")
 			if pb_obj == reflect.ValueOf(nil) {
 				continue
 			}
-			if pb_obj.Kind() != reflect.Pointer && pb_obj.Kind() != reflect.Struct {
+			if pb_obj.Kind() != reflect.Ptr && pb_obj.Kind() != reflect.Struct {
 				continue
 			}
-			if pb_obj.Kind() == reflect.Pointer {
+			if pb_obj.Kind() == reflect.Ptr {
 				pb_obj = pb_obj.Elem()
 			}
 			pb_field := pb_obj.FieldByName(obj_[1])
