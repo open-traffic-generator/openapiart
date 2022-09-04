@@ -69,7 +69,7 @@ def get_go_deps():
             cmd + " -v golang.org/x/tools/cmd/goimports@latest",
             cmd
             + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
-            cmd + " -v github.com/tidwall/sjson",
+            cmd + " -v github.com/tidwall/sjson@latest",
         ]
     )
 
