@@ -1107,7 +1107,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) validateToAndFrom() error {{
-                emptyVars()
+                // emptyVars()
                 obj.validateObj(true)
                 return validationResult()
             }}
