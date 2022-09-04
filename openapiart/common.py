@@ -257,6 +257,7 @@ class OpenApiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
+        self._clear_globals()
         if encoding == OpenApiBase.JSON:
             data = json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
@@ -288,6 +289,7 @@ class OpenApiBase(object):
         - obj(OpenApiObject): This object with all the
             serialized_object deserialized within.
         """
+        self._clear_globals()
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
@@ -540,7 +542,7 @@ class OpenApiValidator(object):
 
     def _validate_constraint(self, name, value, latter=False):
         cons = self._TYPES[name].get("constraint")
-        if cons is None:
+        if cons is None or value is None:
             return
         if latter is True:
             self.__validate_latter__["constraint"].append(
@@ -552,12 +554,12 @@ class OpenApiValidator(object):
             klass, prop = c.split(".")
             names = self.__constraints__.get(klass, {})
             props = [obj._properties.get(prop) for obj in names.values()]
-            if value in names or value in props:
+            if value in props:
                 found = True
                 break
         if found is not True:
             self._validation_errors.append("{} is not a valid type of {}".format(
-                name, "||".join(cons)
+                value, "||".join(cons)
             ))
             return
     
@@ -579,6 +581,8 @@ class OpenApiValidator(object):
         else:
             self.__validate_latter__["unique"].clear()
             self.__validate_latter__["constraint"].clear()
+
+    def _clear_globals(self):
         keys = list(self.__constraints__.keys())
         for k in keys:
             if k == "global":
@@ -666,7 +670,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._set_choice(name)
             self._properties[name] = value
         self._validate_unique_and_name(name, value)
-        # self._validate_constraint(name, value)
+        self._validate_constraint(name, value)
         if self._parent is not None and self._choice is not None and value is not None:
             self._parent._set_property("choice", self._choice)
 
@@ -677,7 +681,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         for key, value in self._properties.items():
             self._validate_types(key, value)
             self._validate_unique_and_name(key, value, True)
-            # self._validate_constraint(key, value, True)
+            self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
@@ -736,7 +740,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 OpenApiStatus.warn("{}.{}".format(type(self).__name__, property_name))
             self._validate_types(property_name, property_value)
             self._validate_unique_and_name(property_name, property_value, True)
-            # self._validate_constraint(property_name, property_value, True)
+            self._validate_constraint(property_name, property_value, True)
         self._validate_required()
         return self
 

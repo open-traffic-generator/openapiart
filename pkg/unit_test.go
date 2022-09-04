@@ -11,6 +11,7 @@ import (
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/sjson"
 )
 
 // JSONBytesEqual compares the JSON in two byte slices.
@@ -1731,7 +1732,7 @@ func TestDeprecationWarning(t *testing.T) {
 
 }
 
-func TestConstraintAndUnique(t *testing.T) {
+func TestUnique(t *testing.T) {
 	prefix := openapiart.NewPrefixConfig()
 	prefix.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10)
 
@@ -1781,22 +1782,53 @@ func TestConstraintAndUnique(t *testing.T) {
 	prefix.ZObject().SetName("local_global_mix")
 	_, err = prefix.ToJson()
 	assert.NotNil(t, err)
-	// ************************************************
+}
 
-	// prefix.YObject().SetYName("123")
-	// _, err = prefix.ToJson()
-	// assert.NotNil(t, err)
-	// assert.Contains(t, err.Error(), "123 is not a valid")
+func TestXConstraint(t *testing.T) {
+	prefix := openapiart.NewPrefixConfig()
+	prefix.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10).SetName("pc1")
 
-	// prefix.YObject().SetYName("local_unique")
-	// prefix.SetName("global_and_local_same_name")
-	// prefix.XList().Add().SetName("global_and_local_same_name")
-	// data, err1 := prefix.ToJson()
-	// assert.Nil(t, err1)
-	// prefix1 := openapiart.NewPrefixConfig()
-	// res := make(map[string]interface{})
-	// err = json.Unmarshal([]byte(data), &res)
-	// assert.Nil(t, err)
-	// err = prefix1.FromJson(data)
-	// assert.Nil(t, err)
+	// set the non existing name to y_object
+	prefix.WList().Add().SetWName("wObj1")
+	prefix.WList().Add().SetWName("wObj2")
+	prefix.ZObject().SetName("zObj")
+	prefix.YObject().SetYName("wObj3")
+	err := prefix.Validate()
+	assert.NotNil(t, err)
+
+	// set the name with invalid object name
+	prefix.YObject().SetYName("pc1")
+	err = prefix.Validate()
+	assert.NotNil(t, err)
+
+	// validate with valid data
+	prefix.YObject().SetYName("wObj1")
+	err = prefix.Validate()
+	assert.Nil(t, err)
+
+	// serialize with non existing name
+	prefix.YObject().SetYName("wObj3")
+	_, err = prefix.ToJson()
+	assert.NotNil(t, err)
+
+	// serialize with valid data
+	prefix.YObject().SetYName("wObj1")
+	data, j_err := prefix.ToJson()
+	assert.Nil(t, j_err)
+	// fmt.Println(data)
+
+	val, err_j := sjson.Set(data, "y_object.y_name", "wObj3")
+	assert.Nil(t, err_j)
+
+	// Deserialize with non-existing name
+	prefix1 := openapiart.NewPrefixConfig()
+	err = prefix1.FromJson(val)
+	assert.NotNil(t, err)
+
+	val, err_j = sjson.Set(data, "y_object.y_name", "wObj1")
+	assert.Nil(t, err_j)
+
+	// Deserialize with valid name
+	err = prefix1.FromJson(val)
+	assert.Nil(t, err)
 }

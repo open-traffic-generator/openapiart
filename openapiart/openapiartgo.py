@@ -2086,7 +2086,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for con in schema["x-constraint"]:
             ref, prop = con.split("/properties/")
             ref = self._get_schema_object_name_from_ref(ref)
-            prop = prop.strip("/")
+            prop = self._get_external_field_name(prop.strip("/"))
             field.x_constraints.append((self._get_internal_name(ref), prop))
 
     def _parse_x_unique(self, field, schema):
@@ -2106,9 +2106,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             validation = append(validation, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
         }}
         """.format(
-            data='"' + ', "'.join([c[0] for c in field.x_constraints]) + '",',
+            data='"'
+            + '", "'.join([".".join(c) for c in field.x_constraints])
+            + '",',
             name=field.name,
-            cons="|".join([c[0] for c in field.x_constraints]),
+            cons="|".join([".".join(c) for c in field.x_constraints]),
         )
         return body
 

@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
+	"github.com/oleiade/reflections"
 )
 
 type grpcTransport struct {
@@ -379,9 +380,39 @@ func validateConstraint(objectName []string, value string) bool {
 	}
 	found := false
 	for _, obj := range objectName {
-		_, ok := constraints[obj][value]
-		if ok {
-			found = true
+		obj_ := strings.Split(obj, ".")
+		strukt, ok := constraints[obj_[0]]
+		if !ok {
+			continue
+		}
+		for _, object := range strukt {
+			// fmt.Printf("%v", object)
+			typ := reflect.TypeOf(object)
+			val := reflect.ValueOf(object)
+			if typ.Kind() == reflect.Pointer {
+				val = val.Elem()
+			}
+			pb_obj := val.FieldByName("obj")
+			if pb_obj == reflect.ValueOf(nil) {
+				continue
+			}
+			if pb_obj.Kind() != reflect.Pointer && pb_obj.Kind() != reflect.Struct {
+				continue
+			}
+			if pb_obj.Kind() == reflect.Pointer {
+				pb_obj = pb_obj.Elem()
+			}
+			pb_field := pb_obj.FieldByName(obj_[1])
+			if pb_field == reflect.ValueOf(nil) {
+				continue
+			}
+			if value == pb_field.String() {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
 		}
 	}
 	return found
