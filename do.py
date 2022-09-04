@@ -69,10 +69,16 @@ def get_go_deps():
             cmd + " -v golang.org/x/tools/cmd/goimports@latest",
             cmd
             + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
-            cmd + " -v github.com/tidwall/sjson@latest",
         ]
     )
-
+    os.chdir("pkg")
+    cmd = "GO111MODULE=on CGO_ENABLED=0 go get"
+    run(
+        [
+            cmd + " -v github.com/tidwall/sjson@latest"
+        ]
+    )
+    os.chdir("..")
 
 def get_protoc():
     version = "3.17.3"
