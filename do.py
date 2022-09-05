@@ -9,7 +9,7 @@ import platform
 # from openapiart.generate_requirements import generate_requirements
 
 
-BLACK_VERSION = "22.1.0"
+BLACK_VERSION = "22.3.0"
 
 os.environ["GOPATH"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".local"
