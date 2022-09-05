@@ -1,12 +1,11 @@
 --prefer-binary
 jsonpath-ng
-openapi-spec-validator
 requests
 typing
 setuptools
 wheel
 PyYAML
-openapi_spec_validator
+openapi_spec_validator==0.5.1
 jsonpath_ng
 urllib3
 typing_extensions ; python_version > '2.7'
