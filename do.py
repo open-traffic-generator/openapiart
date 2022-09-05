@@ -9,7 +9,7 @@ import platform
 # from openapiart.generate_requirements import generate_requirements
 
 
-BLACK_VERSION = "22.3.0"
+BLACK_VERSION = "22.1.0"
 
 os.environ["GOPATH"] = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".local"
@@ -127,24 +127,16 @@ def init(use_sdk=None):
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
         run(
             [
-                py()
-                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(
-                    req
-                ),
-                py()
-                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(req),
+                py() + " -m pip install -r test_requirements.txt",
             ]
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
         run(
             [
-                py()
-                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(
-                    art_path
-                ),
-                py()
-                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(art_path),
+                py() + " -m pip install -r test_requirements.txt",
             ]
         )
 
@@ -277,7 +269,7 @@ def install():
     wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
     run(
         [
-            "{} -m pip install --upgrade --force-reinstall --no-cache-dir {}[testing]".format(
+            "{} -m pip install --force-reinstall --no-cache-dir {}[testing]".format(
                 py(), os.path.join("dist", wheel)
             ),
         ]
