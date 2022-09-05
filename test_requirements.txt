@@ -4,4 +4,4 @@ pytest
 flake8
 pytest-cov
 jsonpath_ng
-openapi_spec_validator==0.5.1
+openapi_spec_validator==0.3.0
