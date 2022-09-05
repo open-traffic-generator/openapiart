@@ -127,16 +127,24 @@ def init(use_sdk=None):
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
         run(
             [
-                py() + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(req),
-                py() + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
+                py()
+                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(
+                    req
+                ),
+                py()
+                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
             ]
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
         run(
             [
-                py() + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(art_path),
-                py() + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
+                py()
+                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r {}".format(
+                    art_path
+                ),
+                py()
+                + " -m pip install --upgrade --force-reinstall --no-cache-dir -r test_requirements.txt",
             ]
         )
 
