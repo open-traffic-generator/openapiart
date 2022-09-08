@@ -1678,57 +1678,55 @@ func TestDeprecationWarning(t *testing.T) {
 	config.SetB(20)
 	config.SetC(30)
 
-	warnings := api.GetApiWarnings()
+	warnings := config.Warnings()
 
 	t.Log(warnings)
 
 	assert.NotNil(t, warnings)
 	assert.Len(t, warnings, 2)
-	api.ClearApiWarnings()
 
-	assert.Len(t, api.GetApiWarnings(), 0)
+	assert.Len(t, config.Warnings(), 0)
 
 	// Warning by ToJson
 	data, err := config.ToJson()
 
 	assert.Nil(t, err)
-	warnings1 := api.GetApiWarnings()
+	warnings = config.Warnings()
 
-	t.Log(warnings1)
+	t.Log(warnings)
 
-	assert.NotNil(t, warnings1)
-	assert.Len(t, warnings1, 2)
-	api.ClearApiWarnings()
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 2)
 
-	assert.Len(t, api.GetApiWarnings(), 0)
+	assert.Len(t, config.Warnings(), 0)
+
+	_, err = api.SetConfig(config)
+	assert.Nil(t, err)
 
 	config1 := api.NewPrefixConfig()
 
 	// Warning by FromJson
 	err1 := config1.FromJson(data)
 	assert.Nil(t, err1)
-	warnings2 := api.GetApiWarnings()
+	warnings = config1.Warnings()
 
 	t.Log(warnings)
 
-	assert.NotNil(t, warnings2)
-	assert.Len(t, warnings2, 2)
-	api.ClearApiWarnings()
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 2)
 
-	assert.Len(t, api.GetApiWarnings(), 0)
+	assert.Len(t, config1.Warnings(), 0)
 
 	u_config := api.NewUpdateConfig()
 	u_config.G().Add().SetGA("abcd")
 	_, err = api.UpdateConfiguration(u_config)
 	assert.Nil(t, err)
 
-	warnings = api.GetApiWarnings()
+	warning := api.Warnings()
 
-	t.Log(warnings)
+	t.Log(warning)
 
-	assert.NotNil(t, warnings)
-	assert.Len(t, warnings, 1)
-	api.ClearApiWarnings()
+	assert.NotNil(t, warning)
 
 }
 

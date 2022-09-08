@@ -188,21 +188,24 @@ class HttpTransport(object):
 
 class OpenApiStatus:
     messages = {}
-    logger = logging.getLogger(__module__)
+    # logger = logging.getLogger(__module__)
 
     @classmethod
-    def warn(cls, key):
+    def warn(cls, key, object):
         if cls.messages.get(key) is not None:
-            if cls.messages[key] in openapi_warnings:
+            if cls.messages[key] in object.__warnings__:
                 return
-            cls.logger.warning(cls.messages[key])
-            openapi_warnings.append(cls.messages[key])
+            # cls.logger.warning(cls.messages[key])
+            logging.warning(cls.messages[key])
+            object.__warnings__.append(cls.messages[key])
+            # openapi_warnings.append(cls.messages[key])
 
     @staticmethod
     def deprecated(func_or_data):
         def inner(self, *args, **kwargs):
             OpenApiStatus.warn(
-                "{}.{}".format(type(self).__name__, func_or_data.__name__)
+                "{}.{}".format(type(self).__name__, func_or_data.__name__),
+                self
             )
             return func_or_data(self, *args, **kwargs)
 
@@ -214,7 +217,8 @@ class OpenApiStatus:
     def under_review(func_or_data):
         def inner(self, *args, **kwargs):
             OpenApiStatus.warn(
-                "{}.{}".format(type(self).__name__, func_or_data.__name__)
+                "{}.{}".format(type(self).__name__, func_or_data.__name__),
+                self
             )
             return func_or_data(self, *args, **kwargs)
 
@@ -231,7 +235,7 @@ class OpenApiBase(object):
     DICT = "dict"
 
     __slots__ = ()
-    
+
     __constraints__ = {
         "global": []
     }
@@ -299,6 +303,14 @@ class OpenApiBase(object):
     def _decode(self, dict_object):
         raise NotImplementedError()
 
+    def warnings(self):
+        warns = list(self.__warnings__)
+        if '2.7' in platform.python_version().rsplit(".", 1)[0]:
+            del self.__warnings__[:]
+        else:
+            self.__warnings__.clear()
+        return warns
+
 
 
 
@@ -312,7 +324,6 @@ class OpenApiValidator(object):
         pass
 
     def _clear_errors(self):
-        import platform
         if '2.7' in platform.python_version().rsplit(".", 1)[0]:
             del self._validation_errors[:]
         else:
@@ -600,7 +611,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     leaf, parent/choice or parent.
     """
 
-    __slots__ = ("_properties", "_parent", "_choice")
+    __slots__ = (
+        "__warnings__", "_properties", "_parent", "_choice"
+    )
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
@@ -610,6 +623,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._parent = parent
         self._choice = choice
         self._properties = {}
+        self.__warnings__ = []
 
     @property
     def parent(self):
@@ -690,7 +704,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
                     value = [str(v) for v in value]
                 output[key] = value
-                OpenApiStatus.warn("{}.{}".format(type(self).__name__, key))
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, key), self)
         return output
 
     def _decode(self, obj):
@@ -737,7 +751,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
-                OpenApiStatus.warn("{}.{}".format(type(self).__name__, property_name))
+                OpenApiStatus.warn("{}.{}".format(type(self).__name__, property_name), self)
             self._validate_types(property_name, property_value)
             self._validate_unique_and_name(property_name, property_value, True)
             self._validate_constraint(property_name, property_value, True)
