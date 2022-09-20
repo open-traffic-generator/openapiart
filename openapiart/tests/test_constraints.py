@@ -20,6 +20,7 @@ def test_x_constraints(default_config):
 
     # set the name with invalid object name
     default_config.y_object.y_name = "pc1"
+    default_config.v_object = ["wObj1", "wObj2"]
     try:
         default_config.validate()
         pytest.fail("validation passed when setting y_name with pc1")
@@ -40,7 +41,17 @@ def test_x_constraints(default_config):
         if "wObj3 is not a valid type of" not in str(err):
             pytest.fail("Exception not valid at serialize wObj3")
 
+    default_config.v_object = ["wObj1", "wObj3"]
+    try:
+        data = default_config.serialize("dict")
+        pytest.fail("validation passed at serialize with wObj3")
+    except Exception as err:
+        if "wObj3 is not a valid type of" not in str(err):
+            pytest.fail("Exception not valid at serialize wObj3")
+
     # serialize with valid data
+    default_config.v_object = ["wObj1", "wObj2"]
+
     default_config.y_object.y_name = "wObj1"
     data = default_config.serialize("dict")
 

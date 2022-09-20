@@ -1791,6 +1791,7 @@ func TestXConstraint(t *testing.T) {
 	prefix_.WList().Add().SetWName("wObj2")
 	prefix_.ZObject().SetName("zObj")
 	prefix_.YObject().SetYName("wObj3")
+	prefix_.SetVObject([]string{prefix_.WList().Items()[0].WName(), prefix_.WList().Items()[1].WName()})
 	prefix_err := prefix_.Validate()
 	assert.NotNil(t, prefix_err)
 
@@ -1804,6 +1805,14 @@ func TestXConstraint(t *testing.T) {
 	err = prefix_.Validate()
 	assert.Nil(t, err)
 
+	prefix_.SetVObject([]string{prefix_.WList().Items()[0].WName(), "somename"})
+	prefix_err = prefix_.Validate()
+	assert.NotNil(t, prefix_err)
+
+	prefix_.SetVObject([]string{"wObj1", "wObj2"})
+	err = prefix_.Validate()
+	assert.Nil(t, err)
+
 	// serialize with non existing name
 	prefix_.YObject().SetYName("wObj3")
 	_, err = prefix_.ToJson()
@@ -1813,6 +1822,10 @@ func TestXConstraint(t *testing.T) {
 	prefix_.YObject().SetYName("wObj1")
 	data, j_err := prefix_.ToJson()
 	assert.Nil(t, j_err)
+
+	prefix_.SetVObject([]string{"wObj1", "wObj3"})
+	_, err = prefix_.ToJson()
+	assert.NotNil(t, err)
 
 	re := regexp.MustCompile(`y_name.+wObj1`)
 	data = re.ReplaceAllString(data, `y_name": "wObj3`)

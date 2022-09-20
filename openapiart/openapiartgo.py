@@ -2105,20 +2105,45 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = ""
         if field.x_constraints == []:
             return body
-        body = """
+        x_cons = """
         xCons := []string{{
             {data}
-        }}
-        if !vObj.validateConstraint(xCons, obj.{name}()) {{
-            vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
         }}
         """.format(
             data='"'
             + '", "'.join([".".join(c) for c in field.x_constraints])
             + '",',
-            name=field.name,
-            cons="|".join([".".join(c) for c in field.x_constraints]),
         )
+        if field.type == "[]string":
+            body = """
+                {x_cons}
+                for _, v := range obj.{name}() {{
+                    if !vObj.validateConstraint(xCons, v) {{
+                        vObj.validationErrors = append(
+                            vObj.validationErrors,
+                            fmt.Sprintf("%s is not a valid {cons} type", v),
+                        )
+                    }}
+                }}
+            """.format(
+                x_cons=x_cons,
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
+        else:
+            body = """
+                {x_cons}
+                if !vObj.validateConstraint(xCons, obj.{name}()) {{
+                    vObj.validationErrors = append(
+                        vObj.validationErrors,
+                        fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()),
+                    )
+                }}
+            """.format(
+                x_cons=x_cons,
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
         return body
 
     def _validate_unique(self, new, field):
