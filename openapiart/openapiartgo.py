@@ -2106,10 +2106,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if field.x_constraints == []:
             return body
         x_cons = """
-        xCons := []string{{
+        {name}Cons := []string{{
             {data}
         }}
         """.format(
+            name=field.name.lower(),
             data='"'
             + '", "'.join([".".join(c) for c in field.x_constraints])
             + '",',
@@ -2118,7 +2119,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 {x_cons}
                 for _, v := range obj.{name}() {{
-                    if !vObj.validateConstraint(xCons, v) {{
+                    if !vObj.validateConstraint({lname}Cons, v) {{
                         vObj.validationErrors = append(
                             vObj.validationErrors,
                             fmt.Sprintf("%s is not a valid {cons} type", v),
@@ -2127,13 +2128,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
             """.format(
                 x_cons=x_cons,
+                lname=field.name.lower(),
                 name=field.name,
                 cons="|".join([".".join(c) for c in field.x_constraints]),
             )
         else:
             body = """
                 {x_cons}
-                if !vObj.validateConstraint(xCons, obj.{name}()) {{
+                if !vObj.validateConstraint({lname}Cons, obj.{name}()) {{
                     vObj.validationErrors = append(
                         vObj.validationErrors,
                         fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()),
@@ -2141,6 +2143,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
             """.format(
                 x_cons=x_cons,
+                lname=field.name.lower(),
                 name=field.name,
                 cons="|".join([".".join(c) for c in field.x_constraints]),
             )

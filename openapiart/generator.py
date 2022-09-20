@@ -1496,7 +1496,9 @@ class Generator:
                     cons_lst = []
                     for cons in yproperty["x-constraint"]:
                         ref, prop = cons.split("/properties/")
-                        klass = self._get_classname_from_ref(ref)
+                        _, _, klass, _ = self._get_object_property_class_names(
+                            ref
+                        )
                         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
                     if cons_lst != []:
                         pt.update({"constraint": cons_lst})
