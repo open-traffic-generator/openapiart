@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
+	"github.com/oleiade/reflections"
 )
 
 type grpcTransport struct {
@@ -112,8 +113,9 @@ func (obj *httpTransport) SetVerify(value bool) HttpTransport {
 }
 
 type api struct {
-	grpc *grpcTransport
-	http *httpTransport
+	grpc     *grpcTransport
+	http     *httpTransport
+	warnings string
 }
 
 type Api interface {
@@ -122,6 +124,11 @@ type Api interface {
 	NewHttpTransport() HttpTransport
 	hasHttpTransport() bool
 	Close() error
+	// Warnings Api is only for testing purpose
+	// and not intended to use in production
+	Warnings() string
+	deprecated(message string)
+	under_review(message string)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -159,6 +166,20 @@ func (api *api) hasHttpTransport() bool {
 	return api.http != nil
 }
 
+func (api *api) Warnings() string {
+	return api.warnings
+}
+
+func (api *api) deprecated(message string) {
+	api.warnings = message
+	fmt.Printf("warning: %s\n", message)
+}
+
+func (api *api) under_review(message string) {
+	api.warnings = message
+	fmt.Printf("warning: %s\n", message)
+}
+
 // HttpRequestDoer will return True for HTTP transport
 type httpRequestDoer interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -171,19 +192,54 @@ type httpClient struct {
 
 // All methods that perform validation will add errors here
 // All api rpcs MUST call Validate
-var validation []string
+type Constraints interface {
+	ValueOf(name string) interface{}
+}
 
-func validationResult() error {
-	if len(validation) > 0 {
-		validation = append(validation, "validation errors")
-		errors := strings.Join(validation, "\n")
-		validation = nil
+type validation struct {
+	validationErrors []string
+	warnings         []string
+	constraints      map[string]map[string]Constraints
+}
+
+type Validation interface {
+	validationResult() error
+	deprecated(message string)
+	under_review(message string)
+	Warnings() []string
+}
+
+func (obj *validation) validationResult() error {
+	obj.constraints = make(map[string]map[string]Constraints)
+	if len(obj.validationErrors) > 0 {
+		obj.validationErrors = append(obj.validationErrors, "validation errors")
+		errors := strings.Join(obj.validationErrors, "\n")
+		obj.validationErrors = nil
 		return fmt.Errorf(errors)
 	}
 	return nil
 }
 
-func validateMac(mac string) error {
+func (obj *validation) Warnings() []string {
+	if len(obj.warnings) > 0 {
+		warns := obj.warnings
+		obj.warnings = nil
+		return warns
+	}
+	return obj.warnings
+}
+
+func (obj *validation) deprecated(message string) {
+	fmt.Printf("warning: %s\n", message)
+	obj.warnings = append(obj.warnings, message)
+}
+
+func (obj *validation) under_review(message string) {
+	fmt.Printf("warning: %s\n", message)
+	obj.warnings = append(obj.warnings, message)
+}
+
+func (obj *validation) validateMac(mac string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
 		return fmt.Errorf(fmt.Sprintf("Invalid Mac address %s", mac))
@@ -198,7 +254,7 @@ func validateMac(mac string) error {
 	return nil
 }
 
-func validateIpv4(ip string) error {
+func (obj *validation) validateIpv4(ip string) error {
 	ipSlice := strings.Split(ip, ".")
 	if len(ipSlice) != 4 {
 		return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address %s", ip))
@@ -213,7 +269,7 @@ func validateIpv4(ip string) error {
 	return nil
 }
 
-func validateIpv6(ip string) error {
+func (obj *validation) validateIpv6(ip string) error {
 	ip = strings.Trim(ip, " \t")
 	if strings.Count(ip, " ") > 0 || strings.Count(ip, ":") > 7 ||
 		strings.Count(ip, "::") > 1 || strings.Count(ip, ":::") > 0 ||
@@ -253,7 +309,7 @@ func validateIpv6(ip string) error {
 	return nil
 }
 
-func validateHex(hex string) error {
+func (obj *validation) validateHex(hex string) error {
 	matched, err := regexp.MatchString(`^[0-9a-fA-F]+$|^0[x|X][0-9a-fA-F]+$`, hex)
 	if err != nil || !matched {
 		return fmt.Errorf(fmt.Sprintf("Invalid hex value %s", hex))
@@ -261,19 +317,19 @@ func validateHex(hex string) error {
 	return nil
 }
 
-func validateSlice(valSlice []string, sliceType string) error {
+func (obj *validation) validateSlice(valSlice []string, sliceType string) error {
 	indices := []string{}
 	var err error
 	for i, val := range valSlice {
 		if sliceType == "mac" {
-			err = validateMac(val)
+			err = obj.validateMac(val)
 		} else if sliceType == "ipv4" {
-			err = validateIpv4(val)
+			err = obj.validateIpv4(val)
 
 		} else if sliceType == "ipv6" {
-			err = validateIpv6(val)
+			err = obj.validateIpv6(val)
 		} else if sliceType == "hex" {
-			err = validateHex(val)
+			err = obj.validateHex(val)
 		} else {
 			return fmt.Errorf(fmt.Sprintf("Invalid slice type received <%s>", sliceType))
 		}
@@ -290,18 +346,73 @@ func validateSlice(valSlice []string, sliceType string) error {
 	return nil
 }
 
-func validateMacSlice(mac []string) error {
-	return validateSlice(mac, "mac")
+func (obj *validation) validateMacSlice(mac []string) error {
+	return obj.validateSlice(mac, "mac")
 }
 
-func validateIpv4Slice(ip []string) error {
-	return validateSlice(ip, "ipv4")
+func (obj *validation) validateIpv4Slice(ip []string) error {
+	return obj.validateSlice(ip, "ipv4")
 }
 
-func validateIpv6Slice(ip []string) error {
-	return validateSlice(ip, "ipv6")
+func (obj *validation) validateIpv6Slice(ip []string) error {
+	return obj.validateSlice(ip, "ipv6")
 }
 
-func validateHexSlice(hex []string) error {
-	return validateSlice(hex, "hex")
+func (obj *validation) validateHexSlice(hex []string) error {
+	return obj.validateSlice(hex, "hex")
+}
+
+func (obj *validation) createMap(objName string) {
+	if obj.constraints == nil {
+		obj.constraints = make(map[string]map[string]Constraints)
+	}
+	_, ok := obj.constraints[objName]
+	if !ok {
+		obj.constraints[objName] = make(map[string]Constraints)
+	}
+}
+
+func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
+	if value == "" {
+		return true
+	}
+
+	obj.createMap("globals")
+	_, ok := obj.constraints["globals"][value]
+	unique := false
+	if !ok {
+		obj.constraints["globals"][value] = object
+		obj.createMap(objectName)
+		obj.constraints[objectName][value] = object
+		unique = true
+	}
+	return unique
+}
+
+func (obj *validation) validateConstraint(objectName []string, value string) bool {
+	if value == "" {
+		return false
+	}
+	found := false
+	for _, object := range objectName {
+		obj_ := strings.Split(object, ".")
+		strukt, ok := obj.constraints[obj_[0]]
+		if !ok {
+			continue
+		}
+		for _, object := range strukt {
+			intf := object.ValueOf(obj_[1])
+			if intf == nil {
+				continue
+			}
+			if value == fmt.Sprintf("%v", intf) {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	return found
 }

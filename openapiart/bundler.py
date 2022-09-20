@@ -94,6 +94,7 @@ class Bundler(object):
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
         self._resolve_x_status()
+        self._resolve_x_unique()
         self._remove_x_include()
         self._resolve_license()
         self._resolve_x_enmu(self._content)
@@ -292,6 +293,7 @@ class Bundler(object):
         with open(self._output_filename) as fid:
             yobject = yaml.safe_load(fid)
             openapi_spec_validator.validate_v3_spec(yobject)
+            # openapi_spec_validator.validate_spec(yobject)
         print("validating complete")
 
     def _read_file(self, base_dir, filename):
@@ -806,18 +808,33 @@ class Bundler(object):
         import jsonpath_ng
 
         for xstatus in self._get_parser("$..x-status").find(self._content):
-            if xstatus.value == "current":
+            if xstatus.value.get("status") == "current":
                 continue
+
+            assert (
+                xstatus.value.get("additional_information") is not None
+            ), "attribute additional_info can't be " "None for %s" % (
+                str(xstatus.full_path)
+            )
+
             print("resolving %s..." % (str(xstatus.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
             if "description" not in parent_schema_object:
                 parent_schema_object["description"] = "TBD"
             parent_schema_object[
                 "description"
-            ] = "Status: {status}\n{description}".format(
-                status=xstatus.value,
+            ] = "Status: {status}\n{add_info}\n{description}".format(
+                status=xstatus.value.get("status"),
+                add_info=xstatus.value.get("additional_information", ""),
                 description=parent_schema_object["description"],
             )
+
+    def _resolve_x_unique(self):
+        """validate the x-unique field and make sure it is [global]"""
+        for xunique in self._get_parser("$..x-unique").find(self._content):
+            if xunique.value in ["global"]:
+                continue
+            raise Exception("x-unique can have only 'global'")
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content

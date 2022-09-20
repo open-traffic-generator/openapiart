@@ -43,13 +43,19 @@ components:
             status_500:
               x-field-uid: 4
         a:
-          x-status: under-review
+          x-status:
+            status: under-review
+            additional_information: property under review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status: deprecated
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Property b is being deprecated from the sdk version x.x.x
+              and property x shall be used instead
           description: |-
             Longer multi-line description
             Second line is here
@@ -61,6 +67,11 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Property d_values is being deprecated from the sdk version x.x.x
+              and property d shall be used instead
           description: A list of enum values
           type: array
           items:
@@ -74,6 +85,11 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
+          x-status:
+            status: deprecated
+            additional_information: |-
+              Property 'e' is being deprecated from the sdk version x.x.x
+              and property 'ep' shall be used instead
           description: A child object
           $ref: '#/components/schemas/EObject'
           x-field-uid: 11
@@ -172,7 +188,9 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: under-review
+          x-status:
+            status: under-review
+            additional_information: property under review
           description: |-
             string minimum&maximum Length
           type: string
@@ -180,7 +198,9 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: under-review
+          x-status:
+            status: under-review
+            additional_information: property under review
           description: |-
             Array of Hex
           type: array
@@ -198,6 +218,48 @@ components:
         name:
           x-include: ../common/common.yaml#/components/schemas/GlobalObject/properties/name
           x-field-uid: 36
+        w_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/WObject'
+          x-field-uid: 37
+        x_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZObject'
+          x-field-uid: 38
+        z_object:
+          $ref: '#/components/schemas/ZObject'
+          x-field-uid: 39
+        y_object:
+          $ref: '#/components/schemas/YObject'
+          x-field-uid: 40
+
+    WObject:
+      required: [w_name]
+      properties:
+        w_name:
+          type: string
+          x-unique: global
+          x-field-uid: 1
+
+    ZObject:
+      required: [name]
+      properties:
+        name:
+          type: string
+          x-unique: global
+          x-field-uid: 1
+
+    YObject:
+      properties:
+        y_name:
+          type: string
+          x-field-uid: 1
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
+
     Layer1Ieee802x:
       type: object
       properties:

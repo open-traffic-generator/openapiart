@@ -9,6 +9,7 @@ import sys
 app = Flask(__name__)
 app.CONFIG = None
 app.PACKAGE = None
+app.UPDATE_CONFIG = None
 app.PORT = 18080
 app.HOST = "0.0.0.0"
 
@@ -27,6 +28,14 @@ def set_config():
     else:
         app.CONFIG = config
         return Response(status=200)
+
+
+@app.route("/api/config", methods=["PATCH"])
+def update_configuration():
+    config = app.PACKAGE.Api().update_config()
+    config.deserialize(request.data.decode("utf-8"))
+    app.UPDATE_CONFIG = config
+    return Response(status=200)
 
 
 @app.route("/api/config", methods=["GET"])

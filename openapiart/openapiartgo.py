@@ -23,6 +23,7 @@ class FluentRpc(object):
         self.responses = []
         self.http_call = None
         self.method_description = None
+        self.status = {}
 
 
 class FluentRpcResponse(object):
@@ -104,6 +105,10 @@ class FluentField(object):
         self.hasminmaxlength = False
         self.min_length = None
         self.max_length = None
+        self.status = None
+        self.status_msg = None
+        self.x_constraints = []
+        self.x_unique = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -261,6 +266,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
+        self._write('import "google.golang.org/grpc/credentials/insecure"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(
@@ -365,6 +371,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
+                if path_item_object.get("x-status", {}).get("status") in [
+                    "deprecated",
+                    "under-review",
+                ]:
+                    rpc.status = path_item_object.get("x-status", {})
+                    rpc.status["status"] = rpc.status["status"].replace(
+                        "-", "_"
+                    )
                 http.description = self._get_description(path_item_object)
                 if (
                     len(
@@ -769,8 +783,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
+            info = rpc.status.get("additional_information")
+            func = rpc.status.get("status")
+            status_str = "{func}{msg}".format(
+                func="" if func is None else "api.{}".format(func),
+                msg="(`%s`)" % info if info is not None else "",
+            )
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    {status}
                     {validate}
                     if api.hasHttpTransport() {{
                             {http_call}
@@ -798,6 +819,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
+                    status=status_str,
                 )
             )
 
@@ -943,6 +965,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // ***** {interface} *****
             type {struct} struct {{
+                validation
                 obj *{pb_pkg_name}.{interface}
                 {internal_items}
             }}
@@ -1085,13 +1108,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) validateToAndFrom() error {{
-                obj.validateObj(true)
-                return validationResult()
+                // emptyVars()
+                obj.validateObj(&obj.validation, true)
+                return obj.validationResult()
             }}
 
             func (obj *{struct}) Validate() error {{
-                obj.validateObj(false)
-                return validationResult()
+                // emptyVars()
+                obj.validateObj(&obj.validation, false)
+                return obj.validationResult()
             }}
 
             func (obj *{struct}) String() string {{
@@ -1133,6 +1158,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """
                 func (obj *{struct}) setNil() {{
                     {nil_items}
+                    obj.validationErrors = nil
+                    obj.warnings = nil
+                    obj.constraints = make(map[string]map[string]Constraints)
                 }}
             """.format(
                     nil_items="\n".join(internal_items_nil), struct=new.struct
@@ -1163,7 +1191,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "// Clones the object",
             "Clone() ({interface}, error)",
             "validateToAndFrom() error",
-            "validateObj(set_default bool)",
+            "validateObj(vObj *validation, set_default bool)",
             "setDefault()",
         ]
         for field in new.interface_fields:
@@ -1182,6 +1210,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             {description}
             type {interface} interface {{
+                Validation
+                Constraints
                 // Msg marshals {interface} to protobuf object *{pb_pkg_name}.{interface}
                 // and doesn't set defaults
                 Msg() *{pb_pkg_name}.{interface}
@@ -1211,6 +1241,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_has(new, field)
             self._write_field_setter(new, field, len(internal_items_nil) > 0)
             self._write_field_adder(new, field)
+        self._write_value_of(new)
         self._write_validate_method(new)
         self._write_default_method(new)
 
@@ -1373,7 +1404,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     enum=field.setChoiceValue,
                 )
-            body = """{set_enum_choice}
+            body = ""
+            if field.type == "string":
+                body = """
+                if obj.obj.{fieldname} == nil {{
+                    return ""
+                }}
+                """.format(
+                    fieldname=field.name
+                )
+            body += """{set_enum_choice}
                 return *obj.obj.{fieldname}
                 """.format(
                 fieldname=field.name,
@@ -1403,6 +1443,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // {fieldname} returns a {fieldtype}\n{description}
             func (obj *{struct}) {getter_method} {{
+                {status}
                 {body}
             }}
             """.format(
@@ -1412,6 +1453,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
+                status=""
+                if field.status is None
+                else "obj.{func}(`{msg}`)".format(
+                    func=field.status, msg=field.status_msg
+                ),
             )
         )
 
@@ -1558,7 +1604,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
                 if !ok {{
-                    validation = append(validation, fmt.Sprintf(
+                    obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
                         "%s is not a valid choice on {interface}{fieldname}Enum", string(value)))
                     return obj
                 }}
@@ -1605,6 +1651,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (obj *{newstruct}) {setter_method} {{
+                {status}
                 {set_choice}
                 {body}
                 return obj
@@ -1618,6 +1665,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 fieldstruct=new.interface,
                 set_choice=set_choice,
+                status=""
+                if field.status is None
+                else "obj.{func}(`{msg}`)".format(
+                    func=field.status, msg=field.status_msg
+                ),
             )
         )
 
@@ -1770,6 +1822,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+            if property_schema.get("x-status", {}).get("status") in [
+                "deprecated",
+                "under-review",
+            ]:
+                field.status = property_schema["x-status"]["status"].replace(
+                    "-", "_"
+                )
+                field.status_msg = property_schema["x-status"].get(
+                    "additional_information"
+                )
+            self._parse_x_constraints(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2023,6 +2087,50 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             fluent_new.interface_fields.append(field)
 
+    def _parse_x_constraints(self, field, schema):
+        if "x-constraint" not in schema:
+            return
+        for con in schema["x-constraint"]:
+            ref, prop = con.split("/properties/")
+            ref = self._get_schema_object_name_from_ref(ref)
+            prop = self._get_external_field_name(prop.strip("/"))
+            field.x_constraints.append((self._get_internal_name(ref), prop))
+
+    def _parse_x_unique(self, field, schema):
+        if "x-unique" not in schema:
+            return
+        field.x_unique = schema["x-unique"]
+
+    def _validate_x_constraint(self, field):
+        body = ""
+        if field.x_constraints == []:
+            return body
+        body = """
+        xCons := []string{{
+            {data}
+        }}
+        if !vObj.validateConstraint(xCons, obj.{name}()) {{
+            vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
+        }}
+        """.format(
+            data='"'
+            + '", "'.join([".".join(c) for c in field.x_constraints])
+            + '",',
+            name=field.name,
+            cons="|".join([".".join(c) for c in field.x_constraints]),
+        )
+        return body
+
+    def _validate_unique(self, new, field):
+        body = ""
+        if field.x_unique is not None:
+            body = """if !vObj.isUnique("{struct}", obj.{name}(), obj) {{
+                vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
+            }}""".format(
+                struct=new.struct, name=field.name
+            )
+        return body
+
     def _validate_types(self, new, field):
         body = ""
         if field.isPointer or "[]" in field.type:
@@ -2031,11 +2139,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
+        status_body = ""
+        if field.status is not None:
+            status_body = """
+            // {name} is {func}
+            if obj.obj.{name}{enum} != {value} {{
+                obj.{func}(`{msg}`)
+            }}
+            """.format(
+                name=field.name,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()"
+                if field.isEnum and field.isArray is False
+                else "",
+                msg=field.status_msg,
+                func=field.status,
+            )
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                validation = append(validation, "{name} is required field on interface {interface}")
+                vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
             }} """.format(
                 name=field.name,
                 interface=new.interface,
@@ -2044,7 +2168,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else "",
             )
-
+            unique = self._validate_unique(new, field)
+            body += "else " + unique if unique != "" else unique
+        if field.isOptional is True:
+            body += self._validate_unique(new, field)
+        body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
@@ -2060,8 +2188,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "if "
                 + " || ".join(line)
                 + """ {{
-                    validation = append(
-                        validation,
+                    vObj.validationErrors = append(
+                        vObj.validationErrors,
                         fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
                     }}
                 """
@@ -2099,8 +2227,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     "if "
                     + " || ".join(line)
                     + """ {{
-                    validation = append(
-                        validation,
+                    vObj.validationErrors = append(
+                        vObj.validationErrors,
                         fmt.Sprintf(
                             "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
                             len({pointer}{value})))
@@ -2137,9 +2265,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.format is None:
                     field.format = field.itemformat
                 inner_body = """
-                    err := validate{format}(obj.{name}())
+                    err := obj.validate{format}(obj.{name}())
                     if err != nil {{
-                        validation = append(validation, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
+                        vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
                     }}
                 """.format(
                     name=field.name,
@@ -2148,6 +2276,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
+        if status_body != "":
+            body = "{} \n {}".format(body, status_body)
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2166,14 +2296,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
-                    validation = append(validation, "{name} is required field on interface {interface}")
+                    vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
                 }}
             """.format(
                 name=field.name, interface=new.interface
             )
 
-        inner_body = "obj.{external_name}().validateObj(set_default)".format(
-            external_name=self._get_external_struct_name(field.name)
+        inner_body = (
+            "obj.{external_name}().validateObj(vObj, set_default)".format(
+                external_name=self._get_external_struct_name(field.name)
+            )
         )
         if field.isArray:
             inner_body = """
@@ -2184,7 +2316,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                  }}
                 for _, item := range obj.{name}().Items() {{
-                    item.validateObj(set_default)
+                    item.validateObj(vObj, set_default)
                 }}
             """.format(
                 name=field.name,
@@ -2192,6 +2324,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         body += """
             if {condition} {{
+                {msg}
                 {body}
             }}
         """.format(
@@ -2199,6 +2332,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
+            msg="obj.{func}(`{msg}`)".format(
+                func=field.status, msg=field.status_msg
+            )
+            if field.status is not None
+            else "",
         )
         return body
 
@@ -2235,7 +2373,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             p()
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) validateObj(set_default bool) {{
+            """func (obj *{struct}) validateObj(vObj *validation, set_default bool) {{
                 if set_default {{
                     obj.setDefault()
                 }}
@@ -2430,6 +2568,26 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {body}
             }}""".format(
                 struct=new.struct, body=body
+            )
+        )
+
+    def _write_value_of(self, new):
+        body = ""
+        for field in new.interface_fields:
+            body += """
+            if name == "{name}" {{
+                return obj.obj.{name}
+            }}
+            """.format(
+                name=field.name
+            )
+        self._write(
+            """func (obj *{struct}) ValueOf(name string) interface{{}} {{
+                {body}
+                return nil
+            }}
+            """.format(
+                body=body, struct=new.struct
             )
         )
 

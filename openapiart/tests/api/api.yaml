@@ -29,6 +29,11 @@ paths:
       operationId: update_configuration
       description: >-
         Sets configuration resources.
+      x-status:
+        status: deprecated
+        additional_information: |-
+          update_configuration API is being deprecated from the sdk version x.x.x
+          instead, consider using x_update_configuration
       requestBody:
         required: true
         content:

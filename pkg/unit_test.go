@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -1261,7 +1262,7 @@ func TestUpdateConfig(t *testing.T) {
 		assert.Nil(t, config2.FromJson(config2Json))
 		assert.Nil(t, config2.FromYaml(config2Yaml))
 		assert.Nil(t, config2.FromPbText(config2PbText))
-		config2.SetMsg(config2.Msg())
+		// config2.SetMsg(config2.Msg())
 		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
 		assert.NotNil(t, config3)
@@ -1664,4 +1665,171 @@ func TestClone(t *testing.T) {
 	assert.Nil(t, err)
 	fmt.Println(&lObj1, &lObj2)
 	assert.NotSame(t, &lObj1, &lObj2)
+}
+
+func TestDeprecationWarning(t *testing.T) {
+
+	// Warning by config
+	api := openapiart.NewApi()
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	config := api.NewPrefixConfig()
+	config.RequiredObject().SetEA(10).SetEB(20)
+	config.SetA("abc")
+	config.SetB(20)
+	config.SetC(30)
+
+	warnings := config.Warnings()
+
+	t.Log(warnings)
+
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 2)
+
+	assert.Len(t, config.Warnings(), 0)
+
+	// Warning by ToJson
+	data, err := config.ToJson()
+
+	assert.Nil(t, err)
+	warnings = config.Warnings()
+
+	t.Log(warnings)
+
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 2)
+
+	assert.Len(t, config.Warnings(), 0)
+
+	_, err = api.SetConfig(config)
+	assert.Nil(t, err)
+
+	config1 := api.NewPrefixConfig()
+
+	// Warning by FromJson
+	err1 := config1.FromJson(data)
+	assert.Nil(t, err1)
+	warnings = config1.Warnings()
+
+	t.Log(warnings)
+
+	assert.NotNil(t, warnings)
+	assert.Len(t, warnings, 2)
+
+	assert.Len(t, config1.Warnings(), 0)
+
+	u_config := api.NewUpdateConfig()
+	u_config.G().Add().SetGA("abcd")
+	_, err = api.UpdateConfiguration(u_config)
+	assert.Nil(t, err)
+
+	warning := api.Warnings()
+
+	t.Log(warning)
+
+	assert.NotNil(t, warning)
+
+}
+
+func TestUnique(t *testing.T) {
+	prefix := openapiart.NewPrefixConfig()
+	prefix.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10)
+
+	// *************** global unique ****************
+	// Two similar objects with same Name.
+	prefix.WList().Add().SetWName("global_unique_similar_obj")
+	prefix.WList().Add().SetWName("global_unique_similar_obj")
+	_, err := prefix.ToJson()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "global_unique_similar_obj already exists")
+
+	// Two similar objects with different name
+	prefix.WList().Items()[1].SetWName("global_unique_similar_obj1")
+	_, err = prefix.ToJson()
+	assert.Nil(t, err)
+
+	// Two different objects with same name
+	prefix.SetName("global_unique")
+	prefix.WList().Add().SetWName("global_unique")
+	_, err = prefix.ToJson()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "global_unique already exists")
+
+	// Two different objects with different name
+	prefix.SetName("global_unique1")
+	_, err = prefix.ToJson()
+	assert.Nil(t, err)
+	// ********************************************
+
+	// *************** local unique ****************
+
+	// prefix.ZObject().SetName("local_unique")
+	// Two similar objects with same Name.
+	prefix.XList().Add().SetName("local_unique")
+	prefix.XList().Add().SetName("local_unique")
+	_, err = prefix.ToJson()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "local_unique already exists")
+
+	// Two similar objects with different name
+	prefix.XList().Items()[0].SetName("local_unique1")
+	_, err = prefix.ToJson()
+	assert.Nil(t, err)
+
+	// Two different objects with same name
+	prefix.SetName("local_global_mix")
+	prefix.ZObject().SetName("local_global_mix")
+	_, err = prefix.ToJson()
+	assert.NotNil(t, err)
+}
+
+func TestXConstraint(t *testing.T) {
+	prefix_ := openapiart.NewPrefixConfig()
+	prefix_.SetA("abc").SetB(10).SetC(32).RequiredObject().SetEA(20).SetEB(10).SetName("pc1")
+
+	// set the non existing name to y_object
+	prefix_.WList().Add().SetWName("wObj1")
+	prefix_.WList().Add().SetWName("wObj2")
+	prefix_.ZObject().SetName("zObj")
+	prefix_.YObject().SetYName("wObj3")
+	prefix_err := prefix_.Validate()
+	assert.NotNil(t, prefix_err)
+
+	// set the name with invalid object name
+	prefix_.YObject().SetYName("pc1")
+	err := prefix_.Validate()
+	assert.NotNil(t, err)
+
+	// validate with valid data
+	prefix_.YObject().SetYName("wObj1")
+	err = prefix_.Validate()
+	assert.Nil(t, err)
+
+	// serialize with non existing name
+	prefix_.YObject().SetYName("wObj3")
+	_, err = prefix_.ToJson()
+	assert.NotNil(t, err)
+
+	// serialize with valid data
+	prefix_.YObject().SetYName("wObj1")
+	data, j_err := prefix_.ToJson()
+	assert.Nil(t, j_err)
+
+	re := regexp.MustCompile(`y_name.+wObj1`)
+	data = re.ReplaceAllString(data, `y_name": "wObj3`)
+	// data = strings.Replace(data, `"y_name": "wObj1"`, `"y_name": "wObj3"`, 1)
+
+	// Deserialize with non-existing name
+	prefix1 := openapiart.NewPrefixConfig()
+	fmt.Println(data)
+	err1 := prefix1.FromJson(data)
+	assert.NotNil(t, err1)
+	fmt.Println(err1.Error())
+
+	re = regexp.MustCompile(`y_name.+wObj3`)
+	data = re.ReplaceAllString(data, `y_name": "wObj1`)
+	// data = strings.Replace(data, `"y_name": "wObj3"`, `"y_name": "wObj1"`, 1)
+
+	// Deserialize with valid name
+	err2 := prefix1.FromJson(data)
+	assert.Nil(t, err2)
 }
