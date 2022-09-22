@@ -1,4 +1,7 @@
 import pytest
+import platform
+
+py = platform.python_version_tuple()
 
 
 def test_formats_sanity(config):
@@ -24,7 +27,8 @@ def test_formats_bad_string(config, value):
             "Value {value} was successfully validated".format(value=value)
         )
     except Exception as e:
-        if "shall be of type <class 'str'>" not in str(e):
+        t = "class" if py[0] != "2" else "type"
+        if "shall be of type <{} 'str'>".format(t) not in str(e):
             pytest.fail("Invalid error message")
 
 
@@ -35,7 +39,8 @@ def test_formats_bad_integer(config, value):
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
     except Exception as e:
-        if "shall be of type <class 'int'>" not in str(e):
+        t = "class" if py[0] != "2" else "type"
+        if "shall be of type <{} 'int'>".format(t) not in str(e):
             pytest.fail("Invalid error message")
 
 
@@ -46,7 +51,8 @@ def test_formats_integer_to_be_removed(config, value):
         config.deserialize(config.serialize(encoding=config.YAML))
         pytest.fail("Value {} was successfully validated".format(value))
     except Exception as e:
-        if "shall be of type <class 'int'>" not in str(e):
+        t = "class" if py[0] != "2" else "type"
+        if "shall be of type <{} 'int'>".format(t) not in str(e):
             pytest.fail("Invalid error message")
 
 
@@ -55,7 +61,7 @@ def test_formats_good_ipv4(config, value):
     config.l.ipv4 = value
     try:
         config.deserialize(config.serialize(encoding=config.YAML))
-    except TypeError:
+    except Exception:
         pytest.fail("Value {} was not valid".format(value))
 
 
