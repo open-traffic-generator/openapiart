@@ -20,8 +20,9 @@ def test_required(api):
         config.mandatory
         config.mandatory.serialize()
         pytest.fail("config got validated")
-    except ValueError:
-        pass
+    except Exception as e:
+        if "required_param is a mandatory property" not in str(e):
+            pytest.fail("invalid error message")
 
 
 def test_serialize_deserialize(api):
@@ -103,7 +104,7 @@ def test_x_pattern_ipv4_good_and_bad_list(default_config, ipv4):
     try:
         default_config.ipv4_pattern.serialize(default_config.DICT)
         pytest.fail("ipv4 values got serialize")
-    except TypeError as e:
+    except Exception as e:
         if "['-255.-255.-255.-255']" not in str(e):
             pytest.fail("Invalid ipv4 list is not proper in error message")
 
@@ -114,7 +115,7 @@ def test_x_pattern_ipv6_good_and_bad_list(default_config, ipv6):
     try:
         default_config.ipv6_pattern.serialize(default_config.DICT)
         pytest.fail("ipv6 values got serialize")
-    except TypeError as e:
+    except Exception as e:
         if "[':', 'abcd::abcd::']" not in str(e):
             pytest.fail("Invalid ipv6 list is not proper in error message")
 
@@ -125,7 +126,7 @@ def test_x_pattern_mac_good_and_bad_list(default_config, mac):
     try:
         default_config.mac_pattern.serialize(default_config.DICT)
         pytest.fail("mac values got serialize")
-    except TypeError as e:
+    except Exception as e:
         if "[':', 'abcd::abcd::']" not in str(e):
             pytest.fail("Invalid mac list is not proper in error message")
 
@@ -138,7 +139,7 @@ def test_x_pattern_integer_good_and_bad_list(default_config, integer):
     try:
         default_config.integer_pattern.serialize(default_config.DICT)
         pytest.fail("integer values got serialize")
-    except TypeError as e:
+    except Exception as e:
         if "['abcd::abcd::', 256, 'ab:ab:ab:ab:ab:ab']" not in str(e):
             pytest.fail("Invalid integer list is not proper in error message")
 
@@ -159,7 +160,7 @@ def test_x_pattern_good_inc_dec(default_config, index, direction):
     dir_obj.count = count[index]
     try:
         default_config.serialize(default_config.DICT)
-    except TypeError:
+    except Exception:
         pytest.fail("%s with %s Failed to serialize" % (enum, direction))
 
 
@@ -180,7 +181,7 @@ def test_x_pattern_bad_inc_dec(default_config, index, direction):
     try:
         default_config.serialize(default_config.DICT)
         pytest.fail("%s with %s got serialized" % (enum, direction))
-    except TypeError as e:
+    except Exception as e:
         print(e)
 
 
@@ -196,7 +197,7 @@ def test_int_64_format(api, default_config):
     conf.integer64 = "2000"
     try:
         conf.validate()
-    except TypeError as e:
+    except Exception as e:
         print(e)
 
 

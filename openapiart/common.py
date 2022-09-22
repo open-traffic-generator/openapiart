@@ -236,9 +236,6 @@ class OpenApiBase(object):
 
     __slots__ = ()
 
-    __constraints__ = {"global": []}
-    __validate_latter__ = {"unique": [], "constraint": []}
-
     def __init__(self):
         pass
 
@@ -257,6 +254,9 @@ class OpenApiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
+        return self._serialize(encoding)
+
+    def _serialize(self, encoding=JSON, from_clone=False):
         self._clear_globals()
         if encoding == OpenApiBase.JSON:
             data = json.dumps(self._encode(), indent=2, sort_keys=True)
@@ -266,6 +266,7 @@ class OpenApiBase(object):
             data = self._encode()
         else:
             raise NotImplementedError("Encoding %s not supported" % encoding)
+        self._validate_obj(self, from_clone)
         self._validate_coded()
         return data
 
@@ -289,10 +290,14 @@ class OpenApiBase(object):
         - obj(OpenApiObject): This object with all the
             serialized_object deserialized within.
         """
+        return self._deserialize(serialized_object)
+
+    def _deserialize(self, serialized_object, from_clone=False):
         self._clear_globals()
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
+        self._validate_obj(self, from_clone)
         self._validate_coded()
         return self
 
@@ -312,7 +317,7 @@ class OpenApiValidator(object):
 
     __slots__ = ()
 
-    _validation_errors = []
+    # _validation_errors = []
 
     def __init__(self):
         pass
@@ -425,7 +430,7 @@ class OpenApiValidator(object):
 
     def validate_list(self, value, itemtype, min, max, min_length, max_length):
         if value is None or not isinstance(value, list):
-            return False
+            return [False]
         v_obj = getattr(self, "validate_{}".format(itemtype), None)
         if v_obj is None:
             raise AttributeError(
@@ -453,6 +458,7 @@ class OpenApiValidator(object):
 
     def types_validation(
         self,
+        root,
         value,
         type_,
         err_msg,
@@ -490,7 +496,7 @@ class OpenApiValidator(object):
                     value[index]
                     for index, item in enumerate(verdict)
                     if item is False
-                ],
+                ] if value is not None else "NoneType",
             )
             verdict = False
         elif type_ == "integer":
@@ -520,66 +526,67 @@ class OpenApiValidator(object):
         else:
             verdict = v_obj(value)
         if verdict is False:
-            raise TypeError(err_msg)
+            root._validation_errors.append(err_msg)
 
-    def _validate_unique_and_name(self, name, value, latter=False):
+    def _validate_unique_and_name(self, name, value, root, latter=False):
         if self._TYPES[name].get("unique") is None or value is None:
             return
         if latter is True:
-            self.__validate_latter__["unique"].append(
-                (self._validate_unique_and_name, name, value)
+            root.__validate_latter__["unique"].append(
+                (self._validate_unique_and_name, name, value, root)
             )
             return
         class_name = type(self).__name__
         unique_type = self._TYPES[name]["unique"]
-        if class_name not in self.__constraints__:
-            self.__constraints__[class_name] = dict()
+        if class_name not in root.__constraints__:
+            root.__constraints__[class_name] = dict()
         if unique_type == "global":
-            values = self.__constraints__["global"]
+            values = root.__constraints__["global"]
         else:
-            values = self.__constraints__[class_name]
+            values = root.__constraints__[class_name]
         if value in values:
-            self._validation_errors.append(
+            root._validation_errors.append(
                 "{} with {} already exists".format(name, value)
             )
             return
         if isinstance(values, list):
             values.append(value)
-        self.__constraints__[class_name].update({value: self})
+        root.__constraints__[class_name].update({value: self})
 
-    def _validate_constraint(self, name, value, latter=False):
+    def _validate_constraint(self, name, value, root, latter=False):
         cons = self._TYPES[name].get("constraint")
         if cons is None or value is None:
             return
         if latter is True:
-            self.__validate_latter__["constraint"].append(
-                (self._validate_constraint, name, value)
+            root.__validate_latter__["constraint"].append(
+                (self._validate_constraint, name, value, root)
             )
             return
         if isinstance(value, list) is True:
             for v in value:
-                self._validate_constraint(name, v, latter)
+                self._validate_constraint(name, v, root, latter)
             return
         found = False
         for c in cons:
             klass, prop = c.split(".")
-            names = self.__constraints__.get(klass, {})
+            names = root.__constraints__.get(klass, {})
             props = [obj._properties.get(prop) for obj in names.values()]
             if value in props:
                 found = True
                 break
         if found is not True:
-            self._validation_errors.append(
+            root._validation_errors.append(
                 "{} is not a valid type of {}".format(value, "||".join(cons))
             )
             return
 
     def _validate_coded(self):
         for item in self.__validate_latter__["unique"]:
-            item[0](item[1], item[2])
+            item[0](item[1], item[2], item[3])
         for item in self.__validate_latter__["constraint"]:
-            item[0](item[1], item[2])
+            item[0](item[1], item[2], item[3])
         self._clear_vars()
+        self._clear_globals()
         if len(self._validation_errors) > 0:
             errors = "\n".join(self._validation_errors)
             self._clear_errors()
@@ -601,6 +608,122 @@ class OpenApiValidator(object):
                 continue
             del self.__constraints__[k]
 
+    def _validate_required(self, name, root):
+        """Validates the required properties are set
+        Use getattr as it will set any defaults prior to validating
+        """
+        if getattr(self, "_REQUIRED", None) is None:
+            return
+        # for name in self._REQUIRED:
+        if name not in self._REQUIRED:
+            return
+        if self._properties.get(name) is None:
+            msg = (
+                "{} is a mandatory property of {}"
+                " and should not be set to None".format(
+                    name,
+                    self.__class__,
+                )
+            )
+            root._validation_errors.append(msg)
+            # raise ValueError(msg)
+
+    def _validate_types(self, property_name, property_value, root):
+        common_data_types = [list, str, int, float, bool]
+        if property_name not in self._TYPES:
+            # raise ValueError("Invalid Property {}".format(property_name))
+            return
+        details = self._TYPES[property_name]
+        if (
+            property_value is None
+            and property_name not in self._DEFAULTS
+            and property_name not in self._REQUIRED
+        ):
+            return
+        if "enum" in details and property_value not in details["enum"]:
+            msg = (
+                "property {} shall be one of these"
+                " {} enum, but got {} at {}"
+            )
+            root._validation_errors.append(
+                msg.format(
+                    property_name,
+                    details["enum"],
+                    property_value,
+                    self.__class__,
+                )
+            )
+        if details["type"] in common_data_types and "format" not in details:
+            msg = "property {} shall be of type {} at {}".format(
+                property_name, details["type"], self.__class__
+            )
+            self.types_validation(
+                root,
+                property_value,
+                details["type"],
+                msg,
+                details.get("itemtype"),
+                details.get("minimum"),
+                details.get("maximum"),
+                details.get("minLength"),
+                details.get("maxLength"),
+            )
+
+        if details["type"] not in common_data_types:
+            class_name = details["type"]
+            # TODO Need to revisit importlib
+            module = importlib.import_module(self.__module__)
+            object_class = getattr(module, class_name)
+            if not isinstance(property_value, object_class):
+                msg = "property {} shall be of type {}," " but got {} at {}"
+                root._validation_errors.append(
+                    msg.format(
+                        property_name,
+                        class_name,
+                        type(property_value),
+                        self.__class__,
+                    )
+                )
+        if "format" in details:
+            msg = "Invalid {} format, expected {} at {}".format(
+                property_value, details["format"], self.__class__
+            )
+            _type = (
+                details["type"]
+                if details["type"] is list
+                else details["format"]
+            )
+            self.types_validation(
+                root,
+                property_value,
+                _type,
+                msg,
+                details["format"],
+                details.get("minimum"),
+                details.get("maximum"),
+                details.get("minLength"),
+                details.get("maxLength"),
+            )
+
+    def _validate_obj(self, root, from_clone=False):
+        if isinstance(self, OpenApiIter) is True:
+            for obj in self:
+                obj._validate_obj(root, from_clone)
+            return
+        for key, value in self._properties.items():
+            if isinstance(value, (OpenApiObject, OpenApiIter)) is True:
+                value._validate_obj(root, from_clone)
+            self._validate_required(key, root)
+            self._validate_types(key, value, root)
+            if from_clone is False:
+                self._validate_unique_and_name(key, value, root, True)
+                self._validate_constraint(key, value, root, True)
+
+    def validate(self):
+        self._validate_obj(self)
+        self._validate_coded()
+
+
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
     """Base class for any /components/schemas object
@@ -611,7 +734,15 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     leaf, parent/choice or parent.
     """
 
-    __slots__ = ("__warnings__", "_properties", "_parent", "_choice")
+    __slots__ = (
+        "__warnings__",
+        "_properties",
+        "_parent",
+        "_choice",
+        "__constraints__",
+        "__validate_latter__",
+        "_validation_errors",
+    )
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
@@ -622,6 +753,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._choice = choice
         self._properties = {}
         self.__warnings__ = []
+        self.__constraints__ = {"global": []}
+        self.__validate_latter__ = {"unique": [], "constraint": []}
+        self._validation_errors = []
 
     @property
     def parent(self):
@@ -681,8 +815,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         else:
             self._set_choice(name)
             self._properties[name] = value
-        self._validate_unique_and_name(name, value)
-        self._validate_constraint(name, value)
         if (
             self._parent is not None
             and self._choice is not None
@@ -693,11 +825,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _encode(self):
         """Helper method for serialization"""
         output = {}
-        self._validate_required()
         for key, value in self._properties.items():
-            self._validate_types(key, value)
-            self._validate_unique_and_name(key, value, True)
-            self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
             elif value is not None:
@@ -721,7 +849,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         "choice" in child[1]._TYPES
                         and "_parent" in child[1].__slots__
                     ):
-                        property_value = child[1](self, property_name)._decode(
+                        choice = property_value.get("choice")
+                        property_value = child[1](self, choice)._decode(
                             property_value
                         )
                     elif "_parent" in child[1].__slots__:
@@ -758,10 +887,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 OpenApiStatus.warn(
                     "{}.{}".format(type(self).__name__, property_name), self
                 )
-            self._validate_types(property_name, property_value)
-            self._validate_unique_and_name(property_name, property_value, True)
-            self._validate_constraint(property_name, property_value, True)
-        self._validate_required()
         return self
 
     def _get_child_class(self, property_name, is_property_list=False):
@@ -782,7 +907,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def __deepcopy__(self, memo):
         """Creates a deep copy of the current object"""
-        return self.__class__().deserialize(self.serialize())
+        return self.__class__()._deserialize(
+            self._serialize(from_clone=True),
+            from_clone=True
+        )
 
     def __copy__(self):
         """Creates a deep copy of the current object"""
@@ -794,104 +922,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def clone(self):
         """Creates a deep copy of the current object"""
         return self.__deepcopy__(None)
-
-    def _validate_required(self):
-        """Validates the required properties are set
-        Use getattr as it will set any defaults prior to validating
-        """
-        if getattr(self, "_REQUIRED", None) is None:
-            return
-        for name in self._REQUIRED:
-            if self._properties.get(name) is None:
-                msg = (
-                    "{} is a mandatory property of {}"
-                    " and should not be set to None".format(
-                        name,
-                        self.__class__,
-                    )
-                )
-                raise ValueError(msg)
-
-    def _validate_types(self, property_name, property_value):
-        common_data_types = [list, str, int, float, bool]
-        if property_name not in self._TYPES:
-            # raise ValueError("Invalid Property {}".format(property_name))
-            return
-        details = self._TYPES[property_name]
-        if (
-            property_value is None
-            and property_name not in self._DEFAULTS
-            and property_name not in self._REQUIRED
-        ):
-            return
-        if "enum" in details and property_value not in details["enum"]:
-            msg = (
-                "property {} shall be one of these"
-                " {} enum, but got {} at {}"
-            )
-            raise TypeError(
-                msg.format(
-                    property_name,
-                    details["enum"],
-                    property_value,
-                    self.__class__,
-                )
-            )
-        if details["type"] in common_data_types and "format" not in details:
-            msg = "property {} shall be of type {} at {}".format(
-                property_name, details["type"], self.__class__
-            )
-            self.types_validation(
-                property_value,
-                details["type"],
-                msg,
-                details.get("itemtype"),
-                details.get("minimum"),
-                details.get("maximum"),
-                details.get("minLength"),
-                details.get("maxLength"),
-            )
-
-        if details["type"] not in common_data_types:
-            class_name = details["type"]
-            # TODO Need to revisit importlib
-            module = importlib.import_module(self.__module__)
-            object_class = getattr(module, class_name)
-            if not isinstance(property_value, object_class):
-                msg = "property {} shall be of type {}," " but got {} at {}"
-                raise TypeError(
-                    msg.format(
-                        property_name,
-                        class_name,
-                        type(property_value),
-                        self.__class__,
-                    )
-                )
-        if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(
-                property_value, details["format"], self.__class__
-            )
-            _type = (
-                details["type"]
-                if details["type"] is list
-                else details["format"]
-            )
-            self.types_validation(
-                property_value,
-                _type,
-                msg,
-                details["format"],
-                details.get("minimum"),
-                details.get("maximum"),
-                details.get("minLength"),
-                details.get("maxLength"),
-            )
-
-    def validate(self):
-        self._validate_required()
-        for key, value in self._properties.items():
-            self._validate_types(key, value)
-        self._validate_coded()
 
     def get(self, name, with_default=False):
         """
@@ -916,7 +946,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return None
 
 
-class OpenApiIter(OpenApiBase):
+class OpenApiIter(OpenApiBase, OpenApiValidator):
     """Container class for OpenApiObject
 
     Inheriting classes contain 0..n instances of an OpenAPI components/schemas
@@ -933,13 +963,22 @@ class OpenApiIter(OpenApiBase):
     - for flow in config.flows:
     """
 
-    __slots__ = ("_index", "_items")
+    __slots__ = (
+        "_index",
+        "_items",
+        "__constraints__",
+        "__validate_latter__",
+        "_validation_errors",
+    )
     _GETITEM_RETURNS_CHOICE_OBJECT = False
 
     def __init__(self):
         super(OpenApiIter, self).__init__()
         self._index = -1
         self._items = []
+        self.__constraints__ = {"global": []}
+        self.__validate_latter__ = {"unique": [], "constraint": []}
+        self._validation_errors = []
 
     def __len__(self):
         return len(self._items)
