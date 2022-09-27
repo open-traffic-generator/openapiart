@@ -117,7 +117,7 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of static documentation: {}".format(e))
 
-    def GeneratePythonSdk(self, package_name):
+    def GeneratePythonSdk(self, package_name, generate_grpc=True):
         """Generates a Python UX Sdk
         Args
         ----
@@ -141,7 +141,8 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
-        self._generate_proto_file()
+        if generate_grpc:
+            self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -150,47 +151,49 @@ class OpenApiArt(object):
                 self._protobuf_package_name,
                 output_dir=self._output_dir,
                 extension_prefix=self._extension_prefix,
+                py_generate_grpc=generate_grpc,
             )
             python_ux.generate()
-        try:
-            python_sdk_dir = os.path.normpath(
-                os.path.join(self._output_dir, self._python_module_name)
-            )
-            process_args = [
-                sys.executable,
-                "-m",
-                "grpc_tools.protoc",
-                "--python_out={}".format(python_sdk_dir),
-                "--grpc_python_out={}".format(python_sdk_dir),
-                "--proto_path={}".format(self._output_dir),
-                "--experimental_allow_proto3_optional",
-                "{}.proto".format(self._protobuf_package_name),
-            ]
-            print(
-                "Generating python grpc stubs: {}".format(
-                    " ".join(process_args)
+        python_sdk_dir = os.path.normpath(
+            os.path.join(self._output_dir, self._python_module_name)
+        )
+        if generate_grpc:
+            try:
+                process_args = [
+                    sys.executable,
+                    "-m",
+                    "grpc_tools.protoc",
+                    "--python_out={}".format(python_sdk_dir),
+                    "--grpc_python_out={}".format(python_sdk_dir),
+                    "--proto_path={}".format(self._output_dir),
+                    "--experimental_allow_proto3_optional",
+                    "{}.proto".format(self._protobuf_package_name),
+                ]
+                print(
+                    "Generating python grpc stubs: {}".format(
+                        " ".join(process_args)
+                    )
                 )
-            )
-            subprocess.check_call(process_args, shell=False)
+                subprocess.check_call(process_args, shell=False)
 
-            pb2_grpc_file = os.path.join(
-                python_sdk_dir,
-                "{}_pb2_grpc.py".format(self._protobuf_package_name),
-            )
-            current_text = (
-                "import {proto_name}_pb2 as {proto_name}__pb2".format(
-                    proto_name=self._protobuf_package_name
+                pb2_grpc_file = os.path.join(
+                    python_sdk_dir,
+                    "{}_pb2_grpc.py".format(self._protobuf_package_name),
                 )
-            )
-            new_text = "try:\n    {text}\nexcept ImportError:\n    from {pkg_name} {text}".format(
-                text=current_text, pkg_name=self._python_module_name
-            )
-            with open(pb2_grpc_file) as f:
-                file_contents = f.read().replace(current_text, new_text)
-            with open(pb2_grpc_file, "w") as f:
-                f.write(file_contents)
-        except Exception as e:
-            print("Bypassed creation of python stubs: {}".format(e))
+                current_text = (
+                    "import {proto_name}_pb2 as {proto_name}__pb2".format(
+                        proto_name=self._protobuf_package_name
+                    )
+                )
+                new_text = "try:\n    {text}\nexcept ImportError:\n    from {pkg_name} {text}".format(
+                    text=current_text, pkg_name=self._python_module_name
+                )
+                with open(pb2_grpc_file) as f:
+                    file_contents = f.read().replace(current_text, new_text)
+                with open(pb2_grpc_file, "w") as f:
+                    f.write(file_contents)
+            except Exception as e:
+                print("Bypassed creation of python stubs: {}".format(e))
         # Auto formatting generated python SDK with Black
         if sys.version_info[0] == 3:
             process_args = [

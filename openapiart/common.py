@@ -7,24 +7,26 @@ import urllib3
 import io
 import sys
 import time
-import grpc
-from google.protobuf import json_format
-import sanity_pb2_grpc as pb2_grpc
-import sanity_pb2 as pb2
 
 try:
     from typing import Union, Dict, List, Any, Literal
 except ImportError:
     from typing_extensions import Literal
 
+#grpc-begin
+import grpc
+from google.protobuf import json_format
+import sanity_pb2_grpc as pb2_grpc
+import sanity_pb2 as pb2
+#grpc-end
 if sys.version_info[0] == 3:
     unicode = str
 
-
+openapi_warnings = []
+#grpc-begin
 class Transport:
     HTTP = "http"
     GRPC = "grpc"
-
 
 def api(
     location=None,
@@ -85,8 +87,52 @@ def api(
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
+#grpc-end
+#http-begin
+def api(
+    location=None,
+    verify=True,
+    logger=None,
+    loglevel=logging.INFO,
+    ext=None,
+):
+    """Create an instance of an Api class
 
+    generator.Generator outputs a base Api class with the following:
+    - an abstract method for each OpenAPI path item object
+    - a concrete properties for each unique OpenAPI path item parameter.
 
+    generator.Generator also outputs an HttpApi class that inherits the base
+    Api class, implements the abstract methods and uses the common HttpTransport
+    class send_recv method to communicate with a REST based server.
+
+    Args
+    ----
+    - location (str): The location of an Open Traffic Generator server.
+    - transport (enum["http", "grpc"]): Transport Type
+    - verify (bool): Verify the server's TLS certificate, or a string, in which
+      case it must be a path to a CA bundle to use. Defaults to `True`.
+      When set to `False`, requests will accept any TLS certificate presented by
+      the server, and will ignore hostname mismatches and/or expired
+      certificates, which will make your application vulnerable to
+      man-in-the-middle (MitM) attacks. Setting verify to `False`
+      may be useful during local development or testing.
+    - logger (logging.Logger): A user defined logging.logger, if none is provided
+      then a default logger with a stdout handler will be provided
+    - loglevel (logging.loglevel): The logging package log level.
+      The default loglevel is logging.INFO
+    - ext (str): Name of an extension package
+    """
+    params = locals()
+    if ext is None:
+        return HttpApi(**params)
+    try:
+        lib = importlib.import_module("{}_{}".format(__name__, ext))
+        return lib.Api(**params)
+    except ImportError as err:
+        msg = "Extension %s is not installed or invalid: %s"
+        raise Exception(msg % (ext, err))
+#http-end
 class HttpTransport(object):
     def __init__(self, **kwargs):
         """Use args from api() method to instantiate an HTTP transport"""

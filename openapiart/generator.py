@@ -48,12 +48,14 @@ class Generator:
         protobuf_package_name,
         output_dir=None,
         extension_prefix=None,
+        py_generate_grpc=True
     ):
         self._parsers = {}
         self._base_url = ""
         self._generated_methods = []
         self._generated_classes = []
         self._generated_top_level_factories = []
+        self._py_generate_grpc = py_generate_grpc
         self._openapi_filename = openapi_filename
         self._extension_prefix = extension_prefix
         self.__python = os.path.normpath(sys.executable)
@@ -142,19 +144,29 @@ class Generator:
             os.path.join(os.path.dirname(__file__), "common.py"), "r"
         ) as fp:
             common_content = fp.read()
-            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
+            if self._py_generate_grpc:
+                grpc_chop = re.compile('#grpc-begin|#grpc-end', re.DOTALL)
+                common_content = grpc_chop.sub('', common_content)
+                http_chop = re.compile('#http-begin.*?#http-end', re.DOTALL)
+                common_content = http_chop.sub('', common_content)
+                cnf_text = "import sanity_pb2_grpc as pb2_grpc"
+                modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                    pkg_name=self._package_name,
+                    text=cnf_text.replace("sanity", self._protobuf_package_name),
+                )
+                common_content = common_content.replace(cnf_text, modify_text)
 
-            cnf_text = "import sanity_pb2 as pb2"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
+                cnf_text = "import sanity_pb2 as pb2"
+                modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                    pkg_name=self._package_name,
+                    text=cnf_text.replace("sanity", self._protobuf_package_name),
+                )
+                common_content = common_content.replace(cnf_text, modify_text)
+            else:
+                grpc_chop = re.compile('#grpc-begin.*?#grpc-end', re.DOTALL)
+                common_content = grpc_chop.sub('', common_content)
+                http_chop = re.compile('#http-begin|#http-end', re.DOTALL)
+                common_content = http_chop.sub('', common_content)
 
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
@@ -172,7 +184,8 @@ class Generator:
         methods, factories, rpc_methods = self._get_methods_and_factories()
         self._write_api_class(methods, factories)
         self._write_http_api_class(methods)
-        self._write_rpc_api_class(rpc_methods)
+        if self._py_generate_grpc:
+            self._write_rpc_api_class(rpc_methods)
         self._write_init()
         return self
 
