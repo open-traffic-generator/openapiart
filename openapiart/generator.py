@@ -48,7 +48,7 @@ class Generator:
         protobuf_package_name,
         output_dir=None,
         extension_prefix=None,
-        py_generate_grpc=True
+        py_generate_grpc=True,
     ):
         self._parsers = {}
         self._base_url = ""
@@ -145,28 +145,32 @@ class Generator:
         ) as fp:
             common_content = fp.read()
             if self._py_generate_grpc:
-                grpc_chop = re.compile('#grpc-begin|#grpc-end', re.DOTALL)
-                common_content = grpc_chop.sub('', common_content)
-                http_chop = re.compile('#http-begin.*?#http-end', re.DOTALL)
-                common_content = http_chop.sub('', common_content)
+                grpc_chop = re.compile("# grpc-begin|# grpc-end", re.DOTALL)
+                common_content = grpc_chop.sub("", common_content)
+                http_chop = re.compile("# http-begin.*?# http-end", re.DOTALL)
+                common_content = http_chop.sub("", common_content)
                 cnf_text = "import sanity_pb2_grpc as pb2_grpc"
                 modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
                     pkg_name=self._package_name,
-                    text=cnf_text.replace("sanity", self._protobuf_package_name),
+                    text=cnf_text.replace(
+                        "sanity", self._protobuf_package_name
+                    ),
                 )
                 common_content = common_content.replace(cnf_text, modify_text)
 
                 cnf_text = "import sanity_pb2 as pb2"
                 modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
                     pkg_name=self._package_name,
-                    text=cnf_text.replace("sanity", self._protobuf_package_name),
+                    text=cnf_text.replace(
+                        "sanity", self._protobuf_package_name
+                    ),
                 )
                 common_content = common_content.replace(cnf_text, modify_text)
             else:
-                grpc_chop = re.compile('#grpc-begin.*?#grpc-end', re.DOTALL)
-                common_content = grpc_chop.sub('', common_content)
-                http_chop = re.compile('#http-begin|#http-end', re.DOTALL)
-                common_content = http_chop.sub('', common_content)
+                grpc_chop = re.compile("# grpc-begin.*?# grpc-end", re.DOTALL)
+                common_content = grpc_chop.sub("", common_content)
+                http_chop = re.compile("# http-begin|# http-end", re.DOTALL)
+                common_content = http_chop.sub("", common_content)
 
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")

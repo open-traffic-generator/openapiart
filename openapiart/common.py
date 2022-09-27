@@ -13,20 +13,22 @@ try:
 except ImportError:
     from typing_extensions import Literal
 
-#grpc-begin
+# grpc-begin
 import grpc
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
-#grpc-end
+
+# grpc-end
 if sys.version_info[0] == 3:
     unicode = str
 
 openapi_warnings = []
-#grpc-begin
+# grpc-begin
 class Transport:
     HTTP = "http"
     GRPC = "grpc"
+
 
 def api(
     location=None,
@@ -87,8 +89,10 @@ def api(
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
-#grpc-end
-#http-begin
+
+
+# grpc-end
+# http-begin
 def api(
     location=None,
     verify=True,
@@ -132,7 +136,9 @@ def api(
     except ImportError as err:
         msg = "Extension %s is not installed or invalid: %s"
         raise Exception(msg % (ext, err))
-#http-end
+
+
+# http-end
 class HttpTransport(object):
     def __init__(self, **kwargs):
         """Use args from api() method to instantiate an HTTP transport"""
