@@ -1384,7 +1384,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return obj.{internal_name}""".format(
                 name=field.name,
-                struct=field.struct,
                 set_choice_or_new=set_choice_or_new,
                 internal_name=self._get_holder_name(field),
                 pb_struct=field.external_struct,
