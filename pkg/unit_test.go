@@ -89,9 +89,9 @@ func TestNewAndSet(t *testing.T) {
 	c := openapiart.NewPrefixConfig()
 	c.SetE(openapiart.NewEObject().SetEA(123.456).SetEB(453.123))
 	c.SetF(openapiart.NewFObject().SetFA("fa string"))
-	yaml1, err := c.E().ToYaml()
+	yaml1, err := c.E().NoDep().ToYaml()
 	assert.Nil(t, err)
-	yaml2, err := c.F().ToYaml()
+	yaml2, err := c.F().NoDep().ToYaml()
 	assert.Nil(t, err)
 	log.Println(yaml1)
 	log.Println(yaml2)
@@ -225,9 +225,9 @@ func TestGObject(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	g1json, err := g1.ToJson()
+	g1json, err := g1.NoDep().ToJson()
 	assert.Nil(t, err)
-	g1yaml, err := g1.ToYaml()
+	g1yaml, err := g1.NoDep().ToYaml()
 	assert.Nil(t, err)
 	log.Print(g1json, g1yaml)
 }
@@ -371,7 +371,7 @@ func TestGoodMacValidation(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValue(GoodMac[0])
-	err := mac.Validate()
+	err := mac.NoDep().Validate()
 	assert.Nil(t, err)
 }
 
@@ -380,7 +380,7 @@ func TestBadMacValidation(t *testing.T) {
 	config := api.NewPrefixConfig()
 	for _, mac := range BadMac {
 		macObj := config.MacPattern().Mac().SetValue(mac)
-		err := macObj.Validate()
+		err := macObj.NoDep().Validate()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Mac")
 		}
@@ -391,7 +391,7 @@ func TestGoodMacValues(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(GoodMac)
-	err := mac.Validate()
+	err := mac.NoDep().Validate()
 	assert.Nil(t, err)
 }
 
@@ -399,7 +399,7 @@ func TestBadMacValues(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(BadMac)
-	err := mac.Validate()
+	err := mac.NoDep().Validate()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -439,7 +439,7 @@ func TestGoodIpv4Validation(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValue(GoodIpv4[0])
-	err := ipv4.Validate()
+	err := ipv4.NoDep().Validate()
 	assert.Nil(t, err)
 }
 
@@ -448,7 +448,7 @@ func TestBadIpv4Validation(t *testing.T) {
 	config := api.NewPrefixConfig()
 	for _, ip := range BadIpv4 {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
-		err := ipv4.Validate()
+		err := ipv4.NoDep().Validate()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Ipv4")
 		}
@@ -496,7 +496,7 @@ func TestGoodIpv6Validation(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValue(GoodIpv6[0])
-	err := ipv6.Validate()
+	err := ipv6.NoDep().Validate()
 	assert.Nil(t, err)
 }
 
@@ -574,7 +574,7 @@ func TestDefaultEObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.E().SetEA(1).SetEB(2)
-	actual_result, err := config.E().ToJson()
+	actual_result, err := config.E().NoDep().ToJson()
 	assert.Nil(t, err)
 	expected_result := `
 	{
@@ -588,7 +588,7 @@ func TestDefaultFObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.F()
-	actual_result, err := config.F().ToJson()
+	actual_result, err := config.F().NoDep().ToJson()
 	assert.Nil(t, err)
 	expected_result := `
 	{
@@ -624,22 +624,22 @@ func TestHexPattern(t *testing.T) {
 	config := api.NewPrefixConfig()
 	l := config.L()
 	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err := l.Validate()
+	err := l.NoDep().Validate()
 	assert.Nil(t, err)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err1 := l.Validate()
+	err1 := l.NoDep().Validate()
 	assert.Nil(t, err1)
 	l.SetHex("")
-	err2 := l.Validate()
+	err2 := l.NoDep().Validate()
 	assert.NotNil(t, err2)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b0000000x0")
-	err3 := l.Validate()
+	err3 := l.NoDep().Validate()
 	assert.NotNil(t, err3)
 	l.SetHex("0x00")
-	err4 := l.Validate()
+	err4 := l.NoDep().Validate()
 	assert.Nil(t, err4)
 	l.SetHex("0XAF12")
-	err5 := l.Validate()
+	err5 := l.NoDep().Validate()
 	assert.Nil(t, err5)
 }
 
@@ -650,18 +650,18 @@ func TestChoice1(t *testing.T) {
 		"choice": "f_b",
 		"f_b": 30.0
 	}`
-	g := config.F().FromJson(json)
+	g := config.F().NoDep().FromJson(json)
 	assert.Nil(t, g)
-	configFjson, err := config.F().ToJson()
+	configFjson, err := config.F().NoDep().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, configFjson, json)
 	json2 := `{
 		"choice": "f_a",
 		"f_a": "this is f string"
 	}`
-	f := config.F().FromJson(json2)
+	f := config.F().NoDep().FromJson(json2)
 	assert.Nil(t, f)
-	configFjson2, err := config.F().ToJson()
+	configFjson2, err := config.F().NoDep().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, configFjson2, json2)
 	fmt.Println(configFjson2)

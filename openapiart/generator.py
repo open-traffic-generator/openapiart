@@ -779,7 +779,7 @@ class Generator:
             self._write()
             self._write()
             self._write(0, "class %s(OpenApiObject):" % class_name)
-            slots = ["'_parent'"]
+            slots = ["'_parent'", "'_root'"]
             if "choice" in self._get_choice_names(schema_object):
                 slots.append("'_choice'")
             self._write(1, "__slots__ = (%s)" % ",".join(slots))
@@ -871,7 +871,7 @@ class Generator:
                     self._write()
 
             # write def __init__(self)
-            params = "self, parent=None"
+            params = "self, parent=None, root=None"
             if "choice" in self._get_choice_names(schema_object):
                 params += ", choice=None"
             init_params, properties, _ = self._get_property_param_string(
@@ -885,6 +885,7 @@ class Generator:
             self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
+            self._write(2, "self._root = self if root is None else root")
             for property_name in properties:
                 self._write(
                     2,
@@ -1027,7 +1028,7 @@ class Generator:
             self._write()
             self._write()
             self._write(0, "class %s(OpenApiIter):" % class_name)
-            self._write(1, "__slots__ = ('_parent', '_choice')")
+            self._write(1, "__slots__ = ('_parent', '_choice', '_root')")
             self._write()
 
             # if all choice(s) are $ref, the getitem should return the actual choice object
@@ -1055,9 +1056,12 @@ class Generator:
             )
 
             self._write()
-            self._write(1, "def __init__(self, parent=None, choice=None):")
+            self._write(
+                1, "def __init__(self, parent=None, root=None, choice=None):"
+            )
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
+            self._write(2, "self._root = root")
             self._write(2, "self._choice = choice")
 
             # write container emulation methods __getitem__, __iter__, __next__
@@ -1191,11 +1195,13 @@ class Generator:
             self._write(2, "Returns: %s" % (return_class_name))
             self._write(2, '"""')
             if choice_method is True:
-                self._write(2, "item = %s()" % (contained_class_name))
+                self._write(
+                    2, "item = %s(root=self._root)" % (contained_class_name)
+                )
                 self._write(2, "item.%s" % (method_name))
                 self._write(2, "item.choice = '%s'" % (method_name))
             else:
-                params = ["parent=self._parent"]
+                params = ["parent=self._parent", "root=self._root"]
                 if (
                     "properties" in yobject
                     and "choice" in yobject["properties"]

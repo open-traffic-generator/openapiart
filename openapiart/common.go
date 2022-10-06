@@ -196,10 +196,20 @@ type Constraints interface {
 	ValueOf(name string) interface{}
 }
 
+type rootObject interface {
+	validateObj(set_default bool)
+	validationResult() error
+	checkUnique()
+	checkConstraint()
+}
+
 type validation struct {
 	validationErrors []string
 	warnings         []string
 	constraints      map[string]map[string]Constraints
+	rootObj          rootObject
+	temp             []rootObject
+	resolve          bool
 }
 
 type Validation interface {
@@ -211,6 +221,7 @@ type Validation interface {
 
 func (obj *validation) validationResult() error {
 	obj.constraints = make(map[string]map[string]Constraints)
+	obj.temp = nil
 	if len(obj.validationErrors) > 0 {
 		obj.validationErrors = append(obj.validationErrors, "validation errors")
 		errors := strings.Join(obj.validationErrors, "\n")

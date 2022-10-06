@@ -243,6 +243,11 @@ components:
             type: string
           x-constraint:
             - /components/schemas/WObject/properties/w_name
+        sub_list:
+          type: array
+          x-field-uid: 42
+          items:
+            $ref: "#/components/schemas/SubObject"
 
     WObject:
       required: [w_name]
@@ -267,6 +272,14 @@ components:
           x-field-uid: 1
           x-constraint:
             - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
+    
+    SubObject:
+      properties:
+        s_name:
+          type: string
+          x-field-uid: 1
+          x-constraint:
             - /components/schemas/WObject/properties/w_name
 
     Layer1Ieee802x:
