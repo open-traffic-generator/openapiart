@@ -44,8 +44,8 @@ def test_module():
     assert api.__module__ == pytest.withoutgrpc_module
     with pytest.raises(Exception) as execinfo:
         importlib.import_module(pytest.withoutgrpc_module + "_pb2")
-    grpc_error = "No module named 'withoutgrpc_pb2'"
-    assert execinfo.value.args[0] == grpc_error
+    assert "No module named" in execinfo.value.args[0]
+    assert "withoutgrpc_pb2" in execinfo.value.args[0]
 
 
 def test_http_client():
