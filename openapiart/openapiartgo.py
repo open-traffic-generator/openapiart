@@ -376,8 +376,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     "under-review",
                 ]:
                     rpc.status = path_item_object.get("x-status", {})
-                    rpc.status["status"] = rpc.status["status"].replace(
-                        "-", "_"
+                    rpc.status["status"] = self._get_internal_name(
+                        self._get_external_struct_name(
+                            rpc.status["status"].replace("-", "_")
+                        )
                     )
                 http.description = self._get_description(path_item_object)
                 if (
@@ -745,9 +747,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for new in self._api.external_new_methods:
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    vObj := validation{{}}
+                    vObj := validator{{}}
                     obj := new{interface}(&vObj)
-                    vObj.rootObj = obj
+                    vObj.root = obj
                     vObj.resolve = true
                     return obj
                     // return New{interface}()
@@ -970,24 +972,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // ***** {interface} *****
             type {struct} struct {{
-                *validation
+                *validator
                 obj *{pb_pkg_name}.{interface}
                 {internal_items}
             }}
 
-            func new{interface}(vObj *validation) {interface} {{
+            func new{interface}(vObj *validator) {interface} {{
                 obj := {struct}{{
                     obj: &{pb_pkg_name}.{interface}{{}},
-                    validation: vObj,
+                    validator: vObj,
                 }}
                 obj.setDefault()
                 return &obj
             }}
 
             func New{interface}() {interface} {{
-                v := validation{{}}
+                v := validator{{}}
                 obj := new{interface}(&v)
-                v.rootObj = obj
+                v.root = obj
                 v.resolve = true
                 return obj
             }}
@@ -1126,14 +1128,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) validateToAndFrom() error {{
                 // emptyVars()
                 if obj.resolve {{
-                    obj.validation.rootObj.validateObj(true)
-                    for _, object := range obj.validation.temp {{
+                    obj.validator.root.validateObj(true)
+                    for _, object := range obj.validator.temp {{
                         object.checkUnique()
                     }}
-                    for _, object := range obj.validation.temp {{
+                    for _, object := range obj.validator.temp {{
                         object.checkConstraint()
                     }}
-                    return obj.validation.rootObj.validationResult()
+                    return obj.validator.root.validationResult()
                 }}
                 obj.validateObj(true)
                 obj.resolve = true
@@ -1143,14 +1145,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) Validate() error {{
                 // emptyVars()
                 if obj.resolve {{
-                    obj.validation.rootObj.validateObj(false)
-                    for _, object := range obj.validation.temp {{
+                    obj.validator.root.validateObj(false)
+                    for _, object := range obj.validator.temp {{
                         object.checkUnique()
                     }}
-                    for _, object := range obj.validation.temp {{
+                    for _, object := range obj.validator.temp {{
                         object.checkConstraint()
                     }}
-                    return obj.validation.rootObj.validationResult()
+                    return obj.validator.root.validationResult()
                 }}
                 obj.validateObj(false)
                 obj.resolve = true
@@ -1205,9 +1207,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """
                 func (obj *{struct}) setNil() {{
                     {nil_items}
-                    obj.validationErrors = nil
+                    obj.errors = nil
                     obj.warnings = nil
-                    obj.constraints = make(map[string]map[string]Constraints)
+                    obj.constraints = make(map[string]map[string]valueGetter)
                     obj.temp = nil
                 }}
             """.format(
@@ -1241,7 +1243,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "// enable validation to resolve the constraints",
             "NoDep() *{struct}",
             "validateToAndFrom() error",
-            "validateObj(set_default bool)",
+            "validateObj(setDefault bool)",
             "checkUnique()",
             "checkConstraint()",
             "setDefault()",
@@ -1263,8 +1265,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             {description}
             type {interface} interface {{
-                Validation
-                Constraints
+                Validator
+                valueGetter
                 // Msg marshals {interface} to protobuf object *{pb_pkg_name}.{interface}
                 // and doesn't set defaults
                 Msg() *{pb_pkg_name}.{interface}
@@ -1360,7 +1362,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # at this time proto generation ignores the optional keyword
             # if the type is an object
             set_choice_or_new = """
-                newObj := new{pb_struct}(obj.validation)
+                newObj := new{pb_struct}(obj.validator)
                 obj.obj.{name} = newObj.Msg()
                 """.format(
                 name=field.name,
@@ -1378,7 +1380,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     {set_choice_or_new}
                 }}
                 if obj.{internal_name} == nil {{
-                    holder := new{pb_struct}(obj.validation)
+                    holder := new{pb_struct}(obj.validator)
                     holder.self().obj = obj.obj.{name}
                     obj.{internal_name} = holder.self()
                 }}
@@ -1662,7 +1664,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
                 if !ok {{
-                    obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+                    obj.errors = append(obj.errors, fmt.Sprintf(
                         "%s is not a valid choice on {interface}{fieldname}Enum", string(value)))
                     return obj
                 }}
@@ -1770,7 +1772,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{internal_struct}) setMsg(msg *{parent_internal_struct}) {interface} {{
                 obj.clearHolderSlice()
                 for _, val := range msg.obj.{field_name} {{
-                    newObj := new{field_external_struct}(msg.validation)
+                    newObj := new{field_external_struct}(msg.validator)
                     newObj.SetMsg(val)
                     obj.appendHolderSlice(newObj.self())
                 }}
@@ -1786,9 +1788,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 // newObj := &{pb_pkg_name}.{field_external_struct}{{}}
                 // newLibObj := &{field_internal_struct}{{
                 //    obj: newObj,
-                //    validation: obj.obj.validation,
+                //    validator: obj.obj.validator,
                 // }}
-                newLibObj := new{field_external_struct}(obj.obj.validation).self()
+                newLibObj := new{field_external_struct}(obj.obj.validator).self()
                 // newLibObj.obj = newObj
                 obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newLibObj.obj)
                 newLibObj.setDefault()
@@ -1799,7 +1801,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{internal_struct}) Append(items ...{field_external_struct}) {interface} {{
                 for _, item := range items {{
                     newObj := item.Msg()
-                    item.self().validation = obj.obj.validation
+                    item.self().validator = obj.obj.validator
                     obj.obj.obj.{field_name} = append(obj.obj.obj.{field_name}, newObj)
                     obj.{internal_items_name} = append(obj.{internal_items_name}, item.self())
                 }}
@@ -1807,7 +1809,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{internal_struct}) Set(index int, newObj {field_external_struct}) {interface} {{
-                newObj.self().validation = obj.obj.validation
+                newObj.self().validator = obj.obj.validator
                 obj.obj.obj.{field_name}[index] = newObj.Msg()
                 obj.{internal_items_name}[index] = newObj
                 return obj
@@ -1893,8 +1895,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "deprecated",
                 "under-review",
             ]:
-                field.status = property_schema["x-status"]["status"].replace(
-                    "-", "_"
+                field.status = self._get_internal_name(
+                    self._get_external_field_name(
+                        property_schema["x-status"]["status"].replace("-", "_")
+                    )
                 )
                 field.status_msg = property_schema["x-status"].get(
                     "additional_information"
@@ -2187,8 +2191,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 {x_cons}
                 for _, v := range obj.{name}() {{
                     if !obj.validateConstraint({lname}Cons, v) {{
-                        obj.validationErrors = append(
-                            obj.validationErrors,
+                        obj.errors = append(
+                            obj.errors,
                             fmt.Sprintf("%s is not a valid {cons} type", v),
                         )
                     }}
@@ -2203,8 +2207,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 {x_cons}
                 if !obj.validateConstraint({lname}Cons, obj.{name}()) && obj.resolve {{
-                    obj.validationErrors = append(
-                        obj.validationErrors,
+                    obj.errors = append(
+                        obj.errors,
                         fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()),
                     )
                 }}
@@ -2225,7 +2229,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self.append = True
             self.unique.append(
                 """if !obj.isUnique("{struct}", obj.{name}(), obj) && obj.resolve {{
-                obj.validationErrors = append(obj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
+                obj.errors = append(obj.errors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
                     struct=new.struct, name=field.name
                 )
@@ -2260,7 +2264,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                obj.validationErrors = append(obj.validationErrors, "{name} is required field on interface {interface}")
+                obj.errors = append(obj.errors, "{name} is required field on interface {interface}")
             }} """.format(
                 name=field.name,
                 interface=new.interface,
@@ -2289,8 +2293,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "if "
                 + " || ".join(line)
                 + """ {{
-                    obj.validationErrors = append(
-                        obj.validationErrors,
+                    obj.errors = append(
+                        obj.errors,
                         fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
                     }}
                 """
@@ -2328,8 +2332,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     "if "
                     + " || ".join(line)
                     + """ {{
-                    obj.validationErrors = append(
-                        obj.validationErrors,
+                    obj.errors = append(
+                        obj.errors,
                         fmt.Sprintf(
                             "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
                             len({pointer}{value})))
@@ -2368,7 +2372,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 inner_body = """
                     err := obj.validate{format}(obj.{name}())
                     if err != nil {{
-                        obj.validationErrors = append(obj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
+                        obj.errors = append(obj.errors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
                     }}
                 """.format(
                     name=field.name,
@@ -2397,27 +2401,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
-                    obj.validationErrors = append(obj.validationErrors, "{name} is required field on interface {interface}")
+                    obj.errors = append(obj.errors, "{name} is required field on interface {interface}")
                 }}
             """.format(
                 name=field.name, interface=new.interface
             )
 
-        inner_body = "obj.{external_name}().validateObj(set_default)".format(
+        inner_body = "obj.{external_name}().validateObj(setDefault)".format(
             external_name=self._get_external_struct_name(field.name)
         )
         if field.isArray:
             inner_body = """
-                 if set_default {{
+                 if setDefault {{
                     obj.{name}().clearHolderSlice()
                     for _, item := range obj.obj.{name} {{
-                        newObj := new{field_internal_struct}(obj.validation)
+                        newObj := new{field_internal_struct}(obj.validator)
                         newObj.self().obj = item
                         obj.{name}().appendHolderSlice(newObj)
                     }}
                  }}
                 for _, item := range obj.{name}().Items() {{
-                    item.validateObj(set_default)
+                    item.validateObj(setDefault)
                 }}
             """.format(
                 name=field.name,
@@ -2479,8 +2483,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             p()
         body = "\n".join(statements)
         self._write(
-            """func (obj *{struct}) validateObj(set_default bool) {{
-                if set_default {{
+            """func (obj *{struct}) validateObj(setDefault bool) {{
+                if setDefault {{
                     obj.setDefault()
                 }}
                 {append}
@@ -2703,17 +2707,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_value_of(self, new):
         body = ""
         for field in new.interface_fields:
+            if field.type != "string" or field.isEnum is True:
+                continue
             body += """
-            if name == "{name}" {{
-                return obj.obj.{name}
-            }}
+                case "{name}":
+                    return {ptr}obj.obj.{name}, nil
             """.format(
-                name=field.name
+                name=field.name, ptr="*" if field.isPointer else ""
             )
         self._write(
-            """func (obj *{struct}) ValueOf(name string) interface{{}} {{
-                {body}
-                return nil
+            """func (obj *{struct}) StringValue(name string) (string, error) {{
+                switch name {{
+                    {body}
+                    default:
+                        return "", fmt.Errorf("invalid property")
+                }}
             }}
             """.format(
                 body=body, struct=new.struct
