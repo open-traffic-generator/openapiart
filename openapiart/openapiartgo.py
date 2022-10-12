@@ -1516,8 +1516,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 status=""
                 if field.status is None
                 else "obj.{func}(`{name}: {msg}`)".format(
-                    func=field.status, msg=field.status_msg,
-                    name=field.name
+                    func=field.status, msg=field.status_msg, name=field.name
                 ),
             )
         )
@@ -1729,8 +1728,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 status=""
                 if field.status is None
                 else "obj.{func}(`{name}: {msg}`)".format(
-                    func=field.status, msg=field.status_msg,
-                    name=field.name
+                    func=field.status, msg=field.status_msg, name=field.name
                 ),
             )
         )
@@ -2442,8 +2440,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
             msg="obj.{func}(`{name}: {msg}`)".format(
-                func=field.status, msg=field.status_msg,
-                name=field.name
+                func=field.status, msg=field.status_msg, name=field.name
             )
             if field.status is not None
             else "",
