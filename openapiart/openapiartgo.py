@@ -1515,8 +1515,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 status=""
                 if field.status is None
-                else "obj.{func}(`{msg}`)".format(
-                    func=field.status, msg=field.status_msg
+                else "obj.{func}(`{name}: {msg}`)".format(
+                    func=field.status, msg=field.status_msg,
+                    name=field.name
                 ),
             )
         )
@@ -1727,8 +1728,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 set_choice=set_choice,
                 status=""
                 if field.status is None
-                else "obj.{func}(`{msg}`)".format(
-                    func=field.status, msg=field.status_msg
+                else "obj.{func}(`{name}: {msg}`)".format(
+                    func=field.status, msg=field.status_msg,
+                    name=field.name
                 ),
             )
         )
@@ -2249,7 +2251,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             status_body = """
             // {name} is {func}
             if obj.obj.{name}{enum} != {value} {{
-                obj.{func}(`{msg}`)
+                obj.{func}(`{name}: {msg}`)
             }}
             """.format(
                 name=field.name,
@@ -2439,8 +2441,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
-            msg="obj.{func}(`{msg}`)".format(
-                func=field.status, msg=field.status_msg
+            msg="obj.{func}(`{name}: {msg}`)".format(
+                func=field.status, msg=field.status_msg,
+                name=field.name
             )
             if field.status is not None
             else "",
