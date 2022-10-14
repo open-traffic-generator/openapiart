@@ -174,6 +174,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "numberdouble": "float64",
             "stringbinary": "[]byte",
         }
+        self.validation = []
 
     def generate(self, openapi):
         self._base_url = ""
@@ -233,6 +234,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_request_interfaces()
         self._write_component_interfaces()
         self._close_fp()
+        self._write_validate_file()
 
     def _write_package_docstring(self, info_object):
         """Write the header of the generated go code file which consists of:
@@ -1352,7 +1354,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_setter(new, field, len(internal_items_nil) > 0)
             self._write_field_adder(new, field)
         self._write_value_of(new)
-        self._write_validate_method(new)
+        self.validation.append(new)
+        # self._write_validate_method(new)
         self._write_default_method(new)
 
     def _write_field_getter(self, new, field):
@@ -2218,13 +2221,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _parse_x_constraints(self, field, schema):
         if "x-constraint" not in schema:
             return
+        field.refs = []
         for con in schema["x-constraint"]:
             ref, prop = con.split("/properties/")
+            ref1 = ref
             ref = self._get_schema_object_name_from_ref(ref)
             prop = self._get_external_field_name(prop.strip("/"))
-            field.const_root.append(
-                self._api.components[self._get_external_struct_name(ref)].root
-            )
+            field.const_root.append(self._get_external_struct_name(ref))
+            field.refs.append(ref1)
             field.x_constraints.append((self._get_internal_name(ref), prop))
 
     def _parse_x_unique(self, field, schema):
@@ -2281,7 +2285,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self.const.append(body)
         body = ""
         self.append = True
-        self.root_str.extend(field.const_root)
+        try:
+            comp = [self._api.components.get(r) for r in field.const_root]
+            comp1 = [self._api.components[r] for r in field.const_root]
+            self.root_str.extend([obj.root for obj in comp])
+        except Exception as e:
+            pass
         return body
 
     def _validate_unique(self, new, field):
@@ -2889,6 +2898,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+
+    def _write_validate_file(self):
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "validate.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        for new in self.validation:
+            self._write_validate_method(new)
+        self._write()
+        self._close_fp()
 
     def _get_holder_name(self, field, isIter=False):
         if isIter:
