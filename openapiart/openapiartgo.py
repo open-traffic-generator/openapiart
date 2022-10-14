@@ -66,6 +66,7 @@ class FluentNew(object):
         self.description = None
         self.method_description = None
         self.interface_fields = []
+        self.root = None
 
     def isOptional(self, property_name):
         if self.schema_object is None:
@@ -109,6 +110,7 @@ class FluentField(object):
         self.status_msg = None
         self.x_constraints = []
         self.x_unique = None
+        self.const_root = []
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -710,6 +712,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 response, err := httpClient.client.Do(req)
                 return response, err
             }}
+
+            func (api *{internal_struct_name}) getValidator() *validator {{
+                if api.validator == nil {{
+                    v := validator{{}}
+                    v.rootMap = make(map[string]rootType)
+                    api.validator = &v
+                }}
+                return api.validator
+            }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
                 interface=self._api.external_interface_name,
@@ -732,6 +743,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             type {external_interface_name} interface {{
                 Api
                 {method_signatures}
+                getValidator() *validator
             }}
             """.format(
                 external_interface_name=self._api.external_interface_name,
@@ -747,9 +759,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for new in self._api.external_new_methods:
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    vObj := validator{{}}
-                    obj := new{interface}(&vObj)
-                    vObj.root = obj
+                    vObj := api.getValidator()
+                    obj := new{interface}(vObj)
+                    vObj.rootMap["{struct}"] = obj
+                    vObj.node = obj
                     vObj.resolve = true
                     return obj
                     // return New{interface}()
@@ -758,6 +771,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     internal_struct_name=self._api.internal_struct_name,
                     method=new.method,
                     interface=new.interface,
+                    struct=new.struct,
                 )
             )
         for rpc in self._api.external_rpc_methods:
@@ -784,7 +798,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }"""
             else:
                 return_value = """if resp.GetStatusCode_200() != nil {{
-                        return New{struct}().SetMsg(resp.GetStatusCode_200()), nil
+                        obj := new{struct}(api.validator)
+                        obj.SetMsg(resp.GetStatusCode_200())
+                        err := obj.Validate()
+                        if err != nil {{
+                            return nil, err
+                        }}
+                        return obj, nil
                     }}""".format(
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
@@ -889,6 +909,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
+            new.root = new.struct
             self._write_interface(new)
 
     def _write_component_interfaces(self):
@@ -939,7 +960,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
     def _write_interface(self, new):
         if new.schema_name in self._api.components:
+            root = new.root
             new = self._api.components[new.schema_name]
+            new.root = root
         else:
             self._api.components[new.schema_name] = new
         if new.generated is True:
@@ -989,7 +1012,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func New{interface}() {interface} {{
                 v := validator{{}}
                 obj := new{interface}(&v)
-                v.root = obj
+                v.node = obj
                 v.resolve = true
                 return obj
             }}
@@ -1128,14 +1151,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) validateToAndFrom() error {{
                 // emptyVars()
                 if obj.resolve {{
-                    obj.validator.root.validateObj(true)
-                    for _, object := range obj.validator.temp {{
+                    skip := false
+                    for _, key := range obj.validator.rootKeys {{
+                        v, ok := obj.validator.rootMap[key]
+                        if !ok {{ continue }}
+                        if obj.myRoot() == key {{
+                            skip = true
+                        }}
+                        v.validateObj(true)
+                    }}
+                    if !skip {{
+                        obj.validateObj(true)
+                    }}
+                    for _, object := range obj.validator.deps {{
                         object.checkUnique()
                     }}
-                    for _, object := range obj.validator.temp {{
+                    for _, object := range obj.validator.deps {{
                         object.checkConstraint()
                     }}
-                    return obj.validator.root.validationResult()
+                    return obj.validator.node.validationResult()
                 }}
                 obj.validateObj(true)
                 obj.resolve = true
@@ -1145,14 +1179,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) Validate() error {{
                 // emptyVars()
                 if obj.resolve {{
-                    obj.validator.root.validateObj(false)
-                    for _, object := range obj.validator.temp {{
+                    skip := false
+                    for _, key := range obj.validator.rootKeys {{
+                        v, ok := obj.validator.rootMap[key]
+                        if !ok {{ continue }}
+                        if obj.myRoot() == key {{
+                            skip = true
+                        }}
+                        v.validateObj(true)
+                    }}
+                    if !skip {{
+                        obj.validateObj(true)
+                    }}
+                    for _, object := range obj.validator.deps {{
                         object.checkUnique()
                     }}
-                    for _, object := range obj.validator.temp {{
+                    for _, object := range obj.validator.deps {{
                         object.checkConstraint()
                     }}
-                    return obj.validator.root.validationResult()
+                    return obj.validator.node.validationResult()
                 }}
                 obj.validateObj(false)
                 obj.resolve = true
@@ -1192,6 +1237,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func (obj *{struct}) self() *{struct} {{
                 return obj
             }}
+            func (obj *{struct}) typeName() string {{
+                return "{struct}"
+            }}
+            func (obj *{struct}) myRoot() string {{
+                return "{root}"
+            }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1200,6 +1251,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if len(internal_items) == 0
                 else "\n".join(internal_items),
                 nil_call="obj.setNil()" if len(internal_items_nil) > 0 else "",
+                root=new.root,
             )
         )
         if len(internal_items_nil) > 0:
@@ -1210,7 +1262,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     obj.errors = nil
                     obj.warnings = nil
                     obj.constraints = make(map[string]map[string]valueGetter)
-                    obj.temp = nil
+                    obj.deps = nil
                 }}
             """.format(
                     nil_items="\n".join(internal_items_nil), struct=new.struct
@@ -1248,6 +1300,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "checkConstraint()",
             "setDefault()",
             "self() *{struct}",
+            "typeName() string",
+            "myRoot() string",
         ]
         for field in new.interface_fields:
             interfaces.append("// {}".format(field.getter_method_description))
@@ -1740,6 +1794,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if interface_name in self._api.components:
             return
         new_iter = FluentNew()
+        new_iter.root = new.root
         new_iter.schema_name = interface_name
         new_iter.interface = interface_name
         new_iter.internal_struct = (
@@ -1890,7 +1945,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.schema = property_schema
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
-            field.type = self._get_struct_field_type(property_schema, field)
+            field.type = self._get_struct_field_type(
+                property_schema, fluent_new, field
+            )
             if property_schema.get("x-status", {}).get("status") in [
                 "deprecated",
                 "under-review",
@@ -2165,6 +2222,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             ref, prop = con.split("/properties/")
             ref = self._get_schema_object_name_from_ref(ref)
             prop = self._get_external_field_name(prop.strip("/"))
+            field.const_root.append(
+                self._api.components[self._get_external_struct_name(ref)].root
+            )
             field.x_constraints.append((self._get_internal_name(ref), prop))
 
     def _parse_x_unique(self, field, schema):
@@ -2221,6 +2281,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self.const.append(body)
         body = ""
         self.append = True
+        self.root_str.extend(field.const_root)
         return body
 
     def _validate_unique(self, new, field):
@@ -2452,6 +2513,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self.unique = []
         self.const = []
         self.append = False
+        self.root_str = []
 
         def p():
             if valid == 0:
@@ -2488,13 +2550,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     obj.setDefault()
                 }}
                 {append}
+                {loop}
                 {body}
             }}
             """.format(
                 struct=new.struct,
                 body=body,
-                append="obj.temp = append(obj.temp, obj)"
+                append="obj.deps = append(obj.deps, obj)"
                 if self.append
+                else "",
+                loop="""
+                var found bool
+                for _, key := range []string{{\"{k}\"}} {{
+                    found = false
+                    for _, k := range obj.rootKeys {{
+                        if k == key {{
+                            found = true
+                        }}
+                    }}
+                    if found {{continue}}
+                    obj.rootKeys = append(obj.rootKeys, key)
+                }}
+                """.format(
+                    k='", "'.join(set(self.root_str))
+                )
+                if self.root_str != []
                 else "",
             )
         )
@@ -2738,7 +2818,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             leaf = leaf[attr]
         return leaf
 
-    def _get_struct_field_type(self, property_schema, fluent_field=None):
+    def _get_struct_field_type(
+        self, property_schema, fluent_new, fluent_field=None
+    ):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
         if "type" in property_schema:
@@ -2749,7 +2831,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             if oapi_type == "array":
                 go_type += "[]" + self._get_struct_field_type(
-                    property_schema["items"], fluent_field
+                    property_schema["items"], fluent_new, fluent_field
                 ).replace("*", "")
                 if "format" in property_schema["items"]:
                     fluent_field.itemformat = property_schema["items"][
@@ -2778,6 +2860,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 new = self._api.components[schema_object_name]
             else:
                 new = FluentNew()
+                new.root = fluent_new.root
                 new.schema_object = schema_object
                 new.schema_name = schema_object_name
                 new.struct = self._get_internal_name(schema_object_name)

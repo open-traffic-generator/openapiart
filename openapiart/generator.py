@@ -354,7 +354,6 @@ class Generator:
             self._top_level_schema_refs.append((ref, None))
 
             factories.append({"name": property_name, "class_name": class_name})
-
         for ref, property_name in self._top_level_schema_refs:
             if property_name is None:
                 self._write_openapi_object(ref)
@@ -637,13 +636,13 @@ class Generator:
         with open(self._api_filename, "a") as self._fid:
             self._write()
             self._write()
-            self._write(0, "class %s(object):" % factory_class_name)
+            self._write(0, "class %s(BaseApi):" % factory_class_name)
             self._write(1, '"""%s' % "OpenApi Abstract API")
             self._write(1, '"""')
             self._write()
             self._write(1, "__warnings__ = []")
             self._write(1, "def __init__(self, **kwargs):")
-            self._write(2, "pass")
+            self._write(2, "super(%s, self).__init__()" % factory_class_name)
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
@@ -691,7 +690,9 @@ class Generator:
                 self._write()
                 self._write(2, "Return: %s" % factory["class_name"])
                 self._write(2, '"""')
-                self._write(2, "return %s()" % factory["class_name"])
+                self._write(
+                    2, "return self._get_property(%s)" % factory["class_name"]
+                )
 
             self._write()
             self._write(1, "def close(self):")
@@ -765,10 +766,11 @@ class Generator:
             external += "_"
         return external
 
-    def _write_openapi_object(self, ref, choice_method_name=None):
+    def _write_openapi_object(self, ref, choice_method_name=None, root=None):
         schema_object = self._get_object_from_ref(ref)
         ref_name = ref.split("/")[-1]
         class_name = ref_name.replace(".", "")
+        root = class_name if root is None else root
         if class_name in self._generated_classes:
             return
         self._generated_classes.append(class_name)
@@ -779,7 +781,7 @@ class Generator:
             self._write()
             self._write()
             self._write(0, "class %s(OpenApiObject):" % class_name)
-            slots = ["'_parent'", "'_root'"]
+            slots = ["'_parent'", "'_root'", "'_api'"]
             if "choice" in self._get_choice_names(schema_object):
                 slots.append("'_choice'")
             self._write(1, "__slots__ = (%s)" % ",".join(slots))
@@ -789,6 +791,7 @@ class Generator:
             # TODO: this func won't detect whether $ref for a given property is
             # a list because it relies on 'type' attribute to do so
             openapi_types = self._get_openapi_types(schema_object)
+            self._write(1, "_ROOT_CLASS = '%s'" % root)
             if len(openapi_types) > 0:
                 self._write(1, "_TYPES = {")
                 for name, value in openapi_types:
@@ -871,7 +874,7 @@ class Generator:
                     self._write()
 
             # write def __init__(self)
-            params = "self, parent=None, root=None"
+            params = "self, parent=None, root=None, api=None"
             if "choice" in self._get_choice_names(schema_object):
                 params += ", choice=None"
             init_params, properties, _ = self._get_property_param_string(
@@ -886,6 +889,7 @@ class Generator:
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
             self._write(2, "self._root = self if root is None else root")
+            self._write(2, "self._api = api")
             for property_name in properties:
                 self._write(
                     2,
@@ -910,7 +914,7 @@ class Generator:
 
         # descend into child properties
         for ref in refs:
-            self._write_openapi_object(ref[0], ref[3])
+            self._write_openapi_object(ref[0], ref[3], root)
             if ref[1] is True:
                 self._write_openapi_list(ref[0], ref[2])
 
@@ -1028,7 +1032,9 @@ class Generator:
             self._write()
             self._write()
             self._write(0, "class %s(OpenApiIter):" % class_name)
-            self._write(1, "__slots__ = ('_parent', '_choice', '_root')")
+            self._write(
+                1, "__slots__ = ('_parent', '_choice', '_root', '_api')"
+            )
             self._write()
 
             # if all choice(s) are $ref, the getitem should return the actual choice object
@@ -1057,11 +1063,13 @@ class Generator:
 
             self._write()
             self._write(
-                1, "def __init__(self, parent=None, root=None, choice=None):"
+                1,
+                "def __init__(self, parent=None, root=None, api=None, choice=None):",
             )
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
             self._write(2, "self._root = root")
+            self._write(2, "self._api = api")
             self._write(2, "self._choice = choice")
 
             # write container emulation methods __getitem__, __iter__, __next__
@@ -1196,12 +1204,18 @@ class Generator:
             self._write(2, '"""')
             if choice_method is True:
                 self._write(
-                    2, "item = %s(root=self._root)" % (contained_class_name)
+                    2,
+                    "item = %s(root=self._root, api=self._api)"
+                    % (contained_class_name),
                 )
                 self._write(2, "item.%s" % (method_name))
                 self._write(2, "item.choice = '%s'" % (method_name))
             else:
-                params = ["parent=self._parent", "root=self._root"]
+                params = [
+                    "parent=self._parent",
+                    "root=self._root",
+                    "api=self._api",
+                ]
                 if (
                     "properties" in yobject
                     and "choice" in yobject["properties"]

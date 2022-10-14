@@ -539,7 +539,7 @@ class OpenApiValidator(object):
             root._validation_errors.append(err_msg)
 
     def _validate_unique_and_name(self, name, value, latter=False):
-        root = self._root
+        root = self._root if self._api is None else self._api
         if self._TYPES[name].get("unique") is None or value is None:
             return
         if latter is True:
@@ -565,10 +565,11 @@ class OpenApiValidator(object):
         root.__constraints__[class_name].update({value: self})
 
     def _validate_constraint(self, name, value, latter=False):
-        root = self._root
+        root = self._root if self._api is None else self._api
         cons = self._TYPES[name].get("constraint")
         if cons is None or value is None:
             return
+        root._deps.append(self._ROOT_CLASS)
         if latter is True:
             root.__validate_latter__["constraint"].append(
                 (self._validate_constraint, name, value)
@@ -594,6 +595,14 @@ class OpenApiValidator(object):
 
     def _validate_coded(self):
         root = self._root
+        name = root.__class__.__name__
+        if root._deps != [] and root._api is not None:
+            for obj in set(root._deps):
+                if obj == name:
+                    continue
+                obj = root._api._properties.get(obj)
+                obj.validate_obj()
+        root = self._root if self._api is None else self._api
         for item in root.__validate_latter__["unique"]:
             item[0](item[1], item[2])
         for item in root.__validate_latter__["constraint"]:
@@ -627,6 +636,7 @@ class OpenApiValidator(object):
         """
         if getattr(self, "_REQUIRED", None) is None:
             return
+        root = self._root if self._api is None else self._api
         for name in self._REQUIRED:
             if self._properties.get(name) is None:
                 msg = (
@@ -636,11 +646,11 @@ class OpenApiValidator(object):
                         self.__class__,
                     )
                 )
-                self._root._validation_errors.append(msg)
+                root._validation_errors.append(msg)
                 # raise ValueError(msg)
 
     def _validate_types(self, property_name, property_value):
-        root = self._root
+        root = self._root if self._api is None else self._api
         common_data_types = [list, str, int, float, bool]
         if property_name not in self._TYPES:
             # raise ValueError("Invalid Property {}".format(property_name))
@@ -756,27 +766,31 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         "_properties",
         "_parent",
         "_root",
+        "_api",
         "_choice",
         "__constraints__",
         "__validate_latter__",
         "_validation_errors",
-        "_resolve"
+        "_resolve",
+        "_deps"
     )
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
 
-    def __init__(self, parent=None, choice=None, root=None):
+    def __init__(self, parent=None, choice=None, root=None, api=None):
         super(OpenApiObject, self).__init__()
         self._parent = parent
         self._choice = choice
         self._root = root
+        self._api = api
         self._properties = {}
         self.__warnings__ = []
         self.__constraints__ = {"global": []}
         self.__validate_latter__ = {"unique": [], "constraint": []}
         self._validation_errors = []
         self._resolve = True
+        self._deps = []
 
     @property
     def parent(self):
@@ -809,10 +823,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._set_choice(name)
             if "_choice" in default_value.__slots__:
                 self._properties[name] = default_value(
-                    parent=parent, choice=choice, root=self._root
+                    parent=parent, choice=choice, root=self._root, api=self._api
                 )
             else:
-                self._properties[name] = default_value(parent=parent, root=self._root)
+                self._properties[name] = default_value(parent=parent, root=self._root, api=self._api)
             if (
                 "_DEFAULTS" in dir(self._properties[name])
                 and "choice" in self._properties[name]._DEFAULTS
@@ -873,11 +887,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         and "_parent" in child[1].__slots__
                     ):
                         choice = property_value.get("choice")
-                        property_value = child[1](parent=self, choice=choice)._decode(
+                        property_value = child[1](parent=self, choice=choice, root=root, api=root._api)._decode(
                             property_value, root
                         )
                     elif "_parent" in child[1].__slots__:
-                        property_value = child[1](parent=self, root=root)._decode(property_value, root)
+                        property_value = child[1](parent=self, root=root, api=root._api)._decode(property_value, root)
                     else:
                         property_value = child[1]()._decode(property_value, root)
                 elif (
@@ -888,7 +902,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     child = self._get_child_class(property_name, True)
                     openapi_list = child[0](root=root)
                     for item in property_value:
-                        item = child[1](root=root)._decode(item, root)
+                        item = child[1](root=root, api=root._api)._decode(item, root)
                         openapi_list._items.append(item)
                     property_value = openapi_list
                 elif (
@@ -1103,3 +1117,48 @@ class OpenApiIter(OpenApiBase, OpenApiValidator):
         raise NotImplementedError(
             "validating an OpenApiIter object is not supported"
         )
+
+
+class BaseApi(object):
+
+    __slots__ = (
+        "_properties",
+        "__constraints__",
+        "__validate_latter__",
+        "_validation_errors",
+        "_deps"
+    )
+
+    def __init__(self):
+        self._properties = {}
+        self.__constraints__ = {"global": []}
+        self.__validate_latter__ = {"unique": [], "constraint": []}
+        self._validation_errors = []
+        self._deps = []
+    
+    def _get_property(self, _class):
+        obj = _class(api=self)
+        self._properties["%s" % _class.__name__] = obj
+        return obj
+
+    def _clear_vars(self):
+        if platform.python_version_tuple()[0] == "2":
+            self.__validate_latter__["unique"] = []
+            self.__validate_latter__["constraint"] = []
+        else:
+            self.__validate_latter__["unique"].clear()
+            self.__validate_latter__["constraint"].clear()
+
+    def _clear_globals(self):
+        keys = list(self.__constraints__.keys())
+        for k in keys:
+            if k == "global":
+                self.__constraints__["global"] = []
+                continue
+            del self.__constraints__[k]
+    
+    def _clear_errors(self):
+        if "2.7" in platform.python_version().rsplit(".", 1)[0]:
+            del self._validation_errors[:]
+        else:
+            self._validation_errors.clear()
