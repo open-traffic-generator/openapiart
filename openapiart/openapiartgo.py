@@ -503,7 +503,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
-                        {struct}.self().validator = api.validator
+                        {struct}.self().validator = api.getValidator()
                         err := {struct}.Validate()
                         if err != nil {{
                             return nil, err
