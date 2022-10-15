@@ -503,6 +503,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
+                        {struct}.self().validator = api.validator
                         err := {struct}.Validate()
                         if err != nil {{
                             return nil, err
@@ -2286,10 +2287,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = ""
         self.append = True
         try:
-            comp = [self._api.components.get(r) for r in field.const_root]
-            comp1 = [self._api.components[r] for r in field.const_root]
+            comp = [self._api.components[r] for r in field.const_root]
             self.root_str.extend([obj.root for obj in comp])
-        except Exception as e:
+        except Exception:
             pass
         return body
 

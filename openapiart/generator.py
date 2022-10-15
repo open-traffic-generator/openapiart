@@ -460,6 +460,13 @@ class Generator:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
+                    self._write(
+                        2, "if isinstance(payload, OpenApiBase) is True:"
+                    )
+                    self._write(
+                        3,
+                        "self._set_property(payload.__class__.__name__, payload)",
+                    )
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
@@ -606,6 +613,15 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
+                if len(method["args"]) > 1:
+                    self._write(
+                        2,
+                        "if isinstance(%s, OpenApiBase):" % method["args"][1],
+                    )
+                    self._write(
+                        3,
+                        "self._set_property(payload.__class__.__name__, payload)",
+                    )
 
                 self._write(2, "return self._transport.send_recv(")
                 self._write(3, '"%s",' % method["http_method"])
@@ -1303,6 +1319,7 @@ class Generator:
         self._write(2, '"""')
         if choice_method is True:
             self._write(2, "item = self.%s()" % (method_name))
+            self._write(2, "item._api = self._api")
             self._write(2, "item.%s" % (contained_class_name))
             self._write(2, "item.choice = '%s'" % (contained_class_name))
         else:
