@@ -17,6 +17,7 @@ class GoServerControllerGenerator(object):
 
     def generate(self):
         self._write_controllers()
+        self._write_api()
 
     def _write_controllers(self):
         if not os.path.exists(self._output_path):
@@ -157,7 +158,8 @@ class GoServerControllerGenerator(object):
             rsp_errors.append(400)
             modelname = request_body.model_name
             full_modelname = request_body.full_model_name
-            new_modelname = self._ctx.models_prefix + "New" + modelname
+            # new_modelname = self._ctx.models_prefix + "New" + modelname
+            new_modelname = "NewApi().getApi()." + "New" + modelname
 
             w.write_line(
                 """var item {full_modelname}
@@ -322,3 +324,45 @@ class GoServerControllerGenerator(object):
     #         ""
     #     )
     #     pass
+    def _write_api(self):
+        fullname = os.path.join(self._output_path, "api.go")
+
+        with open(fullname, "w+") as fd:
+            text = """
+                package {package_name}
+                import (
+                    {models_prefix} "{models_path}"
+                )
+
+                var globalApi *api
+
+                type api struct {{
+                    api *{models_prefix}.{api}
+                }}
+
+                type Api interface {{
+                    getApi() {models_prefix}.{api}
+                }}
+
+                func (obj *api) getApi() {models_prefix}.{api} {{
+                    if obj.api == nil {{
+                        return {models_prefix}.NewApi()
+                    }}
+                    return *obj.api
+                }}
+
+                func NewApi() *api {{
+                    if globalApi == nil {{
+                        globalApi = &api{{}}
+                        return globalApi
+                    }}
+                    return globalApi
+                }}
+
+                """.format(
+                package_name=self._package_name,
+                models_prefix=re.sub("[.]", "", self._ctx.models_prefix),
+                models_path=self._ctx.models_path,
+                api=self._ctx.models_prefix.rstrip(".").capitalize() + "Api",
+            )
+            fd.write(text)
