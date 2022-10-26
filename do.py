@@ -106,9 +106,9 @@ def get_go(version="1.19"):
 def get_go_ci_lint(version):
     run(
         [
-            "curl -kLs {} | sh -s -- -b %s %s".format(
+            "curl -kLs {} | sh -s -- -b {} {}".format(
                 "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh",
-                go_bin_path,
+                go_bin_path(),
                 version,
             )
         ]
