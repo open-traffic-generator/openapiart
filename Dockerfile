@@ -1,12 +1,13 @@
-FROM ubuntu:20.04
-ENV SRC_ROOT=/home/otg/openapiart
-ENV GOPATH=${SRC_ROOT}/.local
-ENV PATH="${PATH}:${GOPATH}/go/bin"
+FROM ubuntu:22.04
+ENV SRC_ROOT=/home/openapiart
+ENV PATH="${PATH}:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin"
 RUN mkdir -p ${SRC_ROOT}
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends sudo curl git vim unzip python-is-python3 python3-pip
 # Get project source, install dependencies and build it
 COPY . ${SRC_ROOT}/
-RUN apt-get update \
-	&& apt-get -y install --no-install-recommends apt-utils dialog 2>&1 \
-    && apt-get -y install curl git vim unzip python-is-python3 python3-pip
+RUN cd ${SRC_ROOT} && python ./do.py setup_ext
+RUN cd ${SRC_ROOT} && python ./do.py setup
+RUN cd ${SRC_ROOT} && python ./do.py init
 WORKDIR ${SRC_ROOT}
 CMD ["/bin/bash"]

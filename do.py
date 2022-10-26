@@ -6,17 +6,8 @@ import shutil
 import subprocess
 import platform
 
-# from openapiart.generate_requirements import generate_requirements
-
 
 BLACK_VERSION = "22.1.0"
-
-os.environ["GOPATH"] = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), ".local"
-)
-os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(
-    os.environ["GOPATH"]
-)
 
 
 def arch():
@@ -36,82 +27,160 @@ def on_linux():
     return "linux" in sys.platform
 
 
-def get_go(go_version="1.17"):
-    version = go_version
-    targz = None
+def linux_home_dir():
+    return os.path.expanduser("~")
 
+
+def linux_bin_exists(name):
+    code, _ = subprocess.getstatusoutput(
+        "which {} > /dev/null 2>&1".format(name)
+    )
+
+    return code == 0
+
+
+def dot_profile_path():
+    return os.path.join(linux_home_dir(), ".profile")
+
+
+def dot_local_path():
+    return os.path.join(linux_home_dir(), ".local")
+
+
+def go_install_path():
+    return "/usr/local/go/bin"
+
+
+def go_bin_path():
+    return os.path.join(linux_home_dir(), "go/bin")
+
+
+def protoc_bin_path():
+    return os.path.join(dot_local_path(), "bin")
+
+
+def set_paths():
+    if on_linux():
+        os.environ["PATH"] = "{}:{}".format(
+            os.environ["PATH"],
+            ":".join([go_install_path(), go_bin_path(), protoc_bin_path()]),
+        )
+
+
+def py_env_installed():
+    return ".env" in py()
+
+
+def go_installer(version):
     if on_arm():
-        targz = "go" + version + ".linux-arm64.tar.gz"
+        return "go{}.linux-arm64.tar.gz".format(version)
     elif on_x86():
-        targz = "go" + version + ".linux-amd64.tar.gz"
+        return "go{}.linux-amd64.tar.gz".format(version)
     else:
         print("host architecture not supported")
+        return None
+
+
+def get_go(version="1.19"):
+    if linux_bin_exists("go"):
         return
 
-    if not os.path.exists(os.environ["GOPATH"]):
-        os.mkdir(os.environ["GOPATH"])
+    installer = go_installer(version)
+    if installer is None:
+        return
 
     print("Installing Go ...")
-    cmd = (
-        "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
+    cmd = "curl -kL {} | sudo tar -C {} -xzf -".format(
+        "https://dl.google.com/go/{}".format(installer), "/usr/local/"
     )
-    cmd += " | tar -C " + os.environ["GOPATH"] + " -xzf -"
     run([cmd])
 
+    with open(dot_profile_path(), "a") as f:
+        f.write(
+            "export PATH=$PATH:{}".format(
+                ":".join([go_install_path(), go_bin_path()])
+            )
+        )
 
-def get_go_deps():
-    print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
+
+def get_go_deps(
+    gen_go="v1.28.1", gen_grpc="v1.2.0", gen_doc="v1.5.1", ci_lint="v1.50.1"
+):
+    print("Installing Go dependencies for SDK generation ...")
+    cmd = "CGO_ENABLED=0 go install -v {}@{}"
     run(
         [
-            cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
-            cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " -v golang.org/x/tools/cmd/goimports@latest",
-            cmd
-            + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
+            cmd.format("google.golang.org/protobuf/cmd/protoc-gen-go", gen_go),
+            cmd.format(
+                "google.golang.org/grpc/cmd/protoc-gen-go-grpc", gen_grpc
+            ),
+            cmd.format("golang.org/x/tools/cmd/goimports", "latest"),
+            cmd.format(
+                "github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc",
+                gen_doc,
+            ),
+            cmd.format(
+                "github.com/golangci/golangci-lint/cmd/golangci-lint", ci_lint
+            ),
         ]
     )
 
 
-def get_protoc():
-    version = "3.17.3"
-    zipfile = None
-
+def protoc_installer(version):
     if on_arm():
-        zipfile = "protoc-" + version + "-linux-aarch_64.zip"
+        return "protoc-{}-linux-aarch_64.zip".format(version)
     elif on_x86():
-        zipfile = "protoc-" + version + "-linux-x86_64.zip"
+        return "protoc-{}-linux-x86_64.zip".format(version)
     else:
         print("host architecture not supported")
+        return None
+
+
+def get_protoc(version="21.8"):
+    if linux_bin_exists("protoc"):
+        return
+
+    installer = protoc_installer(version)
+    if installer is None:
         return
 
     print("Installing protoc ...")
-    cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
-    cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
-    cmd += version + "/" + zipfile
-    cmd += " && unzip ./protoc.zip -d " + os.environ["GOPATH"]
-    cmd += " && rm -rf ./protoc.zip )"
+    cmd = "curl -kLO {0} && unzip {1} -d {2} && rm -rf {1}".format(
+        "https://github.com/protocolbuffers/protobuf/releases/download/v{}/{}".format(
+            version, installer
+        ),
+        installer,
+        dot_local_path(),
+    )
     run([cmd])
 
+    with open(dot_profile_path(), "a") as f:
+        f.write("export PATH=$PATH:{}".format(protoc_bin_path()))
 
-def setup_ext(go_version="1.17"):
+
+def setup_ext():
     if on_linux():
-        get_go(go_version)
-        get_protoc()
+        get_go()
         get_go_deps()
+        get_protoc()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
 
+def get_py_deps():
+    print("Setting up python dependencies for SDK generation ...")
+    run(
+        [
+            py() + " -m pip install -r requirements.txt",
+            py() + " -m pip install -r test_requirements.txt",
+        ]
+    )
+
+
 def setup():
-    if platform.python_version_tuple()[0] == 3:
-        run(
-            [
-                py() + " -m pip install --upgrade pip",
-                py() + " -m {} .env".format(pkg),
-            ]
-        )
-    else:
+    if not py_env_installed():
+        print("Setting up python virtual environment ...")
+        shutil.rmtree(".env", ignore_errors=True)
         run(
             [
                 py() + " -m pip install --upgrade pip",
@@ -119,26 +188,11 @@ def setup():
                 py() + " -m virtualenv .env",
             ]
         )
+    get_py_deps()
 
 
-def init(use_sdk=None):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    if use_sdk is None:
-        req = os.path.join(base_dir, "openapiart", "requirements.txt")
-        run(
-            [
-                py() + " -m pip install -r {}".format(req),
-                py() + " -m pip install -r test_requirements.txt",
-            ]
-        )
-    else:
-        art_path = os.path.join(base_dir, "art", "requirements.txt")
-        run(
-            [
-                py() + " -m pip install -r {}".format(art_path),
-                py() + " -m pip install -r test_requirements.txt",
-            ]
-        )
+def init():
+    get_py_deps()
 
 
 def lint():
@@ -373,7 +427,6 @@ def py():
     Returns path to python executable to be used.
     """
     try:
-        print(py.path)
         return py.path
     except AttributeError:
         py.path = os.path.join(".env", "bin", "python")
@@ -382,7 +435,7 @@ def py():
 
         # since some paths may contain spaces
         py.path = '"' + py.path + '"'
-        print(py.path)
+        print("Using python executable ", py.path)
         return py.path
 
 
@@ -430,6 +483,7 @@ def getstatusoutput(command):
 
 def main():
     if len(sys.argv) >= 2:
+        set_paths()
         globals()[sys.argv[1]](*sys.argv[2:])
     else:
         print("usage: python do.py [args]")

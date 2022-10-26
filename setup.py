@@ -11,7 +11,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
 
-requirements_path = os.path.join(base_dir, "openapiart", "requirements.txt")
+requirements_path = os.path.join(base_dir, "requirements.txt")
 test_req_path = os.path.join(base_dir, "test_requirements.txt")
 installation_requires = []
 test_requires = []
@@ -22,7 +22,7 @@ with open(requirements_path) as f:
     if "--prefer-binary" in installation_requires:
         installation_requires.remove("--prefer-binary")
 if os.path.exists(test_req_path):
-    with open("test_requirements.txt") as f:
+    with open(test_req_path) as f:
         test_requires = f.read().splitlines()
 
 setuptools.setup(

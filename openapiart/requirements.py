@@ -27,7 +27,7 @@ def generate_requirements(path, file_name=None):
         "typing_extensions",
     ]
 
-    with open(os.path.join(base_dir, "requirements.txt"), "r") as fd:
+    with open(os.path.join(os.path.dirname(base_dir), "requirements.txt"), "r") as fd:
         orig_packages = fd.read().splitlines()
 
     with open(os.path.join(save_path, "requirements.txt"), "r") as fh:
