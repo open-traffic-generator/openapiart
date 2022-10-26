@@ -1,3 +1,4 @@
+jsonpath-ng
 flask
 pytest
 flake8
