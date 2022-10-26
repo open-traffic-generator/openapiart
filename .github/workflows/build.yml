@@ -37,7 +37,7 @@ jobs:
           python do.py install
       - name: Run python lint
         run: |
-          python do.py lint
+          python do.py py_lint
       - name: Archive generated artifacts
         uses: actions/upload-artifact@v2
         with:

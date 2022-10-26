@@ -195,36 +195,23 @@ def init():
     get_py_deps()
 
 
-def lint():
+def py_lint(check_only=True):
     paths = [
         pkg()[0],
-        "openapiart",
         "setup.py",
         "do.py",
     ]
-    # --check will check for any files to be formatted with black
-    # if linting fails, format the files with black and commit
-    ret, out = getstatusoutput(
-        py()
-        + " -m black "
-        + " ".join(paths)
-        + " --exclude=openapiart/common.py --check --required-version {}".format(
-            BLACK_VERSION
-        )
-    )
-    if ret == 1:
-        out = out.split("\n")
-        out = [
-            e.replace("would reformat", "Black formatting failed for")
-            for e in out
-            if "would reformat" in e
-        ]
-        print("\n".join(out))
-        raise Exception(
-            "Black formatting failed, use black {} version to format the files".format(
-                BLACK_VERSION
+
+    run(
+        [
+            py()
+            + " -m black {} ".format(" ".join(paths))
+            + "--exclude=openapiart/common.py {} --required-version {}".format(
+                "--check" if check_only else "", BLACK_VERSION
             )
-        )
+        ]
+    )
+
     run(
         [
             py() + " -m flake8 " + " ".join(paths),
@@ -299,12 +286,6 @@ def testgo():
 
 
 def go_lint():
-    pkg = "{env_set}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2".format(
-        env_set=""
-        if sys.platform == "win32"
-        else "GO111MODULE=on CGO_ENABLED=0 "
-    )
-    run([pkg])
     os.chdir("pkg")
     run(["golangci-lint run -v"])
 
