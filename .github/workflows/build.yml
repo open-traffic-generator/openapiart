@@ -72,18 +72,18 @@ jobs:
           python do.py install
       - name: Run artifact generation
         run: |
-          python do.py generate python True
+          python do.py generate python
       - name: Display structure of downloaded files
         run: ls -R
       - name: Run python tests
         run: |
-          sudo python do.py testpy
+          sudo python do.py test_py_sdk
 
   go_tests:
     needs: build
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         go-version: ["1.17.5", "1.18.3", "1.19"]
     steps:
@@ -128,9 +128,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Run go tests
         run: |
-          python do.py testgo
+          python do.py test_go_sdk
 
   publish_python_package:
+    if: github.ref == 'refs/heads/main'
     needs: [python_tests, go_tests]
     runs-on: ubuntu-latest
     steps:

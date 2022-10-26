@@ -7,9 +7,6 @@ import subprocess
 import platform
 
 
-BLACK_VERSION = "22.1.0"
-
-
 def arch():
     return getattr(platform.uname(), "machine", platform.uname()[-1]).lower()
 
@@ -206,18 +203,14 @@ def init():
 
 
 def py_lint(modify="False"):
-    paths = [
-        pkg()[0],
-        "setup.py",
-        "do.py",
-    ]
+    paths = [pkg()[0], "setup.py", "do.py", "build.py"]
 
     run(
         [
             py()
             + " -m black {} ".format(" ".join(paths))
             + "--exclude=openapiart/common.py {} --required-version {}".format(
-                "" if modify == "True" else "--check", BLACK_VERSION
+                "" if modify == "True" else "--check", "22.1.0"
             )
         ]
     )
@@ -229,22 +222,13 @@ def py_lint(modify="False"):
     )
 
 
-def generate(sdk="", cicd=""):
-    artifacts = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "artifacts.py")
-    )
-    run(
-        [
-            py() + " " + artifacts + " " + sdk + " " + cicd,
-        ]
-    )
+def generate(lang="all"):
+    run(["{} {} {}".format(py(), "build.py", lang)])
 
 
-def testpy():
+def test_py_sdk():
     run(
         [
-            # py() + " -m pip install flask",
-            # py() + " -m pip install pytest-cov",
             py()
             + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
         ]
@@ -269,35 +253,56 @@ def testpy():
             )
 
 
-def testgo():
-    go_coverage_threshold = 35
-    # TODO: not able to run the test from main directory
-    os.chdir("pkg")
-    run(["go mod tidy"], capture_output=True)
-    ret = run(
-        ["go test ./... -v -coverprofile coverage.txt"], capture_output=True
-    )
-    os.chdir("..")
-    result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
-    if int(result) < go_coverage_threshold:
-        raise Exception(
-            "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
-                go_coverage_threshold, result
-            )
+def test_go_sdk():
+    try:
+        min_cov = 35
+        print("Running unit tests against Go SDK")
+        os.chdir("pkg")
+
+        cmd = "CGO_ENABLED=0 {}"
+
+        out = run(
+            [
+                cmd.format("go mod tidy"),
+                cmd.format("go test ./... -v -coverprofile coverage.txt"),
+            ],
+            capture_output=True,
         )
-    else:
-        print(
-            "Go tests achieved {1}% ,Coverage thresold {0}%".format(
-                go_coverage_threshold, result
+
+        result = re.findall(r"coverage:.*\s(\d+)", out)[0]
+        if int(result) < min_cov:
+            raise Exception(
+                "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
+                    min_cov, result
+                )
             )
-        )
-    if "FAIL" in ret:
-        raise Exception("Go Tests Failed")
+        else:
+            print(
+                "Go tests achieved {1}% ,Coverage thresold {0}%".format(
+                    min_cov, result
+                )
+            )
+        if "FAIL" in out:
+            raise Exception("Go Tests Failed")
+    finally:
+        os.chdir("..")
 
 
 def go_lint():
-    os.chdir("pkg")
-    run(["golangci-lint run -v"])
+    try:
+        os.chdir("pkg")
+        run(["CGO_ENABLED=0 golangci-lint run -v"])
+    finally:
+        os.chdir("..")
+
+
+def test():
+    init()
+    generate(lang="all")
+    py_lint(modify="True")
+    go_lint()
+    test_py_sdk()
+    test_go_sdk()
 
 
 def dist():

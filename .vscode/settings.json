@@ -22,7 +22,7 @@
         "build.buildFlags": [
             "-tags",
             "all"
-        ]
+        ],
     },
     "go.toolsEnvVars": {
         "CGO_ENABLED": 0

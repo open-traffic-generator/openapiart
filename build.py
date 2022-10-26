@@ -15,11 +15,11 @@
 """
 import sys
 import os
-import importlib
+import openapiart
 
 
-def create_openapi_artifacts(openapiart_class, sdk=None):
-    open_api = openapiart_class(
+def build(lang="all"):
+    open_api = openapiart.OpenApiArt(
         api_files=[
             os.path.join(
                 os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"
@@ -31,7 +31,6 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
             os.path.join(
                 os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"
             ),
-            # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
             os.path.join(
                 os.path.dirname(__file__),
                 "./openapiart/goserver/api/service_a.api.yaml",
@@ -45,10 +44,10 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         extension_prefix="sanity",
         proto_service="Openapi",
     )
-    if sdk == "python" or sdk is None:
+    if lang == "all" or lang == "python":
         open_api.GeneratePythonSdk(package_name="sanity")
 
-    if sdk == "go" or sdk is None:
+    if lang == "all" or lang == "go":
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",
@@ -64,21 +63,4 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
 
 
 if __name__ == "__main__":
-    sdk = None
-    # import pdb; pdb.set_trace()
-    if len(sys.argv) >= 2:
-        sdk = sys.argv[1]
-    if len(sys.argv) == 3:
-        cicd = sys.argv
-    try:
-        from openapiart.openapiart import OpenApiArt as openapiart_class
-    except:
-        if not cicd:
-            sys.path.append(
-                os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-            )
-            module = importlib.import_module("openapiart.openapiart")
-            openapiart_class = getattr(module, "OpenApiArt")
-        else:
-            raise Exception("Error: Not able to import openapiart module with the generated sdk")
-    create_openapi_artifacts(openapiart_class, sdk)
+    build(*sys.argv[2:])

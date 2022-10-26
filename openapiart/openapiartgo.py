@@ -133,7 +133,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             };
         }
 
-    - Generate the .proto file using artifacts.py
+    - Generate the .proto file using build.py
 
     - From the .proto generate the .pb.go and _grpc.pb.go
         protoc --go_out=. --go-grpc_out=. --grpc-gateway_out=. --experimental_allow_proto3_optional .proto
