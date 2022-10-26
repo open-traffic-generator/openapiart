@@ -203,7 +203,7 @@ def init():
 
 
 def py_lint(modify="False"):
-    paths = [pkg()[0], "setup.py", "do.py", "build.py"]
+    paths = [pkg()[0], "setup.py", "do.py"]
 
     run(
         [
