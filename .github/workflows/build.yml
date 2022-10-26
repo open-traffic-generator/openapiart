@@ -29,6 +29,7 @@ jobs:
         run: |
           python do.py setup
           python do.py py_deps
+          python do.py go_deps
       - name: Lint project source
         run: |
           python do.py py_lint
@@ -40,7 +41,13 @@ jobs:
           rm -rf .env
           python do.py setup
           python do.py install
-      - name: Archive generated artifacts
+      - name: Generate Python and Go SDK
+        run: |
+          python do.py generate
+      - name: Lint generated SDK
+        run: |
+          python do.py go_lint
+      - name: Archive generated SDK
         uses: actions/upload-artifact@v2
         with:
           name: generated-artifacts
@@ -68,15 +75,13 @@ jobs:
         id: download
         with:
           name: generated-artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
       - name: Install dependencies
         run: |
           python do.py setup
           python do.py install
-      - name: Run artifact generation
-        run: |
-          python do.py generate python
-      - name: Display structure of downloaded files
-        run: ls -R
+          .env/bin/python -m pip install -r test_requirements.txt
       - name: Run python tests
         run: |
           sudo python do.py test_py_sdk
@@ -97,29 +102,6 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          python do.py setup
-          python do.py py_deps
-      - uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: Setup Go and protoc
-        run: |
-          python do.py get_go ${{ matrix.go-version }}
-          python do.py go_deps
-      - name: Run artifact generation
-        run: |
-          python do.py generate go
-      - name: Run go lint
-        run: |
-          python do.py go_lint
-      - name: Archive generated artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: generated-artifacts
-          path: |
-            pkg
       - uses: actions/download-artifact@v2
         with:
           name: generated-artifacts
