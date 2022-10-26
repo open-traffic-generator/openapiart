@@ -104,7 +104,8 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Setup Go and protoc
         run: |
-          python do.py setup_ext ${{ matrix.go-version }}
+          python do.py get_go ${{ matrix.go-version }}
+          python do.py setup_ext
       - name: Run artifact generation
         run: |
           python do.py generate go
