@@ -44,7 +44,7 @@ setuptools.setup(
     package_data={"openapiart": ["*.go", "goserver/*.go", "*.txt"]},
     include_package_data=True,
     packages=[pkg_name],
-    python_requires=">=3.6, <4",
+    python_requires=">=2.7, <4",
     install_requires=install_requires,
     extras_require={"testing": test_requires},
     test_suite="tests",

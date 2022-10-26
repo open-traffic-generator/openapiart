@@ -52,6 +52,7 @@ jobs:
           path: |
             dist
             pkg
+            art
 
   python_tests:
     needs: build
