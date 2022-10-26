@@ -165,7 +165,8 @@ def get_protoc(version="21.8"):
         f.write("export PATH=$PATH:{}".format(protoc_bin_path()))
 
 
-def setup_ext():
+def go_deps():
+    print("Setting up pre-requisites for Go SDK")
     if on_linux():
         get_go()
         get_go_deps()
@@ -174,7 +175,7 @@ def setup_ext():
         print("Skipping go and protoc installation on non-linux platform ...")
 
 
-def get_py_deps():
+def py_deps():
     print("Setting up python dependencies for SDK generation ...")
     run(
         [
@@ -195,11 +196,6 @@ def setup():
                 py() + " -m virtualenv .env",
             ]
         )
-    get_py_deps()
-
-
-def init():
-    get_py_deps()
 
 
 def py_lint(modify="False"):
@@ -334,7 +330,6 @@ def go_lint():
 
 
 def test():
-    init()
     generate(lang="all")
     py_lint(modify="True")
     go_lint()

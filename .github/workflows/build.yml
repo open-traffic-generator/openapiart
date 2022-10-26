@@ -28,7 +28,7 @@ jobs:
       - name: Setup project prerequisites
         run: |
           python do.py setup
-          python do.py init
+          python do.py py_deps
       - name: Lint project source
         run: |
           python do.py py_lint
@@ -100,14 +100,14 @@ jobs:
       - name: Install dependencies
         run: |
           python do.py setup
-          python do.py init
+          python do.py py_deps
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
       - name: Setup Go and protoc
         run: |
           python do.py get_go ${{ matrix.go-version }}
-          python do.py setup_ext
+          python do.py go_deps
       - name: Run artifact generation
         run: |
           python do.py generate go
@@ -132,9 +132,27 @@ jobs:
         run: |
           python do.py test_go_sdk
 
+  docker_build:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Setup docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Build image
+        run: |
+          docker build . -t openapiart:dev
+      - name: Generate SDKs and run tests
+        run: |
+          docker run -td --name openapiart-dev openapiart:dev
+          docker exec openapiart-dev bash -c "python do.py test"
+
   publish_python_package:
     if: github.ref == 'refs/heads/main'
-    needs: [python_tests, go_tests]
+    needs: [python_tests, go_tests, docker_build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source

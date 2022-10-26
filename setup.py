@@ -1,5 +1,5 @@
 """
-To build distribution: python setup.py sdist --formats=gztar bdist_wheel --universal
+To build distribution: python setup.py sdist bdist_wheel --universal
 """
 import os
 import setuptools
@@ -7,23 +7,20 @@ import setuptools
 pkg_name = "openapiart"
 version = "0.2.6"
 
+# get long description
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "README.md")) as fid:
     long_description = fid.read()
 
-requirements_path = os.path.join(base_dir, "requirements.txt")
-test_req_path = os.path.join(base_dir, "test_requirements.txt")
-installation_requires = []
-test_requires = []
-if os.path.exists(requirements_path) is False:
-    raise Exception("Could not find requirements path")
-with open(requirements_path) as f:
-    installation_requires = f.read().splitlines()
-    if "--prefer-binary" in installation_requires:
-        installation_requires.remove("--prefer-binary")
-if os.path.exists(test_req_path):
-    with open(test_req_path) as f:
-        test_requires = f.read().splitlines()
+# get install requirements
+with open(os.path.join(base_dir, "requirements.txt")) as f:
+    install_requires = f.read().splitlines()
+    if "--prefer-binary" in install_requires:
+        install_requires.remove("--prefer-binary")
+
+# get test requirements
+with open(os.path.join(base_dir, "test_requirements.txt")) as f:
+    test_requires = f.read().splitlines()
 
 setuptools.setup(
     name=pkg_name,
@@ -47,8 +44,8 @@ setuptools.setup(
     package_data={"openapiart": ["*.go", "goserver/*.go", "*.txt"]},
     include_package_data=True,
     packages=[pkg_name],
-    python_requires=">=2.7, <4",
-    install_requires=installation_requires,
+    python_requires=">=3.6, <4",
+    install_requires=install_requires,
     extras_require={"testing": test_requires},
     test_suite="tests",
 )
