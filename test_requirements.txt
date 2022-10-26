@@ -1,4 +1,5 @@
 jsonpath-ng
+openapi_spec_validator==0.3.0
 flask
 pytest
 flake8
