@@ -221,7 +221,13 @@ def py_lint(modify="False"):
 def generate(lang="all", import_from="source", nested="yes"):
     if nested == "yes":
         # this is done to ensure we're always using python executable from virtual env
-        run(["{} {} {} {} no".format(py(), __file__, lang, import_from)])
+        run(
+            [
+                "{} {} generate {} {} no".format(
+                    py(), __file__, lang, import_from
+                )
+            ]
+        )
         return
 
     print(
@@ -234,7 +240,7 @@ def generate(lang="all", import_from="source", nested="yes"):
 
         old_syspath = sys.path
         # remove current dir from path so we import installed package instead of source
-        sys.path = [path for path in sys.path if "" not in path]
+        sys.path = [path for path in sys.path if "" != path]
         import openapiart
 
         sys.path = old_syspath
