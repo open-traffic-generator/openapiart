@@ -26,6 +26,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Setup project prerequisites
+        run: |
           python do.py setup
           python do.py init
       - name: Lint project source
