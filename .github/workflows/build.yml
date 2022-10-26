@@ -30,9 +30,6 @@ jobs:
           python do.py setup
           python do.py py_deps
           python do.py go_deps
-      - name: Lint project source
-        run: |
-          python do.py py_lint
       - name: Generate wheel
         run: |
           python do.py dist
@@ -43,9 +40,10 @@ jobs:
           python do.py install
       - name: Generate Python and Go SDK
         run: |
-          python do.py generate
-      - name: Lint generated SDK
+          python do.py generate all package
+      - name: Lint project source and generated SDK
         run: |
+          python do.py py_lint
           python do.py go_lint
       - name: Archive generated SDK
         uses: actions/upload-artifact@v2

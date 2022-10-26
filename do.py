@@ -224,8 +224,15 @@ def generate(lang="all", import_from="source"):
             lang, import_from
         )
     )
-    if import_from == "source":
+    if import_from == "package":
+        import sys
+
+        old_syspath = sys.path
+        sys.path = [path for path in sys.path if pkg()[0] not in path]
+
         import openapiart
+
+        sys.path = old_syspath
     else:
         import openapiart
 
