@@ -195,7 +195,7 @@ def init():
     get_py_deps()
 
 
-def py_lint(check_only=True):
+def py_lint(modify="False"):
     paths = [
         pkg()[0],
         "setup.py",
@@ -207,7 +207,7 @@ def py_lint(check_only=True):
             py()
             + " -m black {} ".format(" ".join(paths))
             + "--exclude=openapiart/common.py {} --required-version {}".format(
-                "--check" if check_only else "", BLACK_VERSION
+                "" if modify == "True" else "--check", BLACK_VERSION
             )
         ]
     )
@@ -448,6 +448,7 @@ def run(commands, capture_output=False):
         for cmd in commands:
             if sys.platform != "win32":
                 cmd = cmd.encode("utf-8", errors="ignore")
+            print(cmd)
             subprocess.check_call(cmd, shell=True, stdout=fd)
         return flush_output(fd, logfile)
     except Exception:
