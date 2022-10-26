@@ -75,11 +75,10 @@ jobs:
           name: generated-artifacts
       - name: Display structure of downloaded files
         run: ls -R
-      - name: Install dependencies
+      - name: Install SDK
         run: |
           python do.py setup
-          python do.py install
-          .env/bin/python -m pip install -r test_requirements.txt
+          python do.py install_py_sdk
       - name: Run python tests
         run: |
           sudo python do.py test_py_sdk

@@ -376,6 +376,19 @@ def install():
     )
 
 
+def install_py_sdk():
+    run(
+        [
+            "{} -m pip install --force-reinstall --no-cache-dir -r {}".format(
+                py(), "art/requirements.txt"
+            ),
+            "{} -m pip install --force-reinstall --no-cache-dir -r {}".format(
+                py(), "test_requirements.txt"
+            ),
+        ]
+    )
+
+
 def release():
     run(
         [
