@@ -466,13 +466,6 @@ def run(commands, capture_output=False):
         sys.exit(1)
 
 
-def getstatusoutput(command):
-    return (
-        subprocess.getstatusoutput(command)[0],
-        subprocess.getstatusoutput(command)[1],
-    )
-
-
 def main():
     if len(sys.argv) >= 2:
         set_paths()

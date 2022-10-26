@@ -1,7 +1,7 @@
 package test
 
 import (
-	"io/ioutil"
+	"io"
 
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +18,7 @@ func TestGetAllItems(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	jsonResponse, _ := ioutil.ReadAll(wr.Body)
+	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItemList()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
@@ -35,7 +35,7 @@ func TestGetSingleItem(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	jsonResponse, _ := ioutil.ReadAll(wr.Body)
+	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
@@ -46,7 +46,7 @@ func TestGetSingleItem(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusBadRequest, wr.Code) // missing support for 404
 
-	jsonResponse, _ = ioutil.ReadAll(wr.Body)
+	jsonResponse, _ = io.ReadAll(wr.Body)
 	errNew := openapiart.NewCommonResponseError()
 	errFromJson := errNew.FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
@@ -60,7 +60,7 @@ func TestGetSingleItemLevel2(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	jsonResponse, _ := ioutil.ReadAll(wr.Body)
+	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := openapiart.NewServiceBItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
