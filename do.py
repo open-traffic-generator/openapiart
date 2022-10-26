@@ -218,7 +218,12 @@ def py_lint(modify="False"):
     )
 
 
-def generate(lang="all", import_from="source"):
+def generate(lang="all", import_from="source", nested="yes"):
+    if nested == "yes":
+        # this is done to ensure we're always using python executable from virtual env
+        run(["{} {} {} {} no".format(py(), __file__, lang, import_from)])
+        return
+
     print(
         "Generating SDK for language {} and import path {}".format(
             lang, import_from
@@ -228,8 +233,8 @@ def generate(lang="all", import_from="source"):
         import sys
 
         old_syspath = sys.path
-        sys.path = [path for path in sys.path if pkg()[0] not in path]
-
+        # remove current dir from path so we import installed package instead of source
+        sys.path = [path for path in sys.path if "" not in path]
         import openapiart
 
         sys.path = old_syspath

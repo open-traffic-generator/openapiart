@@ -28,23 +28,23 @@ jobs:
       - name: Setup project prerequisites
         run: |
           python do.py setup
-          .env/bin/python do.py py_deps
-          .env/bin/python do.py go_deps
+          python do.py py_deps
+          python do.py go_deps
       - name: Generate wheel
         run: |
-          .env/bin/python do.py dist
+          python do.py dist
       - name: Cleanup environment and install wheel
         run: |
           rm -rf .env
           python do.py setup
-          .env/bin/python do.py install
+          python do.py install
       - name: Generate Python and Go SDK
         run: |
-          .env/bin/python do.py generate all package
+          python do.py generate all package
       - name: Lint project source and generated SDK
         run: |
-          .env/bin/python do.py py_lint
-          .env/bin/python do.py go_lint
+          python do.py py_lint
+          python do.py go_lint
       - name: Archive generated SDK
         uses: actions/upload-artifact@v2
         with:
@@ -78,11 +78,11 @@ jobs:
       - name: Install dependencies
         run: |
           python do.py setup
-          .env/bin/python do.py install
+          python do.py install
           .env/bin/python -m pip install -r test_requirements.txt
       - name: Run python tests
         run: |
-          sudo .env/bin/python do.py test_py_sdk
+          sudo python do.py test_py_sdk
 
   go_tests:
     needs: build
@@ -128,7 +128,7 @@ jobs:
       - name: Generate SDKs and run tests
         run: |
           docker run -td --name openapiart-dev openapiart:dev
-          docker exec openapiart-dev bash -c ".env/bin/python do.py test"
+          docker exec openapiart-dev bash -c "python do.py test"
 
   publish_python_package:
     if: github.ref == 'refs/heads/main'
