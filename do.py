@@ -103,6 +103,18 @@ def get_go(version="1.19"):
         )
 
 
+def get_go_ci_lint(version):
+    run(
+        [
+            "curl -kLs {} | sh -s -- -b %s %s".format(
+                "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh",
+                go_bin_path,
+                version,
+            )
+        ]
+    )
+
+
 def get_go_deps(
     gen_go="v1.28.1", gen_grpc="v1.2.0", gen_doc="v1.5.1", ci_lint="v1.50.1"
 ):
@@ -119,11 +131,9 @@ def get_go_deps(
                 "github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc",
                 gen_doc,
             ),
-            cmd.format(
-                "github.com/golangci/golangci-lint/cmd/golangci-lint", ci_lint
-            ),
         ]
     )
+    get_go_ci_lint(ci_lint)
 
 
 def protoc_installer(version):
