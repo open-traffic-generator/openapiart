@@ -222,8 +222,45 @@ def py_lint(modify="False"):
     )
 
 
-def generate(lang="all"):
-    run(["{} {} {}".format(py(), "build.py", lang)])
+def generate(lang="all", import_from="source"):
+    print(
+        "Generating SDK for language {} and import path {}".format(
+            lang, import_from
+        )
+    )
+    if import_from == "source":
+        import openapiart
+    else:
+        import openapiart
+
+    open_api = openapiart.OpenApiArt(
+        api_files=[
+            "openapiart/tests/api/info.yaml",
+            "openapiart/tests/common/common.yaml",
+            "openapiart/tests/api/api.yaml",
+            "openapiart/goserver/api/service_a.api.yaml",
+            "openapiart/goserver/api/service_b.api.yaml",
+        ],
+        artifact_dir="art",
+        extension_prefix="sanity",
+        proto_service="Openapi",
+    )
+    if lang == "all" or lang == "python":
+        open_api.GeneratePythonSdk(package_name="sanity")
+
+    if lang == "all" or lang == "go":
+        open_api.GenerateGoSdk(
+            package_dir="github.com/open-traffic-generator/openapiart/pkg",
+            package_name="openapiart",
+        )
+        open_api.GenerateGoServer(
+            module_path="github.com/open-traffic-generator/openapiart/pkg",
+            models_prefix="openapiart",
+            models_path="github.com/open-traffic-generator/openapiart/pkg",
+        )
+        open_api.GoTidy(
+            relative_package_dir="pkg",
+        )
 
 
 def test_py_sdk():
