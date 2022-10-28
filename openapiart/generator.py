@@ -62,7 +62,7 @@ class Generator:
         self._src_dir = output_dir
         self._output_dir = os.path.join(output_dir, package_name)
         if os.path.exists(self._output_dir) is False:
-            os.mkdir(self._output_dir)
+            os.makedirs(self._output_dir, exist_ok=True)
         self._package_name = package_name
         self._protobuf_package_name = protobuf_package_name
         self._output_file = package_name
@@ -144,19 +144,23 @@ class Generator:
             os.path.join(os.path.dirname(__file__), "common.py"), "r"
         ) as fp:
             common_content = fp.read()
-            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
 
-            cnf_text = "import sanity_pb2 as pb2"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+            proto_import = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
                 pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
+                text="import {}_pb2 as pb2".format(
+                    self._protobuf_package_name
+                ),
             )
-            common_content = common_content.replace(cnf_text, modify_text)
+
+            grpc_import = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+                pkg_name=self._package_name,
+                text="import {}_pb2_grpc as pb2_grpc".format(
+                    self._protobuf_package_name
+                ),
+            )
+            common_content = common_content.replace(
+                "# IMPORT_PLACEHOLDER", proto_import + "\n\n" + grpc_import
+            )
 
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")

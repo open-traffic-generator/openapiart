@@ -179,7 +179,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._ux_path = os.path.normpath(
             os.path.join(
                 self._output_dir,
-                "..",
                 os.path.split(self._go_sdk_package_dir)[-1],
             )
         )

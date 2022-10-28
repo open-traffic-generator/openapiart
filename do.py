@@ -255,26 +255,28 @@ def generate(lang="all", import_from="source", nested="yes"):
             "openapiart/goserver/api/service_a.api.yaml",
             "openapiart/goserver/api/service_b.api.yaml",
         ],
-        artifact_dir="art",
-        extension_prefix="sanity",
-        proto_service="Openapi",
+        artifact_dir="artifacts",
+        protobuf_name="protobuf",
     )
     if lang == "all" or lang == "python":
-        open_api.GeneratePythonSdk(package_name="sanity")
+        open_api.GeneratePythonSdk(
+            package_name="pypkg", parent_dir="artifacts"
+        )
 
     if lang == "all" or lang == "go":
         open_api.GenerateGoSdk(
-            package_dir="github.com/open-traffic-generator/openapiart/pkg",
-            package_name="openapiart",
+            package_dir="github.com/open-traffic-generator/openapiart/artifacts/gopkg",
+            package_name="gopkg",
+            parent_dir="artifacts",
         )
-        open_api.GenerateGoServer(
-            module_path="github.com/open-traffic-generator/openapiart/pkg",
-            models_prefix="openapiart",
-            models_path="github.com/open-traffic-generator/openapiart/pkg",
-        )
-        open_api.GoTidy(
-            relative_package_dir="pkg",
-        )
+    #     open_api.GenerateGoServer(
+    #         module_path="github.com/open-traffic-generator/openapiart/pkg",
+    #         models_prefix="openapiart",
+    #         models_path="github.com/open-traffic-generator/openapiart/pkg",
+    #     )
+    #     open_api.GoTidy(
+    #         relative_package_dir="artifacts/",
+    #     )
 
 
 def test_py_sdk():

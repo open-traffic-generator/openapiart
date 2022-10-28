@@ -5,7 +5,7 @@ import subprocess
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def generate_requirements(path, file_name=None):
+def generate_requirements(path, pkg_name, file_name=None):
     """
     To generate the requirements.txt of library in its path
     """
@@ -23,7 +23,7 @@ def generate_requirements(path, file_name=None):
     subprocess.check_call(" ".join(process_args), shell=True)
 
     not_required_pkgs = [
-        "sanity",
+        pkg_name,
         "typing_extensions",
     ]
 
