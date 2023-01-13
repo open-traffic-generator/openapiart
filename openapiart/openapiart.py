@@ -61,6 +61,7 @@ class OpenApiArt(object):
         self._get_info()
         self._get_license()
         self._document()
+        self._generate_proto_file()
 
     def _get_license(self):
         license_name = self._bundler._content["info"]["license"]["name"]
@@ -142,7 +143,6 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
-        self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -239,7 +239,6 @@ class OpenApiArt(object):
 
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
-        self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(
                 os.path.join(
