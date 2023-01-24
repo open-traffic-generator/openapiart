@@ -129,8 +129,39 @@ jobs:
         run: |
           python do.py testgo
 
+  proto/yml_generation_test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+       - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9 
+      - uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: generated-artifacts
+      - name: Install dependencies
+        run: |
+          python do.py setup
+          python do.py install
+      - name: Run artifact generation
+        run: |
+          python do.py generate only_proto True
+      - name: Display structure of downloaded files
+        run: ls -R
+      - name: Check Genrated files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "art/openapi.json, art/openapi.yaml, art/sanity.proto"
+          fail: true
+
   publish_python_package:
-    needs: [python_tests, go_tests]
+    needs: [python_tests, go_tests, proto/yml_generation_test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
