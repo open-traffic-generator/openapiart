@@ -129,7 +129,7 @@ jobs:
         run: |
           python do.py testgo
 
-  proto/yml_generation_test:
+  proto_yml_generation_test:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -161,7 +161,7 @@ jobs:
           fail: true
 
   publish_python_package:
-    needs: [python_tests, go_tests, proto/yml_generation_test]
+    needs: [python_tests, go_tests, proto_yml_generation_test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
