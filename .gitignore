@@ -10,7 +10,6 @@ __pycache__
 /build
 /dist
 /env
-/.vscode
 /scratch
 /cov_report
 /**/art
