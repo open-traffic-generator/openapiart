@@ -133,7 +133,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-       - name: Checkout source
+      - name: Checkout source
         uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
