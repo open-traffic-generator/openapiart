@@ -7,13 +7,13 @@ from openapiart.goserver.writer import Writer
 
 
 class GoServerControllerGenerator(object):
-    def __init__(self, ctx):
+    def __init__(self, context):
         # type: (ctx.GeneratorContext) -> None
         self._indent = "\t"
-        self._root_package = ctx.module_path
+        self._root_package = context.module_path
         self._package_name = "controllers"
-        self._ctx = ctx
-        self._output_path = os.path.join(ctx.output_path, "controllers")
+        self._ctx = context
+        self._output_path = os.path.join(context.output_path, "controllers")
 
     def generate(self):
         self._write_controllers()
