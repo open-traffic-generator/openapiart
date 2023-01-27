@@ -45,6 +45,9 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         extension_prefix="sanity",
         proto_service="Openapi",
     )
+    if sdk == "proto" or sdk is None:
+        open_api.GenerateProtoDef(package_name="sanity")
+
     if sdk == "python" or sdk is None:
         open_api.GeneratePythonSdk(package_name="sanity")
 
@@ -80,5 +83,7 @@ if __name__ == "__main__":
             module = importlib.import_module("openapiart.openapiart")
             openapiart_class = getattr(module, "OpenApiArt")
         else:
-            raise Exception("Error: Not able to import openapiart module with the generated sdk")
+            raise Exception(
+                "Error: Not able to import openapiart module with the generated sdk"
+            )
     create_openapi_artifacts(openapiart_class, sdk)

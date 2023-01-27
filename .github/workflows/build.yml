@@ -151,7 +151,7 @@ jobs:
           python do.py install
       - name: Run artifact generation
         run: |
-          python do.py generate only_proto True
+          python do.py generate proto True
       - name: Display structure of downloaded files
         run: ls -R
       - name: Check Genrated files

@@ -61,7 +61,6 @@ class OpenApiArt(object):
         self._get_info()
         self._get_license()
         self._document()
-        self._generate_proto_file()
 
     def _get_license(self):
         license_name = self._bundler._content["info"]["license"]["name"]
@@ -119,6 +118,10 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of static documentation: {}".format(e))
 
+    def GenerateProtoDef(self, package_name):
+        self._protobuf_package_name = package_name
+        self._generate_proto_file()
+
     def GeneratePythonSdk(self, package_name):
         """Generates a Python UX Sdk
         Args
@@ -143,6 +146,8 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
+        if not self.proto_file_exsists():
+            self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -239,6 +244,8 @@ class OpenApiArt(object):
 
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
+        if not self.proto_file_exsists():
+            self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(
                 os.path.join(
@@ -331,6 +338,15 @@ class OpenApiArt(object):
             }
         )
         protobuf.generate(self._openapi)
+
+    def proto_file_exsists(self):
+        proto_file_path = os.path.normpath(
+            os.path.join(
+                self._output_dir,
+                "{}.proto".format(self._protobuf_package_name),
+            )
+        )
+        return os.path.exists(proto_file_path)
 
     @property
     def output_dir(self):
