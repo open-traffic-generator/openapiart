@@ -325,7 +325,7 @@ class Bundler(object):
         self._resolve_refs(base_dir, yobject)
 
     def _check_upper_case(self, value):
-        
+
         for c in value:
             if c.isupper():
                 return True
