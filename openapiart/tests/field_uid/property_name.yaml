@@ -20,32 +20,6 @@ paths:
               schema:
                 type: string
                 format: binary
-        '400':
-          x-field-uid: 2
-          description: 'error 4xx'
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                    x-field-uid: 1
-        '500':
-          x-field-uid: 4
-          description: 'error 5xx'
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                    x-field-uid: 1
 components:
   schemas:
     Field.Config:

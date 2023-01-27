@@ -25,7 +25,7 @@ def str_compare(validte_str, entire_str):
 
 def test_validate_property_name():
     include_error = (
-        "is invalid. Only lower case with underscore separated is allowed"
+        "is invalid. Only lower case letters separated with an underscore is allowed"
     )
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(

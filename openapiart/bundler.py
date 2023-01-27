@@ -348,7 +348,7 @@ class Bundler(object):
                     upper_case = self._check_upper_case(name)
                     if upper_case:
                         raise NameError(
-                            "*** Property name '{}' is invalid. Only lower case with underscore separated is allowed.***".format(
+                            "*** Property name '{}' is invalid. Only lower case letters separated with an underscore is allowed.***".format(
                                 value
                             )
                         )
