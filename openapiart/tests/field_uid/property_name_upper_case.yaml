@@ -27,12 +27,6 @@ components:
       description: |-
         This is a field uid object
       properties:
-        camelCase:
-          type: boolean
-          x-field-uid: 1
-        PascalCase:
-          type: boolean
-          x-field-uid: 2
         Upper_case:
           type: boolean
-          x-field-uid: 3
+          x-field-uid: 1

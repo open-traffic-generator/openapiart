@@ -325,13 +325,12 @@ class Bundler(object):
         self._resolve_refs(base_dir, yobject)
 
     def _check_upper_case(self, value):
-        upper_case = False
-
+        
         for c in value:
             if c.isupper():
-                upper_case = True
+                return True
 
-        return upper_case
+        return False
 
     def _validate_names(self, regex, components_key, components):
         if components_key not in components:
