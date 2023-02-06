@@ -324,6 +324,14 @@ class Bundler(object):
                 self._check_nested_components(value)
         self._resolve_refs(base_dir, yobject)
 
+    def _check_upper_case(self, value):
+
+        for c in value:
+            if c.isupper():
+                return True
+
+        return False
+
     def _validate_names(self, regex, components_key, components):
         if components_key not in components:
             return
@@ -336,6 +344,13 @@ class Bundler(object):
                             "%s property name `%s` contains invalid characters"
                             % (key, name)
                         )
+                    if self._check_upper_case(name):
+                        raise NameError(
+                            "*** Property name '{}' is invalid. Only lower case letters separated with an underscore is allowed.***".format(
+                                value
+                            )
+                        )
+
             self._content["components"][components_key][key] = value
 
     def _check_nested_components(self, components):
