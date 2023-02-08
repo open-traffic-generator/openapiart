@@ -14,6 +14,7 @@ import platform
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
+from inspect import stack
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -612,7 +613,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = (
-        "__warnings__", "_properties", "_parent", "_choice"
+        "__warnings__", "_properties", "_parent", "_choice", "_user_choice", "_ignore_fucntions" 
     )
     _DEFAULTS = {}
     _TYPES = {}
@@ -624,6 +625,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._choice = choice
         self._properties = {}
         self.__warnings__ = []
+        self._user_choice = None
+        self._ignore_fucntions = ["__init__"]
 
     @property
     def parent(self):
@@ -631,6 +634,17 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def _set_choice(self, name):
         if self._has_choice(name):
+            
+            # we need to set the the user choice only when its trigered by the user and not by our internal code base
+            if self._user_choice is None:
+                call_stack = stack()
+                if len(call_stack) > 4 and call_stack[2][3] == name and call_stack[3][3] not in self._ignore_fucntions:
+                    self._user_choice = name
+            
+            # this is needed so that once a choice is set user does not accidently change the choice again
+            if self._user_choice is not None and name != self._user_choice:
+                raise Exception("Cannot set %s, as %s was already set earlier." %(name, self._user_choice))
+            
             for enum in self._TYPES["choice"]["enum"]:
                 if enum in self._properties and name != enum:
                     self._properties.pop(enum)
