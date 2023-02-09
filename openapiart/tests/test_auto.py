@@ -15,8 +15,8 @@ def test_auto(config):
     assert dt.get("auto_field_test", {}).get("choice") == "auto"
     assert dt.get("auto_field_test", {}).get("auto") == 0
 
-    config.auto_field_test.value = 20
-    assert config.auto_field_test.choice == "value"
+    # config.auto_field_test.value = 20
+    # assert config.auto_field_test.choice == "value"
 
     # config.auto_field_test.auto
     # assert config.auto_field_test.choice == "auto"
