@@ -27,7 +27,7 @@ def test_perf(api):
     j = config.j.add()
     j.j_a.e_a = 10.1
     j.j_a.e_b = 2.1
-    # j.j_b.f_b = 3.1
+    j.j_b.f_b = 3.1
     config.k.e_object.e_a = 1.0
     config.k.e_object.e_b = 0.1
     config.k.f_object.f_a

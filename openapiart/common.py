@@ -632,19 +632,29 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def parent(self):
         return self._parent
 
+    def _set_user_choice(self, choice, fucntion_idx):
+        if self._user_choice is None:
+            call_stack = stack()
+            if (
+                len(call_stack) > 4
+                and call_stack[fucntion_idx][3] == choice
+                and call_stack[fucntion_idx + 1][3] not in self._ignore_fucntions
+            ):
+                self._user_choice = choice
+
     def _set_choice(self, name):
         if self._has_choice(name):
-            
+
             # we need to set the the user choice only when its trigered by the user and not by our internal code base
-            if self._user_choice is None:
-                call_stack = stack()
-                if len(call_stack) > 4 and call_stack[2][3] == name and call_stack[3][3] not in self._ignore_fucntions:
-                    self._user_choice = name
-            
+            self._set_user_choice(name, 3)
+
             # this is needed so that once a choice is set user does not accidently change the choice again
             if self._user_choice is not None and name != self._user_choice:
-                raise Exception("Cannot set %s, as %s was already set earlier." %(name, self._user_choice))
-            
+                raise Exception(
+                    "Cannot set/retrieve %s, as %s was already set earlier."
+                    % (name, self._user_choice)
+                )
+
             for enum in self._TYPES["choice"]["enum"]:
                 if enum in self._properties and name != enum:
                     self._properties.pop(enum)
