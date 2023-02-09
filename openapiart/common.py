@@ -675,6 +675,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self, name, default_value=None, parent=None, choice=None
     ):
         if name in self._properties and self._properties[name] is not None:
+            
+            # while retrieving if the user is selecting a choice we should update that and not from internal code
+            if self._has_choice(name):
+                self._set_user_choice(name, 2)
+            
             return self._properties[name]
         if isinstance(default_value, type) is True:
             self._set_choice(name)
