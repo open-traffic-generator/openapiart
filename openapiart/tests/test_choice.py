@@ -55,7 +55,7 @@ def test_strict_choice_type_leaf_nodes_no_default(api):
     m = api.metrics_request()
 
     # ensuring no default value assigned
-    assert m._user_choice == None
+    assert m._user_choice is None
 
     # ensuring choice set properly
     m.port = "abcd"
