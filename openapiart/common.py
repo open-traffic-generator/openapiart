@@ -626,7 +626,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._properties = {}
         self.__warnings__ = []
         self._user_choice = None
-        self._ignore_fucntions = ["__init__"]
+        self._ignore_fucntions = ["__init__", "_get_property"]
 
     @property
     def parent(self):
