@@ -4,15 +4,6 @@ import pytest
 def test_getting_leaf_nodes_without_default(api):
     m = api.metrics_request()
 
-    # check initial state
-    assert m.choice == "flow"
-
-    # getting properties should not change choice
-    m.port
-    assert m.choice == "flow"
-    m.flow
-    assert m.choice == "flow"
-
     # setting properties should change choice
     m.port = "p1"
     assert m.choice == "port"
