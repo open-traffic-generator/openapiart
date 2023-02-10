@@ -613,7 +613,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = (
-        "__warnings__", "_properties", "_parent", "_choice", "_user_choice", "_ignore_fucntions" 
+        "__warnings__", "_properties", "_parent", "_choice"
     )
     _DEFAULTS = {}
     _TYPES = {}
@@ -625,36 +625,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._choice = choice
         self._properties = {}
         self.__warnings__ = []
-        self._user_choice = None
-        self._ignore_fucntions = ["__init__", "_get_property"]
 
     @property
     def parent(self):
         return self._parent
 
-    def _set_user_choice(self, choice, fucntion_idx):
-        if self._user_choice is None:
-            call_stack = stack()
-            if (
-                len(call_stack) > 4
-                and call_stack[fucntion_idx][3] == choice
-                and call_stack[fucntion_idx + 1][3] not in self._ignore_fucntions
-            ):
-                self._user_choice = choice
-
     def _set_choice(self, name):
         if self._has_choice(name):
-
-            # we need to set the the user choice only when its trigered by the user and not by our internal code base
-            self._set_user_choice(name, 3)
-
-            # this is needed so that once a choice is set user does not accidently change the choice again
-            if self._user_choice is not None and name != self._user_choice:
-                raise Exception(
-                    "Cannot set/retrieve %s, as %s was already set earlier."
-                    % (name, self._user_choice)
-                )
-
             for enum in self._TYPES["choice"]["enum"]:
                 if enum in self._properties and name != enum:
                     self._properties.pop(enum)
@@ -675,11 +652,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self, name, default_value=None, parent=None, choice=None
     ):
         if name in self._properties and self._properties[name] is not None:
-            
-            # while retrieving if the user is selecting a choice we should update that and not from internal code
-            if self._has_choice(name):
-                self._set_user_choice(name, 2)
-            
             return self._properties[name]
         if isinstance(default_value, type) is True:
             self._set_choice(name)
@@ -699,8 +671,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 )
         else:
             if default_value is None and name in self._DEFAULTS:
-                self._set_choice(name)
-                self._properties[name] = self._DEFAULTS[name]
+                if stack()[2][3] in ["__init__", "get", "_get_property"]:
+                    self._set_choice(name)
+                    self._properties[name] = self._DEFAULTS[name]
+                else:
+                    return self._DEFAULTS[name]
             else:
                 self._properties[name] = default_value
         return self._properties[name]
