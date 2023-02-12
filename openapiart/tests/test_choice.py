@@ -110,3 +110,45 @@ def test_get_set_for_parent_choice_objects(api):
     assert j.choice == "j_a"
     assert j._properties.get("j_a", None) is not None
     assert j._properties.get("j_b", None) is None
+
+
+def test_get_set_for_pattern_properties(api):
+    config = api.prefix_config()
+    ip = config.ipv4_pattern.ipv4
+
+    # check default
+    assert ip._properties.get("choice", None) == "value"
+    assert ip._properties.get("value", None) is not None
+    assert ip._properties.get("values", None) is None
+    assert ip._properties.get("increment", None) is None
+    assert ip._properties.get("decrement", None) is None
+
+    # fetching properties should not change choice
+    ip.value
+    assert ip._properties.get("choice", None) == "value"
+    assert ip._properties.get("value", None) is not None
+
+    ip.values
+    assert ip._properties.get("choice", None) == "value"
+    assert ip._properties.get("value", None) is not None
+
+    ip.increment
+    assert ip._properties.get("choice", None) == "value"
+    assert ip._properties.get("value", None) is not None
+
+    ip.decrement
+    assert ip._properties.get("choice", None) == "value"
+    assert ip._properties.get("value", None) is not None
+
+    # setting the values should change the choice
+    ip.increment.count = 5
+    assert ip._properties.get("choice", None) == "increment"
+    assert ip._properties.get("increment", None) is not None
+
+    ip.values = ["1.1.1.1"]
+    assert ip._properties.get("choice", None) == "values"
+    assert ip._properties.get("values", None) is not None
+
+    ip.decrement.count = 5
+    assert ip._properties.get("choice", None) == "decrement"
+    assert ip._properties.get("decrement", None) is not None
