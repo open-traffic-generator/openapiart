@@ -14,6 +14,7 @@ import platform
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
+from inspect import stack
 
 try:
     from typing import Union, Dict, List, Any, Literal
@@ -612,7 +613,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     """
 
     __slots__ = (
-        "__warnings__", "_properties", "_parent", "_choice"
+        "__warnings__", "_properties", "_parent", "_choice", "_parent_choice"
     )
     _DEFAULTS = {}
     _TYPES = {}
@@ -622,6 +623,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         super(OpenApiObject, self).__init__()
         self._parent = parent
         self._choice = choice
+        self._parent_choice = None
         self._properties = {}
         self.__warnings__ = []
 
@@ -653,13 +655,17 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
-            self._set_choice(name)
             if "_choice" in default_value.__slots__:
                 self._properties[name] = default_value(
                     parent=parent, choice=choice
                 )
             else:
-                self._properties[name] = default_value(parent=parent)
+                if self._is_internal_call("_get_property"):
+                    self._set_choice(name)
+                    self._properties[name] = default_value(parent=parent)
+                else:
+                    self._properties[name] = default_value(parent=parent)
+                    self._properties[name]._parent_choice = choice
             if (
                 "_DEFAULTS" in dir(self._properties[name])
                 and "choice" in self._properties[name]._DEFAULTS
@@ -670,14 +676,20 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 )
         else:
             if default_value is None and name in self._DEFAULTS:
-                self._set_choice(name)
-                self._properties[name] = self._DEFAULTS[name]
+                if self._is_internal_call("_get_property"):
+                    self._set_choice(name)
+                    self._properties[name] = self._DEFAULTS[name]
+                else:
+                    return self._DEFAULTS[name]
             else:
                 self._properties[name] = default_value
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
-        if name in self._DEFAULTS and value is None:
+        if name == "choice":
+            self._set_choice(value)
+            self._properties[name] = value
+        elif name in self._DEFAULTS and value is None:
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
         else:
@@ -685,9 +697,34 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._properties[name] = value
         self._validate_unique_and_name(name, value)
         self._validate_constraint(name, value)
-        if self._parent is not None and self._choice is not None and value is not None:
+        if (
+            self._parent is not None
+            and self._choice is not None
+            and value is not None
+            and self._is_internal_call("_set_property")
+        ):
             self._parent._set_property("choice", self._choice)
+        elif self._parent is not None and self._parent_choice is not None:
+            self._parent._set_property("choice", self._parent_choice) 
 
+    def _is_internal_call(self, function_name):
+        """
+            This fucntion basically checks the call stack and returns true if the current call to the function is from the internal code base.
+            Basically it helps us to distinguish between user calls and internal code base calls 
+        """
+
+        call_stack = stack()
+        if function_name == "_set_property":
+            internal_func = "__init__"
+            if call_stack[2][3] != internal_func and call_stack[3][3] != internal_func:
+                return True
+        elif function_name == "_get_property":
+            if stack()[3][3] in ["__init__", "get", "_get_property"]:
+                return True
+        else:
+            raise NotImplementedError("currently function %s is not supported" % function_name )
+        return False
+    
     def _encode(self):
         """Helper method for serialization"""
         output = {}

@@ -19,4 +19,5 @@ def test_auto(config):
     assert config.auto_field_test.choice == "value"
 
     config.auto_field_test.auto
-    assert config.auto_field_test.choice == "auto"
+    # just fetching attribute should not change choice
+    assert config.auto_field_test.choice == "value"
