@@ -83,3 +83,30 @@ def test_get_set_for_choice_heirarchy(api):
     assert j.j_b.choice == "f_a"
     assert j.j_b._properties.get("f_a") == "asd"
     assert j.j_b._properties.get("f_b") is None
+
+
+def test_get_set_for_parent_choice_objects(api):
+
+    config = api.prefix_config()
+    j = config.j.add()
+
+    # check default for parent
+    assert j.choice == "j_a"
+    assert j._properties.get("j_a", None) is not None
+    assert j._properties.get("j_b", None) is None
+
+    # fetching properties should not change choice
+    f = j.j_b
+    assert j.choice == "j_a"
+    assert j._properties.get("j_a", None) is not None
+
+    # setting properties should change parent choice
+    f.f_a = "asd"
+    assert j.choice == "j_b"
+    assert j._properties.get("j_b", None) is not None
+    assert j._properties.get("j_a", None) is None
+
+    j.j_a.e_a = 123
+    assert j.choice == "j_a"
+    assert j._properties.get("j_a", None) is not None
+    assert j._properties.get("j_b", None) is None

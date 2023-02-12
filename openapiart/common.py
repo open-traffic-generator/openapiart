@@ -654,12 +654,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
-            self._set_choice(name)
             if "_choice" in default_value.__slots__:
                 self._properties[name] = default_value(
                     parent=parent, choice=choice
                 )
             else:
+                self._set_choice(name)
                 self._properties[name] = default_value(parent=parent)
             if (
                 "_DEFAULTS" in dir(self._properties[name])
@@ -681,7 +681,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
-        if name in self._DEFAULTS and value is None:
+        if name == "choice":
+            self._set_choice(value)
+            self._properties[name] = value
+        elif name in self._DEFAULTS and value is None:
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
         else:
@@ -689,7 +692,14 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._properties[name] = value
         self._validate_unique_and_name(name, value)
         self._validate_constraint(name, value)
-        if self._parent is not None and self._choice is not None and value is not None:
+        call_stack = stack()
+        if (
+            self._parent is not None
+            and self._choice is not None
+            and value is not None
+            and call_stack[1][3] != "__init__"
+            and call_stack[2][3] != "__init__"
+        ):
             self._parent._set_property("choice", self._choice)
 
     def _encode(self):

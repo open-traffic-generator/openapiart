@@ -885,6 +885,8 @@ class Generator:
             self._write(1, "def __init__(%s):" % (params))
             self._write(2, "super(%s, self).__init__()" % class_name)
             self._write(2, "self._parent = parent")
+            if "choice" in params:
+                self._write(2, "self._choice = choice")
             for property_name in properties:
                 self._write(
                     2,
