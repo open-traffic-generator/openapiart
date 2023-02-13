@@ -861,7 +861,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{
                         return nil, err
                     }}
-                    bodyBytes, err := ioutil.ReadAll(resp.Body)
+                    bodyBytes, err := io.ReadAll(resp.Body)
                     defer resp.Body.Close()
                     if err != nil {{
                         return nil, err
