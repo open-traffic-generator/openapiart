@@ -75,6 +75,7 @@ jobs:
         run: |
           python do.py generate python True
       - name: Archive generated artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: generated_py_package
@@ -119,6 +120,7 @@ jobs:
         run: |
           python do.py go_lint
       - name: Archive generated artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: generated_go_package
