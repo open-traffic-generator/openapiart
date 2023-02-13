@@ -68,7 +68,7 @@ def get_go(version=GO_VERSION, targz=None):
     )
     cmd += " && tar -C {} -xzf go-installer".format(LOCAL_PATH)
     cmd += " && rm -rf go-installer"
-    cmd += " && echo 'PATH=$PATH:{}:{}' > ~/.profile".format(
+    cmd += " && echo 'PATH=$PATH:{}:{}' >> ~/.profile".format(
         GO_BIN_PATH, GO_HOME_BIN_PATH
     )
     cmd += " && echo 'GOPATH={}' >> ~/.profile)".format(GO_HOME_PATH)
