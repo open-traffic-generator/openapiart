@@ -71,7 +71,7 @@ def get_go(version=GO_VERSION, targz=None):
     cmd += " && echo 'PATH=$PATH:{}:{}' >> ~/.profile".format(
         GO_BIN_PATH, GO_HOME_BIN_PATH
     )
-    cmd += " && echo 'GOPATH={}' >> ~/.profile)".format(GO_HOME_PATH)
+    cmd += " && echo 'export GOPATH={}' >> ~/.profile)".format(GO_HOME_PATH)
     run([cmd])
 
 
