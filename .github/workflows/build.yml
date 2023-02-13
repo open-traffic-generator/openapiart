@@ -39,9 +39,10 @@ jobs:
         run: |
           python do.py lint
       - name: Archive generated artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
           path: |
             dist
             pkg
@@ -65,7 +66,7 @@ jobs:
       - uses: actions/download-artifact@v2
         id: download
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Install dependencies
         run: |
           python do.py setup
@@ -73,6 +74,12 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate python True
+      - name: Archive generated artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated_py_package
+          path: |
+            art
       - name: Display structure of downloaded files
         run: ls -R
       - name: Run python tests
@@ -114,12 +121,13 @@ jobs:
       - name: Archive generated artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: generated-artifacts
+          name: generated_go_package
           path: |
             pkg
+            art
       - uses: actions/download-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Display structure of downloaded files
         run: ls -R
       - uses: actions/setup-go@v2
@@ -144,7 +152,7 @@ jobs:
       - uses: actions/download-artifact@v2
         id: download
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Install dependencies
         run: |
           python do.py setup
@@ -174,7 +182,7 @@ jobs:
           python-version: 3.9
       - uses: actions/download-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Display structure of downloaded files
         run: ls -R
       - name: Get package version
