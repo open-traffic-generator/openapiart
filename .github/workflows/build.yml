@@ -119,8 +119,6 @@ jobs:
         run: |
           python do.py generate go
       - name: Run go lint
-        # skip for older go versions as newer linter is not supported for those
-        if: ${{ matrix.go }} != "1.17.13" && ${{ matrix.go }} != "1.18.10"
         run: |
           python do.py go_lint
       - name: Archive generated artifacts
