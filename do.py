@@ -265,7 +265,7 @@ def testgo():
 
 
 def go_lint():
-    pkg = "{env_set}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2".format(
+    pkg = "{env_set}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1".format(
         env_set=""
         if sys.platform == "win32"
         else "GO111MODULE=on CGO_ENABLED=0 "
