@@ -193,6 +193,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("package {};".format(self._protobuf_package_name))
         self._write()
+        self._write(
+            'option go_package = "./{};{}";'.format(
+                self._protobuf_package_name, self._protobuf_package_name
+            )
+        )
+        self._write()
         if self._go_sdk_package_dir is not None:
             self._write(
                 'option go_package = "{}/{}";'.format(

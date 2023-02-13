@@ -291,10 +291,11 @@ func TestLObject(t *testing.T) {
 }
 
 // TestRequiredObject
-//  This test MUST create the underlying protobuf EObject
-//  The generated wrapper get accessor must create the underlying protobuf EObject
-//  Confirm the underlying protobuf EObject has been created by setting the
-//  properties of the returned RequiredObject
+//
+//	This test MUST create the underlying protobuf EObject
+//	The generated wrapper get accessor must create the underlying protobuf EObject
+//	Confirm the underlying protobuf EObject has been created by setting the
+//	properties of the returned RequiredObject
 func TestRequiredObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
@@ -304,10 +305,11 @@ func TestRequiredObject(t *testing.T) {
 }
 
 // TestOptionalObject
-//  This test MUST create the underlying protobuf EObject
-//  The generated wrapper get accessor must create the underlying protobuf EObject
-//  Confirm the underlying protobuf EObject has been created by setting the
-//  properties of the returned OptionalObject
+//
+//	This test MUST create the underlying protobuf EObject
+//	The generated wrapper get accessor must create the underlying protobuf EObject
+//	Confirm the underlying protobuf EObject has been created by setting the
+//	properties of the returned OptionalObject
 func TestOptionalObject(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()

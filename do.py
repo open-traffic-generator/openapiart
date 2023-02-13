@@ -5,17 +5,28 @@ import sys
 import shutil
 import subprocess
 import platform
+import pathlib
 
 # from openapiart.generate_requirements import generate_requirements
 
 
 BLACK_VERSION = "22.1.0"
+GO_VERSION = "1.20"
+PROTOC_VERSION = "3.20.3"
 
-os.environ["GOPATH"] = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), ".local"
-)
-os.environ["PATH"] = os.environ["PATH"] + ":{0}/go/bin:{0}/bin".format(
-    os.environ["GOPATH"]
+# this is where go and protoc shall be installed (and expected to be present)
+LOCAL_PATH = os.path.join(pathlib.Path.home(), ".local")
+# path where protoc bin shall be installed or expected to be present
+LOCAL_BIN_PATH = os.path.join(LOCAL_PATH, "bin")
+# path where go bin shall be installed or expected to be present
+GO_BIN_PATH = os.path.join(LOCAL_PATH, "go", "bin")
+# path for go package source and installations
+GO_HOME_PATH = os.path.join(pathlib.Path.home(), "go")
+GO_HOME_BIN_PATH = os.path.join(GO_HOME_PATH, "bin")
+
+os.environ["GOPATH"] = GO_HOME_PATH
+os.environ["PATH"] = "{}:{}:{}:{}".format(
+    os.environ["PATH"], GO_BIN_PATH, GO_HOME_BIN_PATH, LOCAL_BIN_PATH
 )
 
 
@@ -36,26 +47,32 @@ def on_linux():
     return "linux" in sys.platform
 
 
-def get_go(go_version="1.17"):
-    version = go_version
-    targz = None
-
-    if on_arm():
-        targz = "go" + version + ".linux-arm64.tar.gz"
-    elif on_x86():
-        targz = "go" + version + ".linux-amd64.tar.gz"
-    else:
-        print("host architecture not supported")
-        return
-
-    if not os.path.exists(os.environ["GOPATH"]):
-        os.mkdir(os.environ["GOPATH"])
+def get_go(version=GO_VERSION, targz=None):
+    if targz is None:
+        if on_arm():
+            targz = "go" + version + ".linux-arm64.tar.gz"
+        elif on_x86():
+            targz = "go" + version + ".linux-amd64.tar.gz"
+        else:
+            print("host architecture not supported")
+            return
 
     print("Installing Go ...")
-    cmd = (
-        "go version 2> /dev/null || curl -kL https://dl.google.com/go/" + targz
+
+    if not os.path.exists(LOCAL_PATH):
+        os.mkdir(LOCAL_PATH)
+
+    cmd = "go version 2> /dev/null"
+    cmd += " || (rm -rf $(dirname {})".format(GO_BIN_PATH)
+    cmd += " && curl -kL -o go-installer https://dl.google.com/go/{}".format(
+        targz
     )
-    cmd += " | tar -C " + os.environ["GOPATH"] + " -xzf -"
+    cmd += " && tar -C {} -xzf go-installer".format(LOCAL_PATH)
+    cmd += " && rm -rf go-installer"
+    cmd += " && echo 'PATH=$PATH:{}:{}' > ~/.profile".format(
+        GO_BIN_PATH, GO_HOME_BIN_PATH
+    )
+    cmd += " && echo 'GOPATH={}' >> ~/.profile)".format(GO_HOME_PATH)
     run([cmd])
 
 
@@ -64,40 +81,44 @@ def get_go_deps():
     cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
     run(
         [
-            cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0",
-            cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.25.0",
-            cmd + " -v golang.org/x/tools/cmd/goimports@latest",
+            cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0",
+            cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1",
+            cmd + " -v golang.org/x/tools/cmd/goimports@v0.6.0",
             cmd
-            + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest",
+            + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1",
         ]
     )
 
 
-def get_protoc():
-    version = "3.17.3"
-    zipfile = None
-
-    if on_arm():
-        zipfile = "protoc-" + version + "-linux-aarch_64.zip"
-    elif on_x86():
-        zipfile = "protoc-" + version + "-linux-x86_64.zip"
-    else:
-        print("host architecture not supported")
-        return
+def get_protoc(version=PROTOC_VERSION, zipfile=None):
+    if zipfile is None:
+        if on_arm():
+            zipfile = "protoc-" + version + "-linux-aarch_64.zip"
+        elif on_x86():
+            zipfile = "protoc-" + version + "-linux-x86_64.zip"
+        else:
+            print("host architecture not supported")
+            return
 
     print("Installing protoc ...")
-    cmd = "protoc --version 2> /dev/null || ( curl -kL -o ./protoc.zip "
-    cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v"
-    cmd += version + "/" + zipfile
-    cmd += " && unzip ./protoc.zip -d " + os.environ["GOPATH"]
-    cmd += " && rm -rf ./protoc.zip )"
+
+    if not os.path.exists(LOCAL_PATH):
+        os.mkdir(LOCAL_PATH)
+
+    cmd = "protoc --version 2> /dev/null || (curl -kL -o ./protoc.zip "
+    cmd += "https://github.com/protocolbuffers/protobuf/releases/download/v{}/{}".format(
+        version, zipfile
+    )
+    cmd += " && unzip -o ./protoc.zip -d {}".format(LOCAL_PATH)
+    cmd += " && rm -rf ./protoc.zip"
+    cmd += " && echo 'PATH=$PATH:{}' >> ~/.profile)".format(LOCAL_BIN_PATH)
     run([cmd])
 
 
-def setup_ext(go_version="1.17"):
+def setup_ext(go_version=GO_VERSION, protoc_version=PROTOC_VERSION):
     if on_linux():
         get_go(go_version)
-        get_protoc()
+        get_protoc(protoc_version)
         get_go_deps()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
