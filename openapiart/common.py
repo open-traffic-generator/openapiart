@@ -257,7 +257,8 @@ class OpenApiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
-        self._clear_globals()
+        # TODO: restore behavior
+        # self._clear_globals()
         if encoding == OpenApiBase.JSON:
             data = json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
