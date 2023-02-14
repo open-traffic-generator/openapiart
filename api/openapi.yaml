@@ -1,0 +1,308 @@
+openapi: 3.1.0
+
+info:
+  title: openapiart
+  version: 0.0.1
+  description: |
+    This is a reference specification demonstrating features supported by openapiart.
+  license:
+    name: MIT
+    url: https://github.com/ashutshkumr/openapiart/blob/main/license
+
+servers:
+  - url: localhost:8443
+
+security:
+  - {}
+
+paths:
+  /config:
+    get:
+      operationId: get_config
+      summary: Get configuration from server
+      tags:
+        - config
+      responses:
+        200:
+          description: Successfully returned configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        default:
+          description: Failed to return configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+    post:
+      operationId: push_config
+      summary: Push configuration to server
+      tags:
+        - config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Config"
+
+      responses:
+        200:
+          description: Successfully pushed configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseOk"
+        default:
+          description: Failed pushing configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+
+components:
+  schemas:
+    Config:
+      type: object
+      properties:
+        native_features:
+          $ref: "#/components/schemas/NativeFeatures"
+        extended_features:
+          $ref: "#/components/schemas/ExtendedFeatures"
+
+    NativeFeatures:
+      type: object
+      properties:
+        required_val:
+          $ref: "#/components/schemas/RequiredVal"
+        optional_val:
+          $ref: "#/components/schemas/OptionalVal"
+        boundary_val:
+          $ref: "#/components/schemas/BoundaryVal"
+        enum_val:
+          $ref: "#/components/schemas/EnumVal"
+        required_val_array:
+          $ref: "#/components/schemas/RequiredValArray"
+        optional_val_array:
+          $ref: "#/components/schemas/OptionalValArray"
+        boundary_val_array:
+          $ref: "#/components/schemas/BoundaryValArray"
+        enum_val_array:
+          $ref: "#/components/schemas/EnumValArray"
+
+    ExtendedFeatures:
+      type: object
+      properties:
+        choice_val:
+          $ref: "#/components/schemas/ChoiceVal"
+
+    ResponseOk:
+      type: object
+      properties:
+        warnings:
+          type: array
+          items:
+            type: string
+
+    ResponseError:
+      type: object
+      properties:
+        code:
+          type: string
+          default: internal
+          enum:
+            - validation
+            - internal
+        errors:
+          type: array
+          items:
+            type: string
+
+    RequiredVal:
+      type: object
+      required:
+        - int_val
+        - num_val
+        - str_val
+        - bool_val
+      properties:
+        int_val:
+          type: integer
+        num_val:
+          type: number
+        str_val:
+          type: string
+        bool_val:
+          type: boolean
+
+    OptionalVal:
+      type: object
+      properties:
+        int_val:
+          type: integer
+          default: 50
+        num_val:
+          type: number
+          default: 50.05
+        str_val:
+          type: string
+          default: default_str_val
+        bool_val:
+          type: boolean
+          default: true
+
+    BoundaryVal:
+      type: object
+      properties:
+        int_val:
+          type: integer
+          default: 50
+          minimum: 5
+          maximum: 100
+        num_val:
+          type: number
+          default: 50.05
+          minimum: 5.0
+          maximum: 100.0
+
+    RequiredValArray:
+      type: object
+      required:
+        - int_vals
+        - num_vals
+        - str_vals
+        - bool_vals
+      properties:
+        int_vals:
+          type: array
+          items:
+            type: integer
+        num_vals:
+          type: array
+          items:
+            type: number
+        str_vals:
+          type: array
+          items:
+            type: string
+        bool_vals:
+          type: array
+          items:
+            type: boolean
+
+    OptionalValArray:
+      type: object
+      properties:
+        int_vals:
+          type: array
+          items:
+            type: integer
+          default:
+            - 10
+            - 20
+        num_vals:
+          type: array
+          items:
+            type: number
+          default:
+            - 10.01
+            - 20.02
+        str_vals:
+          type: array
+          items:
+            type: string
+          default:
+            - first_str
+            - second_str
+        bool_vals:
+          type: array
+          items:
+            type: boolean
+          default:
+            - true
+            - false
+
+    BoundaryValArray:
+      type: object
+      properties:
+        int_vals:
+          type: array
+          items:
+            type: integer
+            default: 50
+            minimum: 5
+            maximum: 100
+        num_vals:
+          type: array
+          items:
+            type: number
+            default: 50.05
+            minimum: 5.0
+            maximum: 100.0
+
+    EnumVal:
+      type: object
+      required:
+        - required_enum
+      properties:
+        required_enum:
+          type: string
+          enum:
+            - first_val
+            - second_val
+        optional_enum:
+          type: string
+          default: default_val
+          enum:
+            - first_val
+            - second_val
+            - default_val
+
+    EnumValArray:
+      type: object
+      required:
+        - required_enums
+      properties:
+        required_enums:
+          type: array
+          items:
+            type: string
+            enum:
+              - first_val
+              - second_val
+        optional_enums:
+          type: array
+          items:
+            type: string
+            default: default_val
+            enum:
+              - first_val
+              - second_val
+              - default_val
+
+    ChoiceVal:
+      type: object
+      properties:
+        mixed_val:
+          type: object
+          properties:
+            choice:
+              type: string
+              default: int_val
+              enum:
+                - int_val
+                - num_val
+                - str_val
+                - bool_val
+            int_val:
+              type: integer
+              default: 50
+            num_val:
+              type: number
+              default: 50.05
+            str_val:
+              type: string
+              default: default_str_val
+            bool_val:
+              type: boolean
+              default: true
