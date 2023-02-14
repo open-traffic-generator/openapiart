@@ -94,9 +94,9 @@ class Bundler(object):
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
         self._resolve_x_status()
-        self._resolve_x_unique()
+        self._remove_x_include()
         # TODO: restore behavior
-        # self._remove_x_include()
+        # self._resolve_x_unique()
         self._resolve_license()
         self._resolve_x_enmu(self._content)
         self._validate_field_uid()
@@ -347,7 +347,7 @@ class Bundler(object):
                     if self._check_upper_case(name):
                         raise NameError(
                             "*** Property name '{}' is invalid. Only lower case letters separated with an underscore is allowed.***".format(
-                                value
+                                name
                             )
                         )
 
@@ -777,7 +777,6 @@ class Bundler(object):
         Remove the x-include and the included content
         """
         for include_key, include_value in self._includes.items():
-            print(include_key, include_value)
             self._resolve_recursive_x_include(include_value)
 
         for xinclude in self._get_parser("$..x-include").find(self._content):

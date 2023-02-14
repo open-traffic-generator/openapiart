@@ -266,7 +266,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
-        self._write('import "google.golang.org/grpc/credentials/insecure"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(

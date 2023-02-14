@@ -8,7 +8,6 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
-	"github.com/oleiade/reflections"
 )
 
 type grpcTransport struct {
