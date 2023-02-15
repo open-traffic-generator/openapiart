@@ -39,7 +39,7 @@ def test_set(api):
 
     config_data = config._properties
 
-    if config_data["ieee_802_1qbb"] != True:
+    if not config_data["ieee_802_1qbb"]:
         raise ValueError("ieee_802_1qbb value is not set correctly")
     if config_data["space_1"] != 10:
         raise ValueError("space_1 value is not set correctly")
@@ -59,7 +59,7 @@ def test_set(api):
         if value != d_values[i]:
             raise ValueError("d values are not set correctly")
         i = i + 1
-    if config_data["h"] != False:
+    if config_data["h"]:
         raise ValueError("h value is not set correctly")
     if config_data["i"] != "1010100":
         raise ValueError("i value is not set correctly")
