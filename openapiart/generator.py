@@ -905,6 +905,35 @@ class Generator:
                 self._write(2, "else:")
                 self._write(3, "self.choice = choice")
 
+            # write def set(self)
+            write_set = False
+            params = "self"
+            if "choice" in self._get_choice_names(schema_object):
+                write_set = False
+            init_params, properties, _ = self._get_property_param_string(
+                schema_object
+            )
+            if len(init_params) > 0:
+                write_set = True
+            params = (
+                params
+                if len(init_params) == 0
+                else ", ".join([params, init_params])
+            )
+
+            if write_set:
+                self._write(1, "def set(%s):" % (params))
+                self._write(
+                    2, "for property_name, property_value in locals().items():"
+                )
+                self._write(
+                    3,
+                    "if property_name != 'self' and property_value is not None:",
+                )
+                self._write(
+                    4, "self._set_property(property_name, property_value)"
+                )
+
             # process properties - TBD use this one level up to process
             # schema, in requestBody, Response and also
             refs = self._process_properties(
@@ -1400,6 +1429,15 @@ class Generator:
             self._write()
             self._write(2, "value: %s" % restriction)
             self._write(2, '"""')
+            required, defaults = self._get_required_and_defaults(schema_object)
+            if len(required) > 0:
+                if name in required:
+                    self._write(2, "if value is None:")
+                    self._write(
+                        3,
+                        "raise TypeError('Cannot set required property %s as None')"
+                        % name,
+                    )
             if write_set_choice is True:
                 self._write(
                     2, "self._set_property('%s', value, '%s')" % (name, name)
