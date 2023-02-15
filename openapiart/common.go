@@ -8,7 +8,6 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
-	"github.com/oleiade/reflections"
 )
 
 type grpcTransport struct {
@@ -362,57 +361,60 @@ func (obj *validation) validateHexSlice(hex []string) error {
 	return obj.validateSlice(hex, "hex")
 }
 
-func (obj *validation) createMap(objName string) {
-	if obj.constraints == nil {
-		obj.constraints = make(map[string]map[string]Constraints)
-	}
-	_, ok := obj.constraints[objName]
-	if !ok {
-		obj.constraints[objName] = make(map[string]Constraints)
-	}
-}
+// TODO: restore behavior
+// func (obj *validation) createMap(objName string) {
+// 	if obj.constraints == nil {
+// 		obj.constraints = make(map[string]map[string]Constraints)
+// 	}
+// 	_, ok := obj.constraints[objName]
+// 	if !ok {
+// 		obj.constraints[objName] = make(map[string]Constraints)
+// 	}
+// }
 
-func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
-	if value == "" {
-		return true
-	}
+// TODO: restore behavior
+// func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
+// 	if value == "" {
+// 		return true
+// 	}
 
-	obj.createMap("globals")
-	_, ok := obj.constraints["globals"][value]
-	unique := false
-	if !ok {
-		obj.constraints["globals"][value] = object
-		obj.createMap(objectName)
-		obj.constraints[objectName][value] = object
-		unique = true
-	}
-	return unique
-}
+// 	obj.createMap("globals")
+// 	_, ok := obj.constraints["globals"][value]
+// 	unique := false
+// 	if !ok {
+// 		obj.constraints["globals"][value] = object
+// 		obj.createMap(objectName)
+// 		obj.constraints[objectName][value] = object
+// 		unique = true
+// 	}
+// 	return unique
+// }
 
-func (obj *validation) validateConstraint(objectName []string, value string) bool {
-	if value == "" {
-		return false
-	}
-	found := false
-	for _, object := range objectName {
-		obj_ := strings.Split(object, ".")
-		strukt, ok := obj.constraints[obj_[0]]
-		if !ok {
-			continue
-		}
-		for _, object := range strukt {
-			intf := object.ValueOf(obj_[1])
-			if intf == nil {
-				continue
-			}
-			if value == fmt.Sprintf("%v", intf) {
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
-	return found
-}
+// TODO: restore behavior
+// func (obj *validation) validateConstraint(objectName []string, value string) bool {
+// 	if value == "" {
+// 		return false
+// 	}
+// 	found := false
+// 	for _, object := range objectName {
+// 		obj_ := strings.Split(object, ".")
+// 		strukt, ok := obj.constraints[obj_[0]]
+// 		if !ok {
+// 			continue
+// 		}
+// 		for _, object := range strukt {
+// 			intf := object.ValueOf(obj_[1])
+// 			if intf == nil {
+// 				continue
+// 			}
+// 			if value == fmt.Sprintf("%v", intf) {
+// 				found = true
+// 				break
+// 			}
+// 		}
+// 		if found {
+// 			break
+// 		}
+// 	}
+// 	return found
+// }

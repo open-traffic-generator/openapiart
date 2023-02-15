@@ -176,7 +176,8 @@ class Generator:
         self._write_http_api_class(methods)
         self._write_rpc_api_class(rpc_methods)
         self._write_init()
-        self._write_deprecator()
+        # TODO: restore behavior
+        # self._write_deprecator()
         return self
 
     def _get_base_url(self):
@@ -303,13 +304,14 @@ class Generator:
 
             rpc.good_response_type = response_type
             rpc.http_method = path["method"]
-            if "x-status" in path["operation"] and path["operation"][
-                "x-status"
-            ].get("status") in ["deprecated", "under-review"]:
-                rpc.x_status = (
-                    path["operation"]["x-status"]["status"],
-                    path["operation"]["x-status"]["additional_information"],
-                )
+            # TODO: restore behavior
+            # if "x-status" in path["operation"] and path["operation"][
+            #     "x-status"
+            # ].get("status") in ["deprecated", "under-review"]:
+            #     rpc.x_status = (
+            #         path["operation"]["x-status"]["status"],
+            #         path["operation"]["x-status"]["additional_information"],
+            #     )
             methods.append(
                 {
                     "name": method_name,
@@ -320,15 +322,16 @@ class Generator:
                     "url": self._base_url + path["url"],
                     "description": self._get_description(operation),
                     "response_type": response_type,
-                    "x_status": (
-                        path["operation"]["x-status"]["status"],
-                        path["operation"]["x-status"][
-                            "additional_information"
-                        ],
-                    )
-                    if path["operation"].get("x-status", {}).get("status")
-                    in ["deprecated", "under-review"]
-                    else None,
+                    # TODO: restore behavior
+                    # "x_status": (
+                    #     path["operation"]["x-status"]["status"],
+                    #     path["operation"]["x-status"][
+                    #         "additional_information"
+                    #     ],
+                    # )
+                    # if path["operation"].get("x-status", {}).get("status")
+                    # in ["deprecated", "under-review"]
+                    # else None,
                 }
             )
             rpc_methods.append(rpc)
@@ -436,15 +439,16 @@ class Generator:
             self._write(0, class_code)
             for rpc_method in rpc_methods:
                 self._write()
-                if rpc_method.x_status is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=rpc_method.x_status[0].replace("-", "_")
-                        ),
-                    )
-                    key = "{}.{}".format("GrpcApi", rpc_method.method)
-                    self._deprecated_properties[key] = rpc_method.x_status[1]
+                # TODO: restore behavior
+                # if rpc_method.x_status is not None:
+                #     self._write(
+                #         1,
+                #         "@OpenApiStatus.{func}".format(
+                #             func=rpc_method.x_status[0].replace("-", "_")
+                #         ),
+                #     )
+                #     key = "{}.{}".format("GrpcApi", rpc_method.method)
+                #     self._deprecated_properties[key] = rpc_method.x_status[1]
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
                     self._write(2, "stub = self._get_stub()")
@@ -583,15 +587,16 @@ class Generator:
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
-                if method["x_status"] is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=method["x_status"][0].replace("-", "_")
-                        ),
-                    )
-                    key = "{}.{}".format("HttpApi", method["name"])
-                    self._deprecated_properties[key] = method["x_status"][1]
+                # TODO: restore behavior
+                # if method["x_status"] is not None:
+                #     self._write(
+                #         1,
+                #         "@OpenApiStatus.{func}".format(
+                #             func=method["x_status"][0].replace("-", "_")
+                #         ),
+                #     )
+                #     key = "{}.{}".format("HttpApi", method["name"])
+                #     self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -647,17 +652,18 @@ class Generator:
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
-                if method["x_status"] is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=method["x_status"][0].replace("-", "_")
-                        ),
-                    )
-                    key = "{}.{}".format(
-                        "%s" % factory_class_name, method["name"]
-                    )
-                    self._deprecated_properties[key] = method["x_status"][1]
+                # TODO: restore behavior
+                # if method["x_status"] is not None:
+                #     self._write(
+                #         1,
+                #         "@OpenApiStatus.{func}".format(
+                #             func=method["x_status"][0].replace("-", "_")
+                #         ),
+                #     )
+                #     key = "{}.{}".format(
+                #         "%s" % factory_class_name, method["name"]
+                #     )
+                #     self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -696,7 +702,7 @@ class Generator:
             self._write()
             self._write(1, "def close(self):")
             self._write(2, "pass")
-            self._write()
+            # self._write()
             # self._write(1, "def get_api_warnings(self):")
             # self._write(2, "return openapi_warnings")
             # self._write()
@@ -959,11 +965,12 @@ class Generator:
                 if "$ref" not in schema_object["properties"][choice_name]:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]
-                status = schema_object["properties"][choice_name].get(
-                    "x-status"
-                )
+                # TODO: restore behavior
+                # status = schema_object["properties"][choice_name].get(
+                #     "x-status"
+                # )
                 self._write_factory_method(
-                    None, choice_name, ref, property_status=status
+                    None, choice_name, ref, property_status=None
                 )
                 excluded_property_names.append(choice_name)
             for property_name in schema_object["properties"]:
@@ -1217,20 +1224,21 @@ class Generator:
             self._write()
         else:
             self._write(1, "@property")
-            if property_status is not None and property_status in [
-                "deprecated",
-                "under-review",
-            ]:
-                self._write(
-                    1,
-                    "@OpenApiStatus.{func}".format(
-                        func=property_status.replace("-", "_")
-                    ),
-                )
-                key = "{}.{}".format(class_name, method_name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "additional_information"
-                ]
+            # TODO: restore behavior
+            # if property_status is not None and property_status in [
+            #     "deprecated",
+            #     "under-review",
+            # ]:
+            #     self._write(
+            #         1,
+            #         "@OpenApiStatus.{func}".format(
+            #             func=property_status.replace("-", "_")
+            #         ),
+            #     )
+            #     key = "{}.{}".format(class_name, method_name)
+            #     self._deprecated_properties[key] = property["x-status"][
+            #         "additional_information"
+            #     ]
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1353,16 +1361,17 @@ class Generator:
             type_name = restriction
         self._write()
         self._write(1, "@property")
-        if property.get("x-status", {}).get("status") in [
-            "deprecated",
-            "under-review",
-        ]:
-            func = property["x-status"]["status"].replace("-", "_")
-            self._write(1, "@OpenApiStatus.{func}".format(func=func))
-            key = "{}.{}".format(klass_name, name)
-            self._deprecated_properties[key] = property["x-status"][
-                "additional_information"
-            ]
+        # TODO: restore behavior
+        # if property.get("x-status", {}).get("status") in [
+        #     "deprecated",
+        #     "under-review",
+        # ]:
+        #     func = property["x-status"]["status"].replace("-", "_")
+        #     self._write(1, "@OpenApiStatus.{func}".format(func=func))
+        #     key = "{}.{}".format(klass_name, name)
+        #     self._deprecated_properties[key] = property["x-status"][
+        #         "additional_information"
+        #     ]
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1380,16 +1389,17 @@ class Generator:
             if name == "auto":
                 return
             self._write(1, "@%s.setter" % name)
-            if property.get("x-status", {}).get("status") in [
-                "deprecated",
-                "under-review",
-            ]:
-                func = property["x-status"]["status"].replace("-", "_")
-                self._write(1, "@OpenApiStatus.{func}".format(func=func))
-                key = "{}.{}".format(klass_name, name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "additional_information"
-                ]
+            # TODO: restore behavior
+            # if property.get("x-status", {}).get("status") in [
+            #     "deprecated",
+            #     "under-review",
+            # ]:
+            #     func = property["x-status"]["status"].replace("-", "_")
+            #     self._write(1, "@OpenApiStatus.{func}".format(func=func))
+            #     key = "{}.{}".format(klass_name, name)
+            #     self._deprecated_properties[key] = property["x-status"][
+            #         "additional_information"
+            #     ]
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()
@@ -1499,16 +1509,17 @@ class Generator:
                     pt.update({"maxLength": yproperty["maxLength"]})
                 if len(pt) > 0:
                     types.append((name, pt))
-                if "x-constraint" in yproperty:
-                    cons_lst = []
-                    for cons in yproperty["x-constraint"]:
-                        ref, prop = cons.split("/properties/")
-                        klass = self._get_classname_from_ref(ref)
-                        cons_lst.append("%s.%s" % (klass, prop.strip("/")))
-                    if cons_lst != []:
-                        pt.update({"constraint": cons_lst})
-                if "x-unique" in yproperty:
-                    pt.update({"unique": '"%s"' % yproperty["x-unique"]})
+                # TODO: restore behavior
+                # if "x-constraint" in yproperty:
+                #     cons_lst = []
+                #     for cons in yproperty["x-constraint"]:
+                #         ref, prop = cons.split("/properties/")
+                #         klass = self._get_classname_from_ref(ref)
+                #         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
+                #     if cons_lst != []:
+                #         pt.update({"constraint": cons_lst})
+                # if "x-unique" in yproperty:
+                #     pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
 
     def _get_required_and_defaults(self, yobject):
