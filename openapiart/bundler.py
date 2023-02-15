@@ -51,10 +51,11 @@ class Bundler(object):
             "tag:yaml.org,2002:str", data, style="|"
         )
 
-    def __init__(self, api_files, output_dir="./"):
+    def __init__(self, api_files, output_dir="./", generate_version_api=False):
         self._parsers = {}
         self._api_files = api_files
         self._output_dir = os.path.abspath(output_dir)
+        self._generate_version_api = generate_version_api
         if os.path.exists(self._output_dir) is False:
             os.makedirs(self._output_dir)
         self.__python = os.path.normpath(sys.executable)
@@ -98,7 +99,8 @@ class Bundler(object):
         # TODO: restore behavior
         # self._resolve_x_unique()
         self._resolve_license()
-        self._resolve_x_enmu(self._content)
+        self._resolve_x_enum(self._content)
+        self._generate_version_api_spec(self._content)
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
@@ -132,7 +134,7 @@ class Bundler(object):
         if "x-enum" in property_object.keys():
             property_object["enum"] = list(property_object["x-enum"].keys())
 
-    def _resolve_x_enmu(self, content):
+    def _resolve_x_enum(self, content):
         for schema_name, schema_object in content["components"][
             "schemas"
         ].items():
@@ -154,6 +156,81 @@ class Bundler(object):
                     self._inject_enum(
                         property_name, property_object["items"], schema_name
                     )
+
+    def _generate_version_api_spec(self, content):
+        if not self._generate_version_api:
+            return
+
+        print("Generating version API ...")
+        schema_name = "Version"
+        api_path = "/capabilities/version"
+
+        if schema_name in content["components"]["schemas"]:
+            raise AssertionError(
+                "Could not generate version schema: Version schema already exists"
+            )
+
+        if api_path in content["paths"]:
+            raise AssertionError(
+                "Could not generate version path: {} already exists".format(
+                    api_path
+                )
+            )
+
+        content["components"]["schemas"][schema_name] = {
+            "description": "Version details",
+            "type": "object",
+            "properties": {
+                "api_spec_version": {
+                    "description": "Version of API specification",
+                    "type": "string",
+                    "default": "",
+                    "x-field-uid": 1,
+                },
+                "sdk_version": {
+                    "description": "Version of SDK generated from API specification",
+                    "type": "string",
+                    "default": "",
+                    "x-field-uid": 2,
+                },
+                "app_version": {
+                    "description": "Version of application consuming or serving the API",
+                    "type": "string",
+                    "default": "",
+                    "x-field-uid": 3,
+                },
+            },
+        }
+
+        content["paths"][api_path] = {
+            "get": {
+                "tags": ["Capabilities"],
+                "operationId": "get_version",
+                "responses": {
+                    "200": {
+                        "description": "Version details from API server",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/{}".format(
+                                        schema_name
+                                    )
+                                }
+                            }
+                        },
+                        "x-field-uid": 1,
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest",
+                        "x-field-uid": 2,
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError",
+                        "x-field-uid": 3,
+                    },
+                },
+            },
+        }
 
     def _check_duplicate_uid(self, fields_uid, name):
         dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])

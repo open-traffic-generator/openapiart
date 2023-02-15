@@ -29,6 +29,7 @@ class OpenApiArt(object):
         artifact_dir=None,
         extension_prefix=None,
         proto_service=None,
+        generate_version_api=False,
     ):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
@@ -57,6 +58,7 @@ class OpenApiArt(object):
         )
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
+        self._generate_version_api = generate_version_api
         self._bundle()
         self._get_info()
         self._get_license()
@@ -88,7 +90,9 @@ class OpenApiArt(object):
         module = importlib.import_module("openapiart.bundler")
         bundler_class = getattr(module, "Bundler")
         self._bundler = bundler_class(
-            api_files=self._api_files, output_dir=self._output_dir
+            api_files=self._api_files,
+            output_dir=self._output_dir,
+            generate_version_api=self._generate_version_api,
         )
         self._bundler.bundle()
         # read the entire openapi file
