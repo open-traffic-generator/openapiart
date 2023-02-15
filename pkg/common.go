@@ -375,6 +375,7 @@ func (obj *validation) validateHexSlice(hex []string) error {
 // 	}
 // }
 
+// TODO: restore behavior
 // func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
 // 	if value == "" {
 // 		return true
@@ -392,6 +393,7 @@ func (obj *validation) validateHexSlice(hex []string) error {
 // 	return unique
 // }
 
+// TODO: restore behavior
 // func (obj *validation) validateConstraint(objectName []string, value string) bool {
 // 	if value == "" {
 // 		return false
