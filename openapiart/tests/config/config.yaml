@@ -348,6 +348,8 @@ components:
               x-field-uid: 1
             f_b:
               x-field-uid: 2
+            f_c:
+              x-field-uid: 3
         f_a:
           type: string
           default: 'some string'
