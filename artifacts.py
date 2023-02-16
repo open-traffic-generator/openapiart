@@ -44,6 +44,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
         proto_service="Openapi",
+        generate_version_api=True,
     )
     if sdk == "proto" or sdk is None:
         open_api.GenerateProtoDef(package_name="sanity")
@@ -55,6 +56,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",
+            sdk_version="0.0.1",
         )
         open_api.GenerateGoServer(
             module_path="github.com/open-traffic-generator/openapiart/pkg",

@@ -276,6 +276,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "common_test.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(
+            os.path.join(os.path.dirname(__file__), "common_test.go")
+        ) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._fp = go_pkg_fp
         self._filename = go_pkg_filename
 
@@ -592,10 +604,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         # write the go code
         self._write(
-            """type {internal_struct_name} struct {{
+            """
+            type versionMeta struct {{
+                checkVersion  bool
+                localVersion  Version
+                remoteVersion Version
+                checkError    error
+            }}
+            type {internal_struct_name} struct {{
                 api
                 grpcClient {pb_pkg_name}.{proto_service}Client
                 httpClient httpClient
+                versionMeta *versionMeta
             }}
 
             // grpcConnect builds up a grpc connection
@@ -650,6 +670,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                api.versionMeta = &versionMeta{{checkVersion: false}}
                 return &api
             }}
 
@@ -723,6 +744,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             methods.append(rpc.description)
             methods.append(rpc.method)
             # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
+        if self._generate_version_api:
+            methods.extend(self._get_version_api_interface_method_signatures())
         method_signatures = "\n".join(methods)
         self._write(
             """
@@ -751,6 +774,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     internal_struct_name=self._api.internal_struct_name,
                     method=new.method,
                     interface=new.interface,
+                )
+            )
+        if self._generate_version_api:
+            self._write(
+                self._get_version_api_interface_method_impl(
+                    self._api.internal_struct_name
                 )
             )
         for rpc in self._api.external_rpc_methods:
@@ -790,13 +819,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
             #     func="" if func is None else "api.{}".format(func),
             #     msg="(`%s`)" % info if info is not None else "",
             # )
+            if self._generate_version_api:
+                version_check = """
+                    if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
+                        return nil, err
+                    }"""
+            else:
+                version_check = ""
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {validate}
+                    {version_check}
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
-
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
@@ -819,6 +855,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
+                    version_check=""
+                    if rpc.method == "GetVersion() (Version, error)"
+                    else version_check,
                 )
             )
 
@@ -882,6 +921,103 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
             self._write_interface(new)
+
+    def _get_version_api_interface_method_signatures(self):
+        return [
+            "// GetLocalVersion provides version details of local client",
+            "GetLocalVersion() Version",
+            "// GetRemoteVersion provides version details received from remote server",
+            "GetRemoteVersion() (Version, error)",
+            "// SetVersionCompatibilityCheck allows enabling or disabling automatic version",
+            "// compatibility check between client and server API spec version upon API call",
+            "SetVersionCompatibilityCheck(bool)",
+            "// CheckVersionCompatibility compares API spec version for local client and remote server,",
+            "// and returns an error if they are not compatible according to Semantic Versioning 2.0.0",
+            "CheckVersionCompatibility() error",
+        ]
+
+    def _get_version_api_interface_method_impl(self, struct_name):
+        return """
+            func (api *{0}) GetLocalVersion() Version {{
+                if api.versionMeta.localVersion == nil {{
+                    api.versionMeta.localVersion = NewVersion().SetApiSpecVersion("{1}").SetSdkVersion("{2}")
+                }}
+
+                return api.versionMeta.localVersion
+            }}
+
+            func (api *{0}) GetRemoteVersion() (Version, error) {{
+                if api.versionMeta.remoteVersion == nil {{
+                    v, err := api.GetVersion()
+                    if err != nil {{
+                        return nil, fmt.Errorf("could not fetch remote version: %v", err)
+                    }}
+
+                    api.versionMeta.remoteVersion = v
+                }}
+
+                return api.versionMeta.remoteVersion, nil
+            }}
+
+            func (api *{0}) SetVersionCompatibilityCheck(v bool) {{
+                api.versionMeta.checkVersion = v
+            }}
+
+            func (api *{0}) checkLocalRemoteVersionCompatibility() (error, error) {{
+                localVer := api.GetLocalVersion()
+                remoteVer, err := api.GetRemoteVersion()
+                if err != nil {{
+                    return nil, err
+                }}
+                err = checkClientServerVersionCompatibility(localVer.ApiSpecVersion(), remoteVer.ApiSpecVersion(), "API spec")
+                if err != nil {{
+                    return fmt.Errorf(
+                        "client SDK version '%s' is not compatible with server SDK version '%s': %v",
+                        localVer.SdkVersion(), remoteVer.SdkVersion(), err,
+                    ), nil
+                }}
+
+                return nil, nil
+            }}
+
+            func (api *{0}) checkLocalRemoteVersionCompatibilityOnce() error {{
+                if !api.versionMeta.checkVersion {{
+                    return nil
+                }}
+
+                if api.versionMeta.checkError != nil {{
+                    return api.versionMeta.checkError
+                }}
+
+                compatErr, apiErr := api.checkLocalRemoteVersionCompatibility()
+                if compatErr != nil {{
+                    api.versionMeta.checkError = compatErr
+                    return compatErr
+                }}
+                if apiErr != nil {{
+                    api.versionMeta.checkError = nil
+                    return apiErr
+                }}
+
+                api.versionMeta.checkVersion = false
+                api.versionMeta.checkError = nil
+                return nil
+            }}
+
+            func (api *{0}) CheckVersionCompatibility() error {{
+                compatErr, apiErr := api.checkLocalRemoteVersionCompatibility()
+                if compatErr != nil {{
+                    return fmt.Errorf("version error: %v", compatErr)
+                }}
+                if apiErr != nil {{
+                    return apiErr
+                }}
+
+                return nil
+            }}
+        """.format(
+            struct_name, self._api_version, self._sdk_version
+        )
 
     def _write_component_interfaces(self):
         while True:

@@ -49,6 +49,9 @@ class Generator:
         protobuf_package_name,
         output_dir=None,
         extension_prefix=None,
+        generate_version_api=None,
+        api_version=None,
+        sdk_version=None,
     ):
         self._parsers = {}
         self._base_url = ""
@@ -68,6 +71,15 @@ class Generator:
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, "..", "docs")
         self._deprecated_properties = {}
+        self._generate_version_api = generate_version_api
+        if self._generate_version_api is None:
+            self._generate_version_api = False
+        self._api_version = api_version
+        if self._api_version is None:
+            self._api_version = ""
+        self._sdk_version = sdk_version
+        if self._sdk_version is None:
+            self._sdk_version = ""
         self._get_openapi_file()
         # self._plugins = self._load_plugins()
 
@@ -469,6 +481,11 @@ class Generator:
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
                     self._write(2, ")")
+                    if (
+                        self._generate_version_api
+                        and rpc_method.method != "get_version"
+                    ):
+                        self._write(2, "self._do_version_check_once()")
                     "%s=pb_obj" % rpc_method.request_property
                     self._write(
                         2,
@@ -613,6 +630,12 @@ class Generator:
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
 
+                if (
+                    self._generate_version_api
+                    and method["name"] != "get_version"
+                ):
+                    self._write(2, "self._do_version_check_once()")
+
                 self._write(2, "return self._transport.send_recv(")
                 self._write(3, '"%s",' % method["http_method"])
                 self._write(3, '"%s",' % method["url"])
@@ -648,7 +671,28 @@ class Generator:
             self._write()
             self._write(1, "__warnings__ = []")
             self._write(1, "def __init__(self, **kwargs):")
-            self._write(2, "pass")
+            if self._generate_version_api:
+                self._write(2, "self._version_meta = self.version()")
+                self._write(
+                    2,
+                    'self._version_meta.api_spec_version = "{}"'.format(
+                        self._api_version
+                    ),
+                )
+                self._write(
+                    2,
+                    'self._version_meta.sdk_version = "{}"'.format(
+                        self._sdk_version
+                    ),
+                )
+                self._write(
+                    2, 'self._version_check = kwargs.get("version_check")'
+                )
+                self._write(2, "if self._version_check is None:")
+                self._write(3, "self._version_check = False")
+                self._write(2, "self._version_check_err = None")
+            else:
+                self._write(2, "pass")
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
@@ -713,6 +757,95 @@ class Generator:
             # self._write(3, "del openapi_warnings[:]")
             # self._write(2, "else:")
             # self._write(3, "openapi_warnings.clear()")
+            self._generate_version_api_methods()
+
+    def _generate_version_api_methods(self):
+        if not self._generate_version_api:
+            return
+
+        self._write(
+            indent=1,
+            line="""def _check_client_server_version_compatibility(
+        self, client_ver, server_ver, component_name
+    ):
+        if not semantic_version.validate(client_ver):
+            raise AssertionError(
+                "Client {} version '{}' is not a valid semver".format(
+                    component_name, client_ver
+                )
+            )
+
+        if not semantic_version.validate(server_ver):
+            raise AssertionError(
+                "Server {} version '{}' is not a valid semver".format(
+                    component_name, server_ver
+                )
+            )
+
+        err = "Client {} version '{}' is not semver compatible with Server {} version '{}'".format(
+            component_name, client_ver, component_name, server_ver
+        )
+
+        c = semantic_version.Version(client_ver)
+        s = semantic_version.Version(server_ver)
+        v = semantic_version.compare(client_ver, server_ver)
+        if v > 0:
+            if c.major != s.major or c.minor != s.minor:
+                raise Exception(err)
+        elif v < 0:
+            if c.major != s.major:
+                raise Exception(err)
+
+    def get_local_version(self):
+        return self._version_meta
+
+    def get_remote_version(self):
+        return self.get_version()
+
+    def check_version_compatibility(self):
+        comp_err, api_err = self._do_version_check()
+        if comp_err is not None:
+            raise comp_err
+        if api_err is not None:
+            raise api_err
+
+    def _do_version_check(self):
+        local = self.get_local_version()
+        try:
+            remote = self.get_remote_version()
+        except Exception as e:
+            return None, e
+
+        try:
+            self._check_client_server_version_compatibility(
+                local.api_spec_version, remote.api_spec_version, "API spec"
+            )
+        except Exception as e:
+            msg = "client SDK version '{}' is not compatible with server SDK version '{}'".format(
+                local.sdk_version, remote.sdk_version
+            )
+            return Exception("{}: {}".format(msg, str(e))), None
+
+        return None, None
+
+    def _do_version_check_once(self):
+        if not self._version_check:
+            return
+
+        if self._version_check_err is not None:
+            raise self._version_check_err
+
+        comp_err, api_err = self._do_version_check()
+        if comp_err is not None:
+            self._version_check_err = comp_err
+            raise comp_err
+        if api_err is not None:
+            self._version_check_err = None
+            raise api_err
+
+        self._version_check = False
+        self._version_check_err = None""",
+        )
 
     def _get_object_property_class_names(self, ref):
         """Returns: `Tuple(object_name, property_name, class_name, ref_name)`"""
