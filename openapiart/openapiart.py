@@ -127,7 +127,7 @@ class OpenApiArt(object):
         self._protobuf_package_name = package_name
         self._generate_proto_file()
 
-    def GeneratePythonSdk(self, package_name):
+    def GeneratePythonSdk(self, package_name, sdk_version=""):
         """Generates a Python UX Sdk
         Args
         ----
@@ -151,6 +151,7 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
+        self._python_sdk_version = sdk_version
         if not self.proto_file_exists():
             self._generate_proto_file()
         if self._python_module_name is not None:
@@ -161,6 +162,9 @@ class OpenApiArt(object):
                 self._protobuf_package_name,
                 output_dir=self._output_dir,
                 extension_prefix=self._extension_prefix,
+                generate_version_api=self._generate_version_api,
+                api_version=self._api_version,
+                sdk_version=self._python_sdk_version,
             )
             python_ux.generate()
         try:
