@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 
 	"google.golang.org/grpc"
@@ -86,6 +87,13 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {
 	resp := &sanity.GetConfigResponse{
 		StatusCode_200: s.Config,
+	}
+	return resp, nil
+}
+
+func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
+	resp := &sanity.GetVersionResponse{
+		StatusCode_200: openapiart.NewApi().GetLocalVersion().Msg(),
 	}
 	return resp, nil
 }

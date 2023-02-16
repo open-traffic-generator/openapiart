@@ -247,3 +247,53 @@ func TestGrpcClientConnection(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
+
+func TestValidVersionCheckHttp(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewHttpTransport().SetLocation(grpcServer.Location)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestInvalidVersionCheckHttp(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewHttpTransport().SetLocation(grpcServer.Location)
+	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestValidVersionCheckGrpc(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestInvalidVersionCheckGrpc(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}

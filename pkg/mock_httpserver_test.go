@@ -90,6 +90,12 @@ func (h *bundlerHandler) GetConfig(r *http.Request) openapiart.GetConfigResponse
 	return response
 }
 
+func (h *bundlerHandler) GetVersion(r *http.Request) openapiart.GetVersionResponse {
+	response := openapiart.NewGetVersionResponse()
+	response.SetStatusCode200(openapiart.NewApi().GetLocalVersion())
+	return response
+}
+
 // Defined Metrics interface
 
 type metricsHandler struct {
