@@ -222,6 +222,20 @@ class Bundler(object):
                 api_path, schema_ref
             )
         else:
+            err_responses = {}
+            first_path = list(content["paths"].keys())[0]
+            first_method = list(content["paths"][first_path].keys())[0]
+            for code, res in content["paths"][first_path][first_method][
+                "responses"
+            ].items():
+                code_str = str(code)
+                if (
+                    not code_str.startswith("2")
+                    and not code_str.startswith("2")
+                    and not code_str.startswith("3")
+                ):
+                    err_responses[code] = res
+
             content["paths"][api_path] = {
                 "get": {
                     "tags": ["Capabilities"],
@@ -236,17 +250,14 @@ class Bundler(object):
                             },
                             "x-field-uid": 1,
                         },
-                        "400": {
-                            "$ref": "#/components/responses/BadRequest",
-                            "x-field-uid": 2,
-                        },
-                        "500": {
-                            "$ref": "#/components/responses/InternalServerError",
-                            "x-field-uid": 3,
-                        },
                     },
                 },
             }
+
+            for code, res in err_responses.items():
+                content["paths"][api_path]["get"]["responses"][
+                    code
+                ] = copy.deepcopy(res)
 
     def _check_duplicate_uid(self, fields_uid, name):
         dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])

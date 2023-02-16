@@ -21,7 +21,7 @@ type GrpcServer struct {
 
 var (
 	grpcServer GrpcServer = GrpcServer{
-		Location: "[::]:40051",
+		Location: "[::]:40052",
 		Server:   nil,
 	}
 )

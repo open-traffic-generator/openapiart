@@ -21,7 +21,7 @@ type HttpServer struct {
 
 var (
 	httpServer HttpServer = HttpServer{
-		serverLocation: "127.0.0.1:50051",
+		serverLocation: "127.0.0.1:8444",
 	}
 )
 

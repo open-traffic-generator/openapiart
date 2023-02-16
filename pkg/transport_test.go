@@ -171,7 +171,7 @@ func NetStat(t *testing.T) []string {
 		grep = "findstr"
 	}
 	c1 := exec.Command("netstat", "-n")
-	c2 := exec.Command(grep, "127.0.0.1:50051")
+	c2 := exec.Command(grep, "127.0.0.1:8444")
 	r1, w1 := io.Pipe()
 
 	c1.Stdout = w1
