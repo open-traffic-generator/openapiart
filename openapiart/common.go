@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"google.golang.org/grpc"
+	"golang.org/x/mod/semver"
 )
 
 type grpcTransport struct {
@@ -418,3 +419,35 @@ func (obj *validation) validateHexSlice(hex []string) error {
 // 	}
 // 	return found
 // }
+
+func checkClientServerVersionCompatibility(clientVer string, serverVer string, componentName string) error {
+	c := clientVer
+	s := serverVer
+	if !strings.HasPrefix(clientVer, "v") {
+		c = "v" + clientVer
+	}
+	if !strings.HasPrefix(serverVer, "v") {
+		s = "v" + serverVer
+	}
+
+	if !semver.IsValid(c) {
+		return fmt.Errorf("client %s version '%s' is not a valid semver", componentName, clientVer)
+	}
+	if !semver.IsValid(s) {
+		return fmt.Errorf("server %s version '%s' is not a valid semver", componentName, serverVer)
+	}
+
+	err := fmt.Errorf("client %s version '%s' is not semver compatible with server %s version '%s'", componentName, clientVer, componentName, serverVer)
+
+	if v := semver.Compare(c, s); v > 0 {
+		if semver.MajorMinor(c) != semver.MajorMinor(s) {
+			return err
+		}
+	} else if v < 0 {
+		if semver.Major(c) != semver.Major(s) {
+			return err
+		}
+	}
+
+	return nil
+}

@@ -91,6 +91,7 @@ class Bundler(object):
             self._base_dir = os.path.dirname(api_filename)
             self._api_filename = os.path.basename(api_filename)
             self._read_file(self._base_dir, self._api_filename)
+
         self._resolve_x_include()
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
@@ -107,6 +108,7 @@ class Bundler(object):
         self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
+        self._api_version = self._content["info"]["version"]
         with open(self._output_filename, "w") as fp:
             yaml.dump(
                 self._content,
@@ -119,6 +121,9 @@ class Bundler(object):
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
+
+    def get_api_version(self):
+        return self._api_version
 
     def _validate_errors(self):
         if len(self._errors) > 0:
@@ -163,74 +168,85 @@ class Bundler(object):
 
         print("Generating version API ...")
         schema_name = "Version"
+        schema_ref = "#/components/schemas/{}".format(schema_name)
         api_path = "/capabilities/version"
 
         if schema_name in content["components"]["schemas"]:
-            raise AssertionError(
-                "Could not generate version schema: Version schema already exists"
-            )
-
-        if api_path in content["paths"]:
-            raise AssertionError(
-                "Could not generate version path: {} already exists".format(
-                    api_path
-                )
-            )
-
-        content["components"]["schemas"][schema_name] = {
-            "description": "Version details",
-            "type": "object",
-            "properties": {
-                "api_spec_version": {
-                    "description": "Version of API specification",
-                    "type": "string",
-                    "default": "",
-                    "x-field-uid": 1,
-                },
-                "sdk_version": {
-                    "description": "Version of SDK generated from API specification",
-                    "type": "string",
-                    "default": "",
-                    "x-field-uid": 2,
-                },
-                "app_version": {
-                    "description": "Version of application consuming or serving the API",
-                    "type": "string",
-                    "default": "",
-                    "x-field-uid": 3,
-                },
-            },
-        }
-
-        content["paths"][api_path] = {
-            "get": {
-                "tags": ["Capabilities"],
-                "operationId": "get_version",
-                "responses": {
-                    "200": {
-                        "description": "Version details from API server",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/{}".format(
-                                        schema_name
-                                    )
-                                }
-                            }
-                        },
+            schema = content["components"]["schemas"][schema_name]
+            for prop in ["api_spec_version", "sdk_version", "app_version"]:
+                if prop not in schema["properties"]:
+                    raise AssertionError(
+                        "Could not generate version schema: Version is missing property {}".format(
+                            prop
+                        )
+                    )
+                if schema["properties"][prop]["type"] != "string":
+                    raise AssertionError(
+                        "Could not generate version schema: Version property {} MUST be of type string".format(
+                            prop
+                        )
+                    )
+        else:
+            content["components"]["schemas"][schema_name] = {
+                "description": "Version details",
+                "type": "object",
+                "properties": {
+                    "api_spec_version": {
+                        "description": "Version of API specification",
+                        "type": "string",
+                        "default": "",
                         "x-field-uid": 1,
                     },
-                    "400": {
-                        "$ref": "#/components/responses/BadRequest",
+                    "sdk_version": {
+                        "description": "Version of SDK generated from API specification",
+                        "type": "string",
+                        "default": "",
                         "x-field-uid": 2,
                     },
-                    "500": {
-                        "$ref": "#/components/responses/InternalServerError",
+                    "app_version": {
+                        "description": "Version of application consuming or serving the API",
+                        "type": "string",
+                        "default": "",
                         "x-field-uid": 3,
                     },
                 },
-            },
-        }
+            }
+
+        if api_path in content["paths"]:
+            assert (
+                content["paths"][api_path]["get"]["responses"]["200"][
+                    "content"
+                ]["application/json"]["schema"]["$ref"]
+                == schema_ref
+            ), "{} MUST have a 200 GET response {}".format(
+                api_path, schema_ref
+            )
+        else:
+            content["paths"][api_path] = {
+                "get": {
+                    "tags": ["Capabilities"],
+                    "operationId": "get_version",
+                    "responses": {
+                        "200": {
+                            "description": "Version details from API server",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": schema_ref}
+                                }
+                            },
+                            "x-field-uid": 1,
+                        },
+                        "400": {
+                            "$ref": "#/components/responses/BadRequest",
+                            "x-field-uid": 2,
+                        },
+                        "500": {
+                            "$ref": "#/components/responses/InternalServerError",
+                            "x-field-uid": 3,
+                        },
+                    },
+                },
+            }
 
     def _check_duplicate_uid(self, fields_uid, name):
         dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
