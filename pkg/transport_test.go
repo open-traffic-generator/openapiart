@@ -251,7 +251,7 @@ func TestGrpcClientConnection(t *testing.T) {
 func TestValidVersionCheckHttp(t *testing.T) {
 	api := openapiart.NewApi()
 	api.SetVersionCompatibilityCheck(true)
-	api.NewHttpTransport().SetLocation(grpcServer.Location)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
 
 	config := NewFullyPopulatedPrefixConfig(api)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
@@ -263,7 +263,7 @@ func TestValidVersionCheckHttp(t *testing.T) {
 func TestInvalidVersionCheckHttp(t *testing.T) {
 	api := openapiart.NewApi()
 	api.SetVersionCompatibilityCheck(true)
-	api.NewHttpTransport().SetLocation(grpcServer.Location)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
 	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
 
 	config := NewFullyPopulatedPrefixConfig(api)

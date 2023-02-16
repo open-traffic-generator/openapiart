@@ -18,7 +18,7 @@ def test_valid_version_check(api):
         api._version_check = False
 
 
-def test_invalid_inversion_check(api):
+def test_invalid_version_check(api):
     try:
         api.get_local_version().api_spec_version = "0.2.1"
         api._version_check = True
