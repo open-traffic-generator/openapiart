@@ -152,7 +152,7 @@ def init(use_sdk=None):
             ]
         )
     else:
-        art_path = os.path.join(base_dir, "art", "requirements.txt")
+        art_path = os.path.join(base_dir, "artifacts", "requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),

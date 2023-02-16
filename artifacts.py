@@ -1,17 +1,17 @@
 """Using the model files in the api directory create the following artifacts:
-- ./art/openapi.yaml (bundled/validated model file)
-- ./art/openapi.json (json version of openapi.yaml)
-- ./art/openapi.html (html doc of openapi.yaml if node and redoc-cli is installed)
-- ./art/sanity/__init__.py (python ux package)
-- ./art/sanity/sanity.py (python ux package)
-- ./art/sanity/sanity_pb2.py (python protobuf stubs)
-- ./art/sanity/sanity_pb2_grpc.py (python grpc stubs)
+- ./artifacts/openapi.yaml (bundled/validated model file)
+- ./artifacts/openapi.json (json version of openapi.yaml)
+- ./artifacts/openapi.html (html doc of openapi.yaml if node and redoc-cli is installed)
+- ./artifacts/sanity/__init__.py (python ux package)
+- ./artifacts/sanity/sanity.py (python ux package)
+- ./artifacts/sanity/sanity_pb2.py (python protobuf stubs)
+- ./artifacts/sanity/sanity_pb2_grpc.py (python grpc stubs)
 
-- ./art/go/<protobuf_package_name>.proto (proto version of openapi.yaml)
-- ./art/go/<go_module_name>/<protobuf_package_name>/sanity_pb2.go (go protobuf stubs)
-- ./art/go/<go_module_name>/<protobuf_package_name>/sanity_pb2_grpc.go (go grpc stubs)
-- ./art/go/<go_module_name>/go.mod (go ux package)
-- ./art/go/<go_module_name>/sanity.go (go ux package)
+- ./artifacts/go/<protobuf_package_name>.proto (proto version of openapi.yaml)
+- ./artifacts/go/<go_module_name>/<protobuf_package_name>/sanity_pb2.go (go protobuf stubs)
+- ./artifacts/go/<go_module_name>/<protobuf_package_name>/sanity_pb2_grpc.go (go grpc stubs)
+- ./artifacts/go/<go_module_name>/go.mod (go ux package)
+- ./artifacts/go/<go_module_name>/sanity.go (go ux package)
 """
 import sys
 import os
@@ -41,7 +41,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
                 "./openapiart/goserver/api/service_b.api.yaml",
             ),
         ],
-        artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
+        artifact_dir=os.path.join(os.path.dirname(__file__), "artifacts"),
         extension_prefix="sanity",
         proto_service="Openapi",
     )

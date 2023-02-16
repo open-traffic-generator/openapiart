@@ -8,9 +8,11 @@ import importlib
 from concurrent import futures
 from google.protobuf import json_format
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "art"))
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..", "art", "sanity")
+    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
+)
+sys.path.append(
+    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts", "sanity")
 )
 pb2_grpc = importlib.import_module("sanity_pb2_grpc")
 pb2 = importlib.import_module("sanity_pb2")

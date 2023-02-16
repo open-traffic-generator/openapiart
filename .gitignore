@@ -13,6 +13,7 @@ __pycache__
 /scratch
 /cov_report
 /**/art
+/**/artifacts
 /**/art_go
 .local
 /pkg/coverage.txt

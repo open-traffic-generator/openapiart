@@ -81,7 +81,7 @@ jobs:
         with:
           name: generated_py_package
           path: |
-            art
+            artifacts
       - name: Display structure of downloaded files
         run: ls -R
       - name: Run python tests
@@ -128,7 +128,7 @@ jobs:
           name: generated_go_package
           path: |
             pkg
-            art
+            artifacts
       - uses: actions/download-artifact@v2
         with:
           name: python_package
@@ -169,7 +169,7 @@ jobs:
       - name: Check Genrated files
         uses: andstor/file-existence-action@v2
         with:
-          files: "art/openapi.json, art/openapi.yaml, art/sanity.proto"
+          files: "artifacts/openapi.json, artifacts/openapi.yaml, artifacts/sanity.proto"
           fail: true
 
   publish_python_package:

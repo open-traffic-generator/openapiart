@@ -15,12 +15,12 @@ from .server import app
 # artifacts should not be generated from here as these tests are run as sudo
 pytest.module_name = "sanity"
 pytest.artifacts_path = os.path.join(
-    os.path.dirname(__file__), "..", "..", "art"
+    os.path.dirname(__file__), "..", "..", "artifacts"
 )
 sys.path.append(pytest.artifacts_path)
 sys.path.append(
     os.path.join(
-        os.path.dirname(__file__), "..", "..", "art", pytest.module_name
+        os.path.dirname(__file__), "..", "..", "artifacts", pytest.module_name
     )
 )
 
@@ -71,7 +71,7 @@ def grpc_api():
 
 @pytest.fixture(scope="session")
 def proto_file_name():
-    art_dir = os.path.join(os.path.dirname(__file__), "..", "..", "art")
+    art_dir = os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
     proto_file = os.path.join(art_dir, "{}.proto".format(pytest.module_name))
     return proto_file
 

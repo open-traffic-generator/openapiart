@@ -18,7 +18,7 @@ class OpenApiArt(object):
     - protobuf_name (str): name of the .proto file that will be generated
     - artifact_dir (str): directory where artifacts will be created.
       Unless otherwise specified the default directory for generated artifacts
-      is `current working directory/.art`.
+      is `current working directory/.artifacts`.
     - extension_prefix (str): name of the python extension
     """
 
@@ -31,7 +31,7 @@ class OpenApiArt(object):
         proto_service=None,
     ):
         self._output_dir = os.path.abspath(
-            artifact_dir if artifact_dir is not None else "art"
+            artifact_dir if artifact_dir is not None else "artifacts"
         )
         self._doc_dir = os.path.abspath(
             # doc dir name is not getting ignored by git
