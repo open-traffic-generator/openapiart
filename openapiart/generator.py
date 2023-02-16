@@ -907,7 +907,6 @@ class Generator:
 
             # write def set(self)
             write_set = False
-            params = "self"
             if "choice" in self._get_choice_names(schema_object):
                 write_set = False
             init_params, properties, _ = self._get_property_param_string(
@@ -915,12 +914,11 @@ class Generator:
             )
             if len(init_params) > 0:
                 write_set = True
-            params = (
-                params
-                if len(init_params) == 0
-                else ", ".join([params, init_params])
-            )
-
+            params = ["self"]
+            for property in properties:
+                str = property + "=None"
+                params.append(str)
+            params = params if len(init_params) == 0 else ", ".join(params)
             if write_set:
                 self._write(1, "def set(%s):" % (params))
                 self._write(
