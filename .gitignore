@@ -18,7 +18,7 @@ __pycache__
 .local
 /pkg/coverage.txt
 /pkg/coverage.out
-/pkg/sanity
+/pkg/openapi
 /pkg/go.mod
 /pkg/go.sum
 /pkg/openapiart.go

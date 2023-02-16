@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
+	sanity "github.com/open-traffic-generator/openapiart/pkg/openapi"
 	"github.com/stretchr/testify/assert"
 )
 

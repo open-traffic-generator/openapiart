@@ -7,7 +7,7 @@ import (
 	"net"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
+	sanity "github.com/open-traffic-generator/openapiart/pkg/openapi"
 
 	"google.golang.org/grpc"
 )
