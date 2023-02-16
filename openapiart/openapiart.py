@@ -41,10 +41,10 @@ class OpenApiArt(object):
         )
         self._go_sdk_package_dir = None
         self._protobuf_package_name = (
-            protobuf_name if protobuf_name is not None else "sanity"
+            protobuf_name if protobuf_name is not None else "openapi"
         )
         self._extension_prefix = (
-            extension_prefix if extension_prefix is not None else "sanity"
+            extension_prefix if extension_prefix is not None else "pyoapi"
         )
         self._proto_service = (
             proto_service if proto_service is not None else "Openapi"

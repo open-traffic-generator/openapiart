@@ -12,10 +12,10 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
 )
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts", "sanity")
+    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts", "pyoapi")
 )
-pb2_grpc = importlib.import_module("sanity_pb2_grpc")
-pb2 = importlib.import_module("sanity_pb2")
+pb2_grpc = importlib.import_module("openapi_pb2_grpc")
+pb2 = importlib.import_module("openapi_pb2")
 
 GRPC_PORT = 50051
 

@@ -1,7 +1,7 @@
 import importlib
 import pytest
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyoapi")
 
 
 def test_x_constraints(default_config):

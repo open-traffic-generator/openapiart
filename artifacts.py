@@ -2,10 +2,10 @@
 - ./artifacts/openapi.yaml (bundled/validated model file)
 - ./artifacts/openapi.json (json version of openapi.yaml)
 - ./artifacts/openapi.html (html doc of openapi.yaml if node and redoc-cli is installed)
-- ./artifacts/sanity/__init__.py (python ux package)
-- ./artifacts/sanity/sanity.py (python ux package)
-- ./artifacts/sanity/sanity_pb2.py (python protobuf stubs)
-- ./artifacts/sanity/sanity_pb2_grpc.py (python grpc stubs)
+- ./artifacts/pyoapi/__init__.py (python ux package)
+- ./artifacts/pyoapi/pyoapi.py (python ux package)
+- ./artifacts/pyoapi/openapi_pb2.py (python protobuf stubs)
+- ./artifacts/pyoapi/openapi_pb2_grpc.py (python grpc stubs)
 
 - ./artifacts/go/<protobuf_package_name>.proto (proto version of openapi.yaml)
 - ./artifacts/go/<go_module_name>/<protobuf_package_name>/sanity_pb2.go (go protobuf stubs)
@@ -42,14 +42,14 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
             ),
         ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "artifacts"),
-        extension_prefix="sanity",
+        extension_prefix="openapi",
         proto_service="Openapi",
     )
     if sdk == "proto" or sdk is None:
-        open_api.GenerateProtoDef(package_name="sanity")
+        open_api.GenerateProtoDef(package_name="openapi")
 
     if sdk == "python" or sdk is None:
-        open_api.GeneratePythonSdk(package_name="sanity")
+        open_api.GeneratePythonSdk(package_name="pyoapi")
 
     if sdk == "go" or sdk is None:
         open_api.GenerateGoSdk(

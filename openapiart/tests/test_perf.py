@@ -4,13 +4,13 @@ import os
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
 )
-import sanity
+import pyoapi
 import time
 
 
 def test_perf(api):
     start = time.time()
-    config = sanity.Api().prefix_config()
+    config = pyoapi.Api().prefix_config()
     config.a = "abc"
     config.b = 0.2
     config.c = 20
@@ -69,7 +69,7 @@ def test_perf(api):
     print("Time elapsed to serialize to Json %f ms" % ((end - start) * 1000))
 
     start = time.time()
-    c1 = sanity.Api().prefix_config()
+    c1 = pyoapi.Api().prefix_config()
     c1.deserialize(json)
     end = time.time()
     print(
@@ -82,7 +82,7 @@ def test_perf(api):
     print("Time elapsed to serialize to yaml %f ms" % ((end - start) * 1000))
 
     start = time.time()
-    c1 = sanity.Api().prefix_config()
+    c1 = pyoapi.Api().prefix_config()
     c1.deserialize(yaml)
     end = time.time()
     print(
@@ -95,7 +95,7 @@ def test_perf(api):
     print("Time elapsed to serialize to DICT %f ms" % ((end - start) * 1000))
 
     start = time.time()
-    c1 = sanity.Api().prefix_config()
+    c1 = pyoapi.Api().prefix_config()
     c1.deserialize(dt)
     end = time.time()
     print(

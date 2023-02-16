@@ -215,7 +215,7 @@ def testpy():
             # py() + " -m pip install flask",
             # py() + " -m pip install pytest-cov",
             py()
-            + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
+            + " -m pytest -sv --cov=pyoapi --cov-report term --cov-report html:cov_report",
         ]
     )
     import re

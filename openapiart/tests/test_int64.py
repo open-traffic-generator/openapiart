@@ -1,6 +1,6 @@
 import importlib
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyoapi")
 
 
 def test_int64(default_config):

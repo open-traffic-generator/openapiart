@@ -13,7 +13,8 @@ from .server import app
 
 # TBD: fix this hardcoding
 # artifacts should not be generated from here as these tests are run as sudo
-pytest.module_name = "sanity"
+pytest.module_name = "pyoapi"
+pytest.protobuf_name = "openapi"
 pytest.artifacts_path = os.path.join(
     os.path.dirname(__file__), "..", "..", "artifacts"
 )
@@ -26,9 +27,9 @@ sys.path.append(
 
 pytest.module = importlib.import_module(pytest.module_name)
 pytest.http_server = OpenApiServer(pytest.module).start()
-pytest.pb2_module = importlib.import_module(pytest.module_name + "_pb2")
+pytest.pb2_module = importlib.import_module(pytest.protobuf_name + "_pb2")
 pytest.pb2_grpc_module = importlib.import_module(
-    pytest.module_name + "_pb2_grpc"
+    pytest.protobuf_name + "_pb2_grpc"
 )
 pytest.grpc_server = grpc_server()
 
@@ -72,7 +73,7 @@ def grpc_api():
 @pytest.fixture(scope="session")
 def proto_file_name():
     art_dir = os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
-    proto_file = os.path.join(art_dir, "{}.proto".format(pytest.module_name))
+    proto_file = os.path.join(art_dir, "{}.proto".format(pytest.protobuf_name))
     return proto_file
 
 
