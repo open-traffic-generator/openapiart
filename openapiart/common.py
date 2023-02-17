@@ -678,9 +678,21 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def _set_property(self, name, value, choice=None):
         if name == "choice":
+
+            if (
+                self.parent is None
+                and value is not None
+                and value not in self._TYPES["choice"]["enum"]
+            ):
+                raise Exception(
+                    "%s is not a valid choice, valid choices are %s"
+                    % (value, ", ".join(self._TYPES["choice"]["enum"]))
+                )
+
             self._set_choice(value)
-            self._properties[name] = value
-        if name in self._DEFAULTS and value is None:
+            if name in self._DEFAULTS and value is None:
+                self._properties[name] = self._DEFAULTS[name]
+        elif name in self._DEFAULTS and value is None:
             self._set_choice(name)
             self._properties[name] = self._DEFAULTS[name]
         else:

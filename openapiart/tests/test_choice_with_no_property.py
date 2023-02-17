@@ -90,5 +90,32 @@ def test_choice_in_choice_heirarchy(api):
     assert c_obj.f_obj.choice == "f_c"
 
 
+def test_choice_with_invalid_enum_and_none_value(api):
+    config = api.prefix_config()
+    f_obj = config.f
+
+    # check default
+    assert f_obj.choice == "f_a"
+    assert f_obj._properties.get("f_a", None) is not None
+
+    # setting it to a valid value
+    f_obj.choice = "f_b"
+    assert f_obj.choice == "f_b"
+    assert f_obj._properties.get("f_a", None) is None
+
+    # setting None should set to default value
+    f_obj.choice = None
+    assert f_obj.choice == "f_a"
+    assert f_obj._properties.get("f_b", None) is None
+
+    # setting invalid value should result in exception
+    choice_error = (
+        "random is not a valid choice, valid choices are f_a, f_b, f_c"
+    )
+    with pytest.raises(Exception) as execinfo:
+        f_obj.choice = "random"
+    assert execinfo.value.args[0] == choice_error
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
