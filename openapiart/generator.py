@@ -1032,7 +1032,8 @@ class Generator:
                 )
             if "choice" in self._get_choice_names(schema_object):
                 self._write(
-                    2, "if 'choice' in self._DEFAULTS and choice is None:"
+                    2,
+                    "if 'choice' in self._DEFAULTS and choice is None and self._DEFAULTS['choice'] in self._TYPES:",
                 )
                 self._write(3, "getattr(self, self._DEFAULTS['choice'])")
                 self._write(2, "else:")
@@ -1088,6 +1089,12 @@ class Generator:
             choice_names = self._get_choice_names(schema_object)
             excluded_property_names = []
             for choice_name in choice_names:
+
+                # this code is to allow choices with no properties
+                if choice_name not in schema_object["properties"]:
+                    excluded_property_names.append(choice_name)
+                    continue
+
                 if "$ref" not in schema_object["properties"][choice_name]:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]

@@ -230,7 +230,7 @@ class Bundler(object):
             ].items():
                 code_str = str(code)
                 if (
-                    not code_str.startswith("2")
+                    not code_str.startswith("1")
                     and not code_str.startswith("2")
                     and not code_str.startswith("3")
                 ):

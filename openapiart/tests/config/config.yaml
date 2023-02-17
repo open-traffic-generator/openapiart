@@ -216,6 +216,12 @@ components:
         y_object:
           $ref: "#/components/schemas/YObject"
           x-field-uid: 40
+        choice_object:
+          description: A list of objects with choice with and without properties
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceObject'
+          x-field-uid: 41
 
     WObject:
       required: [w_name]
@@ -328,6 +334,8 @@ components:
               x-field-uid: 1
             f_b:
               x-field-uid: 2
+            f_c:
+              x-field-uid: 3
         f_a:
           type: string
           default: "some string"
@@ -355,6 +363,27 @@ components:
         j_b:
           $ref: "#/components/schemas/FObject"
           x-field-uid: 3
+    ChoiceObject:
+      type: object
+      properties:
+        choice:
+          type: string
+          default: no_obj
+          x-field-uid: 1
+          x-enum:
+            e_obj:
+              x-field-uid: 1
+            f_obj:
+              x-field-uid: 2
+            no_obj:
+              x-field-uid: 3
+        e_obj:
+          $ref: '#/components/schemas/EObject'
+          x-field-uid: 2
+        f_obj:
+          $ref: '#/components/schemas/FObject'
+          x-field-uid: 3
+
     KObject:
       type: object
       properties:
