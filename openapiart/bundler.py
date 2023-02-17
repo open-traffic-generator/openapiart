@@ -921,47 +921,45 @@ class Bundler(object):
                     del content[pieces[-1]]
 
     def _resolve_x_status(self):
-        """Find all instances of x-constraint in the openapi content
+        """Find all instances of x-status in the openapi content
         and merge the x-constraint content into the parent object description
         """
         import jsonpath_ng
 
+        valid_statuses = ["deprecated", "under_review"]
         for xstatus in self._get_parser("$..x-status").find(self._content):
-            # TODO: restore behavior
-            # if xstatus.value.get("status") == "current":
-            #     continue
-            if xstatus.value == "current":
-                continue
+            status = xstatus.value.get("status")
 
-            # TODO: restore behavior
-            # assert (
-            #     xstatus.value.get("additional_information") is not None
-            # ), "attribute additional_info can't be " "None for %s" % (
-            #     str(xstatus.full_path)
-            # )
+            if status not in valid_statuses:
+                raise Exception(
+                    "Invalid value for x-status.status={} provided; Valid values are {}".format(
+                        status, valid_statuses
+                    )
+                )
 
-            print("resolving %s..." % (str(xstatus.full_path)))
-            parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
+            print("resolving {} ...".format(xstatus.full_path))
+            parent = jsonpath_ng.Parent().find(xstatus)[0]
+            parent_schema = parent.value
 
-            if "description" not in parent_schema_object:
-                parent_schema_object["description"] = "TBD"
-            parent_schema_object[
-                "description"
-            ] = "Status: {status}\n{description}".format(
-                status=xstatus.value,
-                description=parent_schema_object["description"],
-            )
+            info = xstatus.value.get("information")
+            if info is None or len(info) == 0:
+                info = xstatus.value["information"] = "Information TBD"
+                print(
+                    "[WARNING]: {}.x-status.information missing".format(
+                        parent.full_path
+                    )
+                )
 
-            # TODO: restore behavior
-            # if "description" not in parent_schema_object:
-            #     parent_schema_object["description"] = "TBD"
-            # parent_schema_object[
-            #     "description"
-            # ] = "Status: {status}\n{add_info}\n{description}".format(
-            #     status=xstatus.value.get("status"),
-            #     add_info=xstatus.value.get("additional_information", ""),
-            #     description=parent_schema_object["description"],
-            # )
+            if status == "deprecated":
+                status_msg = "Deprecated: {}".format(info)
+            elif status == "under_review":
+                status_msg = "Under Review: {}".format(info)
+
+            desc = parent_schema.get("description")
+            if desc is None or len(desc) == 0:
+                desc = "Description TBD"
+
+            parent_schema["description"] = "{}\n\n{}".format(status_msg, desc)
 
     def _resolve_x_unique(self):
         """validate the x-unique field and make sure it is [global]"""
