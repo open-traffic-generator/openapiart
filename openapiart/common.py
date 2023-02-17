@@ -9,6 +9,7 @@ import io
 import sys
 import time
 import grpc
+import semantic_version
 import types
 import platform
 from google.protobuf import json_format
@@ -40,6 +41,7 @@ def api(
     logger=None,
     loglevel=logging.INFO,
     ext=None,
+    version_check=False,
 ):
     """Create an instance of an Api class
 
