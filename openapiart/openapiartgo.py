@@ -1330,15 +1330,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "setDefault()",
         ]
         for field in new.interface_fields:
-            interfaces.append("// {}".format(field.getter_method_description))
+            interfaces.append(
+                "// {}".format(
+                    self._escaped_str(field.getter_method_description)
+                )
+            )
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
                 interfaces.append(
-                    "// {}".format(field.setter_method_description)
+                    "// {}".format(
+                        self._escaped_str(field.setter_method_description)
+                    )
                 )
                 interfaces.append(field.setter_method)
             if field.has_method is not None:
-                interfaces.append("// {}".format(field.has_method_description))
+                interfaces.append(
+                    "// {}".format(
+                        self._escaped_str(field.has_method_description)
+                    )
+                )
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
@@ -1379,6 +1389,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # self._write_value_of(new)
         self._write_validate_method(new)
         self._write_default_method(new)
+
+    def _escaped_str(self, val):
+        val = val.replace("{", "{{")
+        return val.replace("}", "}}")
 
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
