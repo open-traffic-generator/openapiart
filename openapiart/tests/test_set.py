@@ -39,79 +39,79 @@ def test_set(api):
 
     config_data = config._properties
 
-    if not config_data["ieee_802_1qbb"]:
-        raise ValueError("ieee_802_1qbb value is not set correctly")
-    if config_data["space_1"] != 10:
-        raise ValueError("space_1 value is not set correctly")
-    if config_data["full_duplex_100_mb"] != 20:
-        raise ValueError("full_duplex_100_mb value is not set correctly")
-    if config_data["response"] != config.STATUS_200:
-        raise ValueError("response value is not set correctly")
-    if config_data["a"] != "abc":
-        raise ValueError("a value is not set correctly")
-    if config_data["b"] != 0.2:
-        raise ValueError("b value is not set correctly")
-    if config_data["c"] != 20:
-        raise ValueError("c value is not set correctly")
+    assert config_data[
+        "ieee_802_1qbb"
+    ], "ieee_802_1qbb value is not set correctly"
+    assert config_data["space_1"] == 10, "space_1 value is not set correctly"
+    assert (
+        config_data["full_duplex_100_mb"] == 20
+    ), "full_duplex_100_mb value is not set correctly"
+    assert (
+        config_data["response"] == config.STATUS_200
+    ), "response value is not set correctly"
+    assert config_data["a"] == "abc", "a value is not set correctly"
+    assert config_data["b"] == 0.2, "b value is not set correctly"
+    assert config_data["c"] == 20, "c value is not set correctly"
     d_values = [config.A]
     i = 0
     for value in config_data["d_values"]:
-        if value != d_values[i]:
-            raise ValueError("d values are not set correctly")
+        assert value == d_values[i], "d values are not set correctly"
         i = i + 1
-    if config_data["h"]:
-        raise ValueError("h value is not set correctly")
-    if config_data["i"] != "1010100":
-        raise ValueError("i value is not set correctly")
+    assert not config_data["h"], "h value is not set correctly"
+    assert config_data["i"] == "1010100", "i value is not set correctly"
     list_of_string_values = ["abc", "efg"]
     i = 0
     for value in config_data["list_of_string_values"]:
-        if value != list_of_string_values[i]:
-            raise ValueError(
-                "list_of_string_values values are not set correctly"
-            )
+        assert (
+            value == list_of_string_values[i]
+        ), "list_of_string_values values are not set correctly"
         i = i + 1
     list_of_integer_values = [1, 2, 3, 4]
     i = 0
     for value in config_data["list_of_integer_values"]:
-        if value != list_of_integer_values[i]:
-            raise ValueError(
-                "list_of_integer_values values are not set correctly"
-            )
+        assert (
+            value == list_of_integer_values[i]
+        ), "list_of_integer_values values are not set correctly"
         i = i + 1
 
     config_e_data = config.e._properties
-    if config_e_data["e_a"] != 1.1:
-        raise ValueError("e_a value is not set correctly")
-    if config_e_data["e_b"] != 2.1:
-        raise ValueError("e_b value is not set correctly")
+    assert config_e_data["e_a"] == 1.1, "e_a value is not set correctly"
+    assert config_e_data["e_b"] == 2.1, "e_b value is not set correctly"
 
     config_l_data = config.l._properties
-    if config_l_data["ipv4"] != "10.1.1.1":
-        raise ValueError("ipv4 value is not set correctly")
-    if config_l_data["ipv6"] != "::":
-        raise ValueError("ipv6 value is not set correctly")
-    if config_l_data["mac"] != "aa:bb:cc:11:22:33":
-        raise ValueError("mac value is not set correctly")
-    if config_l_data["string_param"] != "abcd":
-        raise ValueError("string_param value is not set correctly")
+    assert (
+        config_l_data["ipv4"] == "10.1.1.1"
+    ), "ipv4 value is not set correctly"
+    assert config_l_data["ipv6"] == "::", "ipv6 value is not set correctly"
+    assert (
+        config_l_data["mac"] == "aa:bb:cc:11:22:33"
+    ), "mac value is not set correctly"
+    assert (
+        config_l_data["string_param"] == "abcd"
+    ), "string_param value is not set correctly"
 
     config_mac_pattern_mac_increment_data = (
         config.mac_pattern.mac.increment._properties
     )
-    if config_mac_pattern_mac_increment_data["start"] != "aa:aa:bb:bb:cc:cc":
-        raise ValueError("start value is not set correctly")
-    if config_mac_pattern_mac_increment_data["step"] != "00:01:00:00:10:00":
-        raise ValueError("step value is not set correctly")
-    if config_mac_pattern_mac_increment_data["count"] != 10:
-        raise ValueError("count value is not set correctly")
+    assert (
+        config_mac_pattern_mac_increment_data["start"] == "aa:aa:bb:bb:cc:cc"
+    ), "start value is not set correctly"
+    assert (
+        config_mac_pattern_mac_increment_data["step"] == "00:01:00:00:10:00"
+    ), "step value is not set correctly"
+    assert (
+        config_mac_pattern_mac_increment_data["count"] == 10
+    ), "count value is not set correctly"
 
     config_integer_pattern_integer_decrement = (
         config.integer_pattern.integer.decrement._properties
     )
-    if config_integer_pattern_integer_decrement["start"] != 200:
-        raise ValueError("start value is not set correctly")
-    if config_integer_pattern_integer_decrement["step"] != 2:
-        raise ValueError("step value is not set correctly")
-    if config_integer_pattern_integer_decrement["count"] != 100:
-        raise ValueError("count value is not set correctly")
+    assert (
+        config_integer_pattern_integer_decrement["start"] == 200
+    ), "start value is not set correctly"
+    assert (
+        config_integer_pattern_integer_decrement["step"] == 2
+    ), "step value is not set correctly"
+    assert (
+        config_integer_pattern_integer_decrement["count"] == 100
+    ), "count value is not set correctly"
