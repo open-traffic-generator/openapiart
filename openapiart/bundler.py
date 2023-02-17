@@ -922,7 +922,7 @@ class Bundler(object):
 
     def _resolve_x_status(self):
         """Find all instances of x-status in the openapi content
-        and merge the x-constraint content into the parent object description
+        and merge the x-status content into the parent object description
         """
         import jsonpath_ng
 
