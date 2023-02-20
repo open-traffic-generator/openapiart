@@ -14,8 +14,9 @@ sys.path.append(
 )
 pb2_grpc = importlib.import_module("sanity_pb2_grpc")
 pb2 = importlib.import_module("sanity_pb2")
+op = importlib.import_module("sanity")
 
-GRPC_PORT = 50051
+GRPC_PORT = 40052
 
 
 class OpenapiServicer(pb2_grpc.OpenapiServicer):
@@ -62,6 +63,15 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         response_200 = {"status_code_200": self._prefix_config}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetConfigResponse()
+        )
+        return res_obj
+
+    def GetVersion(self, request, context):
+        self._log("Executing GetVersion")
+        v = op.api().get_local_version()
+        response_200 = {"status_code_200": v.serialize(v.DICT)}
+        res_obj = json_format.Parse(
+            json.dumps(response_200), pb2.GetVersionResponse()
         )
         return res_obj
 

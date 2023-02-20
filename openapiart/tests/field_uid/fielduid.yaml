@@ -1,7 +1,7 @@
 paths:
   /config:
     post:
-      tags: ['Bundler']
+      tags: ["Bundler"]
       operationId: set_config
       description: >-
         Sets configuration resources.
@@ -10,20 +10,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Field.Config'
+              $ref: "#/components/schemas/Field.Config"
       x-reserved-field-uids: [5, 8]
       responses:
-        '200':
+        "200":
           x-field-uid: 1
-          description: 'Standard success binary payload'
+          description: "Standard success binary payload"
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
-        '400':
+        "400":
           x-field-uid: 2
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -34,9 +34,9 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '404':
+        "404":
           x-field-uid: 2
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -47,8 +47,8 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '500':
-          description: 'error 5xx'
+        "500":
+          description: "error 5xx"
           content:
             application/json:
               schema:
@@ -59,9 +59,9 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '501':
+        "501":
           x-field-uid: -4
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -72,9 +72,9 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '502':
+        "502":
           x-field-uid: 536870998
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -85,9 +85,9 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '503':
+        "503":
           x-field-uid: 5
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -102,7 +102,7 @@ components:
   schemas:
     Field.Config:
       type: object
-      x-reserved-field-uids: [2,3]
+      x-reserved-field-uids: [2, 3]
       description: |-
         This is a field uid object
       properties:
@@ -126,7 +126,7 @@ components:
         fieldenum:
           type: string
           x-field-uid: 4
-          x-reserved-field-uids: [2,4]
+          x-reserved-field-uids: [2, 4]
           x-enum:
             enum1:
               x-field-uid: 1
@@ -142,17 +142,13 @@ components:
             maxenum:
               x-field-uid: 536870912
         a:
-          x-status:
-            status: under-review
-            additional_information: property under review
+          x-status: under-review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status:
-            status: deprecated
-            additional_information: property under review
+          x-status: deprecated
           description: |-
             Longer multi-line description
             Second line is here

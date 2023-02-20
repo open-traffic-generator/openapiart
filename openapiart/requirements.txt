@@ -8,6 +8,7 @@ PyYAML
 openapi_spec_validator==0.3.0
 jsonpath_ng
 urllib3
+semantic_version
 typing_extensions ; python_version > '2.7'
 click==8.0.4; python_version > '2.7' # this is added because of the black failure in CI
 black==22.1.0 ; python_version > '2.7'

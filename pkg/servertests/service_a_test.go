@@ -2,7 +2,7 @@ package test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +19,7 @@ func TestGetRootResponse(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	jsonResponse, _ := ioutil.ReadAll(wr.Body)
+	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := openapiart.NewCommonResponseSuccess()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
@@ -42,7 +42,7 @@ func TestPostRootResponse(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	jsonResponse, _ := ioutil.ReadAll(wr.Body)
+	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := openapiart.NewCommonResponseSuccess()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
@@ -56,7 +56,7 @@ func TestDummyResponseTest(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusOK, wr.Code)
 
-	response, _ := ioutil.ReadAll(wr.Body)
+	response, _ := io.ReadAll(wr.Body)
 	assert.Equal(t, "text/plain; charset=UTF-8", wr.Header().Get("Content-Type"))
 	assert.Equal(t, "\"this is a string response\"", string(response))
 

@@ -8,8 +8,6 @@
         "CGO_ENABLED": 0,
     },
     "go.testFlags": [
-        "-tags",
-        "all",
         "-v",
         "-count",
         "1"
@@ -19,18 +17,11 @@
         "build.env": {
             "CGO_ENABLED": 0,
         },
-        "build.buildFlags": [
-            "-tags",
-            "all"
-        ],
     },
     "go.toolsEnvVars": {
         "CGO_ENABLED": 0
     },
     "go.lintTool": "golangci-lint",
-    "go.lintFlags": [
-        "--fast"
-    ],
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,

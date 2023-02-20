@@ -27,22 +27,22 @@ func TestPrefixConfigRequired(t *testing.T) {
 	assert.Contains(t, err2.Error(), "RequiredObject", "A", "B", "C")
 }
 
-// func TestEObjectRequired(t *testing.T) {
-// 	object := openapiart.NewEObject()
-// 	opts := protojson.MarshalOptions{
-// 		UseProtoNames:   true,
-// 		AllowPartial:    true,
-// 		EmitUnpopulated: false,
-// 		Indent:          "  ",
-// 	}
-// 	data, _ := opts.Marshal(object.Msg())
-// 	err := object.FromJson(string(data))
-// 	err1 := object.FromYaml(string(data))
-// 	err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
-// 	assert.Contains(t, err.Error(), "EA", "EB")
-// 	assert.Contains(t, err1.Error(), "EA", "EB")
-// 	assert.Contains(t, err2.Error(), "EA", "EB")
-// }
+//	func TestEObjectRequired(t *testing.T) {
+//		object := openapiart.NewEObject()
+//		opts := protojson.MarshalOptions{
+//			UseProtoNames:   true,
+//			AllowPartial:    true,
+//			EmitUnpopulated: false,
+//			Indent:          "  ",
+//		}
+//		data, _ := opts.Marshal(object.Msg())
+//		err := object.FromJson(string(data))
+//		err1 := object.FromYaml(string(data))
+//		err2 := object.FromPbText(proto.MarshalTextString(object.Msg()))
+//		assert.Contains(t, err.Error(), "EA", "EB")
+//		assert.Contains(t, err1.Error(), "EA", "EB")
+//		assert.Contains(t, err2.Error(), "EA", "EB")
+//	}
 func TestMandateRequired(t *testing.T) {
 	object := openapiart.NewMandate()
 	opts := protojson.MarshalOptions{

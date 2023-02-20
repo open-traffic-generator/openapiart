@@ -29,6 +29,7 @@ class OpenApiArt(object):
         artifact_dir=None,
         extension_prefix=None,
         proto_service=None,
+        generate_version_api=False,
     ):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
@@ -57,6 +58,7 @@ class OpenApiArt(object):
         )
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
+        self._generate_version_api = generate_version_api
         self._bundle()
         self._get_info()
         self._get_license()
@@ -88,9 +90,12 @@ class OpenApiArt(object):
         module = importlib.import_module("openapiart.bundler")
         bundler_class = getattr(module, "Bundler")
         self._bundler = bundler_class(
-            api_files=self._api_files, output_dir=self._output_dir
+            api_files=self._api_files,
+            output_dir=self._output_dir,
+            generate_version_api=self._generate_version_api,
         )
         self._bundler.bundle()
+        self._api_version = self._bundler.get_api_version()
         # read the entire openapi file
         with open(self._bundler.openapi_filepath) as fp:
             self._openapi = yaml.safe_load(fp.read())
@@ -118,7 +123,11 @@ class OpenApiArt(object):
         except Exception as e:
             print("Bypassed creation of static documentation: {}".format(e))
 
-    def GeneratePythonSdk(self, package_name):
+    def GenerateProtoDef(self, package_name):
+        self._protobuf_package_name = package_name
+        self._generate_proto_file()
+
+    def GeneratePythonSdk(self, package_name, sdk_version=""):
         """Generates a Python UX Sdk
         Args
         ----
@@ -142,7 +151,9 @@ class OpenApiArt(object):
         ```
         """
         self._python_module_name = package_name
-        self._generate_proto_file()
+        self._python_sdk_version = sdk_version
+        if not self.proto_file_exists():
+            self._generate_proto_file()
         if self._python_module_name is not None:
             module = importlib.import_module("openapiart.generator")
             python_ux = getattr(module, "Generator")(
@@ -151,6 +162,9 @@ class OpenApiArt(object):
                 self._protobuf_package_name,
                 output_dir=self._output_dir,
                 extension_prefix=self._extension_prefix,
+                generate_version_api=self._generate_version_api,
+                api_version=self._api_version,
+                sdk_version=self._python_sdk_version,
             )
             python_ux.generate()
         try:
@@ -206,7 +220,7 @@ class OpenApiArt(object):
             )
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name):
+    def GenerateGoSdk(self, package_dir, package_name, sdk_version=""):
         """Generates a Go UX Sdk
 
         Args
@@ -239,7 +253,9 @@ class OpenApiArt(object):
 
         self._go_sdk_package_dir = package_dir
         self._go_sdk_package_name = package_name
-        self._generate_proto_file()
+        self._go_sdk_version = sdk_version
+        if not self.proto_file_exists():
+            self._generate_proto_file()
         if self._go_sdk_package_dir and self._protobuf_package_name:
             go_sdk_output_dir = os.path.normpath(
                 os.path.join(
@@ -279,6 +295,9 @@ class OpenApiArt(object):
                     "go_sdk_package_name": self._go_sdk_package_name,
                     "output_dir": self._output_dir,
                     "proto_service": self._proto_service,
+                    "generate_version_api": self._generate_version_api,
+                    "api_version": self._api_version,
+                    "sdk_version": self._go_sdk_version,
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
@@ -332,6 +351,15 @@ class OpenApiArt(object):
             }
         )
         protobuf.generate(self._openapi)
+
+    def proto_file_exists(self):
+        proto_file_path = os.path.normpath(
+            os.path.join(
+                self._output_dir,
+                "{}.proto".format(self._protobuf_package_name),
+            )
+        )
+        return os.path.exists(proto_file_path)
 
     @property
     def output_dir(self):

@@ -171,7 +171,7 @@ func NetStat(t *testing.T) []string {
 		grep = "findstr"
 	}
 	c1 := exec.Command("netstat", "-n")
-	c2 := exec.Command(grep, "127.0.0.1:50051")
+	c2 := exec.Command(grep, "127.0.0.1:8444")
 	r1, w1 := io.Pipe()
 
 	c1.Stdout = w1
@@ -246,4 +246,54 @@ func TestGrpcClientConnection(t *testing.T) {
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+}
+
+func TestValidVersionCheckHttp(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestInvalidVersionCheckHttp(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewHttpTransport().SetLocation(httpServer.Location)
+	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+}
+
+func TestValidVersionCheckGrpc(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestInvalidVersionCheckGrpc(t *testing.T) {
+	api := openapiart.NewApi()
+	api.SetVersionCompatibilityCheck(true)
+	api.NewGrpcTransport().SetLocation(grpcServer.Location)
+	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
+
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
 }

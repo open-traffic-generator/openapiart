@@ -6,7 +6,6 @@ components:
         name:
           type: string
           x-field-uid: 1
-          x-unique: global
     ListObject:
       type: object
       properties:
@@ -48,37 +47,37 @@ components:
           x-field-uid: 1
   responses:
     Success:
-      200:
-        description: 'Standard success binary payload'
+      "200":
+        description: "Standard success binary payload"
         content:
           application/octet-stream:
             schema:
               type: string
               format: binary
     Warnings:
-      description: 'Success warning payload similar to otg Success'
+      description: "Success warning payload similar to otg Success"
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Warning.Details'
+            $ref: "#/components/schemas/Warning.Details"
     Error.400:
-      '400':
-        description: 'error 4xx'
+      "400":
+        description: "error 4xx"
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error.Details'
+              $ref: "#/components/schemas/Error.Details"
     Error.404:
-      '404':
-        description: 'error 404'
+      "404":
+        description: "error 404"
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error.Details'
+              $ref: "#/components/schemas/Error.Details"
     Error500:
-      '500':
-        description: 'error 5xx'
+      "500":
+        description: "error 5xx"
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              $ref: "#/components/schemas/Error"

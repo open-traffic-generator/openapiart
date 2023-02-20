@@ -7,13 +7,13 @@ from openapiart.goserver.writer import Writer
 
 
 class GoServerControllerGenerator(object):
-    def __init__(self, ctx):
+    def __init__(self, context):
         # type: (ctx.GeneratorContext) -> None
         self._indent = "\t"
-        self._root_package = ctx.module_path
+        self._root_package = context.module_path
         self._package_name = "controllers"
-        self._ctx = ctx
-        self._output_path = os.path.join(ctx.output_path, "controllers")
+        self._ctx = context
+        self._output_path = os.path.join(context.output_path, "controllers")
 
     def generate(self):
         self._write_controllers()
@@ -53,7 +53,7 @@ class GoServerControllerGenerator(object):
     def _write_import(self, w):
         # type: (Writer) -> None
         w.write_line("import (").push_indent().write_line(
-            """\"io/ioutil"
+            """\"io"
             "net/http"
             "google.golang.org/protobuf/encoding/protojson"
             "{root_package}/httpapi"
@@ -162,7 +162,7 @@ class GoServerControllerGenerator(object):
             w.write_line(
                 """var item {full_modelname}
                 if r.Body != nil {{
-                    body, readError := ioutil.ReadAll(r.Body)
+                    body, readError := io.ReadAll(r.Body)
                     if body != nil {{
                         item = {new_modelname}()
                         err := item.FromJson(string(body))

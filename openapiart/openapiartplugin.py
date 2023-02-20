@@ -19,6 +19,15 @@ class OpenApiArtPlugin(object):
         self._protobuf_package_name = kwargs["protobuf_package_name"]
         self._protobuf_file_name = kwargs["protobuf_package_name"]
         self._go_sdk_package_dir = kwargs["go_sdk_package_dir"]
+        self._generate_version_api = kwargs.get("generate_version_api")
+        if self._generate_version_api is None:
+            self._generate_version_api = False
+        self._api_version = kwargs.get("api_version")
+        if self._api_version is None:
+            self._api_version = ""
+        self._sdk_version = kwargs.get("sdk_version")
+        if self._sdk_version is None:
+            self._sdk_version = ""
         self._go_sdk_package_name = (
             None
             if "go_sdk_package_name" not in kwargs

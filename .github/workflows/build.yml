@@ -39,20 +39,22 @@ jobs:
         run: |
           python do.py lint
       - name: Archive generated artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
           path: |
             dist
             pkg
 
   python_tests:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       max-parallel: 6
       matrix:
         python-version: [2.7, 3.6, 3.7, 3.8, 3.9, "3.10"]
+      fail-fast: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
@@ -65,7 +67,7 @@ jobs:
       - uses: actions/download-artifact@v2
         id: download
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Install dependencies
         run: |
           python do.py setup
@@ -73,6 +75,13 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate python True
+      - name: Archive generated artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: generated_py_package
+          path: |
+            art
       - name: Display structure of downloaded files
         run: ls -R
       - name: Run python tests
@@ -83,9 +92,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       matrix:
-        go-version: ["1.17.5", "1.18.3"]
+        go-version: ["1.17.13", "1.18.10", "1.19.5", "1.20"]
+      fail-fast: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
@@ -112,14 +122,16 @@ jobs:
         run: |
           python do.py go_lint
       - name: Archive generated artifacts
+        if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: generated-artifacts
+          name: generated_go_package
           path: |
             pkg
+            art
       - uses: actions/download-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Display structure of downloaded files
         run: ls -R
       - uses: actions/setup-go@v2
@@ -129,8 +141,39 @@ jobs:
         run: |
           python do.py testgo
 
+  proto_yml_generation_test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: python_package
+      - name: Install dependencies
+        run: |
+          python do.py setup
+          python do.py install
+      - name: Run artifact generation
+        run: |
+          python do.py generate proto True
+      - name: Display structure of downloaded files
+        run: ls -R
+      - name: Check Genrated files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "art/openapi.json, art/openapi.yaml, art/sanity.proto"
+          fail: true
+
   publish_python_package:
-    needs: [python_tests, go_tests]
+    needs: [python_tests, go_tests, proto_yml_generation_test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
@@ -143,7 +186,7 @@ jobs:
           python-version: 3.9
       - uses: actions/download-artifact@v2
         with:
-          name: generated-artifacts
+          name: python_package
       - name: Display structure of downloaded files
         run: ls -R
       - name: Get package version

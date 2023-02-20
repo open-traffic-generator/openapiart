@@ -9,12 +9,12 @@ components:
         required_object:
           description: |-
             A required object that MUST be generated as such.
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 1
         optional_object:
           description: |-
             An optional object that MUST be generated as such.
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 2
         ieee_802_1qbb:
           type: boolean
@@ -43,19 +43,13 @@ components:
             status_500:
               x-field-uid: 4
         a:
-          x-status:
-            status: under-review
-            additional_information: property under review
+          x-status: under-review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status:
-            status: deprecated
-            additional_information: |-
-              Property b is being deprecated from the sdk version x.x.x
-              and property x shall be used instead
+          x-status: deprecated
           description: |-
             Longer multi-line description
             Second line is here
@@ -67,11 +61,7 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
-          x-status:
-            status: deprecated
-            additional_information: |-
-              Property d_values is being deprecated from the sdk version x.x.x
-              and property d shall be used instead
+          x-status: deprecated
           description: A list of enum values
           type: array
           items:
@@ -85,23 +75,19 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
-          x-status:
-            status: deprecated
-            additional_information: |-
-              Property 'e' is being deprecated from the sdk version x.x.x
-              and property 'ep' shall be used instead
+          x-status: deprecated
           description: A child object
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 11
         f:
           description: An object with only choice(s)
-          $ref: '#/components/schemas/FObject'
+          $ref: "#/components/schemas/FObject"
           x-field-uid: 12
         g:
           description: A list of objects with choice and properties
           type: array
           items:
-            $ref: '#/components/schemas/GObject'
+            $ref: "#/components/schemas/GObject"
           x-field-uid: 13
         h:
           description: A boolean value
@@ -117,14 +103,14 @@ components:
           description: A list of objects with only choice
           type: array
           items:
-            $ref: '#/components/schemas/JObject'
+            $ref: "#/components/schemas/JObject"
           x-field-uid: 16
         k:
           description: A nested object with only one property which is a choice object
-          $ref: '#/components/schemas/KObject'
+          $ref: "#/components/schemas/KObject"
           x-field-uid: 17
         l:
-          $ref: '#/components/schemas/LObject'
+          $ref: "#/components/schemas/LObject"
           x-field-uid: 18
         list_of_string_values:
           description: |-
@@ -141,31 +127,31 @@ components:
             type: integer
           x-field-uid: 20
         level:
-          $ref: '../multilevel/multi.yaml#/components/schemas/Level.One'
+          $ref: "../multilevel/multi.yaml#/components/schemas/Level.One"
           x-field-uid: 21
         mandatory:
-          $ref: '#/components/schemas/Mandate'
+          $ref: "#/components/schemas/Mandate"
           x-field-uid: 22
         ipv4_pattern:
-          $ref: '../pattern/pattern.yaml#/components/schemas/Ipv4Pattern'
+          $ref: "../pattern/pattern.yaml#/components/schemas/Ipv4Pattern"
           x-field-uid: 23
         ipv6_pattern:
-          $ref: '../pattern/pattern.yaml#/components/schemas/Ipv6Pattern'
+          $ref: "../pattern/pattern.yaml#/components/schemas/Ipv6Pattern"
           x-field-uid: 24
         mac_pattern:
-          $ref: '../pattern/pattern.yaml#/components/schemas/MacPattern'
+          $ref: "../pattern/pattern.yaml#/components/schemas/MacPattern"
           x-field-uid: 25
         integer_pattern:
-          $ref: '../pattern/pattern.yaml#/components/schemas/IntegerPattern'
+          $ref: "../pattern/pattern.yaml#/components/schemas/IntegerPattern"
           x-field-uid: 26
         checksum_pattern:
-          $ref: '../pattern/pattern.yaml#/components/schemas/ChecksumPattern'
+          $ref: "../pattern/pattern.yaml#/components/schemas/ChecksumPattern"
           x-field-uid: 27
         case:
-          $ref: '#/components/schemas/Layer1Ieee802x'
+          $ref: "#/components/schemas/Layer1Ieee802x"
           x-field-uid: 28
         m_object:
-          $ref: '#/components/schemas/MObject'
+          $ref: "#/components/schemas/MObject"
           x-field-uid: 29
         integer64:
           description: int64 type
@@ -188,9 +174,7 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status:
-            status: under-review
-            additional_information: property under review
+          x-status: under-review
           description: |-
             string minimum&maximum Length
           type: string
@@ -198,9 +182,7 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status:
-            status: under-review
-            additional_information: property under review
+          x-status: under-review
           description: |-
             Array of Hex
           type: array
@@ -221,26 +203,31 @@ components:
         w_list:
           type: array
           items:
-            $ref: '#/components/schemas/WObject'
+            $ref: "#/components/schemas/WObject"
           x-field-uid: 37
         x_list:
           type: array
           items:
-            $ref: '#/components/schemas/ZObject'
+            $ref: "#/components/schemas/ZObject"
           x-field-uid: 38
         z_object:
-          $ref: '#/components/schemas/ZObject'
+          $ref: "#/components/schemas/ZObject"
           x-field-uid: 39
         y_object:
-          $ref: '#/components/schemas/YObject'
+          $ref: "#/components/schemas/YObject"
           x-field-uid: 40
+        choice_object:
+          description: A list of objects with choice with and without properties
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceObject'
+          x-field-uid: 41
 
     WObject:
       required: [w_name]
       properties:
         w_name:
           type: string
-          x-unique: global
           x-field-uid: 1
 
     ZObject:
@@ -248,7 +235,6 @@ components:
       properties:
         name:
           type: string
-          x-unique: global
           x-field-uid: 1
 
     YObject:
@@ -283,7 +269,7 @@ components:
           x-field-uid: 3
         choice:
           type: string
-          default: 'g_d'
+          default: "g_d"
           x-field-uid: 4
           x-enum:
             g_d:
@@ -292,7 +278,7 @@ components:
               x-field-uid: 2
         g_d:
           type: string
-          default: 'some string'
+          default: "some string"
           x-field-uid: 5
         g_e:
           type: number
@@ -301,7 +287,7 @@ components:
           x-field-uid: 6
         g_f:
           description: |-
-            Another enum to test protbuf enum generation 
+            Another enum to test protbuf enum generation
           type: string
           default: a
           x-field-uid: 7
@@ -341,16 +327,18 @@ components:
       properties:
         choice:
           type: string
-          default: 'f_a'
+          default: "f_a"
           x-field-uid: 1
           x-enum:
             f_a:
               x-field-uid: 1
             f_b:
               x-field-uid: 2
+            f_c:
+              x-field-uid: 3
         f_a:
           type: string
-          default: 'some string'
+          default: "some string"
           x-field-uid: 2
         f_b:
           type: number
@@ -370,19 +358,40 @@ components:
             j_b:
               x-field-uid: 2
         j_a:
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 2
         j_b:
+          $ref: "#/components/schemas/FObject"
+          x-field-uid: 3
+    ChoiceObject:
+      type: object
+      properties:
+        choice:
+          type: string
+          default: no_obj
+          x-field-uid: 1
+          x-enum:
+            e_obj:
+              x-field-uid: 1
+            f_obj:
+              x-field-uid: 2
+            no_obj:
+              x-field-uid: 3
+        e_obj:
+          $ref: '#/components/schemas/EObject'
+          x-field-uid: 2
+        f_obj:
           $ref: '#/components/schemas/FObject'
           x-field-uid: 3
+
     KObject:
       type: object
       properties:
         e_object:
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 1
         f_object:
-          $ref: '#/components/schemas/FObject'
+          $ref: "#/components/schemas/FObject"
           x-field-uid: 2
     LObject:
       description: |-
@@ -462,7 +471,7 @@ components:
     Mandate:
       description: "Object to Test required Parameter"
       type: object
-      required: ['required_param']
+      required: ["required_param"]
       properties:
         required_param:
           type: string
@@ -475,7 +484,7 @@ components:
           description: A list of objects with choice and properties
           type: array
           items:
-            $ref: '#/components/schemas/GObject'
+            $ref: "#/components/schemas/GObject"
           x-field-uid: 1
     Metrics.Request:
       type: object
@@ -510,12 +519,12 @@ components:
         ports:
           type: array
           items:
-            $ref: '#/components/schemas/Port.Metric'
+            $ref: "#/components/schemas/Port.Metric"
           x-field-uid: 2
         flows:
           type: array
           items:
-            $ref: '#/components/schemas/Flow.Metric'
+            $ref: "#/components/schemas/Flow.Metric"
           x-field-uid: 3
     Port.Metric:
       type: object

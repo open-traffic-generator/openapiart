@@ -1,7 +1,7 @@
 paths:
   /config:
     post:
-      tags: ['Bundler']
+      tags: ["Bundler"]
       operationId: set_config
       description: >-
         Sets configuration resources.
@@ -10,73 +10,69 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
+              $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
       responses:
         200:
           x-include: ../common/common.yaml#/components/responses/Success/200
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '404':
+        "404":
           x-include: ../common/common.yaml#/components/responses/Error.404/404
           x-field-uid: 3
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 4
     patch:
-      tags: ['Bundler']
+      tags: ["Bundler"]
       operationId: update_configuration
       description: >-
         Sets configuration resources.
-      x-status:
-        status: deprecated
-        additional_information: |-
-          update_configuration API is being deprecated from the sdk version x.x.x
-          instead, consider using x_update_configuration
+      x-status: deprecated
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '../config/config.yaml#/components/schemas/Update.Config'
+              $ref: "../config/config.yaml#/components/schemas/Update.Config"
       responses:
-        '200':
+        "200":
           description: |-
             success 2xx
           content:
             application/json:
               schema:
-                $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
+                $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 3
     get:
-      tags: ['Bundler']
+      tags: ["Bundler"]
       operationId: get_config
       description: >-
         Gets the configuration resources.
       responses:
-        '200':
+        "200":
           description: Config response
           content:
             application/json:
               schema:
-                $ref: '../config/config.yaml#/components/schemas/Prefix.Config'
+                $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 3
   /metrics:
     get:
-      tags: ['Metrics']
+      tags: ["Metrics"]
       operationId: get_metrics
       description: >-
         Gets metrics.
@@ -85,49 +81,49 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '../config/config.yaml#/components/schemas/Metrics.Request'
+              $ref: "../config/config.yaml#/components/schemas/Metrics.Request"
       responses:
-        '200':
+        "200":
           description: Unique metrics response
           content:
             application/json:
               schema:
-                $ref: '../config/config.yaml#/components/schemas/Metrics'
+                $ref: "../config/config.yaml#/components/schemas/Metrics"
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 3
   /warnings:
     get:
-      tags: ['Metrics']
+      tags: ["Metrics"]
       operationId: get_warnings
       description: >-
         Gets warnings.
       responses:
-        '200':
-          $ref: '../common/common.yaml#/components/responses/Warnings'
+        "200":
+          $ref: "../common/common.yaml#/components/responses/Warnings"
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 3
     delete:
-      tags: ['Metrics']
+      tags: ["Metrics"]
       operationId: clear_warnings
       description: >-
         Clears warnings.
       responses:
-        '200':
-          description: 'OK'
+        "200":
+          description: "OK"
           x-field-uid: 1
-        '400':
+        "400":
           x-include: ../common/common.yaml#/components/responses/Error.400/400
           x-field-uid: 2
-        '500':
+        "500":
           x-include: ../common/common.yaml#/components/responses/Error500/500
           x-field-uid: 3

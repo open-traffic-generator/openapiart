@@ -21,7 +21,7 @@ type HttpServer struct {
 
 var (
 	httpServer HttpServer = HttpServer{
-		serverLocation: "127.0.0.1:50051",
+		serverLocation: "127.0.0.1:8444",
 	}
 )
 
@@ -30,9 +30,11 @@ var (
 func StartMockHttpServer() {
 	bundlerHandler := NewBundlerHandler()
 	metricsHandler := NewMetricsHandler()
+	capabilitiesHandler := NewCapabilitiesHandler()
 	controllers := []httpapi.HttpController{
 		bundlerHandler.GetController(),
 		metricsHandler.GetController(),
+		capabilitiesHandler.GetController(),
 	}
 	router := httpapi.AppendRoutes(nil, controllers...)
 	httpServer.Location = fmt.Sprintf("http://%s", httpServer.serverLocation)
@@ -50,13 +52,27 @@ type bundlerHandler struct {
 	controller interfaces.BundlerController
 }
 
+type capabilitiesHandler struct {
+	controller interfaces.CapabilitiesController
+}
+
 func NewBundlerHandler() interfaces.BundlerHandler {
 	handler := new(bundlerHandler)
 	handler.controller = controllers.NewHttpBundlerController(handler)
 	return handler
 }
 
+func NewCapabilitiesHandler() interfaces.CapabilitiesHandler {
+	handler := new(capabilitiesHandler)
+	handler.controller = controllers.NewHttpCapabilitiesController(handler)
+	return handler
+}
+
 func (h *bundlerHandler) GetController() interfaces.BundlerController {
+	return h.controller
+}
+
+func (h *capabilitiesHandler) GetController() interfaces.CapabilitiesController {
 	return h.controller
 }
 
@@ -87,6 +103,12 @@ func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *h
 func (h *bundlerHandler) GetConfig(r *http.Request) openapiart.GetConfigResponse {
 	response := openapiart.NewGetConfigResponse()
 	response.SetStatusCode200(httpServer.Config)
+	return response
+}
+
+func (h *capabilitiesHandler) GetVersion(r *http.Request) openapiart.GetVersionResponse {
+	response := openapiart.NewGetVersionResponse()
+	response.SetStatusCode200(openapiart.NewApi().GetLocalVersion())
 	return response
 }
 
