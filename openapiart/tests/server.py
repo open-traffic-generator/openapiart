@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.CONFIG = None
 app.PACKAGE = None
 app.UPDATE_CONFIG = None
-app.PORT = 18080
+app.PORT = 8444
 app.HOST = "0.0.0.0"
 
 
@@ -47,6 +47,15 @@ def get_config():
     app.CONFIG.required_object.e_b = 1.2
     serialized_config = app.CONFIG.serialize()
     return Response(serialized_config, mimetype="application/json", status=200)
+
+
+@app.route("/api/capabilities/version", methods=["GET"])
+def get_version():
+    return Response(
+        app.PACKAGE.Api().get_local_version().serialize(),
+        mimetype="application/json",
+        status=200,
+    )
 
 
 @app.after_request

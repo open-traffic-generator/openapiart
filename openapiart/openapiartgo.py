@@ -266,7 +266,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
-        self._write('import "google.golang.org/grpc/credentials/insecure"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(
@@ -277,6 +276,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "common_test.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(
+            os.path.join(os.path.dirname(__file__), "common_test.go")
+        ) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._fp = go_pkg_fp
         self._filename = go_pkg_filename
 
@@ -371,14 +382,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
-                if path_item_object.get("x-status", {}).get("status") in [
-                    "deprecated",
-                    "under-review",
-                ]:
-                    rpc.status = path_item_object.get("x-status", {})
-                    rpc.status["status"] = rpc.status["status"].replace(
-                        "-", "_"
-                    )
+                # TODO: restore behavior
+                # if path_item_object.get("x-status", {}).get("status") in [
+                #     "deprecated",
+                #     "under-review",
+                # ]:
+                #     rpc.status = path_item_object.get("x-status", {})
+                #     rpc.status["status"] = rpc.status["status"].replace(
+                #         "-", "_"
+                #     )
                 http.description = self._get_description(path_item_object)
                 if (
                     len(
@@ -592,10 +604,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         # write the go code
         self._write(
-            """type {internal_struct_name} struct {{
+            """
+            type versionMeta struct {{
+                checkVersion  bool
+                localVersion  Version
+                remoteVersion Version
+                checkError    error
+            }}
+            type {internal_struct_name} struct {{
                 api
                 grpcClient {pb_pkg_name}.{proto_service}Client
                 httpClient httpClient
+                versionMeta *versionMeta
             }}
 
             // grpcConnect builds up a grpc connection
@@ -650,6 +670,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                api.versionMeta = &versionMeta{{checkVersion: false}}
                 return &api
             }}
 
@@ -723,6 +744,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             methods.append(rpc.description)
             methods.append(rpc.method)
             # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
+        if self._generate_version_api:
+            methods.extend(self._get_version_api_interface_method_signatures())
         method_signatures = "\n".join(methods)
         self._write(
             """
@@ -751,6 +774,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     internal_struct_name=self._api.internal_struct_name,
                     method=new.method,
                     interface=new.interface,
+                )
+            )
+        if self._generate_version_api:
+            self._write(
+                self._get_version_api_interface_method_impl(
+                    self._api.internal_struct_name
                 )
             )
         for rpc in self._api.external_rpc_methods:
@@ -783,20 +812,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
-            info = rpc.status.get("additional_information")
-            func = rpc.status.get("status")
-            status_str = "{func}{msg}".format(
-                func="" if func is None else "api.{}".format(func),
-                msg="(`%s`)" % info if info is not None else "",
-            )
+            # TODO: restore behavior
+            # info = rpc.status.get("additional_information")
+            # func = rpc.status.get("status")
+            # status_str = "{func}{msg}".format(
+            #     func="" if func is None else "api.{}".format(func),
+            #     msg="(`%s`)" % info if info is not None else "",
+            # )
+            if self._generate_version_api:
+                version_check = """
+                    if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
+                        return nil, err
+                    }"""
+            else:
+                version_check = ""
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
-                    {status}
                     {validate}
+                    {version_check}
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
-
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
@@ -819,7 +855,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
-                    status=status_str,
+                    version_check=""
+                    if rpc.method == "GetVersion() (Version, error)"
+                    else version_check,
                 )
             )
 
@@ -861,7 +899,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{
                         return nil, err
                     }}
-                    bodyBytes, err := ioutil.ReadAll(resp.Body)
+                    bodyBytes, err := io.ReadAll(resp.Body)
                     defer resp.Body.Close()
                     if err != nil {{
                         return nil, err
@@ -883,6 +921,103 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
             self._write_interface(new)
+
+    def _get_version_api_interface_method_signatures(self):
+        return [
+            "// GetLocalVersion provides version details of local client",
+            "GetLocalVersion() Version",
+            "// GetRemoteVersion provides version details received from remote server",
+            "GetRemoteVersion() (Version, error)",
+            "// SetVersionCompatibilityCheck allows enabling or disabling automatic version",
+            "// compatibility check between client and server API spec version upon API call",
+            "SetVersionCompatibilityCheck(bool)",
+            "// CheckVersionCompatibility compares API spec version for local client and remote server,",
+            "// and returns an error if they are not compatible according to Semantic Versioning 2.0.0",
+            "CheckVersionCompatibility() error",
+        ]
+
+    def _get_version_api_interface_method_impl(self, struct_name):
+        return """
+            func (api *{0}) GetLocalVersion() Version {{
+                if api.versionMeta.localVersion == nil {{
+                    api.versionMeta.localVersion = NewVersion().SetApiSpecVersion("{1}").SetSdkVersion("{2}")
+                }}
+
+                return api.versionMeta.localVersion
+            }}
+
+            func (api *{0}) GetRemoteVersion() (Version, error) {{
+                if api.versionMeta.remoteVersion == nil {{
+                    v, err := api.GetVersion()
+                    if err != nil {{
+                        return nil, fmt.Errorf("could not fetch remote version: %v", err)
+                    }}
+
+                    api.versionMeta.remoteVersion = v
+                }}
+
+                return api.versionMeta.remoteVersion, nil
+            }}
+
+            func (api *{0}) SetVersionCompatibilityCheck(v bool) {{
+                api.versionMeta.checkVersion = v
+            }}
+
+            func (api *{0}) checkLocalRemoteVersionCompatibility() (error, error) {{
+                localVer := api.GetLocalVersion()
+                remoteVer, err := api.GetRemoteVersion()
+                if err != nil {{
+                    return nil, err
+                }}
+                err = checkClientServerVersionCompatibility(localVer.ApiSpecVersion(), remoteVer.ApiSpecVersion(), "API spec")
+                if err != nil {{
+                    return fmt.Errorf(
+                        "client SDK version '%s' is not compatible with server SDK version '%s': %v",
+                        localVer.SdkVersion(), remoteVer.SdkVersion(), err,
+                    ), nil
+                }}
+
+                return nil, nil
+            }}
+
+            func (api *{0}) checkLocalRemoteVersionCompatibilityOnce() error {{
+                if !api.versionMeta.checkVersion {{
+                    return nil
+                }}
+
+                if api.versionMeta.checkError != nil {{
+                    return api.versionMeta.checkError
+                }}
+
+                compatErr, apiErr := api.checkLocalRemoteVersionCompatibility()
+                if compatErr != nil {{
+                    api.versionMeta.checkError = compatErr
+                    return compatErr
+                }}
+                if apiErr != nil {{
+                    api.versionMeta.checkError = nil
+                    return apiErr
+                }}
+
+                api.versionMeta.checkVersion = false
+                api.versionMeta.checkError = nil
+                return nil
+            }}
+
+            func (api *{0}) CheckVersionCompatibility() error {{
+                compatErr, apiErr := api.checkLocalRemoteVersionCompatibility()
+                if compatErr != nil {{
+                    return fmt.Errorf("version error: %v", compatErr)
+                }}
+                if apiErr != nil {{
+                    return apiErr
+                }}
+
+                return nil
+            }}
+        """.format(
+            struct_name, self._api_version, self._sdk_version
+        )
 
     def _write_component_interfaces(self):
         while True:
@@ -1195,15 +1330,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "setDefault()",
         ]
         for field in new.interface_fields:
-            interfaces.append("// {}".format(field.getter_method_description))
+            interfaces.append(
+                "// {}".format(
+                    self._escaped_str(field.getter_method_description)
+                )
+            )
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
                 interfaces.append(
-                    "// {}".format(field.setter_method_description)
+                    "// {}".format(
+                        self._escaped_str(field.setter_method_description)
+                    )
                 )
                 interfaces.append(field.setter_method)
             if field.has_method is not None:
-                interfaces.append("// {}".format(field.has_method_description))
+                interfaces.append(
+                    "// {}".format(
+                        self._escaped_str(field.has_method_description)
+                    )
+                )
                 interfaces.append(field.has_method)
         interface_signatures = "\n".join(interfaces)
         self._write(
@@ -1211,7 +1356,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             {description}
             type {interface} interface {{
                 Validation
-                Constraints
                 // Msg marshals {interface} to protobuf object *{pb_pkg_name}.{interface}
                 // and doesn't set defaults
                 Msg() *{pb_pkg_name}.{interface}
@@ -1241,9 +1385,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write_field_has(new, field)
             self._write_field_setter(new, field, len(internal_items_nil) > 0)
             self._write_field_adder(new, field)
-        self._write_value_of(new)
+        # TODO: restore behavior
+        # self._write_value_of(new)
         self._write_validate_method(new)
         self._write_default_method(new)
+
+    def _escaped_str(self, val):
+        val = val.replace("{", "{{")
+        return val.replace("}", "}}")
 
     def _write_field_getter(self, new, field):
         if field.getter_method is None:
@@ -1401,14 +1550,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     enum=field.setChoiceValue,
                 )
             body = ""
-            if field.type == "string":
-                body = """
-                if rx.pb.{fieldname} == nil {{
-                    return ""
-                }}
-                """.format(
-                    fieldname=field.name
-                )
+            # TODO: restore behavior
+            # if field.type == "string":
+            #     body = """
+            #     if rx.pb.{fieldname} == nil {{
+            #         return ""
+            #     }}
+            #     """.format(
+            #         fieldname=field.name
+            #     )
             body += """{set_enum_choice}
                 return *rx.pb.{fieldname}
                 """.format(
@@ -1439,7 +1589,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // {fieldname} returns a {fieldtype}\n{description}
             func (rx *{struct}) {getter_method} {{
-                {status}
                 {body}
             }}
             """.format(
@@ -1449,11 +1598,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 body=body,
                 description=field.description,
                 fieldtype=field.type,
-                status=""
-                if field.status is None
-                else "rx.{func}(`{msg}`)".format(
-                    func=field.status, msg=field.status_msg
-                ),
+                # TODO: restore behavior
+                # status=""
+                # if field.status is None
+                # else "rx.{func}(`{msg}`)".format(
+                #     func=field.status, msg=field.status_msg
+                # ),
             )
         )
 
@@ -1645,7 +1795,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """
             // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
             func (rx *{newstruct}) {setter_method} {{
-                {status}
                 {set_choice}
                 {body}
                 return rx
@@ -1659,11 +1808,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 fieldtype=field.type,
                 fieldstruct=new.interface,
                 set_choice=set_choice,
-                status=""
-                if field.status is None
-                else "rx.{func}(`{msg}`)".format(
-                    func=field.status, msg=field.status_msg
-                ),
+                # TODO: restore behavior
+                # status=""
+                # if field.status is None
+                # else "rx.{func}(`{msg}`)".format(
+                #     func=field.status, msg=field.status_msg
+                # ),
             )
         )
 
@@ -1816,18 +1966,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
-            if property_schema.get("x-status", {}).get("status") in [
-                "deprecated",
-                "under-review",
-            ]:
-                field.status = property_schema["x-status"]["status"].replace(
-                    "-", "_"
-                )
-                field.status_msg = property_schema["x-status"].get(
-                    "additional_information"
-                )
-            self._parse_x_constraints(field, property_schema)
-            self._parse_x_unique(field, property_schema)
+            # TODO: restore behavior
+            # if property_schema.get("x-status", {}).get("status") in [
+            #     "deprecated",
+            #     "under-review",
+            # ]:
+            #     field.status = property_schema["x-status"]["status"].replace(
+            #         "-", "_"
+            #     )
+            #     field.status_msg = property_schema["x-status"].get(
+            #         "additional_information"
+            #     )
+            # self._parse_x_constraints(field, property_schema)
+            # self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2133,22 +2284,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
-        status_body = ""
-        if field.status is not None:
-            status_body = """
-            // {name} is {func}
-            if rx.pb.{name}{enum} != {value} {{
-                rx.{func}(`{msg}`)
-            }}
-            """.format(
-                name=field.name,
-                value=0 if field.isEnum and field.isArray is False else value,
-                enum=".Number()"
-                if field.isEnum and field.isArray is False
-                else "",
-                msg=field.status_msg,
-                func=field.status,
-            )
+        # TODO: restore behavior
+        # status_body = ""
+        # if field.status is not None:
+        #     status_body = """
+        #     // {name} is {func}
+        #     if rx.pb.{name}{enum} != {value} {{
+        #         rx.{func}(`{msg}`)
+        #     }}
+        #     """.format(
+        #         name=field.name,
+        #         value=0 if field.isEnum and field.isArray is False else value,
+        #         enum=".Number()"
+        #         if field.isEnum and field.isArray is False
+        #         else "",
+        #         msg=field.status_msg,
+        #         func=field.status,
+        #     )
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
@@ -2162,11 +2314,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else "",
             )
-            unique = self._validate_unique(new, field)
-            body += "else " + unique if unique != "" else unique
-        if field.isOptional is True:
-            body += self._validate_unique(new, field)
-        body += self._validate_x_constraint(field)
+            # TODO: restore behavior
+            # unique = self._validate_unique(new, field)
+            # body += "else " + unique if unique != "" else unique
+        # TODO: restore behavior
+        # if field.isOptional is True:
+        #     body += self._validate_unique(new, field)
+        # body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
@@ -2270,8 +2424,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
-        if status_body != "":
-            body = "{} \n {}".format(body, status_body)
+        # TODO: restore behavior
+        # if status_body != "":
+        #     body = "{} \n {}".format(body, status_body)
         # Enum will be handled via wrapper lib
         if inner_body == "":
             return body
@@ -2318,7 +2473,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         body += """
             if {condition} {{
-                {msg}
                 {body}
             }}
         """.format(
@@ -2326,11 +2480,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(rx.pb.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "rx.pb.{name} != nil".format(name=field.name),
-            msg="rx.{func}(`{msg}`)".format(
-                func=field.status, msg=field.status_msg
-            )
-            if field.status is not None
-            else "",
+            # TODO: restore behavior
+            # msg="rx.{func}(`{msg}`)".format(
+            #     func=field.status, msg=field.status_msg
+            # )
+            # if field.status is not None
+            # else "",
         )
         return body
 

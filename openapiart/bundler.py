@@ -51,10 +51,11 @@ class Bundler(object):
             "tag:yaml.org,2002:str", data, style="|"
         )
 
-    def __init__(self, api_files, output_dir="./"):
+    def __init__(self, api_files, output_dir="./", generate_version_api=False):
         self._parsers = {}
         self._api_files = api_files
         self._output_dir = os.path.abspath(output_dir)
+        self._generate_version_api = generate_version_api
         if os.path.exists(self._output_dir) is False:
             os.makedirs(self._output_dir)
         self.__python = os.path.normpath(sys.executable)
@@ -90,20 +91,24 @@ class Bundler(object):
             self._base_dir = os.path.dirname(api_filename)
             self._api_filename = os.path.basename(api_filename)
             self._read_file(self._base_dir, self._api_filename)
+
         self._resolve_x_include()
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
         self._resolve_x_status()
-        self._resolve_x_unique()
         self._remove_x_include()
+        # TODO: restore behavior
+        # self._resolve_x_unique()
         self._resolve_license()
-        self._resolve_x_enmu(self._content)
+        self._resolve_x_enum(self._content)
+        self._generate_version_api_spec(self._content)
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
         self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
+        self._api_version = self._content["info"]["version"]
         with open(self._output_filename, "w") as fp:
             yaml.dump(
                 self._content,
@@ -116,6 +121,9 @@ class Bundler(object):
         with open(self._json_filename, "w") as fp:
             fp.write(json.dumps(self._content, indent=4))
         self._validate_file()
+
+    def get_api_version(self):
+        return self._api_version
 
     def _validate_errors(self):
         if len(self._errors) > 0:
@@ -131,7 +139,7 @@ class Bundler(object):
         if "x-enum" in property_object.keys():
             property_object["enum"] = list(property_object["x-enum"].keys())
 
-    def _resolve_x_enmu(self, content):
+    def _resolve_x_enum(self, content):
         for schema_name, schema_object in content["components"][
             "schemas"
         ].items():
@@ -153,6 +161,103 @@ class Bundler(object):
                     self._inject_enum(
                         property_name, property_object["items"], schema_name
                     )
+
+    def _generate_version_api_spec(self, content):
+        if not self._generate_version_api:
+            return
+
+        print("Generating version API ...")
+        schema_name = "Version"
+        schema_ref = "#/components/schemas/{}".format(schema_name)
+        api_path = "/capabilities/version"
+
+        if schema_name in content["components"]["schemas"]:
+            schema = content["components"]["schemas"][schema_name]
+            for prop in ["api_spec_version", "sdk_version", "app_version"]:
+                if prop not in schema["properties"]:
+                    raise AssertionError(
+                        "Could not generate version schema: Version is missing property {}".format(
+                            prop
+                        )
+                    )
+                if schema["properties"][prop]["type"] != "string":
+                    raise AssertionError(
+                        "Could not generate version schema: Version property {} MUST be of type string".format(
+                            prop
+                        )
+                    )
+        else:
+            content["components"]["schemas"][schema_name] = {
+                "description": "Version details",
+                "type": "object",
+                "properties": {
+                    "api_spec_version": {
+                        "description": "Version of API specification",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 1,
+                    },
+                    "sdk_version": {
+                        "description": "Version of SDK generated from API specification",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 2,
+                    },
+                    "app_version": {
+                        "description": "Version of application consuming or serving the API",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 3,
+                    },
+                },
+            }
+
+        if api_path in content["paths"]:
+            assert (
+                content["paths"][api_path]["get"]["responses"]["200"][
+                    "content"
+                ]["application/json"]["schema"]["$ref"]
+                == schema_ref
+            ), "{} MUST have a 200 GET response {}".format(
+                api_path, schema_ref
+            )
+        else:
+            err_responses = {}
+            first_path = list(content["paths"].keys())[0]
+            first_method = list(content["paths"][first_path].keys())[0]
+            for code, res in content["paths"][first_path][first_method][
+                "responses"
+            ].items():
+                code_str = str(code)
+                if (
+                    not code_str.startswith("1")
+                    and not code_str.startswith("2")
+                    and not code_str.startswith("3")
+                ):
+                    err_responses[code] = res
+
+            content["paths"][api_path] = {
+                "get": {
+                    "tags": ["Capabilities"],
+                    "operationId": "get_version",
+                    "responses": {
+                        "200": {
+                            "description": "Version details from API server",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": schema_ref}
+                                }
+                            },
+                            "x-field-uid": 1,
+                        },
+                    },
+                },
+            }
+
+            for code, res in err_responses.items():
+                content["paths"][api_path]["get"]["responses"][
+                    code
+                ] = copy.deepcopy(res)
 
     def _check_duplicate_uid(self, fields_uid, name):
         dup_values = set([x for x in fields_uid if fields_uid.count(x) > 1])
@@ -293,7 +398,6 @@ class Bundler(object):
         with open(self._output_filename) as fid:
             yobject = yaml.safe_load(fid)
             openapi_spec_validator.validate_v3_spec(yobject)
-            # openapi_spec_validator.validate_spec(yobject)
         print("validating complete")
 
     def _read_file(self, base_dir, filename):
@@ -347,7 +451,7 @@ class Bundler(object):
                     if self._check_upper_case(name):
                         raise NameError(
                             "*** Property name '{}' is invalid. Only lower case letters separated with an underscore is allowed.***".format(
-                                value
+                                name
                             )
                         )
 
@@ -823,26 +927,41 @@ class Bundler(object):
         import jsonpath_ng
 
         for xstatus in self._get_parser("$..x-status").find(self._content):
-            if xstatus.value.get("status") == "current":
+            # TODO: restore behavior
+            # if xstatus.value.get("status") == "current":
+            #     continue
+            if xstatus.value == "current":
                 continue
 
-            assert (
-                xstatus.value.get("additional_information") is not None
-            ), "attribute additional_info can't be " "None for %s" % (
-                str(xstatus.full_path)
-            )
+            # TODO: restore behavior
+            # assert (
+            #     xstatus.value.get("additional_information") is not None
+            # ), "attribute additional_info can't be " "None for %s" % (
+            #     str(xstatus.full_path)
+            # )
 
             print("resolving %s..." % (str(xstatus.full_path)))
             parent_schema_object = jsonpath_ng.Parent().find(xstatus)[0].value
+
             if "description" not in parent_schema_object:
                 parent_schema_object["description"] = "TBD"
             parent_schema_object[
                 "description"
-            ] = "Status: {status}\n{add_info}\n{description}".format(
-                status=xstatus.value.get("status"),
-                add_info=xstatus.value.get("additional_information", ""),
+            ] = "Status: {status}\n{description}".format(
+                status=xstatus.value,
                 description=parent_schema_object["description"],
             )
+
+            # TODO: restore behavior
+            # if "description" not in parent_schema_object:
+            #     parent_schema_object["description"] = "TBD"
+            # parent_schema_object[
+            #     "description"
+            # ] = "Status: {status}\n{add_info}\n{description}".format(
+            #     status=xstatus.value.get("status"),
+            #     add_info=xstatus.value.get("additional_information", ""),
+            #     description=parent_schema_object["description"],
+            # )
 
     def _resolve_x_unique(self):
         """validate the x-unique field and make sure it is [global]"""

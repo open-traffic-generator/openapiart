@@ -5,6 +5,7 @@
         "streetsidesoftware.code-spell-checker",
         "redhat.vscode-yaml",
         "eamodio.gitlens",
-        "hediet.vscode-drawio"
+        "hediet.vscode-drawio",
+        "pbkit.vscode-pbkit"
     ]
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/mod/semver"
 	"google.golang.org/grpc"
 )
 
@@ -364,57 +365,92 @@ func (obj *validation) validateHexSlice(hex []string) error {
 	return obj.validateSlice(hex, "hex")
 }
 
-func (obj *validation) createMap(objName string) {
-	if obj.constraints == nil {
-		obj.constraints = make(map[string]map[string]Constraints)
-	}
-	_, ok := obj.constraints[objName]
-	if !ok {
-		obj.constraints[objName] = make(map[string]Constraints)
-	}
-}
+// TODO: restore behavior
+// func (obj *validation) createMap(objName string) {
+// 	if obj.constraints == nil {
+// 		obj.constraints = make(map[string]map[string]Constraints)
+// 	}
+// 	_, ok := obj.constraints[objName]
+// 	if !ok {
+// 		obj.constraints[objName] = make(map[string]Constraints)
+// 	}
+// }
 
-func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
-	if value == "" {
-		return true
+// TODO: restore behavior
+// func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
+// 	if value == "" {
+// 		return true
+// 	}
+
+// 	obj.createMap("globals")
+// 	_, ok := obj.constraints["globals"][value]
+// 	unique := false
+// 	if !ok {
+// 		obj.constraints["globals"][value] = object
+// 		obj.createMap(objectName)
+// 		obj.constraints[objectName][value] = object
+// 		unique = true
+// 	}
+// 	return unique
+// }
+
+// TODO: restore behavior
+// func (obj *validation) validateConstraint(objectName []string, value string) bool {
+// 	if value == "" {
+// 		return false
+// 	}
+// 	found := false
+// 	for _, object := range objectName {
+// 		obj_ := strings.Split(object, ".")
+// 		strukt, ok := obj.constraints[obj_[0]]
+// 		if !ok {
+// 			continue
+// 		}
+// 		for _, object := range strukt {
+// 			intf := object.ValueOf(obj_[1])
+// 			if intf == nil {
+// 				continue
+// 			}
+// 			if value == fmt.Sprintf("%v", intf) {
+// 				found = true
+// 				break
+// 			}
+// 		}
+// 		if found {
+// 			break
+// 		}
+// 	}
+// 	return found
+// }
+
+func checkClientServerVersionCompatibility(clientVer string, serverVer string, componentName string) error {
+	c := clientVer
+	s := serverVer
+	if !strings.HasPrefix(clientVer, "v") {
+		c = "v" + clientVer
+	}
+	if !strings.HasPrefix(serverVer, "v") {
+		s = "v" + serverVer
 	}
 
-	obj.createMap("globals")
-	_, ok := obj.constraints["globals"][value]
-	unique := false
-	if !ok {
-		obj.constraints["globals"][value] = object
-		obj.createMap(objectName)
-		obj.constraints[objectName][value] = object
-		unique = true
+	if !semver.IsValid(c) {
+		return fmt.Errorf("client %s version '%s' is not a valid semver", componentName, clientVer)
 	}
-	return unique
-}
+	if !semver.IsValid(s) {
+		return fmt.Errorf("server %s version '%s' is not a valid semver", componentName, serverVer)
+	}
 
-func (obj *validation) validateConstraint(objectName []string, value string) bool {
-	if value == "" {
-		return false
-	}
-	found := false
-	for _, object := range objectName {
-		obj_ := strings.Split(object, ".")
-		strukt, ok := obj.constraints[obj_[0]]
-		if !ok {
-			continue
+	err := fmt.Errorf("client %s version '%s' is not semver compatible with server %s version '%s'", componentName, clientVer, componentName, serverVer)
+
+	if v := semver.Compare(c, s); v > 0 {
+		if semver.MajorMinor(c) != semver.MajorMinor(s) {
+			return err
 		}
-		for _, object := range strukt {
-			intf := object.ValueOf(obj_[1])
-			if intf == nil {
-				continue
-			}
-			if value == fmt.Sprintf("%v", intf) {
-				found = true
-				break
-			}
-		}
-		if found {
-			break
+	} else if v < 0 {
+		if semver.Major(c) != semver.Major(s) {
+			return err
 		}
 	}
-	return found
+
+	return nil
 }

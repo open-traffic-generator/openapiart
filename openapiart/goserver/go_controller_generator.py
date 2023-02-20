@@ -53,7 +53,7 @@ class GoServerControllerGenerator(object):
     def _write_import(self, w):
         # type: (Writer) -> None
         w.write_line("import (").push_indent().write_line(
-            """\"io/ioutil"
+            """\"io"
             "net/http"
             "google.golang.org/protobuf/encoding/protojson"
             "{root_package}/httpapi"
@@ -162,7 +162,7 @@ class GoServerControllerGenerator(object):
             w.write_line(
                 """var item {full_modelname}
                 if r.Body != nil {{
-                    body, readError := ioutil.ReadAll(r.Body)
+                    body, readError := io.ReadAll(r.Body)
                     if body != nil {{
                         item = {new_modelname}()
                         err := item.FromJson(string(body))
