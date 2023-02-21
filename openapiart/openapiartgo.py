@@ -107,6 +107,7 @@ class FluentField(object):
         self.max_length = None
         self.status = None
         self.status_msg = None
+        self.x_enum_status = {}
         self.x_constraints = []
         self.x_unique = None
 
@@ -382,15 +383,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
-                # TODO: restore behavior
-                # if path_item_object.get("x-status", {}).get("status") in [
-                #     "deprecated",
-                #     "under-review",
-                # ]:
-                #     rpc.status = path_item_object.get("x-status", {})
-                #     rpc.status["status"] = rpc.status["status"].replace(
-                #         "-", "_"
-                #     )
+                if path_item_object.get("x-status", {}).get("status") in [
+                    "deprecated",
+                    "under-review",
+                ]:
+                    rpc.status = path_item_object.get("x-status", {})
+                    rpc.status["status"] = rpc.status["status"].replace(
+                        "-", "_"
+                    )
                 http.description = self._get_description(path_item_object)
                 if (
                     len(
@@ -812,13 +812,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
-            # TODO: restore behavior
-            # info = rpc.status.get("additional_information")
-            # func = rpc.status.get("status")
-            # status_str = "{func}{msg}".format(
-            #     func="" if func is None else "api.{}".format(func),
-            #     msg="(`%s`)" % info if info is not None else "",
-            # )
+
+            info = rpc.status.get("information")
+            status_type = rpc.status.get("status")
+            status_str = ""
+            if status_type is not None:
+
+                status_str = self._get_status_msg(
+                    rpc.operation_name, status_type, info, "api"
+                )
+
             if self._generate_version_api:
                 version_check = """
                     if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
@@ -828,6 +831,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 version_check = ""
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    {status}
                     {validate}
                     {version_check}
                     if api.hasHttpTransport() {{
@@ -849,6 +853,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=rpc.method,
+                    status=status_str,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
                     error_handling=error_handling,
@@ -1972,17 +1977,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+
+            if property_schema.get("x-status", {}).get("status") in [
+                "deprecated",
+                "under-review",
+            ]:
+                field.status = property_schema["x-status"]["status"].replace(
+                    "-", "_"
+                )
+                field.status_msg = property_schema["x-status"].get(
+                    "information"
+                )
+
+            # for x-enum properties we need go to into each x-enum and
+            # retrieve x-status values from there
+            enums = property_schema.get("x-enum")
+            if enums is not None:
+                for enum_name, enum_property in enums.items():
+                    x_status_info = self._get_x_status(
+                        enum_property, enum_name
+                    )
+                    if x_status_info is not None:
+                        field.x_enum_status[enum_name] = x_status_info
+
             # TODO: restore behavior
-            # if property_schema.get("x-status", {}).get("status") in [
-            #     "deprecated",
-            #     "under-review",
-            # ]:
-            #     field.status = property_schema["x-status"]["status"].replace(
-            #         "-", "_"
-            #     )
-            #     field.status_msg = property_schema["x-status"].get(
-            #         "additional_information"
-            #     )
             # self._parse_x_constraints(field, property_schema)
             # self._parse_x_unique(field, property_schema)
             if (
@@ -2290,23 +2308,55 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
-        # TODO: restore behavior
-        # status_body = ""
-        # if field.status is not None:
-        #     status_body = """
-        #     // {name} is {func}
-        #     if obj.obj.{name}{enum} != {value} {{
-        #         obj.{func}(`{msg}`)
-        #     }}
-        #     """.format(
-        #         name=field.name,
-        #         value=0 if field.isEnum and field.isArray is False else value,
-        #         enum=".Number()"
-        #         if field.isEnum and field.isArray is False
-        #         else "",
-        #         msg=field.status_msg,
-        #         func=field.status,
-        #     )
+
+        # The below code specifically raises warning for x-status in x-enums:
+        if len(field.x_enum_status) > 0:
+            map_add_str = ""
+
+            for enum, msg in field.x_enum_status.items():
+                map_add_str += 'enumMap["%s"] = "%s"\n' % (enum, msg)
+
+            validate_body = """
+            if obj.obj.{property}.Number() != 0 {{
+                enumMap := make(map[string]string)
+                {map_addition}
+                for enum, msg := range enumMap {{
+                    if obj.obj.{property}.String() == enum {{
+                        obj.addWarnings(msg)
+                    }}
+                }}
+            }}
+            """.format(
+                property=field.name,
+                map_addition=map_add_str,
+            )
+
+            body = "{} \n {}".format(body, validate_body)
+
+        # The below if deals with raising warning for x-status
+        status_body = ""
+        status_msg = ""
+        if field.status is not None:
+
+            status_msg = self._get_status_msg(
+                field.name, field.status, field.status_msg, "obj"
+            )
+
+            status_body = """
+            // {name} is {func}
+            if obj.obj.{name}{enum} != {value} {{
+                {msg}
+            }}
+            """.format(
+                name=field.name,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()"
+                if field.isEnum and field.isArray is False
+                else "",
+                msg=status_msg,
+                func=field.status,
+            )
+
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
@@ -2430,18 +2480,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
-        # TODO: restore behavior
-        # if status_body != "":
-        #     body = "{} \n {}".format(body, status_body)
-        # Enum will be handled via wrapper lib
+
+        # if there is no inner body then add status body or else
+        # just the message would do
         if inner_body == "":
+            if status_body != "":
+                body = "{} \n {}".format(body, status_body)
             return body
+
         body += """
         if obj.obj.{name} != {value} {{
+            {status}
             {body}
         }}
         """.format(
-            name=field.name, value=value, body=inner_body
+            name=field.name, value=value, body=inner_body, status=status_msg
         )
         return body
 
@@ -2477,8 +2530,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 name=field.name,
                 field_internal_struct=field.struct,
             )
+
+        #  This part of code is for raising warning for x-status
+        status_str = ""
+        if field.status is not None:
+            status_str = self._get_status_msg(
+                field.name, field.status, field.status_msg, "obj"
+            )
         body += """
             if {condition} {{
+                {msg}
                 {body}
             }}
         """.format(
@@ -2486,12 +2547,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
-            # TODO: restore behavior
-            # msg="obj.{func}(`{msg}`)".format(
-            #     func=field.status, msg=field.status_msg
-            # )
-            # if field.status is not None
-            # else "",
+            msg=status_str,
         )
         return body
 
@@ -2865,3 +2921,42 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
+
+    def _get_status_msg(self, name, status_type, status_msg, property_type):
+        """
+        This function basically returns the warning message for x-status
+        """
+        msg = ""
+        if status_type == "deprecated":
+            msg = "%s is deprecated" % name
+        elif status_type == "under_review":
+            msg = "%s is under review" % name
+        else:
+            raise NotImplementedError(
+                "%s status is not implemented" % status_type
+            )
+
+        initial = "api" if property_type == "api" else "obj"
+
+        if property_type == "x-enum":
+            return "%s, %s" % (msg, status_msg)
+
+        msg = '%s.addWarnings("%s, %s")' % (
+            initial,
+            msg,
+            status_msg,
+        )
+        return msg
+
+    def _get_x_status(self, property_schema, property_name=None):
+        if property_schema.get("x-status", {}).get("status") in [
+            "deprecated",
+            "under-review",
+        ]:
+            status = property_schema["x-status"]["status"].replace("-", "_")
+            status_msg = property_schema["x-status"].get("information")
+            if property_name is not None:
+                status_msg = self._get_status_msg(
+                    property_name, status, status_msg, "x-enum"
+                )
+            return status_msg

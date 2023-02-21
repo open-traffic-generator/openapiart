@@ -43,13 +43,15 @@ components:
             status_500:
               x-field-uid: 4
         a:
-          x-status: under-review
+          x-status: 
+            status: under-review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: |-
             Longer multi-line description
             Second line is here
@@ -61,7 +63,8 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: A list of enum values
           type: array
           items:
@@ -75,7 +78,8 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: A child object
           $ref: "#/components/schemas/EObject"
           x-field-uid: 11
@@ -174,7 +178,8 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: under-review
+          x-status: 
+            status: under-review
           description: |-
             string minimum&maximum Length
           type: string
@@ -182,7 +187,8 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: under-review
+          x-status: 
+            status: under-review
           description: |-
             Array of Hex
           type: array
@@ -356,6 +362,9 @@ components:
             j_a:
               x-field-uid: 1
             j_b:
+              x-status:
+                status: deprecated
+                information: "use j_a instead"
               x-field-uid: 2
         j_a:
           $ref: "#/components/schemas/EObject"

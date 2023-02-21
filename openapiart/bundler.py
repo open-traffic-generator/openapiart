@@ -930,6 +930,9 @@ class Bundler(object):
         for xstatus in self._get_parser("$..x-status").find(self._content):
             status = xstatus.value.get("status")
 
+            if status is not None:
+                status = status.replace("-", "_")
+
             if status not in valid_statuses:
                 raise Exception(
                     "Invalid value for x-status.status={} provided; Valid values are {}".format(
