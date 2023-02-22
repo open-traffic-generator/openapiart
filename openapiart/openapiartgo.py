@@ -1995,7 +1995,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if enums is not None:
                 for enum_name, enum_property in enums.items():
                     x_status_info = self._get_x_status(
-                        enum_property, enum_name
+                        enum_property, enum_name.upper()
                     )
                     if x_status_info is not None:
                         field.x_enum_status[enum_name] = x_status_info

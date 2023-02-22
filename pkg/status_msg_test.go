@@ -88,7 +88,7 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 	}
 	warns := j.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "j_b is deprecated, use j_a instead")
+	assert.Equal(t, warns[0], "J_B is deprecated, use j_a instead")
 }
 
 func TestStatusMsgInXEnumAttrs(t *testing.T) {
@@ -104,7 +104,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	}
 	warns := config.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "status_404 is deprecated, new code will be coming soon")
+	assert.Equal(t, warns[0], "STATUS_404 is deprecated, new code will be coming soon")
 
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 
@@ -115,7 +115,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	}
 	warns = config.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "status_500 is under review, 500 can change to other values")
+	assert.Equal(t, warns[0], "STATUS_500 is under review, 500 can change to other values")
 }
 
 func TestStatusMsgInIterattrs(t *testing.T) {
