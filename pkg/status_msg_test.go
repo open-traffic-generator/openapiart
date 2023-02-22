@@ -26,7 +26,6 @@ func TestStatusApi(t *testing.T) {
 		t.Logf("error: %s", err.Error())
 	}
 	assert.Equal(t, grpcApi.Warnings(), warnStr)
-
 }
 
 func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
@@ -35,7 +34,7 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 
 	// setting all the primitive values which has x-status set
 	config.SetA("test")
-	config.SetB(3.45)
+	config.SetSpace1(32)
 	enums := []openapiart.PrefixConfigDValuesEnum{
 		openapiart.PrefixConfigDValues.A,
 		openapiart.PrefixConfigDValues.B,
@@ -53,8 +52,8 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 
 	warns := config.Warnings()
 	assert.Equal(t, len(warns), 5)
-	assert.Equal(t, warns[0], "A is under review, Information TBD")
-	assert.Equal(t, warns[1], "B is deprecated, Information TBD")
+	assert.Equal(t, warns[0], "Space_1 is deprecated, Information TBD")
+	assert.Equal(t, warns[1], "A is under review, Information TBD")
 	assert.Equal(t, warns[2], "DValues is deprecated, Information TBD")
 	assert.Equal(t, warns[3], "StrLen is under review, Information TBD")
 	assert.Equal(t, warns[4], "HexSlice is under review, Information TBD")
@@ -77,7 +76,7 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 	assert.Equal(t, warns[0], "E is deprecated, Information TBD")
 }
 
-func TestStatusMsgInEnumAttrs(t *testing.T) {
+func TestStatusMsgInChoiceAttrs(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 
@@ -90,5 +89,52 @@ func TestStatusMsgInEnumAttrs(t *testing.T) {
 	warns := j.Warnings()
 	assert.Equal(t, len(warns), 1)
 	assert.Equal(t, warns[0], "j_b is deprecated, use j_a instead")
+}
 
+func TestStatusMsgInXEnumAttrs(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+
+	// validating the warnings
+	err := config.Validate()
+	if err != nil {
+		t.Logf("error: %s", err.Error())
+	}
+	warns := config.Warnings()
+	assert.Equal(t, len(warns), 1)
+	assert.Equal(t, warns[0], "status_404 is deprecated, new code will be coming soon")
+
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+
+	// validating the warnings
+	err = config.Validate()
+	if err != nil {
+		t.Logf("error: %s", err.Error())
+	}
+	warns = config.Warnings()
+	assert.Equal(t, len(warns), 1)
+	assert.Equal(t, warns[0], "status_500 is under review, 500 can change to other values")
+}
+
+func TestStatusMsgInIterattrs(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGC(5.67))
+	list.Append(openapiart.NewGObject().SetGC(7.67))
+	list.Append(openapiart.NewGObject().SetGC(8.67))
+	assert.Len(t, list.Items(), 3)
+
+	for _, item := range list.Items() {
+		err := item.Validate()
+		if err != nil {
+			t.Logf("error: %s", err.Error())
+		}
+		warns := item.Warnings()
+		assert.Equal(t, len(warns), 1)
+		assert.Equal(t, warns[0], "GC is deprecated, Information TBD")
+	}
 }

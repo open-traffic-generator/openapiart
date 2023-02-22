@@ -598,6 +598,17 @@ class Bundler(object):
                                 property=required, name=schema_name
                             )
                         )
+                    if "x-status" in value["properties"][required].keys():
+                        if (
+                            value["properties"][required]["x-status"]["status"]
+                            == "deprecated"
+                        ):
+                            raise Exception(
+                                "Property {property} within schema {name} have "
+                                "both required as well as deprecated status".format(
+                                    property=required, name=schema_name
+                                )
+                            )
 
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content

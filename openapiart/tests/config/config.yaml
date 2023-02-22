@@ -21,6 +21,8 @@ components:
           x-field-uid: 3
         space_1:
           type: integer
+          x-status: 
+            status: deprecated
           x-field-uid: 4
         full_duplex_100_mb:
           type: integer
@@ -39,8 +41,14 @@ components:
             status_400:
               x-field-uid: 2
             status_404:
+              x-status:
+                status: deprecated
+                information: new code will be coming soon
               x-field-uid: 3
             status_500:
+              x-status:
+                status: under-review
+                information: 500 can change to other values
               x-field-uid: 4
         a:
           x-status: 
@@ -50,8 +58,6 @@ components:
           type: string
           x-field-uid: 7
         b:
-          x-status: 
-            status: deprecated
           description: |-
             Longer multi-line description
             Second line is here
@@ -272,6 +278,9 @@ components:
         g_c:
           type: number
           default: 77.7
+          x-status:
+            status: deprecated
+            information: 
           x-field-uid: 3
         choice:
           type: string
