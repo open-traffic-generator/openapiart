@@ -809,11 +809,11 @@ class Generator:
                 raise Exception(err)
 
     def get_local_version(self):
-        log.info("Local Version is " + self._version_meta)
+        log.info("Local Version is " + str(self._version_meta))
         return self._version_meta
 
     def get_remote_version(self):
-        log.info("Remote Version is " + self.get_version())
+        log.info("Remote Version is " + str(self.get_version()))
         return self.get_version()
 
     def check_version_compatibility(self):
