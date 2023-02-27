@@ -170,6 +170,12 @@ class Generator:
             )
             common_content = common_content.replace(cnf_text, modify_text)
 
+            cnf_text = 'log = logging.Logger("common", level=logging.WARN)'
+            modify_text = 'log = logging.Logger("{pkg_name}", level=logging.WARN)'.format(
+                pkg_name=self._package_name
+            )
+            common_content = common_content.replace(cnf_text, modify_text)
+
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
@@ -463,6 +469,9 @@ class Generator:
                 #     self._deprecated_properties[key] = rpc_method.x_status[1]
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
+                    )
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
@@ -476,6 +485,9 @@ class Generator:
                 else:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
+                    )
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
                     )
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
@@ -629,7 +641,7 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
-
+                self._write(2, 'log.info("Executing ' + method["name"] + '")')
                 if (
                     self._generate_version_api
                     and method["name"] != "get_version"
@@ -797,9 +809,11 @@ class Generator:
                 raise Exception(err)
 
     def get_local_version(self):
+        log.info("Local Version is " + self._version_meta)
         return self._version_meta
 
     def get_remote_version(self):
+        log.info("Remote Version is " + self.get_version())
         return self.get_version()
 
     def check_version_compatibility(self):

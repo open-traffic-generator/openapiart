@@ -28,6 +28,18 @@ if sys.version_info[0] == 3:
 
 openapi_warnings = []
 
+# instantiate the logger
+stdout_handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+formatter.converter = time.gmtime
+stdout_handler.setFormatter(formatter)
+log = logging.Logger("common", level=logging.WARN)
+log.addHandler(stdout_handler)
+log.info("Logger instantiated")
+
 
 class Transport:
     HTTP = "http"
@@ -42,6 +54,7 @@ def api(
     loglevel=logging.INFO,
     ext=None,
     version_check=False,
+    module="common",
 ):
     """Create an instance of an Api class
 
@@ -71,6 +84,18 @@ def api(
     - ext (str): Name of an extension package
     """
     params = locals()
+
+    if logger is not None:
+        global log
+        log = logger
+    else:
+        log.info("Logger already instantiated ")
+    if loglevel is not None:
+        log.setLevel(loglevel)
+
+    if version_check is False:
+        log.warning("Version check is disabled")
+
     transport_types = ["http", "grpc"]
     if ext is None:
         transport = "http" if transport is None else transport
@@ -81,8 +106,10 @@ def api(
                 )
             )
         if transport == "http":
+            log.info("Transport set to HTTP")
             return HttpApi(**params)
         else:
+            log.info("Transport set to GRPC")
             return GrpcApi(**params)
     try:
         if transport is not None:
@@ -105,21 +132,7 @@ class HttpTransport(object):
             else "https://localhost:443"
         )
         self.verify = kwargs["verify"] if "verify" in kwargs else False
-        self.logger = kwargs["logger"] if "logger" in kwargs else None
-        self.loglevel = (
-            kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        )
-        if self.logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(
-                fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self.logger = logging.Logger(self.__module__, level=self.loglevel)
-            self.logger.addHandler(stdout_handler)
-        self.logger.debug(
+        log.debug(
             "HttpTransport args: {}".format(
                 ", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])
             )
@@ -131,7 +144,7 @@ class HttpTransport(object):
         self.verify = verify
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.logger.warning("Certificate verification is disabled")
+            log.warning("Certificate verification is disabled")
 
     def send_recv(
         self,
@@ -142,6 +155,7 @@ class HttpTransport(object):
         headers=None,
     ):
         url = "%s%s" % (self.location, relative_url)
+        log.debug("url - " + url)
         data = None
         headers = headers or {"Content-Type": "application/json"}
         if payload is not None:
@@ -200,6 +214,12 @@ class OpenApiStatus:
             # cls.logger.warning(cls.messages[key])
             logging.warning(cls.messages[key])
             object.__warnings__.append(cls.messages[key])
+            log.warning(
+                "["
+                + OpenApiStatus.warn.__name__
+                + "] cls.messages[key]-"
+                + cls.messages[key]
+            )
             # openapi_warnings.append(cls.messages[key])
 
     @staticmethod
@@ -214,6 +234,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.deprecated.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
     @staticmethod
     def under_review(func_or_data):
@@ -227,6 +253,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.under_review.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
 
 class OpenApiBase(object):
@@ -271,6 +303,7 @@ class OpenApiBase(object):
             raise NotImplementedError("Encoding %s not supported" % encoding)
         # TODO: restore behavior
         # self._validate_coded()
+        log.warning("Serializeing data - " + data)
         return data
 
     def _encode(self):
@@ -300,6 +333,7 @@ class OpenApiBase(object):
         self._decode(serialized_object)
         # TODO: restore behavior
         # self._validate_coded()
+        log.warning("Deserializeing")
         return self
 
     def _decode(self, dict_object):
@@ -339,6 +373,7 @@ class OpenApiValidator(object):
         try:
             if len(mac) != 17:
                 return False
+            log.debug("Validating MAC address - " + str(mac))
             return all([0 <= int(oct, 16) <= 255 for oct in mac.split(":")])
         except Exception:
             return False
@@ -353,6 +388,7 @@ class OpenApiValidator(object):
         if len(ip.split(".")) != 4:
             return False
         try:
+            log.debug("Validating IPv4 address - " + str(ip))
             return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
             return False
@@ -383,6 +419,7 @@ class OpenApiValidator(object):
         else:
             ip = ip.replace("::", ":0:")
         try:
+            log.debug("Validating IPv6 address - " + str(ip))
             return all(
                 [
                     True
@@ -398,6 +435,7 @@ class OpenApiValidator(object):
         if hex is None or not isinstance(hex, (str, unicode)):
             return False
         try:
+            log.debug("Validating HEX value - " + str(hex))
             int(hex, 16)
             return True
         except Exception:
@@ -412,9 +450,11 @@ class OpenApiValidator(object):
             return False
         if max is not None and value > max:
             return False
+        log.debug("Validating Integer value - " + str(value))
         return True
 
     def validate_float(self, value):
+        log.debug("Validating Float value - " + str(value))
         return isinstance(value, (int, float))
 
     def validate_string(self, value, min_length, max_length):
@@ -424,9 +464,11 @@ class OpenApiValidator(object):
             return False
         if max_length is not None and len(value) > max_length:
             return False
+        log.debug("Validating String value - " + str(value))
         return True
 
     def validate_bool(self, value):
+        log.debug("Validating Boolean value - " + str(value))
         return isinstance(value, bool)
 
     def validate_list(self, value, itemtype, min, max, min_length, max_length):
@@ -437,6 +479,7 @@ class OpenApiValidator(object):
             raise AttributeError(
                 "{} is not a valid attribute".format(itemtype)
             )
+        log.debug("Validating List - " + str(value))
         v_obj_lst = []
         for item in value:
             if itemtype == "integer":
@@ -450,6 +493,7 @@ class OpenApiValidator(object):
     def validate_binary(self, value):
         if value is None or not isinstance(value, (str, unicode)):
             return False
+        log.debug("Validating Binary value - " + str(value))
         return all(
             [
                 True if int(bin) == 0 or int(bin) == 1 else False
@@ -478,6 +522,7 @@ class OpenApiValidator(object):
             "int32": "integer",
             "double": "float",
         }
+        log.debug("Validating Type - " + str(type_))
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -531,6 +576,9 @@ class OpenApiValidator(object):
     def _validate_unique_and_name(self, name, value, latter=False):
         if self._TYPES[name].get("unique") is None or value is None:
             return
+        log.debug(
+            "Validating Unique and Name - " + str(name) + " " + str(value)
+        )
         if latter is True:
             self.__validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
@@ -650,6 +698,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _get_property(
         self, name, default_value=None, parent=None, choice=None
     ):
+        log.debug("Get Property name - " + str(name))
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
@@ -677,6 +726,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
+        log.debug(
+            "Set Property name - " + str(name) + " value - " + str(value)
+        )
         if name == "choice":
 
             if (
@@ -821,6 +873,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         """Validates the required properties are set
         Use getattr as it will set any defaults prior to validating
         """
+        log.debug("Validate Required")
         if getattr(self, "_REQUIRED", None) is None:
             return
         for name in self._REQUIRED:
@@ -835,6 +888,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 raise ValueError(msg)
 
     def _validate_types(self, property_name, property_value):
+        log.info(
+            "Validate Types property_name - "
+            + str(property_name)
+            + " property_value - "
+            + str(property_value)
+        )
         common_data_types = [list, str, int, float, bool]
         if property_name not in self._TYPES:
             # raise ValueError("Invalid Property {}".format(property_name))
@@ -920,6 +979,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         """
         getattr for openapi object
         """
+        log.debug("Get name - " + str(name))
         if self._properties.get(name) is not None:
             return self._properties[name]
         elif with_default:
