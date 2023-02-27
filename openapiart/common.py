@@ -303,7 +303,7 @@ class OpenApiBase(object):
             raise NotImplementedError("Encoding %s not supported" % encoding)
         # TODO: restore behavior
         # self._validate_coded()
-        log.warning("Serializeing data - " + data)
+        log.warning("Serializeing data - " + str(data))
         return data
 
     def _encode(self):
