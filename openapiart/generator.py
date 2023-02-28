@@ -189,8 +189,6 @@ class Generator:
         self._write_http_api_class(methods)
         self._write_rpc_api_class(rpc_methods)
         self._write_init()
-        # TODO: restore behavior
-        self._write_deprecator()
         return self
 
     def _get_base_url(self):
@@ -450,14 +448,6 @@ class Generator:
             self._write(0, class_code)
             for rpc_method in rpc_methods:
                 self._write()
-                # TODO: restore behavior
-                # if rpc_method.x_status is not None:
-                #     self._write(
-                #         1,
-                #         "@OpenApiStatus.{func}".format(
-                #             func=rpc_method.x_status[0].replace("-", "_")
-                #         ),
-                #     )
                 status_msg = ""
                 if rpc_method.x_status is not None:
                     status_msg = "%s is %s, %s" % (
@@ -617,14 +607,7 @@ class Generator:
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
-                # TODO: restore behavior
                 if method["x_status"] is not None:
-                    # self._write(
-                    #     1,
-                    #     "@OpenApiStatus.{func}".format(
-                    #         func=method["x_status"][0].replace("-", "_")
-                    #     ),
-                    # )
                     key = "{}.{}".format("HttpApi", method["name"])
                     self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
@@ -717,18 +700,6 @@ class Generator:
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
-                # TODO: restore behavior
-                # if method["x_status"] is not None:
-                #     self._write(
-                #         1,
-                #         "@OpenApiStatus.{func}".format(
-                #             func=method["x_status"][0].replace("-", "_")
-                #         ),
-                #     )
-                #     key = "{}.{}".format(
-                #         "%s" % factory_class_name, method["name"]
-                #     )
-                #     self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -1162,10 +1133,6 @@ class Generator:
                 if "$ref" not in schema_object["properties"][choice_name]:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]
-                # TODO: restore behavior
-                status = schema_object["properties"][choice_name].get(
-                    "x-status"
-                )
                 self._write_factory_method(
                     None, choice_name, ref, property_status=None
                 )
@@ -1421,21 +1388,6 @@ class Generator:
             self._write()
         else:
             self._write(1, "@property")
-            # TODO: restore behavior
-            if property_status is not None and property_status in [
-                "deprecated",
-                "under-review",
-            ]:
-                self._write(
-                    1,
-                    "@OpenApiStatus.{func}".format(
-                        func=property_status.replace("-", "_")
-                    ),
-                )
-                key = "{}.{}".format(class_name, method_name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "information"
-                ]
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1558,17 +1510,6 @@ class Generator:
             type_name = restriction
         self._write()
         self._write(1, "@property")
-        # TODO: restore behavior
-        if property.get("x-status", {}).get("status") in [
-            "deprecated",
-            "under-review",
-        ]:
-            func = property["x-status"]["status"].replace("-", "_")
-            self._write(1, "@OpenApiStatus.{func}".format(func=func))
-            key = "{}.{}".format(klass_name, name)
-            self._deprecated_properties[key] = property["x-status"][
-                "information"
-            ]
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1586,17 +1527,6 @@ class Generator:
             if name == "auto":
                 return
             self._write(1, "@%s.setter" % name)
-            # TODO: restore behavior
-            if property.get("x-status", {}).get("status") in [
-                "deprecated",
-                "under-review",
-            ]:
-                func = property["x-status"]["status"].replace("-", "_")
-                self._write(1, "@OpenApiStatus.{func}".format(func=func))
-                key = "{}.{}".format(klass_name, name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "information"
-                ]
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()
@@ -1655,11 +1585,11 @@ class Generator:
                 status[name] = self._get_status_msg(name, property_value)
             elif "x-enum" in property_value:
                 for enum in property_value["x-enum"]:
-                    if "x-status" in enum["properties"]:
-                        status_value = enum["properties"]
+                    enum_value = property_value["x-enum"][enum]
+                    if "x-status" in enum_value:
                         key = "%s.%s" % (name, enum)
                         status[key] = self._get_status_msg(
-                            enum.upper(), status_value
+                            enum.upper(), enum_value
                         )
 
         return status
@@ -1933,14 +1863,3 @@ class Generator:
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
-
-    def _write_deprecator(self):
-        with open(self._api_filename, "a") as self._fid:
-            self._write(0, "OpenApiStatus.messages = {")
-            for klass, msg in self._deprecated_properties.items():
-                if "\n" in msg:
-                    print(msg)
-                    self._write(1, '"{}" : """{}""",'.format(klass, msg))
-                else:
-                    self._write(1, '"{}" : "{}",'.format(klass, msg))
-            self._write(1, "}")

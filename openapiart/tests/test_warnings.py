@@ -70,3 +70,39 @@ def test_warnings_for_iter_items(api, capsys):
 
     assert err == ""
     assert out.count("[WARNING]: g_c is deprecated, Information TBD") == 3
+
+
+def test_warnings_for_x_enmu_attr(api, capsys):
+    conf = api.prefix_config()
+    conf.required_object.e_a = 10
+    conf.required_object.e_b = 20
+    conf.a = "abc"
+    conf.b = 10.2
+    conf.c = 30
+
+    conf.response = "status_404"
+    conf.serialize(conf.DICT)
+
+    out, err = capsys.readouterr()
+    assert err == ""
+    assert (
+        "[WARNING]: STATUS_404 is deprecated, new code will be coming soon"
+        in out
+    )
+
+
+def test_warnings_for_choice_attr(api, capsys):
+    conf = api.prefix_config()
+    conf.required_object.e_a = 10
+    conf.required_object.e_b = 20
+    conf.a = "abc"
+    conf.b = 10.2
+    conf.c = 30
+
+    j = conf.j.add()
+    j.j_b.f_a = "some string"
+    conf.serialize(conf.DICT)
+
+    out, err = capsys.readouterr()
+    assert err == ""
+    assert "[WARNING]: J_B is deprecated, use j_a instead" in out
