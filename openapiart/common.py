@@ -617,6 +617,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
+    _STATUS = {}
 
     def __init__(self, parent=None, choice=None):
         super(OpenApiObject, self).__init__()
@@ -719,6 +720,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
+                self._raise_status_warnings(key, value)
             elif value is not None:
                 if self._TYPES.get(key, {}).get("format", "") == "int64":
                     value = str(value)
@@ -729,6 +731,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 # OpenApiStatus.warn(
                 #     "{}.{}".format(type(self).__name__, key), self
                 # )
+                self._raise_status_warnings(key, value)
         return output
 
     def _decode(self, obj):
@@ -937,6 +940,11 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     self._properties["choice"] = choice
             return self._properties.pop(name)
         return None
+
+    def _raise_status_warnings(self, property_name, property_value):
+        if len(self._STATUS) > 0:
+            if property_name in self._STATUS:
+                print("[WARNING]: %s" % self._STATUS[property_name])
 
 
 class OpenApiIter(OpenApiBase):

@@ -8,6 +8,7 @@ TBD:
 - docstrings
 - type checking
 """
+from logging import warning
 import sys
 import yaml
 import os
@@ -189,7 +190,7 @@ class Generator:
         self._write_rpc_api_class(rpc_methods)
         self._write_init()
         # TODO: restore behavior
-        # self._write_deprecator()
+        self._write_deprecator()
         return self
 
     def _get_base_url(self):
@@ -317,13 +318,13 @@ class Generator:
             rpc.good_response_type = response_type
             rpc.http_method = path["method"]
             # TODO: restore behavior
-            # if "x-status" in path["operation"] and path["operation"][
-            #     "x-status"
-            # ].get("status") in ["deprecated", "under-review"]:
-            #     rpc.x_status = (
-            #         path["operation"]["x-status"]["status"],
-            #         path["operation"]["x-status"]["additional_information"],
-            #     )
+            if "x-status" in path["operation"] and path["operation"][
+                "x-status"
+            ].get("status") in ["deprecated", "under_review"]:
+                rpc.x_status = (
+                    path["operation"]["x-status"]["status"],
+                    path["operation"]["x-status"]["information"],
+                )
             methods.append(
                 {
                     "name": method_name,
@@ -335,15 +336,13 @@ class Generator:
                     "description": self._get_description(operation),
                     "response_type": response_type,
                     # TODO: restore behavior
-                    # "x_status": (
-                    #     path["operation"]["x-status"]["status"],
-                    #     path["operation"]["x-status"][
-                    #         "additional_information"
-                    #     ],
-                    # )
-                    # if path["operation"].get("x-status", {}).get("status")
-                    # in ["deprecated", "under-review"]
-                    # else None,
+                    "x_status": (
+                        path["operation"]["x-status"]["status"],
+                        path["operation"]["x-status"]["information"],
+                    )
+                    if path["operation"].get("x-status", {}).get("status")
+                    in ["deprecated", "under-review"]
+                    else None,
                 }
             )
             rpc_methods.append(rpc)
@@ -459,10 +458,20 @@ class Generator:
                 #             func=rpc_method.x_status[0].replace("-", "_")
                 #         ),
                 #     )
-                #     key = "{}.{}".format("GrpcApi", rpc_method.method)
-                #     self._deprecated_properties[key] = rpc_method.x_status[1]
+                status_msg = ""
+                if rpc_method.x_status is not None:
+                    status_msg = "%s is %s, %s" % (
+                        rpc_method.method,
+                        rpc_method.x_status[0],
+                        rpc_method.x_status[1],
+                    )
+                    key = "{}.{}".format("GrpcApi", rpc_method.method)
+                    self._deprecated_properties[key] = rpc_method.x_status[1]
+
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
+                    if status_msg != "":
+                        self._write(2, "print('%s')" % status_msg)
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
@@ -477,6 +486,10 @@ class Generator:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
+
+                    if status_msg != "":
+                        self._write(2, "print('%s')" % status_msg)
+
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
@@ -605,15 +618,15 @@ class Generator:
                 print("generating method %s" % method["name"])
                 self._write()
                 # TODO: restore behavior
-                # if method["x_status"] is not None:
-                #     self._write(
-                #         1,
-                #         "@OpenApiStatus.{func}".format(
-                #             func=method["x_status"][0].replace("-", "_")
-                #         ),
-                #     )
-                #     key = "{}.{}".format("HttpApi", method["name"])
-                #     self._deprecated_properties[key] = method["x_status"][1]
+                if method["x_status"] is not None:
+                    # self._write(
+                    #     1,
+                    #     "@OpenApiStatus.{func}".format(
+                    #         func=method["x_status"][0].replace("-", "_")
+                    #     ),
+                    # )
+                    key = "{}.{}".format("HttpApi", method["name"])
+                    self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -629,6 +642,14 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
+
+                if method["x_status"] is not None:
+                    status_msg = "%s is %s, %s" % (
+                        method["name"],
+                        method["x_status"][0],
+                        method["x_status"][1],
+                    )
+                    self._write(2, "print('%s')" % status_msg)
 
                 if (
                     self._generate_version_api
@@ -1009,6 +1030,21 @@ class Generator:
                 if len(enum.value) > 0:
                     self._write()
 
+            # find x-status codes
+            status = self._get_status_dict(schema_object)
+            if len(status) > 0:
+                self._write(1, "_STATUS = {")
+                for name, value in status.items():
+                    if isinstance(name, (list, bool, int, float, tuple)):
+                        self._write(2, "%s: '%s'," % (name, value))
+                    else:
+                        self._write(2, "'%s': '%s'," % (name, value))
+                self._write(1, "} # type: Dict[str, Union(type)]")
+                self._write()
+            else:
+                self._write(1, "_STATUS= {} # type: Dict[str, Union(type)]")
+                self._write()
+
             # write def __init__(self)
             params = "self, parent=None"
             if "choice" in self._get_choice_names(schema_object):
@@ -1127,9 +1163,9 @@ class Generator:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]
                 # TODO: restore behavior
-                # status = schema_object["properties"][choice_name].get(
-                #     "x-status"
-                # )
+                status = schema_object["properties"][choice_name].get(
+                    "x-status"
+                )
                 self._write_factory_method(
                     None, choice_name, ref, property_status=None
                 )
@@ -1386,20 +1422,20 @@ class Generator:
         else:
             self._write(1, "@property")
             # TODO: restore behavior
-            # if property_status is not None and property_status in [
-            #     "deprecated",
-            #     "under-review",
-            # ]:
-            #     self._write(
-            #         1,
-            #         "@OpenApiStatus.{func}".format(
-            #             func=property_status.replace("-", "_")
-            #         ),
-            #     )
-            #     key = "{}.{}".format(class_name, method_name)
-            #     self._deprecated_properties[key] = property["x-status"][
-            #         "additional_information"
-            #     ]
+            if property_status is not None and property_status in [
+                "deprecated",
+                "under-review",
+            ]:
+                self._write(
+                    1,
+                    "@OpenApiStatus.{func}".format(
+                        func=property_status.replace("-", "_")
+                    ),
+                )
+                key = "{}.{}".format(class_name, method_name)
+                self._deprecated_properties[key] = property["x-status"][
+                    "information"
+                ]
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1523,16 +1559,16 @@ class Generator:
         self._write()
         self._write(1, "@property")
         # TODO: restore behavior
-        # if property.get("x-status", {}).get("status") in [
-        #     "deprecated",
-        #     "under-review",
-        # ]:
-        #     func = property["x-status"]["status"].replace("-", "_")
-        #     self._write(1, "@OpenApiStatus.{func}".format(func=func))
-        #     key = "{}.{}".format(klass_name, name)
-        #     self._deprecated_properties[key] = property["x-status"][
-        #         "additional_information"
-        #     ]
+        if property.get("x-status", {}).get("status") in [
+            "deprecated",
+            "under-review",
+        ]:
+            func = property["x-status"]["status"].replace("-", "_")
+            self._write(1, "@OpenApiStatus.{func}".format(func=func))
+            key = "{}.{}".format(klass_name, name)
+            self._deprecated_properties[key] = property["x-status"][
+                "information"
+            ]
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1551,16 +1587,16 @@ class Generator:
                 return
             self._write(1, "@%s.setter" % name)
             # TODO: restore behavior
-            # if property.get("x-status", {}).get("status") in [
-            #     "deprecated",
-            #     "under-review",
-            # ]:
-            #     func = property["x-status"]["status"].replace("-", "_")
-            #     self._write(1, "@OpenApiStatus.{func}".format(func=func))
-            #     key = "{}.{}".format(klass_name, name)
-            #     self._deprecated_properties[key] = property["x-status"][
-            #         "additional_information"
-            #     ]
+            if property.get("x-status", {}).get("status") in [
+                "deprecated",
+                "under-review",
+            ]:
+                func = property["x-status"]["status"].replace("-", "_")
+                self._write(1, "@OpenApiStatus.{func}".format(func=func))
+                key = "{}.{}".format(klass_name, name)
+                self._deprecated_properties[key] = property["x-status"][
+                    "information"
+                ]
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()
@@ -1609,6 +1645,30 @@ class Generator:
         #     if len(line) > 0:
         #         doc_string.append('%s  ' % line)
         # return doc_string
+
+    def _get_status_dict(self, yobject):
+        status = {}
+
+        for name in yobject["properties"]:
+            property_value = yobject["properties"][name]
+            if "x-status" in property_value:
+                status[name] = self._get_status_msg(name, property_value)
+            elif "x-enum" in property_value:
+                for enum in property_value["x-enum"]:
+                    if "x-status" in enum["properties"]:
+                        status_value = enum["properties"]
+                        key = "%s.%s" % (name, enum)
+                        status[key] = self._get_status_msg(
+                            enum.upper(), status_value
+                        )
+
+        return status
+
+    def _get_status_msg(self, property_name, x_status_obj):
+        status_type = x_status_obj["x-status"].get("status")
+        info = x_status_obj["x-status"].get("information")
+        status_msg = "%s is %s, %s" % (property_name, status_type, info)
+        return status_msg
 
     def _get_data_types(self, yproperty):
         data_type_map = {
