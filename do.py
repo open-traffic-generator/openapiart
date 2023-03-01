@@ -276,7 +276,7 @@ def go_lint():
     )
     run([pkg])
     os.chdir("pkg")
-    run(["golangci-lint run -v --disable staticcheck"])
+    run(["golangci-lint run -v"])
 
 
 def dist():
