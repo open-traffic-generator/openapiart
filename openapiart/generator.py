@@ -8,6 +8,7 @@ TBD:
 - docstrings
 - type checking
 """
+from email import message
 from logging import warning
 import sys
 import yaml
@@ -461,7 +462,7 @@ class Generator:
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
                     if status_msg != "":
-                        self._write(2, "print('%s')" % status_msg)
+                        self._write(2, "self.add_warnings('%s')" % status_msg)
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
@@ -478,7 +479,7 @@ class Generator:
                     )
 
                     if status_msg != "":
-                        self._write(2, "print('%s')" % status_msg)
+                        self._write(2, "self.add_warnings('%s')" % status_msg)
 
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
@@ -632,7 +633,7 @@ class Generator:
                         method["x_status"][0],
                         method["x_status"][1],
                     )
-                    self._write(2, "print('%s')" % status_msg)
+                    self._write(2, "self.add_warnings('%s')" % status_msg)
 
                 if (
                     self._generate_version_api
@@ -697,6 +698,12 @@ class Generator:
                 self._write(2, "self._version_check_err = None")
             else:
                 self._write(2, "pass")
+
+            self._write()
+            self._write(1, "def add_warnings(self, msg):")
+            self._write(2, "print('[WARNING]: %s' % msg)")
+            self._write(2, "self.__warnings__.append(msg)")
+
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
