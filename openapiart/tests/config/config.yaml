@@ -266,6 +266,9 @@ components:
           x-field-uid: 1
     GObject:
       type: object
+      x-status:
+        status: deprecated
+        information: "new schema Jobject to be used"
       properties:
         g_a:
           type: string
@@ -496,6 +499,9 @@ components:
           x-field-uid: 1
     Update.Config:
       description: "Object to Test required Parameter"
+      x-status:
+        status: under_review
+        information: "the whole schema is being reviewed"
       type: object
       properties:
         g:

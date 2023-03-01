@@ -712,6 +712,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _encode(self):
         """Helper method for serialization"""
         output = {}
+        self._raise_status_warnings(self, None)
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
@@ -733,6 +734,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def _decode(self, obj):
         dtypes = [list, str, int, float, bool]
+        self._raise_status_warnings(self, None)
         for property_name, property_value in obj.items():
             if property_name in self._TYPES:
                 ignore_warnings = False
@@ -944,6 +946,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
     def _raise_status_warnings(self, property_name, property_value):
         if len(self._STATUS) > 0:
+
+            if isinstance(property_name, OpenApiObject):
+                if "self" in self._STATUS and property_value is None:
+                    print("[WARNING]: %s" % self._STATUS["self"])
+
+                return
+
             enum_key = "%s.%s" % (property_name, property_value)
             if property_name in self._STATUS:
                 print("[WARNING]: %s" % self._STATUS[property_name])

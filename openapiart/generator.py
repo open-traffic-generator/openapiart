@@ -1009,7 +1009,7 @@ class Generator:
                     self._write()
 
             # find x-status codes
-            status = self._get_status_dict(schema_object)
+            status = self._get_status_dict(schema_object, class_name)
             if len(status) > 0:
                 self._write(1, "_STATUS = {")
                 for name, value in status.items():
@@ -1583,8 +1583,14 @@ class Generator:
         #         doc_string.append('%s  ' % line)
         # return doc_string
 
-    def _get_status_dict(self, yobject):
+    def _get_status_dict(self, yobject, class_name):
         status = {}
+
+        if yobject.get("x-status", None) is not None:
+            status["self"] = self._get_status_msg(class_name, yobject)
+
+        if yobject.get("properties", None) is None:
+            return status
 
         for name in yobject["properties"]:
             property_value = yobject["properties"][name]

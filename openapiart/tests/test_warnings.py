@@ -144,3 +144,44 @@ def test_warnings_for_choice_attr(api, capsys):
     out, err = capsys.readouterr()
     assert err == ""
     assert out.count("[WARNING]: J_B is deprecated, use j_a instead") == 1
+
+
+def test_warnings_for_schema(api, capsys):
+    conf = api.update_config()
+    conf.g.add(g_c=5.67)
+    conf.g.add(g_a="asd")
+    s_obj = conf.serialize(conf.DICT)
+
+    out, err = capsys.readouterr()
+    assert err == ""
+    assert (
+        out.count(
+            "[WARNING]: UpdateConfig is under_review, the whole schema is being reviewed"
+        )
+        == 1
+    )
+    assert (
+        out.count(
+            "[WARNING]: GObject is deprecated, new schema Jobject to be used"
+        )
+        == 2
+    )
+    assert out.count("[WARNING]: g_c is deprecated, Information TBD") == 2
+
+    conf.deserialize(s_obj)
+    out, err = capsys.readouterr()
+
+    assert err == ""
+    assert (
+        out.count(
+            "[WARNING]: UpdateConfig is under_review, the whole schema is being reviewed"
+        )
+        == 1
+    )
+    assert (
+        out.count(
+            "[WARNING]: GObject is deprecated, new schema Jobject to be used"
+        )
+        == 2
+    )
+    assert out.count("[WARNING]: g_c is deprecated, Information TBD") == 2
