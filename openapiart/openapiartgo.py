@@ -66,6 +66,8 @@ class FluentNew(object):
         self.description = None
         self.method_description = None
         self.interface_fields = []
+        self.status = None
+        self.status_info = None
 
     def isOptional(self, property_name):
         if self.schema_object is None:
@@ -385,7 +387,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
                 if path_item_object.get("x-status", {}).get("status") in [
                     "deprecated",
-                    "under-review",
+                    "under_review",
                 ]:
                     rpc.status = path_item_object.get("x-status", {})
                     rpc.status["status"] = rpc.status["status"].replace(
@@ -472,6 +474,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.method = """New{interface}() {interface}""".format(
                         interface=new.interface
                     )
+                    self._populate_status(new)
                     if (
                         len(
                             [
@@ -1067,6 +1070,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 self._get_description(new.schema_object, True).lstrip("// "),
             )
             new.schema_name = self._get_external_struct_name(new.interface)
+            self._populate_status(new)
             # new.isRpcResponse = True
             self._api.external_new_methods.append(new)
 
@@ -1841,6 +1845,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             interface_name[0].lower() + interface_name[1:]
         )
         new_iter.generated = True
+        self._populate_status(new_iter)
         self._api.components[interface_name] = new_iter
         self._write(
             """
@@ -1980,7 +1985,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             if property_schema.get("x-status", {}).get("status") in [
                 "deprecated",
-                "under-review",
+                "under_review",
             ]:
                 field.status = property_schema["x-status"]["status"].replace(
                     "-", "_"
@@ -2565,6 +2570,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
 
+        status_str = ""
+        if new.status is not None:
+            status_str = self._get_status_msg(
+                new.schema_name, new.status, new.status_info, "obj"
+            )
+
         for field in new.interface_fields:
             valid = 0
             if field.type.lstrip("[]") in self._oapi_go_types.values():
@@ -2582,7 +2593,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 valid += 1
                 statements.append(block)
             p()
+
         body = "\n".join(statements)
+        if status_str != "":
+            body = "\n%s\n%s" % (status_str, body)
+
         self._write(
             """func (obj *{struct}) validateObj(vObj *validation, set_default bool) {{
                 if set_default {{
@@ -2859,6 +2874,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     schema_object_name
                 )
                 new.description = self._get_description(schema_object, True)
+                self._populate_status(new)
                 self._api.components[new.schema_name] = new
             go_type = new.interface
         else:
@@ -2880,6 +2896,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+
+    def _populate_status(self, new_fluent):
+        if new_fluent is None:
+            return
+
+        if new_fluent.schema_object is not None:
+            if "x-status" in new_fluent.schema_object:
+                status_val = new_fluent.schema_object["x-status"]
+                new_fluent.status = status_val["status"]
+                new_fluent.status_info = status_val["information"]
 
     def _get_holder_name(self, field, isIter=False):
         if isIter:
@@ -2951,7 +2977,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _get_x_status(self, property_schema, property_name=None):
         if property_schema.get("x-status", {}).get("status") in [
             "deprecated",
-            "under-review",
+            "under_review",
         ]:
             status = property_schema["x-status"]["status"].replace("-", "_")
             status_msg = property_schema["x-status"].get("information")

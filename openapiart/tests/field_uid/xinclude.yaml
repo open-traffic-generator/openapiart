@@ -93,7 +93,7 @@ components:
               x-field-uid: 536870912
         a:
           x-status: 
-            status: under-review
+            status: under_review
           description: |-
             Small single line description
           type: string

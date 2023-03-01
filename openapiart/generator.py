@@ -340,7 +340,7 @@ class Generator:
                         path["operation"]["x-status"]["information"],
                     )
                     if path["operation"].get("x-status", {}).get("status")
-                    in ["deprecated", "under-review"]
+                    in ["deprecated", "under_review"]
                     else None,
                 }
             )

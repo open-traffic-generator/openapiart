@@ -47,12 +47,12 @@ components:
               x-field-uid: 3
             status_500:
               x-status:
-                status: under-review
+                status: under_review
                 information: 500 can change to other values
               x-field-uid: 4
         a:
           x-status: 
-            status: under-review
+            status: under_review
           description: |-
             Small single line description
           type: string
@@ -185,7 +185,7 @@ components:
           x-field-uid: 32
         str_len:
           x-status: 
-            status: under-review
+            status: under_review
           description: |-
             string minimum&maximum Length
           type: string
@@ -194,7 +194,7 @@ components:
           x-field-uid: 33
         hex_slice:
           x-status: 
-            status: under-review
+            status: under_review
           description: |-
             Array of Hex
           type: array

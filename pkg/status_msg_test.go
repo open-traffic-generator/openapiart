@@ -134,7 +134,36 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 			t.Logf("error: %s", err.Error())
 		}
 		warns := item.Warnings()
-		assert.Equal(t, len(warns), 1)
-		assert.Equal(t, warns[0], "GC is deprecated, Information TBD")
+		assert.Equal(t, len(warns), 2)
+		assert.Equal(t, warns[1], "GC is deprecated, Information TBD")
+	}
+}
+
+func TestStatusMsgInSchemaObjects(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewUpdateConfig()
+
+	err := config.Validate()
+	if err != nil {
+		t.Logf("error: %s", err.Error())
+	}
+	warns := config.Warnings()
+	assert.Equal(t, len(warns), 1)
+	assert.Equal(t, warns[0], "UpdateConfig is under review, the whole schema is being reviewed")
+
+	list := config.G()
+	list.Append(openapiart.NewGObject().SetGC(5.67))
+	list.Append(openapiart.NewGObject().SetGC(7.67))
+	list.Append(openapiart.NewGObject().SetGC(8.67))
+	assert.Len(t, list.Items(), 3)
+
+	for _, item := range list.Items() {
+		err := item.Validate()
+		if err != nil {
+			t.Logf("error: %s", err.Error())
+		}
+		warns := item.Warnings()
+		assert.Equal(t, len(warns), 2)
+		assert.Equal(t, warns[0], "GObject is deprecated, new schema Jobject to be used")
 	}
 }

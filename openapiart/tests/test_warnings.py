@@ -37,17 +37,17 @@ def test_warning_for_primitive_attr(api, capsys):
     out, err = capsys.readouterr()
     assert err == ""
     assert "[WARNING]: space_1 is deprecated, Information TBD" in out
-    assert "[WARNING]: a is under-review, Information TBD" in out
-    assert "[WARNING]: str_len is under-review, Information TBD" in out
-    assert "[WARNING]: hex_slice is under-review, Information TBD" in out
+    assert "[WARNING]: a is under_review, Information TBD" in out
+    assert "[WARNING]: str_len is under_review, Information TBD" in out
+    assert "[WARNING]: hex_slice is under_review, Information TBD" in out
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
     assert err == ""
     assert "[WARNING]: space_1 is deprecated, Information TBD" in out
-    assert "[WARNING]: a is under-review, Information TBD" in out
-    assert "[WARNING]: str_len is under-review, Information TBD" in out
-    assert "[WARNING]: hex_slice is under-review, Information TBD" in out
+    assert "[WARNING]: a is under_review, Information TBD" in out
+    assert "[WARNING]: str_len is under_review, Information TBD" in out
+    assert "[WARNING]: hex_slice is under_review, Information TBD" in out
 
 
 def test_warnings_for_non_primitive_attr(api, capsys):
