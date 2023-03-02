@@ -1,5 +1,3 @@
-package openapiart
-
 import (
 	"context"
 	"fmt"
