@@ -1,4 +1,3 @@
-package openapiart
 
 import "testing"
 
