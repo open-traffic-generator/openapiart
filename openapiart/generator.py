@@ -451,7 +451,7 @@ class Generator:
                 self._write()
                 status_msg = ""
                 if rpc_method.x_status is not None:
-                    status_msg = "%s is %s, %s" % (
+                    status_msg = "%s api is %s, %s" % (
                         rpc_method.method,
                         rpc_method.x_status[0],
                         rpc_method.x_status[1],
@@ -628,7 +628,7 @@ class Generator:
                 self._write(2, '"""')
 
                 if method["x_status"] is not None:
-                    status_msg = "%s is %s, %s" % (
+                    status_msg = "%s api is %s, %s" % (
                         method["name"],
                         method["x_status"][0],
                         method["x_status"][1],
@@ -1587,7 +1587,7 @@ class Generator:
         status = {}
 
         if yobject.get("x-status", None) is not None:
-            status["self"] = self._get_status_msg(class_name, yobject)
+            status["self"] = self._get_status_msg(class_name, yobject, "class")
 
         if yobject.get("properties", None) is None:
             return status
@@ -1595,22 +1595,45 @@ class Generator:
         for name in yobject["properties"]:
             property_value = yobject["properties"][name]
             if "x-status" in property_value:
-                status[name] = self._get_status_msg(name, property_value)
+                status[name] = self._get_status_msg(
+                    name, property_value, "prop", class_name
+                )
             elif "x-enum" in property_value:
                 for enum in property_value["x-enum"]:
                     enum_value = property_value["x-enum"][enum]
                     if "x-status" in enum_value:
                         key = "%s.%s" % (name, enum)
                         status[key] = self._get_status_msg(
-                            enum.upper(), enum_value
+                            enum.upper(), enum_value, "enum", name
                         )
 
         return status
 
-    def _get_status_msg(self, property_name, x_status_obj):
+    def _get_status_msg(
+        self, property_name, x_status_obj, prop_type, parent_name=None
+    ):
         status_type = x_status_obj["x-status"].get("status")
         info = x_status_obj["x-status"].get("information")
-        status_msg = "%s is %s, %s" % (property_name, status_type, info)
+
+        status_msg = ""
+        if prop_type == "prop":
+            status_msg = "%s property in schema %s is %s, %s" % (
+                property_name,
+                parent_name,
+                status_type,
+                info,
+            )
+            pass
+        elif prop_type == "enum":
+            status_msg = "%s enum in property %s is %s, %s" % (
+                property_name,
+                parent_name,
+                status_type,
+                info,
+            )
+        else:
+            status_msg = "%s is %s, %s" % (property_name, status_type, info)
+
         return status_msg
 
     def _get_data_types(self, yproperty):
