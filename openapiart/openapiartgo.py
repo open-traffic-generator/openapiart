@@ -2000,7 +2000,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if enums is not None:
                 for enum_name, enum_property in enums.items():
                     x_status_info = self._get_x_status(
-                        enum_property, enum_name.upper()
+                        enum_property,
+                        enum_name.upper(),
+                        field.name,
                     )
                     if x_status_info is not None:
                         field.x_enum_status[enum_name] = x_status_info
@@ -2344,7 +2346,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if field.status is not None:
 
             status_msg = self._get_status_msg(
-                field.name, field.status, field.status_msg, "obj"
+                field.name,
+                field.status,
+                field.status_msg,
+                "obj",
+                "property",
+                new.schema_name,
             )
 
             status_body = """
@@ -2540,7 +2547,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
         status_str = ""
         if field.status is not None:
             status_str = self._get_status_msg(
-                field.name, field.status, field.status_msg, "obj"
+                field.name,
+                field.status,
+                field.status_msg,
+                "obj",
+                "property",
+                new.schema_name,
             )
         body += """
             if {condition} {{
@@ -2573,7 +2585,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         status_str = ""
         if new.status is not None:
             status_str = self._get_status_msg(
-                new.schema_name, new.status, new.status_info, "obj"
+                new.schema_name, new.status, new.status_info, "obj", "schema"
             )
 
         for field in new.interface_fields:
@@ -2948,24 +2960,46 @@ class OpenApiArtGo(OpenApiArtPlugin):
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
 
-    def _get_status_msg(self, name, status_type, status_msg, property_type):
+    def _get_status_msg(
+        self,
+        name,
+        status_type,
+        status_msg,
+        prefix,
+        property_type=None,
+        parent_schema=None,
+    ):
         """
         This function basically returns the warning message for x-status
         """
         msg = ""
         if status_type == "deprecated":
-            msg = "%s is deprecated" % name
+            msg = "is deprecated"
         elif status_type == "under_review":
-            msg = "%s is under review" % name
+            msg = "is under review"
         else:
             raise NotImplementedError(
                 "%s status is not implemented" % status_type
             )
 
-        initial = "api" if property_type == "api" else "obj"
+        if property_type == "property":
+            msg = "%s property in schema %s %s" % (name, parent_schema, msg)
+        elif property_type == "schema":
+            msg = "%s %s" % (name, msg)
 
-        if property_type == "x-enum":
-            return "%s, %s" % (msg, status_msg)
+        initial = ""
+        if prefix == "api":
+            initial = prefix
+            msg = "%s api %s" % (name, msg)
+        elif prefix == "x-enum":
+            return "%s enum in property %s %s, %s" % (
+                name,
+                parent_schema,
+                msg,
+                status_msg,
+            )
+        else:
+            initial = "obj"
 
         msg = '%s.addWarnings("%s, %s")' % (
             initial,
@@ -2974,15 +3008,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         return msg
 
-    def _get_x_status(self, property_schema, property_name=None):
+    def _get_x_status(
+        self, property_schema, enum_name=None, property_name=None
+    ):
         if property_schema.get("x-status", {}).get("status") in [
             "deprecated",
             "under_review",
         ]:
             status = property_schema["x-status"]["status"].replace("-", "_")
             status_msg = property_schema["x-status"].get("information")
-            if property_name is not None:
+            if enum_name is not None:
                 status_msg = self._get_status_msg(
-                    property_name, status, status_msg, "x-enum"
+                    enum_name,
+                    status,
+                    status_msg,
+                    "x-enum",
+                    parent_schema=property_name,
                 )
             return status_msg

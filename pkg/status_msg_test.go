@@ -18,7 +18,7 @@ func TestStatusApi(t *testing.T) {
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 
 	config := grpcApi.NewUpdateConfig()
-	warnStr := "UpdateConfiguration is deprecated, please use post instead"
+	warnStr := "UpdateConfiguration api is deprecated, please use post instead"
 
 	// check warning for grpc API
 	_, err = grpcApi.UpdateConfiguration(config)
@@ -52,11 +52,11 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 
 	warns := config.Warnings()
 	assert.Equal(t, len(warns), 5)
-	assert.Equal(t, warns[0], "Space_1 is deprecated, Information TBD")
-	assert.Equal(t, warns[1], "A is under review, Information TBD")
-	assert.Equal(t, warns[2], "DValues is deprecated, Information TBD")
-	assert.Equal(t, warns[3], "StrLen is under review, Information TBD")
-	assert.Equal(t, warns[4], "HexSlice is under review, Information TBD")
+	assert.Equal(t, warns[0], "Space_1 property in schema PrefixConfig is deprecated, Information TBD")
+	assert.Equal(t, warns[1], "A property in schema PrefixConfig is under review, Information TBD")
+	assert.Equal(t, warns[2], "DValues property in schema PrefixConfig is deprecated, Information TBD")
+	assert.Equal(t, warns[3], "StrLen property in schema PrefixConfig is under review, Information TBD")
+	assert.Equal(t, warns[4], "HexSlice property in schema PrefixConfig is under review, Information TBD")
 }
 
 func TestStatusMsgInStructAttrs(t *testing.T) {
@@ -73,7 +73,7 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 	}
 	warns := config.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "E is deprecated, Information TBD")
+	assert.Equal(t, warns[0], "E property in schema PrefixConfig is deprecated, Information TBD")
 }
 
 func TestStatusMsgInChoiceAttrs(t *testing.T) {
@@ -88,7 +88,7 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 	}
 	warns := j.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "J_B is deprecated, use j_a instead")
+	assert.Equal(t, warns[0], "J_B enum in property Choice is deprecated, use j_a instead")
 }
 
 func TestStatusMsgInXEnumAttrs(t *testing.T) {
@@ -104,7 +104,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	}
 	warns := config.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "STATUS_404 is deprecated, new code will be coming soon")
+	assert.Equal(t, warns[0], "STATUS_404 enum in property Response is deprecated, new code will be coming soon")
 
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 
@@ -115,7 +115,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	}
 	warns = config.Warnings()
 	assert.Equal(t, len(warns), 1)
-	assert.Equal(t, warns[0], "STATUS_500 is under review, 500 can change to other values")
+	assert.Equal(t, warns[0], "STATUS_500 enum in property Response is under review, 500 can change to other values")
 }
 
 func TestStatusMsgInIterattrs(t *testing.T) {
@@ -135,7 +135,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 		}
 		warns := item.Warnings()
 		assert.Equal(t, len(warns), 2)
-		assert.Equal(t, warns[1], "GC is deprecated, Information TBD")
+		assert.Equal(t, warns[1], "GC property in schema GObject is deprecated, Information TBD")
 	}
 }
 
