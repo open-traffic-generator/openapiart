@@ -399,16 +399,7 @@ class Generator:
             else "localhost:50051"
         )
         self._transport = kwargs["transport"] if "transport" in kwargs else None
-        self._logger = kwargs["logger"] if "logger" in kwargs else None
-        self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        if self._logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self._logger = logging.Logger(self.__module__, level=self._loglevel)
-            self._logger.addHandler(stdout_handler)
-        self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        log.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
     def _get_stub(self):
         if self._stub is None:
@@ -489,6 +480,9 @@ class Generator:
                     self._write(
                         2, 'log.info("Executing ' + rpc_method.method + '")'
                     )
+                    self._write(
+                        2, 'log.debug("Request payload - " + str(payload))'
+                    )
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
@@ -518,6 +512,7 @@ class Generator:
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
+                self._write(2, 'log.debug("Response - " + str(response))')
                 self._write(
                     2, 'status_code_200 = response.get("status_code_200")'
                 )

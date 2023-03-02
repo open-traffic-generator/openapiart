@@ -151,7 +151,6 @@ class HttpTransport(object):
         headers=None,
     ):
         url = "%s%s" % (self.location, relative_url)
-        log.debug("url - " + url)
         data = None
         headers = headers or {"Content-Type": "application/json"}
         if payload is not None:
@@ -164,6 +163,10 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
+        log.debug("Request url - " + str(url))
+        log.debug("Method - " + str(method))
+        log.debug("Request headers - " + str(headers))
+        log.debug("Request payload - " + str(data))
         response = self._session.request(
             method=method,
             url=url,
@@ -173,6 +176,10 @@ class HttpTransport(object):
             # TODO: add a timeout here
             headers=headers,
         )
+        log.debug("Response status code - " + str(response.status_code))
+        log.debug("Response header - " + str(response.headers))
+        log.debug("Response content - " + str(response.content))
+        log.debug("Response text - " + str(response.text))
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
