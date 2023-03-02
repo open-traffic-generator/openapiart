@@ -170,8 +170,8 @@ class Generator:
             )
             common_content = common_content.replace(cnf_text, modify_text)
 
-            cnf_text = 'log = logging.Logger("common", level=logging.WARN)'
-            modify_text = 'log = logging.Logger("{pkg_name}", level=logging.WARN)'.format(
+            cnf_text = 'log = logging.getLogger("common")'
+            modify_text = 'log = logging.getLogger("{pkg_name}")'.format(
                 pkg_name=self._package_name
             )
             common_content = common_content.replace(cnf_text, modify_text)

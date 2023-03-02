@@ -36,7 +36,7 @@ formatter = logging.Formatter(
 )
 formatter.converter = time.gmtime
 stdout_handler.setFormatter(formatter)
-log = logging.Logger("common", level=logging.WARN)
+log = logging.getLogger("common")
 log.addHandler(stdout_handler)
 log.info("Logger instantiated")
 
@@ -54,7 +54,6 @@ def api(
     loglevel=logging.INFO,
     ext=None,
     version_check=False,
-    module="common",
 ):
     """Create an instance of an Api class
 
@@ -88,10 +87,7 @@ def api(
     if logger is not None:
         global log
         log = logger
-    else:
-        log.info("Logger already instantiated ")
-    if loglevel is not None:
-        log.setLevel(loglevel)
+    log.setLevel(loglevel)
 
     if version_check is False:
         log.warning("Version check is disabled")
@@ -303,7 +299,6 @@ class OpenApiBase(object):
             raise NotImplementedError("Encoding %s not supported" % encoding)
         # TODO: restore behavior
         # self._validate_coded()
-        log.warning("Serializeing data - " + str(data))
         return data
 
     def _encode(self):
@@ -333,7 +328,6 @@ class OpenApiBase(object):
         self._decode(serialized_object)
         # TODO: restore behavior
         # self._validate_coded()
-        log.warning("Deserializeing")
         return self
 
     def _decode(self, dict_object):
@@ -373,9 +367,9 @@ class OpenApiValidator(object):
         try:
             if len(mac) != 17:
                 return False
-            log.debug("Validating MAC address - " + str(mac))
             return all([0 <= int(oct, 16) <= 255 for oct in mac.split(":")])
         except Exception:
+            log.debug("Validating MAC address - " + str(mac) + " failed ")
             return False
 
     def validate_ipv4(self, ip):
@@ -388,9 +382,9 @@ class OpenApiValidator(object):
         if len(ip.split(".")) != 4:
             return False
         try:
-            log.debug("Validating IPv4 address - " + str(ip))
             return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
+            log.debug("Validating IPv4 address - " + str(ip) + " failed")
             return False
 
     def validate_ipv6(self, ip):
@@ -419,7 +413,6 @@ class OpenApiValidator(object):
         else:
             ip = ip.replace("::", ":0:")
         try:
-            log.debug("Validating IPv6 address - " + str(ip))
             return all(
                 [
                     True
@@ -429,16 +422,17 @@ class OpenApiValidator(object):
                 ]
             )
         except Exception:
+            log.debug("Validating IPv6 address - " + str(ip) + " failed")
             return False
 
     def validate_hex(self, hex):
         if hex is None or not isinstance(hex, (str, unicode)):
             return False
         try:
-            log.debug("Validating HEX value - " + str(hex))
             int(hex, 16)
             return True
         except Exception:
+            log.debug("Validating HEX value - " + str(hex) + " failed")
             return False
 
     def validate_integer(self, value, min, max):
@@ -450,11 +444,9 @@ class OpenApiValidator(object):
             return False
         if max is not None and value > max:
             return False
-        log.debug("Validating Integer value - " + str(value))
         return True
 
     def validate_float(self, value):
-        log.debug("Validating Float value - " + str(value))
         return isinstance(value, (int, float))
 
     def validate_string(self, value, min_length, max_length):
@@ -464,11 +456,9 @@ class OpenApiValidator(object):
             return False
         if max_length is not None and len(value) > max_length:
             return False
-        log.debug("Validating String value - " + str(value))
         return True
 
     def validate_bool(self, value):
-        log.debug("Validating Boolean value - " + str(value))
         return isinstance(value, bool)
 
     def validate_list(self, value, itemtype, min, max, min_length, max_length):
@@ -479,7 +469,6 @@ class OpenApiValidator(object):
             raise AttributeError(
                 "{} is not a valid attribute".format(itemtype)
             )
-        log.debug("Validating List - " + str(value))
         v_obj_lst = []
         for item in value:
             if itemtype == "integer":
@@ -493,7 +482,6 @@ class OpenApiValidator(object):
     def validate_binary(self, value):
         if value is None or not isinstance(value, (str, unicode)):
             return False
-        log.debug("Validating Binary value - " + str(value))
         return all(
             [
                 True if int(bin) == 0 or int(bin) == 1 else False
@@ -522,7 +510,6 @@ class OpenApiValidator(object):
             "int32": "integer",
             "double": "float",
         }
-        log.debug("Validating Type - " + str(type_))
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -576,9 +563,6 @@ class OpenApiValidator(object):
     def _validate_unique_and_name(self, name, value, latter=False):
         if self._TYPES[name].get("unique") is None or value is None:
             return
-        log.debug(
-            "Validating Unique and Name - " + str(name) + " " + str(value)
-        )
         if latter is True:
             self.__validate_latter__["unique"].append(
                 (self._validate_unique_and_name, name, value)
@@ -698,7 +682,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _get_property(
         self, name, default_value=None, parent=None, choice=None
     ):
-        log.debug("Get Property name - " + str(name))
         if name in self._properties and self._properties[name] is not None:
             return self._properties[name]
         if isinstance(default_value, type) is True:
@@ -726,9 +709,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         return self._properties[name]
 
     def _set_property(self, name, value, choice=None):
-        log.debug(
-            "Set Property name - " + str(name) + " value - " + str(value)
-        )
         if name == "choice":
 
             if (
@@ -873,7 +853,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         """Validates the required properties are set
         Use getattr as it will set any defaults prior to validating
         """
-        log.debug("Validate Required")
         if getattr(self, "_REQUIRED", None) is None:
             return
         for name in self._REQUIRED:
@@ -888,12 +867,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 raise ValueError(msg)
 
     def _validate_types(self, property_name, property_value):
-        log.info(
-            "Validate Types property_name - "
-            + str(property_name)
-            + " property_value - "
-            + str(property_value)
-        )
         common_data_types = [list, str, int, float, bool]
         if property_name not in self._TYPES:
             # raise ValueError("Invalid Property {}".format(property_name))
@@ -979,7 +952,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         """
         getattr for openapi object
         """
-        log.debug("Get name - " + str(name))
         if self._properties.get(name) is not None:
             return self._properties[name]
         elif with_default:
