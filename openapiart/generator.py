@@ -767,33 +767,31 @@ class Generator:
             line="""def _check_client_server_version_compatibility(
         self, client_ver, server_ver, component_name
     ):
-        if not semantic_version.validate(client_ver):
+        try:
+            c = semantic_version.Version(client_ver)
+        except Exception as e:
             raise AssertionError(
-                "Client {} version '{}' is not a valid semver".format(
-                    component_name, client_ver
+                "Client {} version '{}' is not a valid semver: {}".format(
+                    component_name, client_ver, e
                 )
             )
 
-        if not semantic_version.validate(server_ver):
+        try:
+            s = semantic_version.SimpleSpec(server_ver)
+        except Exception as e:
             raise AssertionError(
-                "Server {} version '{}' is not a valid semver".format(
-                    component_name, server_ver
+                "Server {} version '{}' is not a valid semver: {}".format(
+                    component_name, server_ver, e
                 )
             )
+
 
         err = "Client {} version '{}' is not semver compatible with Server {} version '{}'".format(
             component_name, client_ver, component_name, server_ver
         )
 
-        c = semantic_version.Version(client_ver)
-        s = semantic_version.Version(server_ver)
-        v = semantic_version.compare(client_ver, server_ver)
-        if v > 0:
-            if c.major != s.major or c.minor != s.minor:
-                raise Exception(err)
-        elif v < 0:
-            if c.major != s.major:
-                raise Exception(err)
+        if not s.match(c):
+            raise Exception(err)
 
     def get_local_version(self):
         return self._version_meta
