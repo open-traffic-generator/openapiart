@@ -222,6 +222,9 @@ components:
           items:
             $ref: '#/components/schemas/ChoiceObject'
           x-field-uid: 41
+        required_choice_object:
+          $ref: "#/components/schemas/RequiredChoiceParent"
+          x-field-uid: 42
 
     WObject:
       required: [w_name]
@@ -556,3 +559,45 @@ components:
           type: number
           format: double
           x-field-uid: 3
+    
+    RequiredChoiceParent:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            intermediate_obj:
+              x-field-uid: 1
+            no_obj:
+              x-field-uid: 2
+        intermediate_obj:
+          $ref: '#/components/schemas/RequiredChoiceIntermediate'
+          x-field-uid: 2
+    RequiredChoiceIntermediate:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            f_a:
+              x-field-uid: 1
+            leaf:
+              x-field-uid: 2
+        f_a:
+          type: string
+          default: "some string"
+          x-field-uid: 2
+        leaf:
+          $ref: "#/components/schemas/RequiredChoiceIntermeLeaf"
+          x-field-uid: 3
+    RequiredChoiceIntermeLeaf:
+      type: object
+      properties:
+        name:
+          type: string
+          x-field-uid: 1
+

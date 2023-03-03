@@ -1035,7 +1035,7 @@ class Generator:
                 )
                 self._write(3, "getattr(self, self._DEFAULTS['choice'])")
                 self._write(2, "else:")
-                self._write(3, "self.choice = choice")
+                self._write(3, "self._set_property('choice', choice)")
 
             # write def set(self)
             self._write_set_method(schema_object)
