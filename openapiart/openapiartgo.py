@@ -462,15 +462,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.description = self._get_description(
                         new.schema_object, True
                     )
-                    new.method_description = """// New{interface} returns a new instance of {interface}.
-                    """.format(
+                    new.method_description = """// New{interface} returns a new instance of {interface}.""".format(
                         interface=new.interface
-                    ) + "// {} is {}".format(
+                    )
+
+                    description = "// {} is {}".format(
                         new.interface,
                         self._get_description(new.schema_object, True).lstrip(
                             "// "
                         ),
                     )
+
+                    new.method_description = (
+                        description + "\n" + new.method_description
+                    )
+
                     new.method = """New{interface}() {interface}""".format(
                         interface=new.interface
                     )
@@ -1062,12 +1068,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
             )
             new.description = self._get_description(new.schema_object, True)
-            new.method_description = """// New{interface} returns a new instance of {interface}.
-            """.format(
+            new.method_description = """// New{interface} returns a new instance of {interface}.""".format(
                 interface=new.interface
-            ) + "// {} is {}".format(
+            )
+
+            description = "// {} is {}".format(
                 new.interface,
                 self._get_description(new.schema_object, True).lstrip("// "),
+            )
+
+            new.method_description = (
+                description + "\n" + new.method_description
             )
             new.schema_name = self._get_external_struct_name(new.interface)
             self._populate_status(new)
@@ -1600,7 +1611,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         self._write(
             """
-            // {fieldname} returns a {fieldtype}\n{description}
+            {description}\n// {fieldname} returns a {fieldtype}
             func (obj *{struct}) {getter_method} {{
                 {body}
             }}
@@ -1808,7 +1819,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         self._write(
             """
-            // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
+            {description}\n // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object
             func (obj *{newstruct}) {setter_method} {{
                 {set_choice}
                 {body}
@@ -1940,7 +1951,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         self._write(
             """
-            // {fieldname} returns a {fieldtype}\n{description}
+            {description}\n// {fieldname} returns a {fieldtype}
             func (obj *{struct}) Has{fieldname}() bool {{
                 return obj.obj.{internal_field_name} != nil
             }}
@@ -1998,14 +2009,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # retrieve x-status values from there
             enums = property_schema.get("x-enum")
             if enums is not None:
-                for enum_name, enum_property in enums.items():
+                for idx, (enum_name, enum_property) in enumerate(
+                    enums.items()
+                ):
                     x_status_info = self._get_x_status(
                         enum_property,
                         enum_name.upper(),
                         field.name,
                     )
                     if x_status_info is not None:
-                        field.x_enum_status[enum_name] = x_status_info
+                        field.x_enum_status[idx + 1] = x_status_info
 
             # TODO: restore behavior
             # self._parse_x_constraints(field, property_schema)
@@ -2318,25 +2331,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         # The below code specifically raises warning for x-status in x-enums:
         if len(field.x_enum_status) > 0:
-            map_add_str = ""
+            validate_body = ""
 
             for enum, msg in field.x_enum_status.items():
-                map_add_str += 'enumMap["%s"] = "%s"\n' % (enum, msg)
-
-            validate_body = """
-            if obj.obj.{property}.Number() != 0 {{
-                enumMap := make(map[string]string)
-                {map_addition}
-                for enum, msg := range enumMap {{
-                    if obj.obj.{property}.String() == enum {{
-                        obj.addWarnings(msg)
-                    }}
+                validate_body += """
+                if obj.obj.{property}.Number() == {enum_number} {{
+                    obj.addWarnings("{message}")
                 }}
-            }}
-            """.format(
-                property=field.name,
-                map_addition=map_add_str,
-            )
+                """.format(
+                    property=field.name,
+                    enum_number=enum,
+                    message=msg,
+                )
 
             body = "{} \n {}".format(body, validate_body)
 
@@ -3008,15 +3014,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         return msg
 
-    def _get_x_status(
-        self, property_schema, enum_name=None, property_name=None
-    ):
-        if property_schema.get("x-status", {}).get("status") in [
+    def _get_x_status(self, enum_schema, enum_name=None, property_name=None):
+        if enum_schema.get("x-status", {}).get("status") in [
             "deprecated",
             "under_review",
         ]:
-            status = property_schema["x-status"]["status"].replace("-", "_")
-            status_msg = property_schema["x-status"].get("information")
+            status = enum_schema["x-status"]["status"].replace("-", "_")
+            status_msg = enum_schema["x-status"].get("information")
             if enum_name is not None:
                 status_msg = self._get_status_msg(
                     enum_name,

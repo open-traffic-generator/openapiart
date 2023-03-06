@@ -1573,6 +1573,7 @@ class Generator:
         # remove tabs, multiple spaces
         description = re.sub(r"\n", ". ", yobject["description"])
         description = re.sub(r"\s+", " ", description)
+        description = re.sub(r" . ", " ", description)
         return description
         # doc_string = []
         # for line in re.split('\. ', description):
