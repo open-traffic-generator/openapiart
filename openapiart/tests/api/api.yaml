@@ -29,7 +29,9 @@ paths:
       operationId: update_configuration
       description: >-
         Sets configuration resources.
-      x-status: deprecated
+      x-status: 
+        status: deprecated
+        information: "please use post instead"
       requestBody:
         required: true
         content:
