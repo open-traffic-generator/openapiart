@@ -24,6 +24,8 @@ class FluentRpc(object):
         self.http_call = None
         self.method_description = None
         self.status = {}
+        self.log_request = None
+        self.log_response = None
 
 
 class FluentRpcResponse(object):
@@ -271,6 +273,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/protobuf/proto"')
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "loggers.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "loggers.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._filename = os.path.normpath(
             os.path.join(self._ux_path, "common.go")
         )
@@ -525,6 +536,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         struct=new.struct
                     )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")\n'
+                        % rpc.operation_name
+                    )
+                    rpc.log_request += (
+                        'logs.Debug().Str("Request", %s.String()).Msg("")'
+                        % new.struct
+                    )
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
                             operation_name=rpc.operation_name,
@@ -561,6 +580,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
+                    )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")' % rpc.operation_name
                     )
                     rpc.http_call = (
                         """return api.http{operation_name}()""".format(
@@ -614,6 +636,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
+            var logs zerolog.Logger
+            
             type versionMeta struct {{
                 checkVersion  bool
                 localVersion  Version
@@ -680,6 +704,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
+                logs = GetLogger("openapiart")
+                logs.Info().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
@@ -806,16 +832,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
             error_handling += 'return nil, fmt.Errorf("response of 200, 400, 500 has not been implemented")'
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
-                        return resp.GetStatusCode_200(), nil
+                        data, _ := yaml.Marshal(resp.GetStatusCode_200())
+		                logs.Debug().Str("Response", string(data)).Msg("")
+		                return resp.GetStatusCode_200(), nil
                     }"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetStatusCode_200() != "" {
                         status_code_value := resp.GetStatusCode_200()
+                        logs.Debug().Str("Response", status_code_value).Msg("")
                         return &status_code_value, nil
                     }"""
             else:
                 return_value = """if resp.GetStatusCode_200() != nil {{
-                        return New{struct}().SetMsg(resp.GetStatusCode_200()), nil
+                        returnObj := New{struct}().SetMsg(resp.GetStatusCode_200())
+                        logs.Debug().Str("Response ", returnObj.String()).Msg("")
+                        return returnObj, nil
                     }}""".format(
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
@@ -842,6 +873,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
                     {validate}
+                    {log_request}
                     {version_check}
                     if api.hasHttpTransport() {{
                             {http_call}
@@ -872,6 +904,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    log_request=rpc.log_request
+                    if rpc.log_request != None
+                    else "",
                 )
             )
 
@@ -919,6 +954,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.StatusCode == 200 {{
+                        logs.Debug().Str("Response ", string(bodyBytes)).Msg("")
                         {success_handling}
                     }}
                     {error_handling}
