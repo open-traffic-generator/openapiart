@@ -62,7 +62,9 @@ func SetUserLogLevel(logLevel zerolog.Level) {
 
 func GetLogger(ctx string) zerolog.Logger {
 	if GlobalCtx == "" {
-		initOpenapiartlog()
+		if err := initOpenapiartlog(); err != nil {
+			panic(fmt.Errorf("Logger helper set failed: %v", err))
+		}
 	}
 	GlobalCtx = ctx
 	var localLogger zerolog.Logger
