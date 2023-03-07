@@ -637,7 +637,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(
             """
             var logs zerolog.Logger
-            
+
             type versionMeta struct {{
                 checkVersion  bool
                 localVersion  Version
@@ -833,8 +833,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
                         data, _ := yaml.Marshal(resp.GetStatusCode_200())
-		                logs.Debug().Str("Response", string(data)).Msg("")
-		                return resp.GetStatusCode_200(), nil
+                        logs.Debug().Str("Response", string(data)).Msg("")
+                        return resp.GetStatusCode_200(), nil
                     }"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetStatusCode_200() != "" {
@@ -905,7 +905,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
                     log_request=rpc.log_request
-                    if rpc.log_request != None
+                    if rpc.log_request is not None
                     else "",
                 )
             )
