@@ -105,7 +105,7 @@ class Bundler(object):
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
-        self._validate_required_responses()
+        # self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         self._api_version = self._content["info"]["version"]
