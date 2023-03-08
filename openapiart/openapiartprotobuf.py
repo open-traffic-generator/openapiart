@@ -169,7 +169,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write("message {} {{".format(operation.response))
             for response_field in response_fields:
                 if response_field.type == "Error":
-                    return
+                    continue
                 self._write(
                     "{} {} = {};".format(
                         response_field.type,
