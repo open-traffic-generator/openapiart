@@ -173,9 +173,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 self._write(
                     "{} {} = {};".format(
                         response_field.type,
-                        response_field.name
-                        if response_field.type != "Warning"
-                        else response_field.type.lower(),
+                        response_field.type.lower()
+                        if response_field.type != "bytes"
+                        else "response_bytes",
                         response_field.field_uid,
                     ),
                     indent=1,
