@@ -292,7 +292,7 @@ func (obj *validation) validateMac(mac string) error {
 	for ind, val := range macSlice {
 		num, err := strconv.ParseUint(val, 16, 32)
 		if err != nil || num > 255 {
-			logs.Error().Str("Invalid Mac address ", err.Error()).Msg("")
+			logs.Error().Msg("Invalid Mac address")
 			return fmt.Errorf(fmt.Sprintf("Invalid Mac address at %s octet in %s mac", octInd[ind], mac))
 		}
 	}
@@ -309,7 +309,7 @@ func (obj *validation) validateIpv4(ip string) error {
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 10, 32)
 		if err != nil || num > 255 {
-			logs.Error().Str("Invalid Ipv4 address ", err.Error()).Msg("")
+			logs.Error().Msg("Invalid Ipv4 address")
 			return fmt.Errorf(fmt.Sprintf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip))
 		}
 	}
@@ -352,7 +352,7 @@ func (obj *validation) validateIpv6(ip string) error {
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 16, 64)
 		if err != nil || num > 65535 {
-			logs.Error().Str("Invalid Ipv4 address ", err.Error()).Msg("")
+			logs.Error().Msg("Invalid Ipv4 address")
 			return fmt.Errorf(fmt.Sprintf("Invalid Ipv6 address at %s octet in %s ipv6", octInd[ind], ip))
 		}
 	}
@@ -490,7 +490,7 @@ func checkClientServerVersionCompatibility(clientVer string, serverVer string, c
 	err = fmt.Errorf("client %s version '%s' is not semver compatible with server %s version constraint '%s'", componentName, clientVer, componentName, serverVer)
 	valid, errs := s.Validate(c)
 	if len(errs) != 0 {
-		logs.Error().Str("Message", err.Error()).Msg("")
+		logs.Error().Msg("Client Server Version Compatibility Check")
 		return fmt.Errorf("%v: %v", err, errs)
 	}
 
