@@ -168,10 +168,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             for response_field in response_fields:
+                if response_field.type == "Error":
+                    return
                 self._write(
-                    "optional {} {} = {};".format(
+                    "{} {} = {};".format(
                         response_field.type,
-                        response_field.name,
+                        response_field.name
+                        if response_field.type != "Warning"
+                        else response_field.type.lower(),
                         response_field.field_uid,
                     ),
                     indent=1,
