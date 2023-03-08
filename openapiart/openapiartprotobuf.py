@@ -173,7 +173,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 self._write(
                     "{} {} = {};".format(
                         response_field.type,
-                        response_field.type.lower()
+                        self._lowercase(response_field.type)
                         if response_field.type != "bytes"
                         else "response_bytes",
                         response_field.field_uid,
