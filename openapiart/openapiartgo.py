@@ -66,6 +66,8 @@ class FluentNew(object):
         self.description = None
         self.method_description = None
         self.interface_fields = []
+        self.status = None
+        self.status_info = None
 
     def isOptional(self, property_name):
         if self.schema_object is None:
@@ -107,6 +109,7 @@ class FluentField(object):
         self.max_length = None
         self.status = None
         self.status_msg = None
+        self.x_enum_status = {}
         self.x_constraints = []
         self.x_unique = None
 
@@ -382,15 +385,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
-                # TODO: restore behavior
-                # if path_item_object.get("x-status", {}).get("status") in [
-                #     "deprecated",
-                #     "under-review",
-                # ]:
-                #     rpc.status = path_item_object.get("x-status", {})
-                #     rpc.status["status"] = rpc.status["status"].replace(
-                #         "-", "_"
-                #     )
+                if path_item_object.get("x-status", {}).get("status") in [
+                    "deprecated",
+                    "under_review",
+                ]:
+                    rpc.status = path_item_object.get("x-status", {})
+                    rpc.status["status"] = rpc.status["status"].replace(
+                        "-", "_"
+                    )
                 http.description = self._get_description(path_item_object)
                 if (
                     len(
@@ -460,18 +462,25 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     new.description = self._get_description(
                         new.schema_object, True
                     )
-                    new.method_description = """// New{interface} returns a new instance of {interface}.
-                    """.format(
+                    new.method_description = """// New{interface} returns a new instance of {interface}.""".format(
                         interface=new.interface
-                    ) + "// {} is {}".format(
+                    )
+
+                    description = "// {} is {}".format(
                         new.interface,
                         self._get_description(new.schema_object, True).lstrip(
                             "// "
                         ),
                     )
+
+                    new.method_description = (
+                        description + "\n" + new.method_description
+                    )
+
                     new.method = """New{interface}() {interface}""".format(
                         interface=new.interface
                     )
+                    self._populate_status(new)
                     if (
                         len(
                             [
@@ -812,13 +821,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
-            # TODO: restore behavior
-            # info = rpc.status.get("additional_information")
-            # func = rpc.status.get("status")
-            # status_str = "{func}{msg}".format(
-            #     func="" if func is None else "api.{}".format(func),
-            #     msg="(`%s`)" % info if info is not None else "",
-            # )
+
+            info = rpc.status.get("information")
+            status_type = rpc.status.get("status")
+            status_str = ""
+            if status_type is not None:
+
+                status_str = self._get_status_msg(
+                    rpc.operation_name, status_type, info, "api"
+                )
+
             if self._generate_version_api:
                 version_check = """
                     if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
@@ -828,6 +840,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 version_check = ""
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
+                    {status}
                     {validate}
                     {version_check}
                     if api.hasHttpTransport() {{
@@ -849,6 +862,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=rpc.method,
+                    status=status_str,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
                     error_handling=error_handling,
@@ -1054,14 +1068,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
             )
             new.description = self._get_description(new.schema_object, True)
-            new.method_description = """// New{interface} returns a new instance of {interface}.
-            """.format(
+            new.method_description = """// New{interface} returns a new instance of {interface}.""".format(
                 interface=new.interface
-            ) + "// {} is {}".format(
+            )
+
+            description = "// {} is {}".format(
                 new.interface,
                 self._get_description(new.schema_object, True).lstrip("// "),
             )
+
+            new.method_description = (
+                description + "\n" + new.method_description
+            )
             new.schema_name = self._get_external_struct_name(new.interface)
+            self._populate_status(new)
             # new.isRpcResponse = True
             self._api.external_new_methods.append(new)
 
@@ -1591,7 +1611,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         self._write(
             """
-            // {fieldname} returns a {fieldtype}\n{description}
+            {description}\n// {fieldname} returns a {fieldtype}
             func (obj *{struct}) {getter_method} {{
                 {body}
             }}
@@ -1799,7 +1819,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         self._write(
             """
-            // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object\n{description}
+            {description}\n // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object
             func (obj *{newstruct}) {setter_method} {{
                 {set_choice}
                 {body}
@@ -1836,6 +1856,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             interface_name[0].lower() + interface_name[1:]
         )
         new_iter.generated = True
+        self._populate_status(new_iter)
         self._api.components[interface_name] = new_iter
         self._write(
             """
@@ -1930,7 +1951,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         self._write(
             """
-            // {fieldname} returns a {fieldtype}\n{description}
+            {description}\n// {fieldname} returns a {fieldtype}
             func (obj *{struct}) Has{fieldname}() bool {{
                 return obj.obj.{internal_field_name} != nil
             }}
@@ -1972,17 +1993,34 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+
+            if property_schema.get("x-status", {}).get("status") in [
+                "deprecated",
+                "under_review",
+            ]:
+                field.status = property_schema["x-status"]["status"].replace(
+                    "-", "_"
+                )
+                field.status_msg = property_schema["x-status"].get(
+                    "information"
+                )
+
+            # for x-enum properties we need go to into each x-enum and
+            # retrieve x-status values from there
+            enums = property_schema.get("x-enum")
+            if enums is not None:
+                for idx, (enum_name, enum_property) in enumerate(
+                    enums.items()
+                ):
+                    x_status_info = self._get_x_status(
+                        enum_property,
+                        enum_name.upper(),
+                        field.name,
+                    )
+                    if x_status_info is not None:
+                        field.x_enum_status[idx + 1] = x_status_info
+
             # TODO: restore behavior
-            # if property_schema.get("x-status", {}).get("status") in [
-            #     "deprecated",
-            #     "under-review",
-            # ]:
-            #     field.status = property_schema["x-status"]["status"].replace(
-            #         "-", "_"
-            #     )
-            #     field.status_msg = property_schema["x-status"].get(
-            #         "additional_information"
-            #     )
             # self._parse_x_constraints(field, property_schema)
             # self._parse_x_unique(field, property_schema)
             if (
@@ -2290,23 +2328,53 @@ class OpenApiArtGo(OpenApiArtPlugin):
             value = '''""'''
         else:
             value = 0
-        # TODO: restore behavior
-        # status_body = ""
-        # if field.status is not None:
-        #     status_body = """
-        #     // {name} is {func}
-        #     if obj.obj.{name}{enum} != {value} {{
-        #         obj.{func}(`{msg}`)
-        #     }}
-        #     """.format(
-        #         name=field.name,
-        #         value=0 if field.isEnum and field.isArray is False else value,
-        #         enum=".Number()"
-        #         if field.isEnum and field.isArray is False
-        #         else "",
-        #         msg=field.status_msg,
-        #         func=field.status,
-        #     )
+
+        # The below code specifically raises warning for x-status in x-enums:
+        if len(field.x_enum_status) > 0:
+            validate_body = ""
+
+            for enum, msg in field.x_enum_status.items():
+                validate_body += """
+                if obj.obj.{property}.Number() == {enum_number} {{
+                    obj.addWarnings("{message}")
+                }}
+                """.format(
+                    property=field.name,
+                    enum_number=enum,
+                    message=msg,
+                )
+
+            body = "{} \n {}".format(body, validate_body)
+
+        # The below if deals with raising warning for x-status
+        status_body = ""
+        status_msg = ""
+        if field.status is not None:
+
+            status_msg = self._get_status_msg(
+                field.name,
+                field.status,
+                field.status_msg,
+                "obj",
+                "property",
+                new.schema_name,
+            )
+
+            status_body = """
+            // {name} is {func}
+            if obj.obj.{name}{enum} != {value} {{
+                {msg}
+            }}
+            """.format(
+                name=field.name,
+                value=0 if field.isEnum and field.isArray is False else value,
+                enum=".Number()"
+                if field.isEnum and field.isArray is False
+                else "",
+                msg=status_msg,
+                func=field.status,
+            )
+
         if field.isOptional is False and "string" in field.type:
             body = """
             // {name} is required
@@ -2430,18 +2498,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
                 )
-        # TODO: restore behavior
-        # if status_body != "":
-        #     body = "{} \n {}".format(body, status_body)
-        # Enum will be handled via wrapper lib
+
+        # if there is no inner body then add status body or else
+        # just the message would do
         if inner_body == "":
+            if status_body != "":
+                body = "{} \n {}".format(body, status_body)
             return body
+
         body += """
         if obj.obj.{name} != {value} {{
+            {status}
             {body}
         }}
         """.format(
-            name=field.name, value=value, body=inner_body
+            name=field.name, value=value, body=inner_body, status=status_msg
         )
         return body
 
@@ -2477,8 +2548,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 name=field.name,
                 field_internal_struct=field.struct,
             )
+
+        #  This part of code is for raising warning for x-status
+        status_str = ""
+        if field.status is not None:
+            status_str = self._get_status_msg(
+                field.name,
+                field.status,
+                field.status_msg,
+                "obj",
+                "property",
+                new.schema_name,
+            )
         body += """
             if {condition} {{
+                {msg}
                 {body}
             }}
         """.format(
@@ -2486,12 +2570,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
             else "obj.obj.{name} != nil".format(name=field.name),
-            # TODO: restore behavior
-            # msg="obj.{func}(`{msg}`)".format(
-            #     func=field.status, msg=field.status_msg
-            # )
-            # if field.status is not None
-            # else "",
+            msg=status_str,
         )
         return body
 
@@ -2508,6 +2587,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         req="Optional" if field.isOptional else "required",
                     )
                 )
+
+        status_str = ""
+        if new.status is not None:
+            status_str = self._get_status_msg(
+                new.schema_name, new.status, new.status_info, "obj", "schema"
+            )
 
         for field in new.interface_fields:
             valid = 0
@@ -2526,7 +2611,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 valid += 1
                 statements.append(block)
             p()
+
         body = "\n".join(statements)
+        if status_str != "":
+            body = "\n%s\n%s" % (status_str, body)
+
         self._write(
             """func (obj *{struct}) validateObj(vObj *validation, set_default bool) {{
                 if set_default {{
@@ -2803,6 +2892,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     schema_object_name
                 )
                 new.description = self._get_description(schema_object, True)
+                self._populate_status(new)
                 self._api.components[new.schema_name] = new
             go_type = new.interface
         else:
@@ -2824,6 +2914,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     line = line[0].lower() + line[1:]
                 description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
+
+    def _populate_status(self, new_fluent):
+        if new_fluent is None:
+            return
+
+        if new_fluent.schema_object is not None:
+            if "x-status" in new_fluent.schema_object:
+                status_val = new_fluent.schema_object["x-status"]
+                new_fluent.status = status_val["status"]
+                new_fluent.status_info = status_val["information"]
 
     def _get_holder_name(self, field, isIter=False):
         if isIter:
@@ -2865,3 +2965,68 @@ class OpenApiArtGo(OpenApiArtPlugin):
             process.wait()
         except Exception as e:
             print("Bypassed tidying the generated mod file: {}".format(e))
+
+    def _get_status_msg(
+        self,
+        name,
+        status_type,
+        status_msg,
+        prefix,
+        property_type=None,
+        parent_schema=None,
+    ):
+        """
+        This function basically returns the warning message for x-status
+        """
+        msg = ""
+        if status_type == "deprecated":
+            msg = "is deprecated"
+        elif status_type == "under_review":
+            msg = "is under review"
+        else:
+            raise NotImplementedError(
+                "%s status is not implemented" % status_type
+            )
+
+        if property_type == "property":
+            msg = "%s property in schema %s %s" % (name, parent_schema, msg)
+        elif property_type == "schema":
+            msg = "%s %s" % (name, msg)
+
+        initial = ""
+        if prefix == "api":
+            initial = prefix
+            msg = "%s api %s" % (name, msg)
+        elif prefix == "x-enum":
+            return "%s enum in property %s %s, %s" % (
+                name,
+                parent_schema,
+                msg,
+                status_msg,
+            )
+        else:
+            initial = "obj"
+
+        msg = '%s.addWarnings("%s, %s")' % (
+            initial,
+            msg,
+            status_msg,
+        )
+        return msg
+
+    def _get_x_status(self, enum_schema, enum_name=None, property_name=None):
+        if enum_schema.get("x-status", {}).get("status") in [
+            "deprecated",
+            "under_review",
+        ]:
+            status = enum_schema["x-status"]["status"].replace("-", "_")
+            status_msg = enum_schema["x-status"].get("information")
+            if enum_name is not None:
+                status_msg = self._get_status_msg(
+                    enum_name,
+                    status,
+                    status_msg,
+                    "x-enum",
+                    parent_schema=property_name,
+                )
+            return status_msg

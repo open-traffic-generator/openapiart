@@ -142,13 +142,15 @@ components:
             maxenum:
               x-field-uid: 536870912
         a:
-          x-status: under-review
+          x-status: 
+            status: under_review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: |-
             Longer multi-line description
             Second line is here

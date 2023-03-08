@@ -21,6 +21,8 @@ components:
           x-field-uid: 3
         space_1:
           type: integer
+          x-status: 
+            status: deprecated
           x-field-uid: 4
         full_duplex_100_mb:
           type: integer
@@ -39,17 +41,23 @@ components:
             status_400:
               x-field-uid: 2
             status_404:
+              x-status:
+                status: deprecated
+                information: new code will be coming soon
               x-field-uid: 3
             status_500:
+              x-status:
+                status: under_review
+                information: 500 can change to other values
               x-field-uid: 4
         a:
-          x-status: under-review
+          x-status: 
+            status: under_review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status: deprecated
           description: |-
             Longer multi-line description
             Second line is here
@@ -61,7 +69,8 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: A list of enum values
           type: array
           items:
@@ -75,7 +84,8 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
-          x-status: deprecated
+          x-status: 
+            status: deprecated
           description: A child object
           $ref: "#/components/schemas/EObject"
           x-field-uid: 11
@@ -174,7 +184,8 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: under-review
+          x-status: 
+            status: under_review
           description: |-
             string minimum&maximum Length
           type: string
@@ -182,7 +193,8 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: under-review
+          x-status: 
+            status: under_review
           description: |-
             Array of Hex
           type: array
@@ -222,6 +234,9 @@ components:
           items:
             $ref: '#/components/schemas/ChoiceObject'
           x-field-uid: 41
+        required_choice_object:
+          $ref: "#/components/schemas/RequiredChoiceParent"
+          x-field-uid: 42
 
     WObject:
       required: [w_name]
@@ -254,6 +269,9 @@ components:
           x-field-uid: 1
     GObject:
       type: object
+      x-status:
+        status: deprecated
+        information: "new schema Jobject to be used"
       properties:
         g_a:
           type: string
@@ -266,6 +284,9 @@ components:
         g_c:
           type: number
           default: 77.7
+          x-status:
+            status: deprecated
+            information: 
           x-field-uid: 3
         choice:
           type: string
@@ -356,6 +377,9 @@ components:
             j_a:
               x-field-uid: 1
             j_b:
+              x-status:
+                status: deprecated
+                information: "use j_a instead"
               x-field-uid: 2
         j_a:
           $ref: "#/components/schemas/EObject"
@@ -478,6 +502,9 @@ components:
           x-field-uid: 1
     Update.Config:
       description: "Object to Test required Parameter"
+      x-status:
+        status: under_review
+        information: "the whole schema is being reviewed"
       type: object
       properties:
         g:
@@ -556,3 +583,45 @@ components:
           type: number
           format: double
           x-field-uid: 3
+    
+    RequiredChoiceParent:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            intermediate_obj:
+              x-field-uid: 1
+            no_obj:
+              x-field-uid: 2
+        intermediate_obj:
+          $ref: '#/components/schemas/RequiredChoiceIntermediate'
+          x-field-uid: 2
+    RequiredChoiceIntermediate:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            f_a:
+              x-field-uid: 1
+            leaf:
+              x-field-uid: 2
+        f_a:
+          type: string
+          default: "some string"
+          x-field-uid: 2
+        leaf:
+          $ref: "#/components/schemas/RequiredChoiceIntermeLeaf"
+          x-field-uid: 3
+    RequiredChoiceIntermeLeaf:
+      type: object
+      properties:
+        name:
+          type: string
+          x-field-uid: 1
+

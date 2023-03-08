@@ -656,6 +656,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     _DEFAULTS = {}
     _TYPES = {}
     _REQUIRED = []
+    _STATUS = {}
 
     def __init__(self, parent=None, choice=None):
         super(OpenApiObject, self).__init__()
@@ -750,6 +751,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
     def _encode(self):
         """Helper method for serialization"""
         output = {}
+        self._raise_status_warnings(self, None)
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
@@ -758,22 +760,23 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
+                if isinstance(value, OpenApiObject):
+                    self._raise_status_warnings(key, value)
             elif value is not None:
                 if self._TYPES.get(key, {}).get("format", "") == "int64":
                     value = str(value)
                 elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
                     value = [str(v) for v in value]
                 output[key] = value
-                # TODO: restore behavior
-                # OpenApiStatus.warn(
-                #     "{}.{}".format(type(self).__name__, key), self
-                # )
+                self._raise_status_warnings(key, value)
         return output
 
     def _decode(self, obj):
         dtypes = [list, str, int, float, bool]
+        self._raise_status_warnings(self, None)
         for property_name, property_value in obj.items():
             if property_name in self._TYPES:
+                ignore_warnings = False
                 if isinstance(property_value, dict):
                     child = self._get_child_class(property_name)
                     if (
@@ -798,6 +801,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         item = child[1]()._decode(item)
                         openapi_list._items.append(item)
                     property_value = openapi_list
+                    ignore_warnings = True
                 elif (
                     property_name in self._DEFAULTS and property_value is None
                 ):
@@ -818,6 +822,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 # OpenApiStatus.warn(
                 #     "{}.{}".format(type(self).__name__, property_name), self
                 # )
+                if not ignore_warnings:
+                    self._raise_status_warnings(property_name, property_value)
             self._validate_types(property_name, property_value)
             # TODO: restore behavior
             # self._validate_unique_and_name(property_name, property_value, True)
@@ -976,6 +982,21 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     self._properties["choice"] = choice
             return self._properties.pop(name)
         return None
+
+    def _raise_status_warnings(self, property_name, property_value):
+        if len(self._STATUS) > 0:
+
+            if isinstance(property_name, OpenApiObject):
+                if "self" in self._STATUS and property_value is None:
+                    print("[WARNING]: %s" % self._STATUS["self"])
+
+                return
+
+            enum_key = "%s.%s" % (property_name, property_value)
+            if property_name in self._STATUS:
+                print("[WARNING]: %s" % self._STATUS[property_name])
+            elif enum_key in self._STATUS:
+                print("[WARNING]: %s" % self._STATUS[enum_key])
 
 
 class OpenApiIter(OpenApiBase):
