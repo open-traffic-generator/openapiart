@@ -832,19 +832,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
                         data, _ := yaml.Marshal(resp.GetStatusCode_200())
-                        logs.Debug().Str("Response", string(data)).Msg("")
+                        logs.Debug().Msg("Response : " + string(data))
                         return resp.GetStatusCode_200(), nil
                     }"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetStatusCode_200() != "" {
                         status_code_value := resp.GetStatusCode_200()
-                        logs.Debug().Str("Response", status_code_value).Msg("")
+                        logs.Debug().Msg("Response : " + status_code_value)
                         return &status_code_value, nil
                     }"""
             else:
                 return_value = """if resp.GetStatusCode_200() != nil {{
                         returnObj := New{struct}().SetMsg(resp.GetStatusCode_200())
-                        logs.Debug().Str("Response ", returnObj.String()).Msg("")
+                        logs.Debug().Msg("Response : " + returnObj.String())
                         return returnObj, nil
                     }}""".format(
                     struct=self._get_external_struct_name(
@@ -953,7 +953,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.StatusCode == 200 {{
-                        logs.Debug().Str("Response ", string(bodyBytes)).Msg("")
+                        logs.Debug().Msg("Response : " + string(bodyBytes))
                         {success_handling}
                     }}
                     {error_handling}
