@@ -540,9 +540,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         'logs.Info().Msg("Executing %s")\n'
                         % rpc.operation_name
                     )
-                    rpc.log_request += (
-                        'logs.Debug().Str("Request", %s.String()).Msg("")'
-                        % new.struct
+                    rpc.log_request += 'logs.Debug().Msg("Request : " + {struct}.String())'.format(
+                        struct=new.struct
                     )
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
