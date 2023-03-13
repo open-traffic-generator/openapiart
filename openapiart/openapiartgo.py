@@ -540,8 +540,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         'logs.Info().Msg("Executing %s")\n'
                         % rpc.operation_name
                     )
-                    rpc.log_request += 'logs.Debug().Msg("Request : " + {struct}.String())'.format(
-                        struct=new.struct
+                    rpc.log_request += (
+                        'logs.Debug().Str("Request", %s.String()).Msg("")'
+                        % new.struct
                     )
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
@@ -832,19 +833,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.GetStatusCode_200() != nil {
                         data, _ := yaml.Marshal(resp.GetStatusCode_200())
-                        logs.Debug().Msg("Response : " + string(data))
+                        logs.Debug().Str("Response", string(data)).Msg("")
                         return resp.GetStatusCode_200(), nil
                     }"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetStatusCode_200() != "" {
                         status_code_value := resp.GetStatusCode_200()
-                        logs.Debug().Msg("Response : " + status_code_value)
+                        logs.Debug().Str("Response", status_code_value).Msg("")
                         return &status_code_value, nil
                     }"""
             else:
                 return_value = """if resp.GetStatusCode_200() != nil {{
                         returnObj := New{struct}().SetMsg(resp.GetStatusCode_200())
-                        logs.Debug().Msg("Response : " + returnObj.String())
+                        logs.Debug().Str("Response", returnObj.String()).Msg("")
                         return returnObj, nil
                     }}""".format(
                     struct=self._get_external_struct_name(
@@ -953,7 +954,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.StatusCode == 200 {{
-                        logs.Debug().Msg("Response : " + string(bodyBytes))
+                        logs.Debug().Str("Response", string(bodyBytes)).Msg("")
                         {success_handling}
                     }}
                     {error_handling}
