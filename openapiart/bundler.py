@@ -766,17 +766,66 @@ class Bundler(object):
                     format,
                     property_name="auto",
                 )
-            if "metric_group" in xpattern["features"]:
-                schema["properties"]["metric_group"] = {
+            if "metric_tags" in xpattern["features"]:
+                metric_tags_schema_name = "{}.MetricTags".format(schema_name)
+                length = 65535
+                if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                    if "length" in xpattern:
+                        length = int(xpattern["length"])
+                    elif xpattern["format"] == "mac":
+                        length = 48
+                    elif xpattern["format"] == "ipv4":
+                        length = 32
+                    elif xpattern["format"] == "ipv6":
+                        length = 128
+                metric_tags_auto_field = AutoFieldUid()
+                metric_tags_schema = {
                     "description": """A unique name is used to indicate to the system that the field may """
                     """extend the metric row key and create an aggregate metric row for """
                     """every unique value. """
-                    """To have metric group columns appear in the flow metric rows the flow """
-                    """metric request allows for the metric_group value to be specified """
+                    """To have metric tag columns appear in the flow metric rows the flow """
+                    """metric request allows for the metric_tag value to be specified """
                     """as part of the request.""",
-                    "type": "string",
-                    "x-field-uid": auto_field.uid,
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "description": "Globally unique name of an object. It also serves as the primary key for arrays of objects.",
+                            "type": "string",
+                            "pattern": "^[\sa-zA-Z0-9-_()><\[\]]+$",
+                            "x-field-uid": metric_tags_auto_field.uid,
+                            "x-unique": "global",
+                        },
+                        "offset": {
+                            "description": "This is in bits and relative to start of the field",
+                            "type": "integer",
+                            "default": 0,
+                            "minimum": 0,
+                            "maximum": length - 1,
+                            "x-field-uid": metric_tags_auto_field.uid,
+                        },
+                        "length": {
+                            "description": "This is in bits",
+                            "type": "integer",
+                            "default": length,
+                            "minimum": 1,
+                            "maximum": length,
+                            "x-field-uid": metric_tags_auto_field.uid,
+                        },
+                    },
                 }
+                schema["properties"]["metric_tags"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        metric_tags_schema_name
+                    )
+                }
+                schema["properties"]["metric_tags"][
+                    "x-field-uid"
+                ] = auto_field.uid
+                self._content["components"]["schemas"][
+                    metric_tags_schema_name
+                ] = metric_tags_schema
+
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
                 xpattern["enums"]
