@@ -786,7 +786,7 @@ class Bundler(object):
                     """To have metric tag columns appear in the flow metric rows the flow """
                     """metric request allows for the metric_tag value to be specified """
                     """as part of the request.""",
-                    "type": "object",
+                    "type": "array",
                     "required": ["name"],
                     "properties": {
                         "name": {
