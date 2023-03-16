@@ -815,14 +815,14 @@ class Bundler(object):
                     },
                 }
                 schema["properties"]["metric_tags"] = {
-                    "$ref": "#/components/schemas/{}".format(
-                        metric_tags_schema_name
-                    )
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/{}".format(
+                            metric_tags_schema_name
+                        )
+                    },
+                    "x-field-uid": auto_field.uid,
                 }
-                schema["properties"]["metric_tags"]["type"] = "array"
-                schema["properties"]["metric_tags"][
-                    "x-field-uid"
-                ] = auto_field.uid
                 self._content["components"]["schemas"][
                     metric_tags_schema_name
                 ] = metric_tags_schema
