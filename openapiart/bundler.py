@@ -786,7 +786,7 @@ class Bundler(object):
                     """To have metric tag columns appear in the flow metric rows the flow """
                     """metric request allows for the metric_tag value to be specified """
                     """as part of the request.""",
-                    "type": "array",
+                    "type": "object",
                     "required": ["name"],
                     "properties": {
                         "name": {
@@ -819,6 +819,7 @@ class Bundler(object):
                         metric_tags_schema_name
                     )
                 }
+                schema["properties"]["metric_tags"]["type"] = "array"
                 schema["properties"]["metric_tags"][
                     "x-field-uid"
                 ] = auto_field.uid
