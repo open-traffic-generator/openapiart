@@ -792,7 +792,7 @@ class Bundler(object):
                         "name": {
                             "description": "Globally unique name of an object. It also serves as the primary key for arrays of objects.",
                             "type": "string",
-                            "pattern": "^[\sa-zA-Z0-9-_()><\[\]]+$",
+                            "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
                             "x-field-uid": metric_tags_auto_field.uid,
                             "x-unique": "global",
                         },
