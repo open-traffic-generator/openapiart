@@ -81,11 +81,7 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 	response := openapiart.NewSetConfigResponse()
 	switch httpServer.Config.Response() {
 	case openapiart.PrefixConfigResponse.STATUS_200:
-		response.SetStatusCode200([]byte("Successful set config operation"))
-	case openapiart.PrefixConfigResponse.STATUS_400:
-		response.StatusCode400().SetErrors([]string{"A 400 error has occurred"})
-	case openapiart.PrefixConfigResponse.STATUS_500:
-		response.StatusCode500().SetErrors([]string{"A 500 error has occurred"})
+		response.SetResponseBytes([]byte("Successful set config operation"))
 	}
 	return response
 }
@@ -93,7 +89,7 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) openapiart.UpdateConfigurationResponse {
 	response := openapiart.NewUpdateConfigurationResponse()
 	data, _ := httpServer.Config.ToJson()
-	err := response.StatusCode200().FromJson(data)
+	err := response.PrefixConfig().FromJson(data)
 	if err != nil {
 		log.Print(err.Error())
 	}
@@ -102,13 +98,13 @@ func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *h
 
 func (h *bundlerHandler) GetConfig(r *http.Request) openapiart.GetConfigResponse {
 	response := openapiart.NewGetConfigResponse()
-	response.SetStatusCode200(httpServer.Config)
+	response.SetPrefixConfig(httpServer.Config)
 	return response
 }
 
 func (h *capabilitiesHandler) GetVersion(r *http.Request) openapiart.GetVersionResponse {
 	response := openapiart.NewGetVersionResponse()
-	response.SetStatusCode200(openapiart.NewApi().GetLocalVersion())
+	response.SetVersion(openapiart.NewApi().GetLocalVersion())
 	return response
 }
 
@@ -133,30 +129,27 @@ func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Reque
 	switch choice {
 	case "port":
 		response := openapiart.NewGetMetricsResponse()
-		response.StatusCode200().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
-		response.StatusCode200().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
+		response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
+		response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
 		return response
 	case "flow":
 		response := openapiart.NewGetMetricsResponse()
-		response.StatusCode200().Flows().Add().SetName("f1").SetTxFrames(2000).SetRxFrames(1777)
-		response.StatusCode200().Flows().Add().SetName("f2").SetTxFrames(3000).SetRxFrames(2999)
+		response.Metrics().Flows().Add().SetName("f1").SetTxFrames(2000).SetRxFrames(1777)
+		response.Metrics().Flows().Add().SetName("f2").SetTxFrames(3000).SetRxFrames(2999)
 		return response
 	default:
-		return openapiart.NewGetMetricsResponse().SetStatusCode400(
-			openapiart.NewErrorDetails().SetErrors(
-				[]string{"Invalid choice"}))
+		return openapiart.NewGetMetricsResponse()
 	}
-
 }
 
 func (h *metricsHandler) GetWarnings(r *http.Request) openapiart.GetWarningsResponse {
 	response := openapiart.NewGetWarningsResponse()
-	response.StatusCode200().SetWarnings([]string{"This is your first warning", "Your last warning"})
+	response.WarningDetails().SetWarnings([]string{"This is your first warning", "Your last warning"})
 	return response
 }
 
 func (h *metricsHandler) ClearWarnings(r *http.Request) openapiart.ClearWarningsResponse {
 	response := openapiart.NewClearWarningsResponse()
-	response.SetStatusCode200("success")
+	response.SetResponseString("success")
 	return response
 }

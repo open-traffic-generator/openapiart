@@ -11,29 +11,29 @@ import (
 )
 
 type serviceBHandler struct {
-	controller interfaces.ServiceBController
+	controller interfaces.ServiceAbcController
 }
 
-func NewServiceBHandler() interfaces.ServiceBHandler {
+func NewServiceBHandler() interfaces.ServiceAbcHandler {
 	handler := new(serviceBHandler)
-	handler.controller = controllers.NewHttpServiceBController(handler)
+	handler.controller = controllers.NewHttpServiceAbcController(handler)
 	return handler
 }
 
-func (h *serviceBHandler) GetController() interfaces.ServiceBController {
+func (h *serviceBHandler) GetController() interfaces.ServiceAbcController {
 	return h.controller
 }
 func (h *serviceBHandler) GetAllItems(r *http.Request) openapiart.GetAllItemsResponse {
 	items := h.getItems()
 	result := openapiart.NewGetAllItemsResponse()
-	result.StatusCode200().Items().Append(items...)
+	result.ServiceAbcItemList().Items().Append(items...)
 	return result
 }
 func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleItemResponse {
 	vars := mux.Vars(r)
-	id := vars[interfaces.ServiceBItemId]
+	id := vars[interfaces.ServiceAbcItemId]
 	items := h.getItems()
-	var item openapiart.ServiceBItem
+	var item openapiart.ServiceAbcItem
 	for _, i := range items {
 		if i.SomeId() == id {
 			item = i
@@ -42,29 +42,30 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleIte
 	}
 	result := openapiart.NewGetSingleItemResponse()
 	if item != nil {
-		result.SetStatusCode200(item)
+		result.SetServiceAbcItem(item)
 	} else {
-		result.StatusCode400().SetMessage(fmt.Sprintf("not found: id '%s'", id))
+		fmt.Println("commenting out for now")
+		// result.StatusCode400().SetMessage(fmt.Sprintf("not found: id '%s'", id))
 	}
 	return result
 }
 func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) openapiart.GetSingleItemLevel2Response {
 	vars := mux.Vars(r)
-	id1 := vars[interfaces.ServiceBItemId]
-	id2 := vars[interfaces.ServiceBLevel2]
+	id1 := vars[interfaces.ServiceAbcItemId]
+	id2 := vars[interfaces.ServiceAbcLevel2]
 	result := openapiart.NewGetSingleItemLevel2Response()
-	result.StatusCode200().SetPathId(id1).SetLevel2(id2)
+	result.ServiceAbcItem().SetPathId(id1).SetLevel2(id2)
 	return result
 }
 
-func (h *serviceBHandler) getItems() []openapiart.ServiceBItem {
-	item1 := openapiart.NewServiceBItem()
+func (h *serviceBHandler) getItems() []openapiart.ServiceAbcItem {
+	item1 := openapiart.NewServiceAbcItem()
 	item1.SetSomeId("1")
 	item1.SetSomeString("item 1")
-	item2 := openapiart.NewServiceBItem()
+	item2 := openapiart.NewServiceAbcItem()
 	item2.SetSomeId("2")
 	item2.SetSomeString("item 2")
-	return []openapiart.ServiceBItem{
+	return []openapiart.ServiceAbcItem{
 		item1,
 		item2,
 	}

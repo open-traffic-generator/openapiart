@@ -12,6 +12,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 type grpcTransport struct {
@@ -133,6 +134,7 @@ type Api interface {
 	deprecated(message string)
 	under_review(message string)
 	addWarnings(message string)
+	FromError(err error) Error
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -187,6 +189,26 @@ func (api *api) deprecated(message string) {
 func (api *api) under_review(message string) {
 	api.warnings = message
 	fmt.Printf("warning: %s\n", message)
+}
+
+func (api *api) FromError(err error) Error {
+	errObj := NewError()
+	errors := []string{}
+	ers := errObj.FromJson(err.Error())
+	if ers != nil {
+		st, ok := status.FromError(err)
+		if !ok {
+			errors = append(errors, err.Error())
+			return errObj.SetErrors(errors)
+		} else {
+			errObj.Msg().Code = int32(st.Code())
+			errors = append(errors, st.Message())
+			errObj.Msg().Errors = errors
+		}
+		return errObj
+	}
+
+	return errObj
 }
 
 // HttpRequestDoer will return True for HTTP transport

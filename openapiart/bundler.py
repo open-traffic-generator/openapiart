@@ -105,7 +105,7 @@ class Bundler(object):
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
-        # self._validate_required_responses()
+        self._validate_required_responses()
         self._resolve_strings(self._content)
         self._resolve_keys(self._content)
         self._api_version = self._content["info"]["version"]
@@ -366,7 +366,7 @@ class Bundler(object):
                     )
 
     def _validate_required_responses(self):
-        """Ensure all paths include a 400 and 500 response.
+        """Ensure all paths include a 200 and default response.
 
         Print every path that does not include a 400 or 500 response.
 
@@ -376,7 +376,7 @@ class Bundler(object):
         None: all paths have a 400 and 500 response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        required_error_codes = ["400", "500"]
+        required_error_codes = ["200", "default"]
         missing_paths = ""
         for response in responses:
             missing = set(required_error_codes).difference(
@@ -391,6 +391,20 @@ class Bundler(object):
                 missing_paths += "{}\n".format(error_message)
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
+
+        # There must be the Error structure in the yaml which should have required kind and errors
+        err_schema = self._get_parser("$..Error").find(self._content)
+        required_err_nodes = ["code", "errors"]
+        for schema in err_schema:
+            if "required" in schema.value.keys():
+                diff = set(schema.value["required"]).difference(
+                    set(required_err_nodes)
+                )
+                if len(diff):
+                    raise Exception(
+                        "Error schema but have %s as required properties"
+                        % str(required_err_nodes)
+                    )
         return None
 
     def _validate_file(self):

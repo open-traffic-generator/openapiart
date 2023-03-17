@@ -55,52 +55,47 @@ func StartMockGrpcServer() error {
 
 func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest) (*sanity.SetConfigResponse, error) {
 	var resp *sanity.SetConfigResponse
+	var err error
 	switch req.PrefixConfig.Response.Enum().Number() {
 	case sanity.PrefixConfig_Response_status_400.Enum().Number():
-		resp = &sanity.SetConfigResponse{
-			StatusCode_400: &sanity.ErrorDetails{
-				Errors: []string{"SetConfig has detected configuration errors"},
-			},
-		}
+		resp = nil
+		err = fmt.Errorf("SetConfig has detected configuration errors")
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
-		resp = &sanity.SetConfigResponse{
-			StatusCode_500: &sanity.Error{
-				Errors: []string{"SetConfig has encountered a server error"},
-			},
-		}
+		resp = nil
+		err = fmt.Errorf("SetConfig has encountered a server error")
 	case sanity.PrefixConfig_Response_status_200.Enum().Number():
 		s.Config = req.PrefixConfig
 		resp = &sanity.SetConfigResponse{
-			StatusCode_200: []byte("SetConfig has completed successfully"),
+			ResponseBytes: []byte("SetConfig has completed successfully"),
 		}
+		err = nil
 	case sanity.PrefixConfig_Response_status_404.Enum().Number():
 		s.Config = req.PrefixConfig
-		resp = &sanity.SetConfigResponse{
-			StatusCode_404: &sanity.ErrorDetails{
-				Errors: []string{"Not found error"},
-			},
-		}
+		errObj := openapiart.NewError()
+		errObj.Msg().Code = 500
+		errObj.Msg().Errors = []string{"returning err1", "returning err2"}
+		err = fmt.Errorf(errObj.String())
 	}
-	return resp, nil
+	return resp, err
 }
 
 func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {
 	resp := &sanity.GetConfigResponse{
-		StatusCode_200: s.Config,
+		PrefixConfig: s.Config,
 	}
 	return resp, nil
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
 	resp := &sanity.GetVersionResponse{
-		StatusCode_200: openapiart.NewApi().GetLocalVersion().Msg(),
+		Version: openapiart.NewApi().GetLocalVersion().Msg(),
 	}
 	return resp, nil
 }
 
 func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.UpdateConfigurationRequest) (*sanity.UpdateConfigurationResponse, error) {
 	resp := &sanity.UpdateConfigurationResponse{
-		StatusCode_200: s.Config,
+		PrefixConfig: s.Config,
 	}
 	return resp, nil
 }
@@ -111,7 +106,7 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 	case "port":
 		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_ports)
 		resp := &sanity.GetMetricsResponse{
-			StatusCode_200: &sanity.Metrics{
+			Metrics: &sanity.Metrics{
 				Choice: &choice_val,
 				Ports: []*sanity.PortMetric{
 					{
@@ -131,7 +126,7 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 	case "flow":
 		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_flows)
 		resp := &sanity.GetMetricsResponse{
-			StatusCode_200: &sanity.Metrics{
+			Metrics: &sanity.Metrics{
 				Choice: &choice_val,
 				Flows: []*sanity.FlowMetric{
 					{
@@ -155,7 +150,7 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 
 func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sanity.GetWarningsResponse, error) {
 	resp := &sanity.GetWarningsResponse{
-		StatusCode_200: &sanity.WarningDetails{
+		WarningDetails: &sanity.WarningDetails{
 			Warnings: []string{"This is your first warning", "Your last warning"},
 		},
 	}
@@ -165,7 +160,7 @@ func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sani
 func (s *GrpcServer) ClearWarnings(ctx context.Context, empty *empty.Empty) (*sanity.ClearWarningsResponse, error) {
 	value := "warnings cleared"
 	resp := &sanity.ClearWarningsResponse{
-		StatusCode_200: &value,
+		String_: value,
 	}
 	return resp, nil
 }

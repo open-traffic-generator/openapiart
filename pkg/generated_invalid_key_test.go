@@ -362,7 +362,7 @@ func TestErrorDetailsIncorrectKey(t *testing.T) {
             }
         }`
 
-	object := openapiart.NewErrorDetails()
+	object := openapiart.NewError()
 	assert.NotNil(t, object.FromYaml(incorrect_key))
 	assert.NotNil(t, object.FromJson(incorrect_key))
 	assert.NotNil(t, object.FromPbText(incorrect_key))

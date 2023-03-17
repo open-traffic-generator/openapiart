@@ -23,21 +23,21 @@ func (h *apiTestHandler) GetController() interfaces.ApiTestController {
 }
 func (h *apiTestHandler) GetRootResponse(r *http.Request) openapiart.GetRootResponseResponse {
 	result := openapiart.NewGetRootResponseResponse()
-	result.StatusCode200().SetMessage("from GetRootResponse")
+	result.CommonResponseSuccess().SetMessage("from GetRootResponse")
 	return result
 }
 
 func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBody, r *http.Request) openapiart.PostRootResponseResponse {
 	result := openapiart.NewPostRootResponseResponse()
 	if requestbody != nil {
-		result.StatusCode200().SetMessage(requestbody.SomeString())
+		result.CommonResponseSuccess().SetMessage(requestbody.SomeString())
 		return result
 	}
-	result.StatusCode500().SetMessage("missing input")
+	// result.StatusCode500().SetMessage("missing input")
 	return result
 }
 func (h *apiTestHandler) DummyResponseTest(r *http.Request) openapiart.DummyResponseTestResponse {
 	result := openapiart.NewDummyResponseTestResponse()
-	result.SetStatusCode200("this is a string response")
+	result.SetResponseString("this is a string response")
 	return result
 }

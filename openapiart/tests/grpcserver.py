@@ -39,7 +39,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
         response_200 = """
             {
-                "status_code_200" : "%s"
+                "response_bytes" : "%s"
             }
         """ % base64.b64encode(
             b"success"
@@ -60,7 +60,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def GetConfig(self, request, context):
         self._log("Executing GetConfig")
-        response_200 = {"status_code_200": self._prefix_config}
+        response_200 = {"prefix_config": self._prefix_config}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetConfigResponse()
         )
@@ -69,7 +69,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
     def GetVersion(self, request, context):
         self._log("Executing GetVersion")
         v = op.api().get_local_version()
-        response_200 = {"status_code_200": v.serialize(v.DICT)}
+        response_200 = {"version": v.serialize(v.DICT)}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetVersionResponse()
         )
