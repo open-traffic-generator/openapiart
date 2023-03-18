@@ -21,23 +21,23 @@ func NewApiTestHandler() interfaces.ApiTestHandler {
 func (h *apiTestHandler) GetController() interfaces.ApiTestController {
 	return h.controller
 }
-func (h *apiTestHandler) GetRootResponse(r *http.Request) openapiart.GetRootResponseResponse {
+func (h *apiTestHandler) GetRootResponse(r *http.Request) (openapiart.GetRootResponseResponse, error) {
 	result := openapiart.NewGetRootResponseResponse()
 	result.CommonResponseSuccess().SetMessage("from GetRootResponse")
-	return result
+	return result, nil
 }
 
-func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBody, r *http.Request) openapiart.PostRootResponseResponse {
+func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBody, r *http.Request) (openapiart.PostRootResponseResponse, error) {
 	result := openapiart.NewPostRootResponseResponse()
 	if requestbody != nil {
 		result.CommonResponseSuccess().SetMessage(requestbody.SomeString())
-		return result
+		return result, nil
 	}
 	// result.StatusCode500().SetMessage("missing input")
-	return result
+	return result, nil
 }
-func (h *apiTestHandler) DummyResponseTest(r *http.Request) openapiart.DummyResponseTestResponse {
+func (h *apiTestHandler) DummyResponseTest(r *http.Request) (openapiart.DummyResponseTestResponse, error) {
 	result := openapiart.NewDummyResponseTestResponse()
 	result.SetResponseString("this is a string response")
-	return result
+	return result, nil
 }

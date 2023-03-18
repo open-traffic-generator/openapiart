@@ -45,11 +45,11 @@ func TestGetSingleItem(t *testing.T) {
 	router.ServeHTTP(wr, req)
 	assert.Equal(t, http.StatusInternalServerError, wr.Code) // missing support for 404
 
-	// jsonResponse, _ = io.ReadAll(wr.Body)
-	// errNew := openapiart.NewCommonResponseError()
-	// errFromJson := errNew.FromJson(string(jsonResponse))
-	// assert.Nil(t, errFromJson)
-	// assert.Equal(t, "not found: id '3'", errNew.Message())
+	jsonResponse, _ = io.ReadAll(wr.Body)
+	errNew := openapiart.NewError()
+	errFromJson := errNew.FromJson(string(jsonResponse))
+	assert.Nil(t, errFromJson)
+	assert.Equal(t, "not found: id '3'", errNew.Errors()[0])
 }
 
 func TestGetSingleItemLevel2(t *testing.T) {

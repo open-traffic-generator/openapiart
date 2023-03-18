@@ -64,6 +64,7 @@ func TestSetConfig400(t *testing.T) {
 		resp, err := api.SetConfig(config)
 		assert.Nil(t, resp)
 		assert.NotNil(t, err)
+		log.Println(err)
 	}
 }
 
@@ -258,6 +259,7 @@ func TestValidVersionCheckHttp(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
+	log.Println(resp)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
@@ -316,6 +318,23 @@ func TestGrpcErrorStructSetConfig(t *testing.T) {
 	assert.Equal(t, errSt.Errors()[1], "returning err2")
 }
 
+func TestHttpErrorStructSetConfig(t *testing.T) {
+	api := apis[1]
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(500))
+	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
+	assert.Equal(t, errSt.Errors()[0], "internal err 1")
+	assert.Equal(t, errSt.Errors()[1], "internal err 2")
+	assert.Equal(t, errSt.Errors()[2], "internal err 3")
+}
+
 func TestGrpcErrorStringSetConfig(t *testing.T) {
 	api := apis[0]
 	config := NewFullyPopulatedPrefixConfig(api)
@@ -329,6 +348,21 @@ func TestGrpcErrorStringSetConfig(t *testing.T) {
 	assert.Equal(t, errSt.Code(), int32(2))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "SetConfig has detected configuration errors")
+}
+
+func TestHttpErrorStringSetConfig(t *testing.T) {
+	api := apis[1]
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(500))
+	assert.False(t, errSt.HasKind())
+	assert.Equal(t, errSt.Errors()[0], "client error !!!!")
 }
 
 func TestGrpcErrorkindSetConfig(t *testing.T) {

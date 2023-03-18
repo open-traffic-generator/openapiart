@@ -520,7 +520,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.validate = """
                         err := {struct}.Validate()
                         if err != nil {{
-                            return nil, err
+                            return nil, api.FromError(err)
                         }}
                     """.format(
                         struct=new.struct
@@ -803,7 +803,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             #         """.format(
             #         status_code=response.status_code,
             #     )
-            error_handling += 'return nil, fmt.Errorf("response of 200, default has not been implemented")'
+            error_handling += """
+            eStr := fmt.Errorf("response of 200, default has not been implemented")
+            return nil, api.FromError(eStr)
+            """
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
                         return resp.ResponseBytes, nil
@@ -834,7 +837,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if self._generate_version_api:
                 version_check = """
                     if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
-                        return nil, err
+                        return nil, api.FromError(err)
                     }"""
             else:
                 version_check = ""
@@ -884,16 +887,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    # error_handling += """if resp.StatusCode == {status_code} {{
-                    #         return nil, fmt.Errorf(string(bodyBytes))
-                    #     }}
-                    #     """.format(
-                    #     status_code=response.status_code,
-                    # )
-                    pass
-            error_handling += (
-                'return nil, fmt.Errorf("response not implemented")'
-            )
+                    error_handling += """err := api.fromHttpError(resp.StatusCode, bodyBytes)
+                        return nil, err"""
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil"""
             elif http.request_return_type == "*string":
@@ -902,10 +897,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 success_handling = """obj := api.{success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
-                        return nil, err
+                        return nil, api.FromError(err)
                     }}
                     if err != nil {{
-                        return nil, err
+                        return nil, api.FromError(err)
                     }}
                     return obj, nil""".format(
                     success_method=success_method,
@@ -915,17 +910,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (api *{internal_struct_name}) {method} {{
                     {request}
                     if err != nil {{
-                        return nil, err
+                        return nil, api.FromError(err)
                     }}
                     bodyBytes, err := io.ReadAll(resp.Body)
                     defer resp.Body.Close()
                     if err != nil {{
-                        return nil, err
+                        return nil, api.FromError(err)
                     }}
                     if resp.StatusCode == 200 {{
                         {success_handling}
+                    }} else {{
+                        {error_handling}
                     }}
-                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,

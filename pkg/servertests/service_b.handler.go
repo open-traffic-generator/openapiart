@@ -23,13 +23,13 @@ func NewServiceBHandler() interfaces.ServiceAbcHandler {
 func (h *serviceBHandler) GetController() interfaces.ServiceAbcController {
 	return h.controller
 }
-func (h *serviceBHandler) GetAllItems(r *http.Request) openapiart.GetAllItemsResponse {
+func (h *serviceBHandler) GetAllItems(r *http.Request) (openapiart.GetAllItemsResponse, error) {
 	items := h.getItems()
 	result := openapiart.NewGetAllItemsResponse()
 	result.ServiceAbcItemList().Items().Append(items...)
-	return result
+	return result, nil
 }
-func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleItemResponse {
+func (h *serviceBHandler) GetSingleItem(r *http.Request) (openapiart.GetSingleItemResponse, error) {
 	vars := mux.Vars(r)
 	id := vars[interfaces.ServiceAbcItemId]
 	items := h.getItems()
@@ -44,18 +44,21 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleIte
 	if item != nil {
 		result.SetServiceAbcItem(item)
 	} else {
-		fmt.Println("commenting out for now")
-		// result.StatusCode400().SetMessage(fmt.Sprintf("not found: id '%s'", id))
+		err := openapiart.NewError()
+		err.Msg().Code = 500
+		err.Msg().Errors = []string{fmt.Sprintf("not found: id '%s'", id)}
+		jsonStr, _ := err.ToJson()
+		return nil, fmt.Errorf(jsonStr)
 	}
-	return result
+	return result, nil
 }
-func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) openapiart.GetSingleItemLevel2Response {
+func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) (openapiart.GetSingleItemLevel2Response, error) {
 	vars := mux.Vars(r)
 	id1 := vars[interfaces.ServiceAbcItemId]
 	id2 := vars[interfaces.ServiceAbcLevel2]
 	result := openapiart.NewGetSingleItemLevel2Response()
 	result.ServiceAbcItem().SetPathId(id1).SetLevel2(id2)
-	return result
+	return result, nil
 }
 
 func (h *serviceBHandler) getItems() []openapiart.ServiceAbcItem {

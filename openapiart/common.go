@@ -132,6 +132,7 @@ type Api interface {
 	deprecated(message string)
 	under_review(message string)
 	addWarnings(message string)
+	fromHttpError(statusCode int, body []byte) Error
 	FromError(err error) Error
 }
 
@@ -204,6 +205,15 @@ func (api *api) setErrrObj(obj Error, code int32, message string) {
 	errors = append(errors, message)
 	obj.Msg().Code = code
 	obj.Msg().Errors = errors
+}
+
+func (api *api) fromHttpError(statusCode int, body []byte) Error {
+	errObj := NewError()
+	err := errObj.FromJson(string(body))
+	if err != nil {
+		api.setErrrObj(errObj, int32(statusCode), string(body))
+	}
+	return errObj
 }
 
 // HttpRequestDoer will return True for HTTP transport

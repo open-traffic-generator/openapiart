@@ -76,36 +76,46 @@ func (h *capabilitiesHandler) GetController() interfaces.CapabilitiesController 
 	return h.controller
 }
 
-func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Request) openapiart.SetConfigResponse {
+func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Request) (openapiart.SetConfigResponse, error) {
 	httpServer.Config = rbody
 	response := openapiart.NewSetConfigResponse()
 	switch httpServer.Config.Response() {
 	case openapiart.PrefixConfigResponse.STATUS_200:
 		response.SetResponseBytes([]byte("Successful set config operation"))
+	case openapiart.PrefixConfigResponse.STATUS_400:
+		return nil, fmt.Errorf("client error !!!!")
+	case openapiart.PrefixConfigResponse.STATUS_500:
+		err := openapiart.NewError()
+		err.Msg().Code = 500
+		e := err.SetKind("internal")
+		fmt.Println(e)
+		err.Msg().Errors = []string{"internal err 1", "internal err 2", "internal err 3"}
+		jsonStr, _ := err.ToJson()
+		return nil, fmt.Errorf(jsonStr)
 	}
-	return response
+	return response, nil
 }
 
-func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) openapiart.UpdateConfigurationResponse {
+func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) (openapiart.UpdateConfigurationResponse, error) {
 	response := openapiart.NewUpdateConfigurationResponse()
 	data, _ := httpServer.Config.ToJson()
 	err := response.PrefixConfig().FromJson(data)
 	if err != nil {
 		log.Print(err.Error())
 	}
-	return response
+	return response, nil
 }
 
-func (h *bundlerHandler) GetConfig(r *http.Request) openapiart.GetConfigResponse {
+func (h *bundlerHandler) GetConfig(r *http.Request) (openapiart.GetConfigResponse, error) {
 	response := openapiart.NewGetConfigResponse()
 	response.SetPrefixConfig(httpServer.Config)
-	return response
+	return response, nil
 }
 
-func (h *capabilitiesHandler) GetVersion(r *http.Request) openapiart.GetVersionResponse {
+func (h *capabilitiesHandler) GetVersion(r *http.Request) (openapiart.GetVersionResponse, error) {
 	response := openapiart.NewGetVersionResponse()
 	response.SetVersion(openapiart.NewApi().GetLocalVersion())
-	return response
+	return response, nil
 }
 
 // Defined Metrics interface
@@ -124,32 +134,32 @@ func (h *metricsHandler) GetController() interfaces.MetricsController {
 	return h.controller
 }
 
-func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) openapiart.GetMetricsResponse {
+func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) (openapiart.GetMetricsResponse, error) {
 	choice := req.Msg().GetChoice().String()
 	switch choice {
 	case "port":
 		response := openapiart.NewGetMetricsResponse()
 		response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
 		response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
-		return response
+		return response, nil
 	case "flow":
 		response := openapiart.NewGetMetricsResponse()
 		response.Metrics().Flows().Add().SetName("f1").SetTxFrames(2000).SetRxFrames(1777)
 		response.Metrics().Flows().Add().SetName("f2").SetTxFrames(3000).SetRxFrames(2999)
-		return response
+		return response, nil
 	default:
-		return openapiart.NewGetMetricsResponse()
+		return openapiart.NewGetMetricsResponse(), nil
 	}
 }
 
-func (h *metricsHandler) GetWarnings(r *http.Request) openapiart.GetWarningsResponse {
+func (h *metricsHandler) GetWarnings(r *http.Request) (openapiart.GetWarningsResponse, error) {
 	response := openapiart.NewGetWarningsResponse()
 	response.WarningDetails().SetWarnings([]string{"This is your first warning", "Your last warning"})
-	return response
+	return response, nil
 }
 
-func (h *metricsHandler) ClearWarnings(r *http.Request) openapiart.ClearWarningsResponse {
+func (h *metricsHandler) ClearWarnings(r *http.Request) (openapiart.ClearWarningsResponse, error) {
 	response := openapiart.NewClearWarningsResponse()
 	response.SetResponseString("success")
-	return response
+	return response, nil
 }

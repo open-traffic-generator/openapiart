@@ -56,6 +56,7 @@ class GoServerControllerGenerator(object):
             """\"io"
             "net/http"
             "google.golang.org/protobuf/encoding/protojson"
+            "google.golang.org/grpc/status"
             "{root_package}/httpapi"
             "{root_package}/httpapi/interfaces"
             {models_prefix} "{models_path}\"""".format(
@@ -177,7 +178,7 @@ class GoServerControllerGenerator(object):
                     ctrl.{rsp_500_error}(w, 500, bodyError)
                     return
                 }}
-                result := ctrl.handler.{operation_name}(item, r)""".format(
+                result, err := ctrl.handler.{operation_name}(item, r)""".format(
                     full_modelname=full_modelname,
                     new_modelname=new_modelname,
                     rsp_400_error=rsp_error,
@@ -187,10 +188,20 @@ class GoServerControllerGenerator(object):
             )
         else:
             w.write_line(
-                "result := ctrl.handler.{name}(r)".format(
+                "result, err := ctrl.handler.{name}(r)".format(
                     name=route.operation_name
                 )
             )
+
+        w.write_line(
+            """if err != nil {{
+                ctrl.{rsp_error}(w, 500, err)
+                return
+            }}
+            """.format(
+                rsp_error=rsp_error
+            )
+        )
 
         error_responses = []
         struct_name = ""
@@ -260,8 +271,12 @@ class GoServerControllerGenerator(object):
                 )
                 schema = self._ctx.get_object_from_ref(schema["$ref"])
             set_errors = """
+                st, _ := status.FromError(rsp_err)
+                err := result.FromJson(st.Message())
+                if err != nil {
+                    result.Msg().Errors = []string{rsp_err.Error()}
+                }
                 result.Msg().Code = int32(status_code)
-                result.Msg().Errors = []string{rsp_err.Error()}
             """
 
             w.write_line(
