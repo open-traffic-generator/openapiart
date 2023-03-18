@@ -193,22 +193,19 @@ func (api *api) under_review(message string) {
 
 func (api *api) FromError(err error) Error {
 	errObj := NewError()
-	errors := []string{}
-	ers := errObj.FromJson(err.Error())
+	st, _ := status.FromError(err)
+	ers := errObj.FromJson(st.Message())
 	if ers != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			errors = append(errors, err.Error())
-			return errObj.SetErrors(errors)
-		} else {
-			errObj.Msg().Code = int32(st.Code())
-			errors = append(errors, st.Message())
-			errObj.Msg().Errors = errors
-		}
-		return errObj
+		api.setErrrObj(errObj, int32(st.Code()), st.Message())
 	}
-
 	return errObj
+}
+
+func (api *api) setErrrObj(obj Error, code int32, message string) {
+	errors := []string{}
+	errors = append(errors, message)
+	obj.Msg().Code = code
+	obj.Msg().Errors = errors
 }
 
 // HttpRequestDoer will return True for HTTP transport

@@ -96,6 +96,7 @@ func TestGetConfigSuccess(t *testing.T) {
 			log.Printf("error: %s", err.Error())
 		}
 		resp, err := api.GetConfig()
+		fmt.Println(resp)
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
 	}
@@ -158,9 +159,10 @@ func TestGetWarnings(t *testing.T) {
 func TestClearWarnings(t *testing.T) {
 	for _, api := range apis {
 		api.NewClearWarningsResponse()
-		resp, err := api.ClearWarnings()
+		res, err := api.ClearWarnings()
 		assert.Nil(t, err)
-		assert.NotNil(t, resp)
+		assert.NotNil(t, res)
+		log.Println(*res)
 	}
 }
 
@@ -296,4 +298,92 @@ func TestInvalidVersionCheckGrpc(t *testing.T) {
 	resp, err := api.SetConfig(config)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
+}
+
+func TestGrpcErrorStructSetConfig(t *testing.T) {
+	api := apis[0]
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(404))
+	assert.False(t, errSt.HasKind())
+	assert.Equal(t, errSt.Errors()[0], "returning err1")
+	assert.Equal(t, errSt.Errors()[1], "returning err2")
+}
+
+func TestGrpcErrorStringSetConfig(t *testing.T) {
+	api := apis[0]
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(2))
+	assert.False(t, errSt.HasKind())
+	assert.Equal(t, errSt.Errors()[0], "SetConfig has detected configuration errors")
+}
+
+func TestGrpcErrorkindSetConfig(t *testing.T) {
+	api := apis[0]
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	resp, err := api.SetConfig(config)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(500))
+	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
+	assert.Equal(t, errSt.Errors()[0], "internal err 1")
+}
+
+func TestGrpcErrorStringUpdate(t *testing.T) {
+	api := apis[2]
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	_, err := api.SetConfig(config1)
+	if err != nil {
+		log.Printf("error: %s", err.Error())
+	}
+	config2 := api.NewUpdateConfig()
+	config2.G().Add().SetName("ErStr").SetGA("ga string").SetGB(232)
+	config3, err := api.UpdateConfiguration(config2)
+	assert.Nil(t, config3)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(2))
+	assert.False(t, errSt.HasKind())
+	assert.Equal(t, errSt.Errors()[0], "unit test error")
+}
+
+func TestGrpcErrorStructUpdate(t *testing.T) {
+	api := apis[2]
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	_, err := api.SetConfig(config1)
+	if err != nil {
+		log.Printf("error: %s", err.Error())
+	}
+	config2 := api.NewUpdateConfig()
+	config2.G().Add().SetName("Erkind").SetGA("ga string").SetGB(232)
+	config3, err := api.UpdateConfiguration(config2)
+	assert.Nil(t, config3)
+	assert.NotNil(t, err)
+
+	// if user wants to get the json now
+	errSt := api.FromError(err)
+	assert.Equal(t, errSt.Code(), int32(404))
+	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.VALIDATION)
+	assert.Equal(t, errSt.Errors()[0], "invalid1")
 }

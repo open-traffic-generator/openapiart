@@ -62,7 +62,16 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = fmt.Errorf("SetConfig has detected configuration errors")
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
 		resp = nil
-		err = fmt.Errorf("SetConfig has encountered a server error")
+		errObj := openapiart.NewError()
+		errObj.Msg().Code = 500
+		tmp := errObj.SetKind("internal")
+		fmt.Println(tmp)
+		errObj.Msg().Errors = []string{"internal err 1"}
+		jsonStr, e := errObj.ToJson()
+		if e != nil {
+			return resp, e
+		}
+		err = fmt.Errorf(jsonStr)
 	case sanity.PrefixConfig_Response_status_200.Enum().Number():
 		s.Config = req.PrefixConfig
 		resp = &sanity.SetConfigResponse{
@@ -72,9 +81,13 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	case sanity.PrefixConfig_Response_status_404.Enum().Number():
 		s.Config = req.PrefixConfig
 		errObj := openapiart.NewError()
-		errObj.Msg().Code = 500
+		errObj.Msg().Code = 404
 		errObj.Msg().Errors = []string{"returning err1", "returning err2"}
-		err = fmt.Errorf(errObj.String())
+		jsonStr, e := errObj.ToJson()
+		if e != nil {
+			return resp, e
+		}
+		err = fmt.Errorf(jsonStr)
 	}
 	return resp, err
 }
@@ -94,10 +107,30 @@ func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.
 }
 
 func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.UpdateConfigurationRequest) (*sanity.UpdateConfigurationResponse, error) {
-	resp := &sanity.UpdateConfigurationResponse{
-		PrefixConfig: s.Config,
+
+	if len(req.UpdateConfig.G) > 0 {
+		if req.UpdateConfig.G[0].GetName() == "ErStr" {
+			return nil, fmt.Errorf("unit test error")
+		} else if req.UpdateConfig.G[0].GetName() == "Erkind" {
+			errObj := openapiart.NewError()
+			errObj.Msg().Code = 404
+			tmp := errObj.SetKind("validation")
+			fmt.Println(tmp)
+			errObj.Msg().Errors = []string{"invalid1", "invalid2"}
+			jsonStr, e := errObj.ToJson()
+			if e != nil {
+				return nil, e
+			}
+			return nil, fmt.Errorf(jsonStr)
+		} else {
+			resp := &sanity.UpdateConfigurationResponse{
+				PrefixConfig: s.Config,
+			}
+			return resp, nil
+		}
+	} else {
+		return nil, nil
 	}
-	return resp, nil
 }
 
 func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsRequest) (*sanity.GetMetricsResponse, error) {

@@ -1414,16 +1414,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write(
                 """
                 func (obj *_error) Error() string {
-                errors := strings.Join(obj.obj.Errors, ", ")
-                kindStr := ""
-                    if obj.HasKind() {
-                        kindStr = obj.obj.Kind.Enum().String()
-                    } else {
-                        kindStr = "unspecified"
-                    }
-                    codeStr := strconv.Itoa(int(obj.obj.Code))
-                    errStr := fmt.Sprintf("error code: %s error kind: %s error messages : %s", codeStr, kindStr, errors)
-                    return errStr
+                    json, _ := obj.ToJson()
+                    return json
                 }
                 """
             )
