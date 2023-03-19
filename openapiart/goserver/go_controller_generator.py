@@ -224,13 +224,14 @@ class GoServerControllerGenerator(object):
 
             # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
             if self._need_warning_check(route, response):
-                rsp_section = """data, err := {mrl_name}MrlOpts.Marshal(result.StatusCode200().Msg())
+                rsp_section = """data, err := {mrl_name}MrlOpts.Marshal(result.{struct}().Msg())
                         if err != nil {{
                             ctrl.{rsp_400_error}(w, 400, err)
                         }}
                         httpapi.WriteCustomJSONResponse(w, 200, data)
                     """.format(
                     mrl_name=util.camel_case(ctrl.yamlname),
+                    struct=struct_name,
                     rsp_400_error=rsp_error,
                 )
             elif response.response_value == "default":
