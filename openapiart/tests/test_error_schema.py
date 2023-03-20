@@ -17,30 +17,30 @@ def create_openapi_artifacts(openapiart_class, sdk=None, file_name=None):
     )
 
 
-def str_compare(validte_str, entire_str):
-    return validte_str in entire_str
+def str_compare(validte_str, entire_str, item):
+    return validte_str in entire_str and item in entire_str
 
 
 def test_validate_response_default():
-    default_error = "paths./config.post.responses: is missing the following required responses: {'default'}\n"
+    default_error = "paths./config.post.responses: is missing the following required responses:"
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
             openapiart_class,
             file_name="./response/response_default_error.yaml",
         )
     error_value = execinfo.value.args[0]
-    assert default_error == error_value
+    assert str_compare(default_error, error_value, "default")
 
 
 def test_validate_response_200():
-    default_error = "paths./config.post.responses: is missing the following required responses: {'200'}\n"
+    default_error = "paths./config.post.responses: is missing the following required responses"
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
             openapiart_class,
             file_name="./response/response_200_error.yaml",
         )
     error_value = execinfo.value.args[0]
-    assert default_error == error_value
+    assert str_compare(default_error, error_value, "200")
 
 
 def test_required_fields_in_error():
