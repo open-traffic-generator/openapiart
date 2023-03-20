@@ -1,0 +1,75 @@
+paths:
+  /config:
+    post:
+      tags: ["Bundler"]
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Field.Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "Standard success binary payload"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          x-field-uid: 2
+          description: |-
+            The request did not succeed and server has responded with error details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Field.Config:
+      type: object
+      description: |-
+        This is a field uid object
+      properties:
+        bool_value:
+          type: boolean
+          x-field-uid: 1
+    Error:
+      description: |-
+        Error response generated while serving API request.
+      type: object
+      required:
+      - code
+      properties:
+        code:
+           description: |-
+             Numeric status code based on underlying transport being used.
+           type: integer
+           x-field-uid: 1
+        kind:
+          description: |-
+            Kind of error message.
+          type: string
+          x-enum:
+            transport:
+              x-field-uid: 1
+            validation:
+              x-field-uid: 2
+            internal:
+              x-field-uid: 3
+          x-field-uid: 2
+          enum:
+          - transport
+          - validation
+          - internal
+        errors:
+          description: |-
+            List of error messages generated while serving API request.
+          type: array
+          items:
+            type: string
+          x-field-uid: 3

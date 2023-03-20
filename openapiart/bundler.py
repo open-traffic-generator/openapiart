@@ -372,8 +372,8 @@ class Bundler(object):
 
         Returns
         -------
-        Exception: one or more paths is missing a 400 or 500 response
-        None: all paths have a 400 and 500 response
+        Exception: one or more paths is missing a 200 or default response
+        None: all paths have a 200 and default response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
         required_error_codes = ["200", "default"]
@@ -397,8 +397,8 @@ class Bundler(object):
         required_err_nodes = ["code", "errors"]
         for schema in err_schema:
             if "required" in schema.value.keys():
-                diff = set(schema.value["required"]).difference(
-                    set(required_err_nodes)
+                diff = set(required_err_nodes).difference(
+                    set(schema.value["required"])
                 )
                 if len(diff):
                     raise Exception(
