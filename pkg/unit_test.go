@@ -1005,13 +1005,13 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 	}
 }
 
-// func TestEObjectValidation(t *testing.T) {
-// 	eObject := openapiart.NewEObject()
-// 	err := eObject.Validate()
-// 	if assert.Error(t, err) {
-// 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
-// 	}
-// }
+func TestEObjectValidation(t *testing.T) {
+	eObject := openapiart.NewEObject()
+	err := eObject.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
+	}
+}
 
 func TestMObjectValidation(t *testing.T) {
 	mObject := openapiart.NewMObject()
