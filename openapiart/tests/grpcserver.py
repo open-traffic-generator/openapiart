@@ -29,14 +29,6 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def SetConfig(self, request, context):
         self._log("Executing SetConfig")
-        response_400 = """
-            {
-                "status_code_400" : {
-                    "errors" : ["invalid value"]
-                }
-            }
-            """
-
         response_200 = """
             {
                 "response_bytes" : "%s"
@@ -51,8 +43,17 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         self._prefix_config = json_format.MessageToDict(
             request.prefix_config, preserving_proto_field_name=True
         )
-        if test is not None and (test < 10 or test > 90):
-            res_obj = json_format.Parse(response_400, pb2.SetConfigResponse())
+        if test is not None and (test > 90):
+            err = op.api().error()
+            err.code = 13
+            err.errors = ["err1", "err2"]
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(err.serialize())
+            res_obj = pb2.SetConfigResponse()
+        elif test is not None and (test < 0):
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("some random error!")
+            res_obj = pb2.SetConfigResponse()
         else:
             res_obj = json_format.Parse(response_200, pb2.SetConfigResponse())
 

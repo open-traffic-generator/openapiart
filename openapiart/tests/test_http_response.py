@@ -45,7 +45,7 @@ def test_error_for_non_okay_error_codes(api):
     config = api.prefix_config()
     config.a = "asdf"
     config.b = 1.1
-    config.c = 400
+    config.c = 500
     config.required_object.e_a = 1.1
     config.required_object.e_b = 1.2
     config.d_values = [config.A, config.B, config.C]
@@ -55,3 +55,26 @@ def test_error_for_non_okay_error_codes(api):
     with pytest.raises(Exception) as execinfo:
         api.set_config(config)
     assert str(execinfo.value.args) == rest_error
+
+    err = api.from_exception(execinfo.value)
+    assert err.code == 500
+    assert str(err.errors[0]) == "{'detail': 'invalid data type'}"
+
+
+def test_error_structure_for_non_okay_error_codes(api):
+    config = api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 400
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    config.d_values = [config.A, config.B, config.C]
+    config.level.l1_p1.l2_p1.l3_p1 = "test"
+    config.level.l1_p2.l4_p1.l1_p2.l4_p1.l1_p1.l2_p1.l3_p1 = "test"
+    with pytest.raises(Exception) as execinfo:
+        api.set_config(config)
+
+    err = api.from_exception(execinfo.value)
+    assert err.code == 400
+    assert err.kind == "validation"
+    assert err.errors[0] == "err for validation"

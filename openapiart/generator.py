@@ -273,47 +273,26 @@ class Generator:
                     schema_obj = self._get_parser("$..schema").find(
                         response_property
                     )
-                    if len(schema_obj) == 0:
-                        (
-                            response_name,
-                            _,
-                            class_name,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            response_property
-                        )
-                        proto_name = self._camelcase_to_snakecase(class_name)
-                        if response_name is not None:
-                            response = self._get_parser('$.."$ref"').find(
-                                self._get_object_from_ref(ref)
-                            )
-                            if len(response) > 0:
-                                (
-                                    _,
-                                    response_type,
-                                    class_name,
-                                    ref,
-                                ) = self._get_object_property_class_names(
-                                    response[0].value
-                                )
-                                proto_name = self._camelcase_to_snakecase(
-                                    class_name
-                                )
-                                if ref:
-                                    refs.append(ref)
-                    else:
-                        (
-                            _,
-                            response_type,
-                            class_name,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            schema_obj[0].value
-                        )
-                        proto_name = self._camelcase_to_snakecase(class_name)
-                        if ref:
-                            refs.append(ref)
+                    (
+                        response_name,
+                        response_type,
+                        class_name,
+                        ref,
+                        proto_name,
+                    ) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                 else:
+                    schema_obj = self._get_parser("$..schema").find(
+                        response_property
+                    )
+                    (_, _, _, ref, _) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                     rpc.bad_responses.append(str(response_code))
 
             if response_type is None:
@@ -426,6 +405,16 @@ class Generator:
         if isinstance(payload, dict):
             payload = json.dumps(payload)
         return payload
+
+    def from_exception(self, grpc_error):
+        # type: (grpc.RpcError) -> Error
+        err = self.error()
+        try:
+            err.deserialize(grpc_error.details())
+        except Exception as e:
+            err.code = 2 # code for unknown error
+            err.errors = [grpc_error.details()]
+        return err
 
     @property
     def request_timeout(self):
@@ -618,6 +607,20 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
+            self._write()
+            self._write(1, "def from_exception(self, exception):")
+            self._write(2, "# type (Exception) -> Error")
+            self._write(2, "err_obj = self.error()")
+            self._write(2, "if len(exception.args) != 2:")
+            self._write(3, "err_obj.code = 500")
+            self._write(3, "err_obj.errors = [str(exception)]")
+            self._write(2, "else:")
+            self._write(3, "try:")
+            self._write(4, "err_obj.deserialize(exception.args[1])")
+            self._write(3, "except Exception as e:")
+            self._write(4, "err_obj.errors = [exception.args[1]]")
+            self._write(3, "err_obj.code = exception.args[0]")
+            self._write(2, "return err_obj")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -1932,3 +1935,41 @@ class Generator:
                 insert_underscore = True
 
         return word
+
+    def _get_ref_from_response(self, schema_obj, response_property):
+        ref = None
+        response_name = None
+        response_type = None
+        class_name = None
+        if len(schema_obj) == 0:
+            (
+                response_name,
+                _,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(response_property)
+            proto_name = self._camelcase_to_snakecase(class_name)
+            if response_name is not None:
+                response = self._get_parser('$.."$ref"').find(
+                    self._get_object_from_ref(ref)
+                )
+                if len(response) > 0:
+                    (
+                        _,
+                        response_type,
+                        class_name,
+                        ref,
+                    ) = self._get_object_property_class_names(
+                        response[0].value
+                    )
+                    proto_name = self._camelcase_to_snakecase(class_name)
+        else:
+            (
+                _,
+                response_type,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(schema_obj[0].value)
+            proto_name = self._camelcase_to_snakecase(class_name)
+
+        return response_name, response_type, class_name, ref, proto_name
