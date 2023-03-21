@@ -115,14 +115,14 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 				Choice: &choice_val,
 				Ports: []*sanity.PortMetric{
 					{
-						Name:     "P2",
-						TxFrames: 3000,
-						RxFrames: 2788,
+						Name:     s.GetStringPtr("P2"),
+						TxFrames: s.GetFloatPtr(3000),
+						RxFrames: s.GetFloatPtr(2788),
 					},
 					{
-						Name:     "P1",
-						TxFrames: 2323,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("P1"),
+						TxFrames: s.GetFloatPtr(2323),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 				},
 			},
@@ -135,14 +135,14 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 				Choice: &choice_val,
 				Flows: []*sanity.FlowMetric{
 					{
-						Name:     "F2",
-						TxFrames: 4000,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("F2"),
+						TxFrames: s.GetFloatPtr(4000),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 					{
-						Name:     "F1",
-						TxFrames: 2000,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("F1"),
+						TxFrames: s.GetFloatPtr(2000),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 				},
 			},
@@ -168,4 +168,12 @@ func (s *GrpcServer) ClearWarnings(ctx context.Context, empty *empty.Empty) (*sa
 		StatusCode_200: &value,
 	}
 	return resp, nil
+}
+
+func (s *GrpcServer) GetStringPtr(value string) *string {
+	return &value
+}
+
+func (s *GrpcServer) GetFloatPtr(value float64) *float64 {
+	return &value
 }

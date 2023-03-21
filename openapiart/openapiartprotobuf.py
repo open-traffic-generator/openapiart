@@ -373,11 +373,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     default = "{}.{}".format(
                         property_type.split(" ")[-1], default.lower()
                     )
-            if (
-                "required" in schema_object
-                and property_name in schema_object["required"]
-                or property_type.startswith("repeated")
-            ):
+            if property_type.startswith("repeated"):
                 optional = ""
             else:
                 optional = "optional "
@@ -385,7 +381,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             if default is not None:
                 desc += "\ndefault = {}".format(default)
             if (
-                optional == ""
+                "required" in schema_object
+                and property_name in schema_object["required"]
                 and property_type.startswith("repeated") is not True
             ):
                 desc += "\nrequired = true"

@@ -2087,9 +2087,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     field.name = self._get_external_struct_name(schema_name)
             field.isOptional = fluent_new.isOptional(property_name)
-            field.isPointer = (
-                False if field.type.startswith("[") else field.isOptional
-            )
+            field.isPointer = not field.type.startswith("[")
             if field.isArray and field.isEnum:
                 field.getter_method = (
                     "{fieldname}() []{interface}{fieldname}Enum".format(
@@ -2375,7 +2373,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 func=field.status,
             )
 
-        if field.isOptional is False and "string" in field.type:
+        if (
+            field.isOptional is False
+            and field.type in self._oapi_go_types.values()
+        ):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
