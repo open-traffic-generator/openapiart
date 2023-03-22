@@ -403,10 +403,12 @@ class OpenApiValidator(object):
         except Exception:
             return False
 
-    def validate_integer(self, value, min, max):
+    def validate_integer(self, value, min, max, original_type=None):
         if value is None or not isinstance(value, int):
             return False
-        if value < 0:
+        if original_type == "uint32" and value < 0:
+            return False
+        if original_type == "uint64" and value < 0:
             return False
         if min is not None and value < min:
             return False
@@ -476,8 +478,11 @@ class OpenApiValidator(object):
             list: "list",
             "int64": "integer",
             "int32": "integer",
+            "uint64": "integer",
+            "uint32": "integer",
             "double": "float",
         }
+        original_type = type_
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -500,7 +505,7 @@ class OpenApiValidator(object):
             )
             verdict = False
         elif type_ == "integer":
-            verdict = v_obj(value, min, max)
+            verdict = v_obj(value, min, max, original_type)
             if verdict is True:
                 return
             min_max = ""
@@ -724,9 +729,16 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 if isinstance(value, OpenApiObject):
                     self._raise_status_warnings(key, value)
             elif value is not None:
-                if self._TYPES.get(key, {}).get("format", "") == "int64":
+                if (
+                    self._TYPES.get(key, {}).get("format", "") == "int64"
+                    or self._TYPES.get(key, {}).get("format", "") == "uint64"
+                ):
                     value = str(value)
-                elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
+                elif (
+                    self._TYPES.get(key, {}).get("itemformat", "") == "int64"
+                    or self._TYPES.get(key, {}).get("itemformat", "")
+                    == "uint64"
+                ):
                     value = [str(v) for v in value]
                 output[key] = value
                 self._raise_status_warnings(key, value)
@@ -772,10 +784,15 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         property_value = self._DEFAULTS[property_name]
                 self._set_choice(property_name)
                 # convert int64(will be string on wire) to to int
-                if self._TYPES[property_name].get("format", "") == "int64":
+                if (
+                    self._TYPES[property_name].get("format", "") == "int64"
+                    or self._TYPES[property_name].get("format", "") == "uint64"
+                ):
                     property_value = int(property_value)
                 elif (
                     self._TYPES[property_name].get("itemformat", "") == "int64"
+                    or self._TYPES[property_name].get("itemformat", "")
+                    == "uint64"
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value

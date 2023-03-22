@@ -209,6 +209,23 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
+    def _get_integer_format(self, format, min, max):
+        if (min is not None and min > 4294967294) or (
+            max is not None and max > 4294967294
+        ):
+            return "uint64"
+        if format is not None and "uint64" in format:
+            return "uint64"
+        elif format is not None and "uint32" in format:
+            return "uint32"
+        if (min is not None and min > 2147483647) or (
+            max is not None and max > 2147483647
+        ):
+            return "int64"
+        if format is not None and "int64" in format:
+            return "int64"
+        return "int32"
+
     def _get_field_type(self, property_name, openapi_object):
         """Convert openapi type -> protobuf type
 
@@ -218,6 +235,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         - type:integer -> int32
         - type:integer [format:int32] -> int32
         - type:integer [format:int64] -> int64
+        - type:integer [format:uint32] -> uint32
+        - type:integer [format:uint64] -> uint64
         - type:boolean -> bool
         - type:string -> string
         - type:string [format:binary] -> bytes
@@ -244,13 +263,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    return "int64"
-                if format is not None and "int64" in format:
-                    return "int64"
-                return "int32"
+                return self._get_integer_format(format, min, max)
             if type == "number":
                 if "format" in openapi_object:
                     if openapi_object["format"] == "double":
@@ -270,6 +283,12 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 ):
                     item_type = item_type.replace("32", "64")
                 if format is not None and "int64" in format:
+                    item_type = item_type.replace("32", "64")
+                if (min is not None and min > 4294967294) or (
+                    max is not None and max > 4294967294
+                ):
+                    item_type = item_type.replace("32", "64")
+                if format is not None and "uint64" in format:
                     item_type = item_type.replace("32", "64")
                 return "repeated " + item_type
         elif "$ref" in openapi_object:

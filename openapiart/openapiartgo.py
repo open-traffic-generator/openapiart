@@ -170,6 +170,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "boolean": "bool",
             "integer": "int32",
             "int64": "int64",
+            "uint32": "uint32",
+            "uint64": "uint64",
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
@@ -2065,6 +2067,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     (field.min is not None and field.min > 2147483647)
                     or (field.max is not None and field.max > 2147483647)
                     and "int" in field.type
+                ):
+                    field.type = field.type.replace("32", "64")
+                if (
+                    (field.min is not None and field.min > 4294967294)
+                    or (field.max is not None and field.max > 4294967294)
+                    and "uint" in field.type
                 ):
                     field.type = field.type.replace("32", "64")
             if field.hasminmaxlength:

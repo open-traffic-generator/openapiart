@@ -1694,6 +1694,8 @@ class Generator:
                 )
                 if min_max > 2147483647:
                     pt.update({key: r"'int64'"})
+                if min_max > 4294967294:
+                    pt.update({key: r"'uint64'"})
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:
