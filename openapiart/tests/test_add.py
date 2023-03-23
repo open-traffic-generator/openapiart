@@ -20,5 +20,23 @@ def test_add(api):
     config.deserialize(yaml)
 
 
+def test_add_with_multiple_list(api):
+    config = api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 1
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    config.g.add(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
+    assert len(config.g) == 1
+    config.g1.add(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
+    assert len(config.g1) == 1
+    config.g2.add(name="unique list name", g_a="dkdkd", g_b=3, g_c=22.2)
+    assert len(config.g2) == 1
+    yaml = config.serialize(encoding=config.YAML)
+    print(yaml)
+    config.deserialize(yaml)
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

@@ -1110,7 +1110,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 internal_items.append(
                     "{} {}".format(
                         self._get_holder_name(field),
-                        new.interface + field.external_struct + "Iter",
+                        new.interface
+                        + field.external_struct
+                        + field.name
+                        + "Iter",
                     )
                 )
                 internal_items_nil.append(
@@ -1434,7 +1437,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         {block}
                     }}
                     if obj.{internal_name} == nil {{
-                        obj.{internal_name} = new{parent}{interface}Iter().setMsg(obj)
+                        obj.{internal_name} = new{parent}{interface}{name}Iter().setMsg(obj)
                     }}
                     return obj.{internal_name}""".format(
                     name=field.name,
@@ -1846,7 +1849,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
-        interface_name = new.interface + field.external_struct + "Iter"
+        interface_name = (
+            new.interface + field.external_struct + field.name + "Iter"
+        )
         if interface_name in self._api.components:
             return
         new_iter = FluentNew()
@@ -2223,24 +2228,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.external_struct = self._get_external_struct_name(
                         schema_name
                     )
-                    field.adder_method = (
-                        "Add() {parent}{external_struct}Iter".format(
-                            parent=fluent_new.interface,
-                            external_struct=field.external_struct,
-                        )
+                    field.adder_method = "Add() {parent}{external_struct}{field_name}Iter".format(
+                        parent=fluent_new.interface,
+                        external_struct=field.external_struct,
+                        field_name=field.name,
                     )
                     field.isOptional = False
-                    field.getter_method = (
-                        "{name}() {parent}{external_struct}Iter".format(
-                            name=self._get_external_struct_name(field.name),
-                            parent=fluent_new.interface,
-                            external_struct=field.external_struct,
-                        )
-                    )
-                    field.getter_method_description = "{name} returns {parent}{external_struct}Iter, set in {parent}".format(
+                    field.getter_method = "{name}() {parent}{external_struct}{field_name}Iter".format(
                         name=self._get_external_struct_name(field.name),
                         parent=fluent_new.interface,
                         external_struct=field.external_struct,
+                        field_name=field.name,
+                    )
+                    field.getter_method_description = "{name} returns {parent}{external_struct}{field_name}Iter, set in {parent}".format(
+                        name=self._get_external_struct_name(field.name),
+                        parent=fluent_new.interface,
+                        external_struct=field.external_struct,
+                        field_name=field.name,
                     )
                 else:
                     field.setter_method = (
