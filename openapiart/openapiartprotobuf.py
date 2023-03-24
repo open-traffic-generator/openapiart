@@ -210,19 +210,19 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/empty.proto";')
 
     def _get_integer_format(self, format, min, max):
-        if (min is not None and min > 4294967294) or (
-            max is not None and max > 4294967294
-        ):
-            return "uint64"
         if format is not None and "uint64" in format:
             return "uint64"
         elif format is not None and "uint32" in format:
             return "uint32"
+        if format is not None and "int64" in format:
+            return "int64"
+        if (min is not None and min > 4294967294) or (
+            max is not None and max > 4294967294
+        ):
+            return "uint64"
         if (min is not None and min > 2147483647) or (
             max is not None and max > 2147483647
         ):
-            return "int64"
-        if format is not None and "int64" in format:
             return "int64"
         return "int32"
 
