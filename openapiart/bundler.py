@@ -888,8 +888,17 @@ class Bundler(object):
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
         if format is not None:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["format"] = format
+            # else:
             schema["format"] = format
         if "length" in xpattern:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["minimum"] = 0
+            #     schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            # else:
             schema["minimum"] = 0
             schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
