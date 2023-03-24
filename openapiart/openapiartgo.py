@@ -112,6 +112,7 @@ class FluentField(object):
         self.x_enum_status = {}
         self.x_constraints = []
         self.x_unique = None
+        self.iter_name = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -175,6 +176,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "numberdouble": "float64",
             "stringbinary": "[]byte",
         }
+        self.iter_names = []
 
     def generate(self, openapi):
         self._base_url = ""
@@ -1110,10 +1112,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 internal_items.append(
                     "{} {}".format(
                         self._get_holder_name(field),
-                        new.interface
-                        + field.external_struct
-                        + field.name
-                        + "Iter",
+                        field.iter_name,
                     )
                 )
                 internal_items_nil.append(
@@ -1437,12 +1436,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         {block}
                     }}
                     if obj.{internal_name} == nil {{
-                        obj.{internal_name} = new{parent}{interface}{name}Iter().setMsg(obj)
+                        obj.{internal_name} = new{iter_name}().setMsg(obj)
                     }}
                     return obj.{internal_name}""".format(
                     name=field.name,
-                    interface=field.external_struct,
-                    parent=new.interface,
+                    iter_name=field.iter_name,
                     block=block,
                     internal_name=self._get_holder_name(field),
                 )
@@ -1849,9 +1847,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
             return
-        interface_name = (
-            new.interface + field.external_struct + field.name + "Iter"
-        )
+        interface_name = field.iter_name
         if interface_name in self._api.components:
             return
         new_iter = FluentNew()
@@ -2228,23 +2224,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.external_struct = self._get_external_struct_name(
                         schema_name
                     )
-                    field.adder_method = "Add() {parent}{external_struct}{field_name}Iter".format(
-                        parent=fluent_new.interface,
-                        external_struct=field.external_struct,
-                        field_name=field.name,
+                    prefix = fluent_new.interface + field.external_struct
+                    field.iter_name = prefix + "Iter"
+                    if field.iter_name in self.iter_names:
+                        field.iter_name = prefix + field.name + "Iter"
+                    self.iter_names.append(field.iter_name)
+                    field.adder_method = "Add() {name}".format(
+                        name=field.iter_name
                     )
                     field.isOptional = False
-                    field.getter_method = "{name}() {parent}{external_struct}{field_name}Iter".format(
+                    field.getter_method = "{name}() {iter_name}".format(
                         name=self._get_external_struct_name(field.name),
-                        parent=fluent_new.interface,
-                        external_struct=field.external_struct,
-                        field_name=field.name,
+                        iter_name=field.iter_name,
                     )
-                    field.getter_method_description = "{name} returns {parent}{external_struct}{field_name}Iter, set in {parent}".format(
+                    field.getter_method_description = "{name} returns {iter_name}Iter, set in {parent}".format(
                         name=self._get_external_struct_name(field.name),
                         parent=fluent_new.interface,
-                        external_struct=field.external_struct,
-                        field_name=field.name,
+                        iter_name=field.iter_name,
                     )
                 else:
                     field.setter_method = (
