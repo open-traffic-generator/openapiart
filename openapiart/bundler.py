@@ -871,10 +871,17 @@ class Bundler(object):
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
         if format is not None:
-            schema["format"] = format
+            if property_name == "values":
+                schema["items"]["format"] = format
+            else:
+                schema["format"] = format
         if "length" in xpattern:
-            schema["minimum"] = 0
-            schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+            if property_name == "values":
+                schema["items"]["minimum"] = 0
+                schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            else:
+                schema["minimum"] = 0
+                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:

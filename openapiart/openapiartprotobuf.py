@@ -209,37 +209,72 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
+    def _min_max_in_range(self, format, min, max):
+        if min is None or max is None:
+            return True
+        elif min is None or max is None:
+            if min is None:
+                min = max
+            if max is None:
+                max = min
+
+        if min > max:
+            return False
+
+        if format == "uint32":
+            return min >= 0 and max <= 4294967295
+        elif format == "uint64":
+            return min >= 0 and max <= 18446744073709551615
+        elif format == "int32":
+            return min >= -2147483648 and max <= 2147483647
+        elif format == "int64":
+            return min >= -9223372036854775808 and max <= 9223372036854775807
+        else:
+            raise Exception("unsupported integer format: {}".format(format))
+
     def _format_from_range(self, min, max):
         if min is None and max is None:
             return "int32"
-        if min is not None and max is not None:
-            if max >= min:
-                if min >= 0 and max <= 4294967295:
-                    return "int32"
-                    # TODO: restore correct return value
-                    # return "uint32"
-                if min >= 0 and max <= 18446744073709551615:
-                    return "int32"
-                    # TODO: restore correct return value
-                    # return "uint64"
-                if min >= -2147483648 and max <= 2147483647:
-                    return "int32"
-                if min >= -9223372036854775808 and max <= 9223372036854775807:
-                    return "int64"
-            else:
-                raise Exception("min %d cannot be less than max %d", min, max)
-        val = min if min is not None else max
-        return self._format_from_range(val, val)
+        elif min is None or max is None:
+            if min is None:
+                min = max
+            if max is None:
+                max = min
+
+        if max < min:
+            raise Exception("min %d cannot be less than max %d", min, max)
+
+        # TODO: this logic needs to be replaced with the one commented out below
+        if min > 2147483647 or max > 2147483647:
+            return "int64"
+        else:
+            return "int32"
+        # TODO: following snippet is more accurate but introduces breaking
+        # changes and hence commented out
+        # if self._min_max_in_range("uint32", min, max):
+        #     return "uint32"
+        # if self._min_max_in_range("uint64", min, max):
+        #     return "uint64"
+        # if self._min_max_in_range("int32", min, max):
+        #     return "int32"
+        # if self._min_max_in_range("int64", min, max):
+        #     return "int64"
 
     def _get_integer_format(self, type_format, min, max):
-        supported_type_formats = ["int32", "int64", "uint32", "uint64"]
+        valid_formats = ["int32", "int64", "uint32", "uint64"]
         if type_format is not None:
-            if type_format in supported_type_formats:
+            if type_format in valid_formats:
+                if not self._min_max_in_range(type_format, min, max):
+                    raise Exception(
+                        "format {} is not compatible with [min,max] [{},{}]".format(
+                            type_format, min, max
+                        )
+                    )
                 return type_format
             raise Exception(
                 "unsupported format %s, supported formats are: %s",
                 type_format,
-                supported_type_formats,
+                valid_formats,
             )
         return self._format_from_range(min, max)
 
