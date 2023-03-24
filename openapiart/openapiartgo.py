@@ -170,6 +170,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "boolean": "bool",
             "integer": "int32",
             "int64": "int64",
+            "uint32": "uint32",
+            "uint64": "uint64",
             "number": "float32",
             "numberfloat": "float32",
             "numberdouble": "float64",
@@ -2067,6 +2069,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     and "int" in field.type
                 ):
                     field.type = field.type.replace("32", "64")
+                if (
+                    (field.min is not None and field.min > 4294967295)
+                    or (field.max is not None and field.max > 4294967295)
+                    and "uint" in field.type
+                ):
+                    field.type = field.type.replace("32", "64")
             if field.hasminmaxlength:
                 field.min_length = (
                     None
@@ -2864,10 +2872,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         "format"
                     ]
             if "format" in property_schema:
-                format_type = (oapi_type + property_schema["format"]).lower()
-                if format_type.lower() in self._oapi_go_types:
+                type_format = (oapi_type + property_schema["format"]).lower()
+                if type_format.lower() in self._oapi_go_types:
                     go_type = "{oapi_go_type}".format(
-                        oapi_go_type=self._oapi_go_types[format_type.lower()]
+                        oapi_go_type=self._oapi_go_types[type_format.lower()]
                     )
                 elif property_schema["format"].lower() in self._oapi_go_types:
                     go_type = "{oapi_go_type}".format(

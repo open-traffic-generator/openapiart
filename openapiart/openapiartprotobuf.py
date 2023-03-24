@@ -209,7 +209,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
-    def _get_field_type(self, property_name, openapi_object):
+    def _get_field_type(
+        self,
+        property_name,
+        openapi_object,
+        outer_format=None,
+        outer_min=None,
+        outer_max=None,
+    ):
         """Convert openapi type -> protobuf type
 
         - type:number -> float
@@ -218,6 +225,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         - type:integer -> int32
         - type:integer [format:int32] -> int32
         - type:integer [format:int64] -> int64
+        - type:integer [format:uint32] -> uint32
+        - type:integer [format:uint64] -> uint64
         - type:boolean -> bool
         - type:string -> string
         - type:string [format:binary] -> bytes
@@ -228,7 +237,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 return "bool"
             if type == "string":
                 if "format" in openapi_object:
-                    if openapi_object["format"] == "binary":
+                    if (
+                        str(outer_format) == "binary"
+                        or openapi_object["format"] == "binary"
+                    ):
                         return "bytes"
                 elif "x-enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
@@ -241,36 +253,45 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
-                format = openapi_object.get("format")
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    return "int64"
-                if format is not None and "int64" in format:
-                    return "int64"
-                return "int32"
+                if outer_min is not None:
+                    min = outer_min
+                if outer_max is not None:
+                    max = outer_max
+                if outer_format is not None:
+                    type_format = outer_format
+                return _get_integer_format(type_format, min, max)
             if type == "number":
                 if "format" in openapi_object:
-                    if openapi_object["format"] == "double":
+                    if (
+                        str(outer_format) == "double"
+                        or openapi_object["format"] == "double"
+                    ):
                         return "double"
-                    elif openapi_object["format"] == "float":
+                    elif (
+                        str(outer_format) == "float"
+                        or openapi_object["format"] == "float"
+                    ):
                         return "float"
                 return "float"
             if type == "array":
-                item_type = self._get_field_type(
-                    property_name, openapi_object["items"]
-                )
-                format = openapi_object.get("format")
+                # TODO: outer min/max shouldn't exist for arrays
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    item_type = item_type.replace("32", "64")
-                if format is not None and "int64" in format:
-                    item_type = item_type.replace("32", "64")
+
+                item_type = self._get_field_type(
+                    property_name,
+                    openapi_object["items"],
+                    outer_format=type_format,
+                    outer_min=min,
+                    outer_max=max,
+                )
+
+                if item_type == "integer":
+                    item_type = _get_integer_format(type_format, min, max)
                 return "repeated " + item_type
         elif "$ref" in openapi_object:
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
@@ -422,3 +443,75 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation.rpc, operation.request, "", operation.response
         )
         self._write(line, indent=1)
+
+
+def _min_max_in_range(format, min, max):
+    if min is None or max is None:
+        return True
+    elif min is None or max is None:
+        if min is None:
+            min = max
+        if max is None:
+            max = min
+
+    if min > max:
+        return False
+
+    if format == "uint32":
+        return min >= 0 and max <= 4294967295
+    elif format == "uint64":
+        return min >= 0 and max <= 18446744073709551615
+    elif format == "int32":
+        return min >= -2147483648 and max <= 2147483647
+    elif format == "int64":
+        return min >= -9223372036854775808 and max <= 9223372036854775807
+    else:
+        raise Exception("unsupported integer format: {}".format(format))
+
+
+def _format_from_range(min, max):
+    if min is None and max is None:
+        return "int32"
+    elif min is None or max is None:
+        if min is None:
+            min = max
+        if max is None:
+            max = min
+
+    if max < min:
+        raise Exception("min %d cannot be less than max %d", min, max)
+
+    # TODO: this logic needs to be replaced with the one commented out below
+    if min > 2147483647 or max > 2147483647:
+        return "int64"
+    else:
+        return "int32"
+    # TODO: following snippet is more accurate but introduces breaking
+    # changes and hence commented out
+    # if self._min_max_in_range("uint32", min, max):
+    #     return "uint32"
+    # if self._min_max_in_range("uint64", min, max):
+    #     return "uint64"
+    # if self._min_max_in_range("int32", min, max):
+    #     return "int32"
+    # if self._min_max_in_range("int64", min, max):
+    #     return "int64"
+
+
+def _get_integer_format(type_format, min, max):
+    valid_formats = ["int32", "int64", "uint32", "uint64"]
+    if type_format is not None:
+        if type_format in valid_formats:
+            if not _min_max_in_range(type_format, min, max):
+                raise Exception(
+                    "format {} is not compatible with [min,max] [{},{}]".format(
+                        type_format, min, max
+                    )
+                )
+            return type_format
+        raise Exception(
+            "unsupported format %s, supported formats are: %s",
+            type_format,
+            valid_formats,
+        )
+    return _format_from_range(min, max)
