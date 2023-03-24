@@ -403,12 +403,12 @@ class OpenApiValidator(object):
         except Exception:
             return False
 
-    def validate_integer(self, value, min, max, original_type=None):
+    def validate_integer(self, value, min, max, type_format=None):
         if value is None or not isinstance(value, int):
             return False
-        if original_type == "uint32" and value < 0:
+        if type_format == "uint32" and value < 0:
             return False
-        if original_type == "uint64" and value < 0:
+        if type_format == "uint64" and value < 0:
             return False
         if min is not None and value < min:
             return False
@@ -482,7 +482,7 @@ class OpenApiValidator(object):
             "uint32": "integer",
             "double": "float",
         }
-        original_type = type_
+        type_format = type_
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -505,7 +505,7 @@ class OpenApiValidator(object):
             )
             verdict = False
         elif type_ == "integer":
-            verdict = v_obj(value, min, max, original_type)
+            verdict = v_obj(value, min, max, type_format)
             if verdict is True:
                 return
             min_max = ""

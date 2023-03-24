@@ -209,22 +209,39 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
-    def _get_integer_format(self, format, min, max):
-        if format is not None and "uint64" in format:
-            return "uint64"
-        elif format is not None and "uint32" in format:
-            return "uint32"
-        if format is not None and "int64" in format:
-            return "int64"
-        if (min is not None and min > 4294967294) or (
-            max is not None and max > 4294967294
-        ):
-            return "uint64"
-        if (min is not None and min > 2147483647) or (
-            max is not None and max > 2147483647
-        ):
-            return "int64"
-        return "int32"
+    def _format_from_range(self, min, max):
+        if min is None and max is None:
+            return "int32"
+        if min is not None and max is not None:
+            if max >= min:
+                if min >= 0 and max <= 4294967295:
+                    return "int32"
+                    # TODO: restore correct return value
+                    # return "uint32"
+                if min >= 0 and max <= 18446744073709551615:
+                    return "int32"
+                    # TODO: restore correct return value
+                    # return "uint64"
+                if min >= -2147483648 and max <= 2147483647:
+                    return "int32"
+                if min >= -9223372036854775808 and max <= 9223372036854775807:
+                    return "int64"
+            else:
+                raise Exception("min %d cannot be less than max %d", min, max)
+        val = min if min is not None else max
+        return self._format_from_range(val, val)
+
+    def _get_integer_format(self, type_format, min, max):
+        supported_type_formats = ["int32", "int64", "uint32", "uint64"]
+        if type_format is not None:
+            if type_format in supported_type_formats:
+                return type_format
+            raise Exception(
+                "unsupported format %s, supported formats are: %s",
+                type_format,
+                supported_type_formats,
+            )
+        return self._format_from_range(min, max)
 
     def _get_field_type(self, property_name, openapi_object):
         """Convert openapi type -> protobuf type
@@ -260,10 +277,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
-                format = openapi_object.get("format")
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                return self._get_integer_format(format, min, max)
+                return self._get_integer_format(type_format, min, max)
             if type == "number":
                 if "format" in openapi_object:
                     if openapi_object["format"] == "double":
@@ -275,21 +292,11 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 item_type = self._get_field_type(
                     property_name, openapi_object["items"]
                 )
-                format = openapi_object.get("format")
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    item_type = item_type.replace("32", "64")
-                if format is not None and "int64" in format:
-                    item_type = item_type.replace("32", "64")
-                if (min is not None and min > 4294967294) or (
-                    max is not None and max > 4294967294
-                ):
-                    item_type = item_type.replace("32", "64")
-                if format is not None and "uint64" in format:
-                    item_type = item_type.replace("32", "64")
+                if item_type == "integer":
+                    item_type = self._get_integer_format(type_format, min, max)
                 return "repeated " + item_type
         elif "$ref" in openapi_object:
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
