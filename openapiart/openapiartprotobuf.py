@@ -1,6 +1,6 @@
 import subprocess
 import os
-from .openapiartplugin import OpenApiArtPlugin
+from .openapiartplugin import OpenApiArtPlugin, type_limits
 
 
 class OpenApiArtProtobuf(OpenApiArtPlugin):
@@ -262,7 +262,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     max = outer_max
                 if outer_format is not None:
                     type_format = outer_format
-                return _get_integer_format(type_format, min, max)
+                return type_limits._get_integer_format(type_format, min, max)
             if type == "number":
                 if "format" in openapi_object:
                     if (
@@ -291,7 +291,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 )
 
                 if item_type == "integer":
-                    item_type = _get_integer_format(type_format, min, max)
+                    item_type = type_limits._get_integer_format(
+                        type_format, min, max
+                    )
                 return "repeated " + item_type
         elif "$ref" in openapi_object:
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
@@ -446,75 +448,3 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation.rpc, operation.request, "", operation.response
         )
         self._write(line, indent=1)
-
-
-def _min_max_in_range(format, min, max):
-    if min is None or max is None:
-        return True
-    elif min is None or max is None:
-        if min is None:
-            min = max
-        if max is None:
-            max = min
-
-    if min > max:
-        return False
-
-    if format == "uint32":
-        return min >= 0 and max <= 4294967295
-    elif format == "uint64":
-        return min >= 0 and max <= 18446744073709551615
-    elif format == "int32":
-        return min >= -2147483648 and max <= 2147483647
-    elif format == "int64":
-        return min >= -9223372036854775808 and max <= 9223372036854775807
-    else:
-        raise Exception("unsupported integer format: {}".format(format))
-
-
-def _format_from_range(min, max):
-    if min is None and max is None:
-        return "int32"
-    elif min is None or max is None:
-        if min is None:
-            min = max
-        if max is None:
-            max = min
-
-    if max < min:
-        raise Exception("min %d cannot be less than max %d", min, max)
-
-    # TODO: this logic needs to be replaced with the one commented out below
-    if min > 2147483647 or max > 2147483647:
-        return "int64"
-    else:
-        return "int32"
-    # TODO: following snippet is more accurate but introduces breaking
-    # changes and hence commented out
-    # if self._min_max_in_range("uint32", min, max):
-    #     return "uint32"
-    # if self._min_max_in_range("uint64", min, max):
-    #     return "uint64"
-    # if self._min_max_in_range("int32", min, max):
-    #     return "int32"
-    # if self._min_max_in_range("int64", min, max):
-    #     return "int64"
-
-
-def _get_integer_format(type_format, min, max):
-    valid_formats = ["int32", "int64", "uint32", "uint64"]
-    if type_format is not None:
-        if type_format in valid_formats:
-            if not _min_max_in_range(type_format, min, max):
-                raise Exception(
-                    "format {} is not compatible with [min,max] [{},{}]".format(
-                        type_format, min, max
-                    )
-                )
-            return type_format
-        raise Exception(
-            "unsupported format %s, supported formats are: %s",
-            type_format,
-            valid_formats,
-        )
-    return _format_from_range(min, max)
