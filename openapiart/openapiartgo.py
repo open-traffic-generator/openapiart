@@ -1940,7 +1940,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 field_internal_struct=field.struct,
                 parent_internal_struct=new.struct,
                 field_external_struct=field.external_struct,
-                field_name=field.name,
                 pb_pkg_name=self._protobuf_package_name,
                 field_type=field.type,
                 internal_items_name=self._get_holder_name(field, True),
