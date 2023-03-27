@@ -176,7 +176,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "numberdouble": "float64",
             "stringbinary": "[]byte",
         }
-        self.iter_names = []
 
     def generate(self, openapi):
         self._base_url = ""
@@ -2224,11 +2223,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.external_struct = self._get_external_struct_name(
                         schema_name
                     )
-                    prefix = fluent_new.interface + field.external_struct
-                    field.iter_name = prefix + "Iter"
-                    if field.iter_name in self.iter_names:
-                        field.iter_name = prefix + field.name + "Iter"
-                    self.iter_names.append(field.iter_name)
+                    field.iter_name = (
+                        fluent_new.interface
+                        + field.name
+                        + field.external_struct
+                        + "Iter"
+                    )
                     field.adder_method = "Add() {name}".format(
                         name=field.iter_name
                     )
