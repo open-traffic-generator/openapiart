@@ -368,8 +368,6 @@ class Bundler(object):
     def _validate_required_responses(self):
         """Ensure all paths include a 200 and default response.
 
-        Print every path that does not include a 400 or 500 response.
-
         Returns
         -------
         Exception: one or more paths is missing a 200 or default response
@@ -379,23 +377,21 @@ class Bundler(object):
         required_responses = ["200", "default"]
         missing_paths = ""
         for response in responses:
-            missing = set(required_responses).difference(
-                set(response.value.keys())
-            )
-            if len(missing):
+            response_keys = [str(key) for key in response.value.keys()]
+            missing = set(required_responses).difference(set(response_keys))
+            if len(missing) > 0:
                 error_message = "{}: is missing the following required responses: {}".format(
                     response.full_path,
                     missing,
                 )
-                print(error_message)
                 missing_paths += "{}\n".format(error_message)
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
 
-        # There must be the Error structure in the yaml which should have required kind and errors
+        # There must be the Error structure in the yaml which should have required fields code and errors
         err_schema = self._get_parser("$..Error").find(self._content)
         if len(err_schema) == 0:
-            raise Exception("default must have a error schema")
+            raise Exception("Error schema does not exsist")
 
         required_err_nodes = ["code", "errors"]
         for schema in err_schema:
