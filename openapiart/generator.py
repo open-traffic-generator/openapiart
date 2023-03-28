@@ -1669,6 +1669,7 @@ class Generator:
 
     def _get_openapi_types(self, yobject):
         types = []
+        # TODO: revisit this portion for data type refactor
         if "properties" in yobject:
             for name in yobject["properties"]:
                 yproperty = yobject["properties"][name]

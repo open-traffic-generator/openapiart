@@ -1,4 +1,4 @@
-from .openapiartplugin import OpenApiArtPlugin
+from .openapiartplugin import OpenApiArtPlugin, type_limits
 import os
 import subprocess
 
@@ -2487,10 +2487,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
-            if field.min is None and "int" in field.type:
-                field.min = -(2**31 if "32" in field.type else 2**63)
-            if field.max is None and "int" in field.type:
-                field.max = (2**31 if "32" in field.type else 2**63) - 1
+            if "int" in field.type:
+                type_min, type_max = type_limits.limits.get(
+                    field.type, (None, None)
+                )
+                if field.min is None and type_min is not None:
+                    field.min = type_min
+                if field.max is None and type_max is not None:
+                    field.max = type_max
             if field.min is not None:
                 line.append("{pointer}{value} < {min}")
             if field.max is not None:
