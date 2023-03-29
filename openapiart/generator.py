@@ -268,7 +268,7 @@ class Generator:
             if response_list is None:
                 raise Exception("{} should have responses".format(method_name))
             for response_code, response_property in response_list.items():
-                if response_code == "200":
+                if str(response_code) == "200":
                     rpc.good_response_property = response_property
                     schema_obj = self._get_parser("$..schema").find(
                         response_property

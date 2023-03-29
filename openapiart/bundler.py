@@ -376,6 +376,7 @@ class Bundler(object):
         responses = self._get_parser("$..paths..responses").find(self._content)
         required_responses = ["200", "default"]
         missing_paths = ""
+        default_schema_errors = ""
         for response in responses:
             response_keys = [str(key) for key in response.value.keys()]
             missing = set(required_responses).difference(set(response_keys))
@@ -385,25 +386,54 @@ class Bundler(object):
                     missing,
                 )
                 missing_paths += "{}\n".format(error_message)
+            else:
+                default_schema = response.value["default"]
+                content = default_schema["content"]
+                if content.get("application/json") is None:
+                    default_schema_errors += (
+                        "default in %s should have content as application/json\n"
+                        % response.full_path
+                    )
+                    continue
+                ref = content["application/json"]["schema"]["$ref"]
+                if ref != "#/components/schemas/Error":
+                    default_schema_errors += (
+                        "default response in %s should point to error schema\n"
+                        % response.full_path
+                    )
+
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
+
+        if len(default_schema_errors) > 0:
+            raise Exception(default_schema_errors)
 
         # There must be the Error structure in the yaml which should have required fields code and errors
         err_schema = self._get_parser("$..Error").find(self._content)
         if len(err_schema) == 0:
             raise Exception("Error schema does not exsist")
+        elif len(err_schema) > 1:
+            raise Exception(
+                "There must be exactly one instance of Error schema"
+            )
 
         required_err_nodes = ["code", "errors"]
-        for schema in err_schema:
-            if "required" in schema.value.keys():
-                diff = set(required_err_nodes).difference(
-                    set(schema.value["required"])
-                )
-                if len(diff):
-                    raise Exception(
-                        "Error schema but have %s as required properties"
-                        % str(required_err_nodes)
-                    )
+        schema = err_schema[0]
+
+        if "required" not in schema.value.keys():
+            raise Exception(
+                "Error schema in %s must have the required field in it"
+                % schema.full_path,
+            )
+
+        diff = set(required_err_nodes).difference(
+            set(schema.value["required"])
+        )
+        if len(diff):
+            raise Exception(
+                "Error schema must have %s as required properties"
+                % str(required_err_nodes)
+            )
         return None
 
     def _validate_file(self):
