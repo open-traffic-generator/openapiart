@@ -520,9 +520,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
-                        err := {struct}.Validate()
-                        if err != nil {{
-                            return nil, api.FromError(err)
+                        if err := {struct}.Validate(); err != nil {{
+                            return nil, err
                         }}
                     """.format(
                         struct=new.struct
@@ -794,34 +793,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             )
         for rpc in self._api.external_rpc_methods:
-            error_handling = ""
-            # for response in rpc.responses:
-            #     if response.status_code.startswith("2"):
-            #         continue
-            #     error_handling += """if resp.GetStatusCode_{status_code}() != nil {{
-            #             data, _ := yaml.Marshal(resp.GetStatusCode_{status_code}())
-            #             return nil, fmt.Errorf(string(data))
-            #         }}
-            #         """.format(
-            #         status_code=response.status_code,
-            #     )
-            error_handling += """
-            eStr := fmt.Errorf("response of 200, default has not been implemented")
-            return nil, api.FromError(eStr)
-            """
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
                         return resp.ResponseBytes, nil
-                    }"""
+                    }
+                    return nil, nil"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetString_() != "" {
                         status_code_value := resp.GetString_()
                         return &status_code_value, nil
-                    }"""
+                    }
+                    return nil, nil"""
             else:
-                return_value = """if resp.Get{struct}() != nil {{
-                        return New{struct}().SetMsg(resp.Get{struct}()), nil
-                    }}""".format(
+                return_value = """ret := New{struct}()
+                    if resp.Get{struct}() != nil {{
+                        return ret.SetMsg(resp.Get{struct}()), nil
+                    }}
+
+                    return ret, nil""".format(
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
                     ),
@@ -839,7 +828,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if self._generate_version_api:
                 version_check = """
                     if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
-                        return nil, api.FromError(err)
+                        return nil, err
                     }"""
             else:
                 version_check = ""
@@ -852,19 +841,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             {http_call}
                     }}
                     if err := api.grpcConnect(); err != nil {{
-                        errObj := api.FromError(err)
-                        return nil, errObj
+                        return nil, err
                     }}
                     request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
                     resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
-                        errObj := api.FromError(err)
-                        return nil, errObj
+                        if er, ok := api.fromGrpcError(err); ok {{
+                            return nil, er
+                        }}
+                        return nil, err
                     }}
                     {return_value}
-                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
@@ -872,7 +861,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     status=status_str,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
-                    error_handling=error_handling,
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
@@ -889,8 +877,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += """err := api.fromHttpError(resp.StatusCode, bodyBytes)
-                        return nil, err"""
+                    error_handling += "return nil, api.fromHttpError(resp.StatusCode, bodyBytes)"
+
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil"""
             elif http.request_return_type == "*string":
@@ -899,25 +887,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 success_handling = """obj := api.{success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
-                        return nil, api.FromError(err)
-                    }}
-                    if err != nil {{
-                        return nil, api.FromError(err)
+                        return nil, err
                     }}
                     return obj, nil""".format(
                     success_method=success_method,
                     struct=http.request_return_type,
                 )
+            # TODO: do not hardcode 200 status code
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {request}
                     if err != nil {{
-                        return nil, api.FromError(err)
+                        return nil, err
                     }}
                     bodyBytes, err := io.ReadAll(resp.Body)
                     defer resp.Body.Close()
                     if err != nil {{
-                        return nil, api.FromError(err)
+                        return nil, err
                     }}
                     if resp.StatusCode == 200 {{
                         {success_handling}
@@ -1412,7 +1398,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write(
                 """
                 func (obj *_error) Error() string {
-                    json, _ := obj.ToJson()
+                    json, err := obj.ToJson()
+                    if err != nil {
+                        return fmt.Sprintf("could not convert Error to JSON: %v", err)
+                    }
                     return json
                 }
                 """
