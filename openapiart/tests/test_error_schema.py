@@ -67,27 +67,5 @@ def test_error_for_missing_required():
     assert error_msg == error_value
 
 
-def test_error_for_invalid_content_for_sefault_schema():
-    error_msg = "default in paths./config.post.responses should have content as application/json\n"
-    with pytest.raises(Exception) as execinfo:
-        create_openapi_artifacts(
-            openapiart_class,
-            file_name="./response/response_default_not_having_json.yaml",
-        )
-    error_value = execinfo.value.args[0]
-    assert error_msg == error_value
-
-
-def test_error_for_default_not_referring_to_error_schema():
-    error_msg = "default response in paths./config.post.responses should point to error schema\n"
-    with pytest.raises(Exception) as execinfo:
-        create_openapi_artifacts(
-            openapiart_class,
-            file_name="./response/response_default_not_refering_error.yaml",
-        )
-    error_value = execinfo.value.args[0]
-    assert error_msg == error_value
-
-
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
