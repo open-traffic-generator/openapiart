@@ -408,6 +408,8 @@ class Generator:
 
     def from_exception(self, grpc_error):
         # type: (grpc.RpcError) -> Error
+        if not isinstance(grpc_error, grpc.RpcError):
+            raise Exception("error provided is not a valid error of type grpc.RpcError")
         err = self.error()
         try:
             err.deserialize(grpc_error.details())
@@ -612,8 +614,18 @@ class Generator:
             self._write(2, "# type (Exception) -> Error")
             self._write(2, "err_obj = self.error()")
             self._write(2, "if len(exception.args) != 2:")
-            self._write(3, "err_obj.code = 500")
-            self._write(3, "err_obj.errors = [str(exception)]")
+            self._write(
+                3,
+                "raise Exception('cannot parse exception: ' + str(exception))",
+            )
+            self._write(
+                2,
+                "elif not isinstance(exception.args[0], int) or (not isinstance(exception.args[1], str) and not isinstance(exception.args[1], dict)):",
+            )
+            self._write(
+                3,
+                "raise Exception('cannot parse exception: ' + str(exception))",
+            )
             self._write(2, "else:")
             self._write(3, "try:")
             self._write(4, "err_obj.deserialize(exception.args[1])")

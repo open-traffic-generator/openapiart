@@ -386,6 +386,8 @@ class Bundler(object):
                 )
                 missing_paths += "{}\n".format(error_message)
 
+            # TODO: need to check wheather every default schema points to
+
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
 
