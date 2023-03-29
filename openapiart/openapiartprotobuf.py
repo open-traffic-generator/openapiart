@@ -437,8 +437,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             "// representation of `Error` message as an error string upon failure, ensuring"
         )
         self._write(
-            "// name of enum constants (instead of value) is present in the representation"
+            "// name of enum constants (instead of value) for `kind` property is present"
         )
+        self._write("// in the representation")
 
         self._write("service {name} {{".format(name=self.proto_service_name))
         self._write()
