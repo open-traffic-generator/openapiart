@@ -312,7 +312,7 @@ func TestGrpcErrorStructSetConfig(t *testing.T) {
 
 	// if user wants to get the json now
 	errSt, _ := api.FromError(err)
-	assert.Equal(t, errSt.Code(), int32(404))
+	assert.Equal(t, errSt.Code(), int32(13))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "returning err1")
 	assert.Equal(t, errSt.Errors()[1], "returning err2")
@@ -375,7 +375,7 @@ func TestGrpcErrorkindSetConfig(t *testing.T) {
 
 	// if user wants to get the json now
 	errSt, _ := api.FromError(err)
-	assert.Equal(t, errSt.Code(), int32(500))
+	assert.Equal(t, errSt.Code(), int32(3))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "internal err 1")
 }
@@ -417,7 +417,7 @@ func TestGrpcErrorStructUpdate(t *testing.T) {
 
 	// if user wants to get the json now
 	errSt, _ := api.FromError(err)
-	assert.Equal(t, errSt.Code(), int32(404))
+	assert.Equal(t, errSt.Code(), int32(6))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.VALIDATION)
 	assert.Equal(t, errSt.Errors()[0], "invalid1")
 }

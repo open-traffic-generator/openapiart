@@ -11,6 +11,8 @@ import (
 	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type GrpcServer struct {
@@ -71,7 +73,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		if e != nil {
 			return resp, e
 		}
-		err = fmt.Errorf(jsonStr)
+		err = status.Error(codes.InvalidArgument, jsonStr)
 	case sanity.PrefixConfig_Response_status_200.Enum().Number():
 		s.Config = req.PrefixConfig
 		resp = &sanity.SetConfigResponse{
@@ -87,7 +89,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		if e != nil {
 			return resp, e
 		}
-		err = fmt.Errorf(jsonStr)
+		err = status.Error(codes.Internal, jsonStr)
 	}
 	return resp, err
 }
@@ -121,7 +123,7 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 			if e != nil {
 				return nil, e
 			}
-			return nil, fmt.Errorf(jsonStr)
+			return nil, status.Error(codes.AlreadyExists, jsonStr)
 		} else {
 			resp := &sanity.UpdateConfigurationResponse{
 				PrefixConfig: s.Config,
