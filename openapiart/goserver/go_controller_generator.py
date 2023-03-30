@@ -272,20 +272,32 @@ class GoServerControllerGenerator(object):
                 )
                 schema = self._ctx.get_object_from_ref(schema["$ref"])
             set_errors = """
-                st, _ := status.FromError(rsp_err)
-                err := result.FromJson(st.Message())
-                if err != nil {
-                    result.Msg().Errors = []string{rsp_err.Error()}
-                }
-                result.Msg().Code = int32(status_code)
-            """
+                if rErr, ok := rsp_err.({models_prefix}Error); ok {{
+                    result = rErr
+                }} else {{
+                    result = {models_prefix}NewError()
+                    err := result.FromJson(rsp_err.Error())
+                    if err != nil {{
+                        result = nil
+                    }}
+                }}
+            """.format(
+                models_prefix=self._ctx.models_prefix,
+            )
 
             w.write_line(
                 """func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, status_code int, rsp_err error) {{
-                result := {models_prefix}New{schema}()
+                var result {models_prefix}{schema}
                 {set_errors}
-                if _, err := httpapi.WriteJSONResponse(w, status_code, result); err != nil {{
-                    log.Print(err.Error())
+                if result != nil {{
+                    if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
+                        log.Print(err.Error())
+                    }}
+                }} else {{
+                    data := []byte(rsp_err.Error())
+                    if _, err := httpapi.WriteCustomJSONResponse(w, status_code, data); err != nil {{
+                        log.Print(err.Error())
+                    }}
                 }}
             }}
             """.format(
