@@ -174,8 +174,8 @@ class GoServerControllerGenerator(object):
                         return
                     }}
                 }} else {{
-                    bodyError := errors.New(\"Request do not have any body\")
-                    ctrl.{rsp_500_error}(w, 500, bodyError)
+                    bodyError := errors.New(\"Request does not have a body\")
+                    ctrl.{rsp_500_error}(w, 400, bodyError)
                     return
                 }}
                 result, err := ctrl.handler.{operation_name}(item, r)""".format(
