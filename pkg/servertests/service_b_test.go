@@ -18,7 +18,7 @@ func TestGetAllItems(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceBItemList()
+	r := openapiart.NewServiceAbcItemList()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	items := r.Items().Items()
@@ -35,7 +35,7 @@ func TestGetSingleItem(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceBItem()
+	r := openapiart.NewServiceAbcItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "1", r.SomeId())
@@ -43,13 +43,13 @@ func TestGetSingleItem(t *testing.T) {
 	req, _ = http.NewRequest(http.MethodGet, "/api/serviceb/3", nil)
 	wr = httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
-	assert.Equal(t, http.StatusBadRequest, wr.Code) // missing support for 404
+	assert.Equal(t, http.StatusInternalServerError, wr.Code) // missing support for 404
 
 	jsonResponse, _ = io.ReadAll(wr.Body)
-	errNew := openapiart.NewCommonResponseError()
+	errNew := openapiart.NewError()
 	errFromJson := errNew.FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
-	assert.Equal(t, "not found: id '3'", errNew.Message())
+	assert.Equal(t, "not found: id '3'", errNew.Errors()[0])
 }
 
 func TestGetSingleItemLevel2(t *testing.T) {
@@ -60,7 +60,7 @@ func TestGetSingleItemLevel2(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceBItem()
+	r := openapiart.NewServiceAbcItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "aa", r.PathId())

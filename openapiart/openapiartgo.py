@@ -520,8 +520,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
-                        err := {struct}.Validate()
-                        if err != nil {{
+                        if err := {struct}.Validate(); err != nil {{
                             return nil, err
                         }}
                     """.format(
@@ -794,31 +793,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
             )
         for rpc in self._api.external_rpc_methods:
-            error_handling = ""
-            for response in rpc.responses:
-                if response.status_code.startswith("2"):
-                    continue
-                error_handling += """if resp.GetStatusCode_{status_code}() != nil {{
-                        data, _ := yaml.Marshal(resp.GetStatusCode_{status_code}())
-                        return nil, fmt.Errorf(string(data))
-                    }}
-                    """.format(
-                    status_code=response.status_code,
-                )
-            error_handling += 'return nil, fmt.Errorf("response of 200, 400, 500 has not been implemented")'
             if rpc.request_return_type == "[]byte":
-                return_value = """if resp.GetStatusCode_200() != nil {
-                        return resp.GetStatusCode_200(), nil
-                    }"""
+                return_value = """if resp.ResponseBytes != nil {
+                        return resp.ResponseBytes, nil
+                    }
+                    return nil, nil"""
             elif rpc.request_return_type == "*string":
-                return_value = """if resp.GetStatusCode_200() != "" {
-                        status_code_value := resp.GetStatusCode_200()
+                return_value = """if resp.GetString_() != "" {
+                        status_code_value := resp.GetString_()
                         return &status_code_value, nil
-                    }"""
+                    }
+                    return nil, nil"""
             else:
-                return_value = """if resp.GetStatusCode_200() != nil {{
-                        return New{struct}().SetMsg(resp.GetStatusCode_200()), nil
-                    }}""".format(
+                return_value = """ret := New{struct}()
+                    if resp.Get{struct}() != nil {{
+                        return ret.SetMsg(resp.Get{struct}()), nil
+                    }}
+
+                    return ret, nil""".format(
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
                     ),
@@ -856,10 +848,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     defer cancelFunc()
                     resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
+                        if er, ok := api.fromGrpcError(err); ok {{
+                            return nil, er
+                        }}
                         return nil, err
                     }}
                     {return_value}
-                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
@@ -867,7 +861,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     status=status_str,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
-                    error_handling=error_handling,
                     return_value=return_value,
                     http_call=rpc.http_call,
                     validate=getattr(rpc, "validate", ""),
@@ -884,31 +877,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += """if resp.StatusCode == {status_code} {{
-                            return nil, fmt.Errorf(string(bodyBytes))
-                        }}
-                        """.format(
-                        status_code=response.status_code,
-                    )
-            error_handling += (
-                'return nil, fmt.Errorf("response not implemented")'
-            )
+                    error_handling += "return nil, api.fromHttpError(resp.StatusCode, bodyBytes)"
+
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
                 return &bodyString, nil"""
             else:
-                success_handling = """obj := api.{success_method}().StatusCode200()
+                success_handling = """obj := api.{success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
-                        return nil, err
-                    }}
-                    if err != nil {{
                         return nil, err
                     }}
                     return obj, nil""".format(
                     success_method=success_method,
+                    struct=http.request_return_type,
                 )
+            # TODO: do not hardcode 200 status code
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {request}
@@ -922,8 +907,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }}
                     if resp.StatusCode == 200 {{
                         {success_handling}
+                    }} else {{
+                        {error_handling}
                     }}
-                    {error_handling}
                 }}
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
@@ -1372,6 +1358,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 interfaces.append(field.has_method)
+        if new.interface == "Error":
+            interfaces.append(
+                "// implement Error function for implementingnative Error Interface. \n Error() string"
+            )
         interface_signatures = "\n".join(interfaces)
         self._write(
             """
@@ -1402,6 +1392,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 nil_call="setNil()" if len(internal_items_nil) > 0 else "",
             )
         )
+
+        # error-ux change for implement error fucntion inside Error struct
+        if new.interface == "Error":
+            self._write(
+                """
+                func (obj *_error) Error() string {
+                    json, err := obj.ToJson()
+                    if err != nil {
+                        return fmt.Sprintf("could not convert Error to JSON: %v", err)
+                    }
+                    return json
+                }
+                """
+            )
+
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_has(new, field)
@@ -1611,27 +1616,43 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if set_enum_choice is not None
                 else "",
             )
-        self._write(
-            """
-            {description}\n// {fieldname} returns a {fieldtype}
-            func (obj *{struct}) {getter_method} {{
-                {body}
-            }}
-            """.format(
-                fieldname=self._get_external_struct_name(field.name),
-                struct=new.struct,
-                getter_method=field.getter_method,
-                body=body,
-                description=field.description,
-                fieldtype=field.type,
-                # TODO: restore behavior
-                # status=""
-                # if field.status is None
-                # else "obj.{func}(`{msg}`)".format(
-                #     func=field.status, msg=field.status_msg
-                # ),
+        if field.name == "ResponseString":
+            self._write(
+                """
+                {description}\n// {fieldname} returns a {fieldtype}
+                func (obj *{struct}) {getter_method} {{
+                    return obj.obj.String_
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    struct=new.struct,
+                    getter_method=field.getter_method,
+                    description=field.description,
+                    fieldtype=field.type,
+                )
             )
-        )
+        else:
+            self._write(
+                """
+                {description}\n// {fieldname} returns a {fieldtype}
+                func (obj *{struct}) {getter_method} {{
+                    {body}
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    struct=new.struct,
+                    getter_method=field.getter_method,
+                    body=body,
+                    description=field.description,
+                    fieldtype=field.type,
+                    # TODO: restore behavior
+                    # status=""
+                    # if field.status is None
+                    # else "obj.{func}(`{msg}`)".format(
+                    #     func=field.status, msg=field.status_msg
+                    # ),
+                )
+            )
 
     def _write_field_setter(self, new, field, set_nil):
         if field.setter_method is None:
@@ -1819,31 +1840,49 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface=new.interface,
                 enum=field.setChoiceValue,
             )
-        self._write(
-            """
-            {description}\n // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object
-            func (obj *{newstruct}) {setter_method} {{
-                {set_choice}
-                {body}
-                return obj
-            }}
-            """.format(
-                fieldname=self._get_external_struct_name(field.name),
-                newstruct=new.struct,
-                setter_method=field.setter_method,
-                body=body,
-                description=field.description,
-                fieldtype=field.type,
-                fieldstruct=new.interface,
-                set_choice=set_choice,
-                # TODO: restore behavior
-                # status=""
-                # if field.status is None
-                # else "obj.{func}(`{msg}`)".format(
-                #     func=field.status, msg=field.status_msg
-                # ),
+        if field.name == "ResponseString":
+            self._write(
+                """
+                {description}\n // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object
+                func (obj *{newstruct}) {setter_method} {{
+                    obj.obj.String_ = value
+                    return obj
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    newstruct=new.struct,
+                    setter_method=field.setter_method,
+                    description=field.description,
+                    fieldtype=field.type,
+                    fieldstruct=new.interface,
+                )
             )
-        )
+        else:
+            self._write(
+                """
+                {description}\n // Set{fieldname} sets the {fieldtype} value in the {fieldstruct} object
+                func (obj *{newstruct}) {setter_method} {{
+                    {set_choice}
+                    {body}
+                    return obj
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    newstruct=new.struct,
+                    setter_method=field.setter_method,
+                    body=body,
+                    description=field.description,
+                    fieldtype=field.type,
+                    fieldstruct=new.interface,
+                    set_choice=set_choice,
+                    # TODO: restore behavior
+                    # status=""
+                    # if field.status is None
+                    # else "obj.{func}(`{msg}`)".format(
+                    #     func=field.status, msg=field.status_msg
+                    # ),
+                )
+            )
 
     def _write_field_adder(self, new, field):
         if field.adder_method is None:
@@ -1951,20 +1990,35 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _write_field_has(self, new, field):
         if field.has_method is None:
             return
-        self._write(
-            """
-            {description}\n// {fieldname} returns a {fieldtype}
-            func (obj *{struct}) Has{fieldname}() bool {{
-                return obj.obj.{internal_field_name} != nil
-            }}
-            """.format(
-                fieldname=self._get_external_struct_name(field.name),
-                struct=new.struct,
-                description=field.description,
-                fieldtype=field.type,
-                internal_field_name=field.name,
+        if field.name == "ResponseString":
+            self._write(
+                """
+                {description}\n// {fieldname} returns a {fieldtype}
+                func (obj *{struct}) Has{fieldname}() bool {{
+                    return obj.obj.String_ != ""
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    struct=new.struct,
+                    description=field.description,
+                    fieldtype=field.type,
+                )
             )
-        )
+        else:
+            self._write(
+                """
+                {description}\n// {fieldname} returns a {fieldtype}
+                func (obj *{struct}) Has{fieldname}() bool {{
+                    return obj.obj.{internal_field_name} != nil
+                }}
+                """.format(
+                    fieldname=self._get_external_struct_name(field.name),
+                    struct=new.struct,
+                    description=field.description,
+                    fieldtype=field.type,
+                    internal_field_name=field.name,
+                )
+            )
 
     def _build_setters_getters(self, fluent_new):
         """Add new FluentField objects for each interface field"""
@@ -1995,6 +2049,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
+
+            if property_name == "status_code_default":
+                continue
 
             if property_schema.get("x-status", {}).get("status") in [
                 "deprecated",
@@ -2121,6 +2178,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=fluent_new.interface,
                 )
             else:
+                if field.name == "StatusCode_200":
+                    if field.type == "[]byte":
+                        field.name = "ResponseBytes"
+                    elif field.type == "string":
+                        field.name = "ResponseString"
+                    elif "$ref" in property_schema:
+                        schema_name = self._get_schema_object_name_from_ref(
+                            property_schema["$ref"]
+                        )
+                        field.name = self._get_external_struct_name(
+                            schema_name
+                        )
+
                 field.getter_method = "{name}() {ftype}".format(
                     name=self._get_external_struct_name(field.name),
                     ftype=field.type,
@@ -2179,7 +2249,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if (
                 field.isOptional
                 and field.isPointer
-                or "StatusCode" in field.name
+                or "status_code" in property_name
             ):
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
@@ -3042,3 +3112,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     parent_schema=property_name,
                 )
             return status_msg
+
+    def _handle_response_fields(self, field, property_name, property_schema):
+        pass

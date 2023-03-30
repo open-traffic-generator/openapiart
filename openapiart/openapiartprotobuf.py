@@ -168,10 +168,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             for response_field in response_fields:
+                if response_field.type == "Error":
+                    continue
                 self._write(
-                    "optional {} {} = {};".format(
+                    "{} {} = {};".format(
                         response_field.type,
-                        response_field.name,
+                        self._lowercase(response_field.type)
+                        if response_field.type != "bytes"
+                        else "response_bytes",
                         response_field.field_uid,
                     ),
                     indent=1,
@@ -424,9 +428,19 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _write_service(self):
         self._write()
         paths_object = self._openapi["paths"]
+        self._write(self._justify_desc(self._get_description(paths_object)))
+        self._write("//")
         self._write(
-            self._justify_desc(self._get_description(paths_object), indent=1)
+            "// For all RPCs defined in this service, API Server SHOULD provide JSON"
         )
+        self._write(
+            "// representation of `Error` message as an error string upon failure, ensuring"
+        )
+        self._write(
+            "// name of enum constants (instead of value) for `kind` property is present"
+        )
+        self._write("// in the representation")
+
         self._write("service {name} {{".format(name=self.proto_service_name))
         self._write()
         for url, path_object in self._openapi["paths"].items():

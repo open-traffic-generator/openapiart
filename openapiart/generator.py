@@ -32,6 +32,7 @@ class FluentRpc(object):
         self.request_class = None
         self.request_property = None
         self.good_response_type = None  # considering 200-ok
+        self.proto_field_name = None  # introduced in error-ux changes
         self.bad_responses = []  # != 200-ok
         self.description = None
         self.http_method = None
@@ -262,51 +263,36 @@ class Generator:
                     rpc.request_class = class_name
 
             response_type = None
+            proto_name = None
             response_list = operation.get("responses")
             if response_list is None:
                 raise Exception("{} should have responses".format(method_name))
             for response_code, response_property in response_list.items():
-                if int(response_code) == 200:
+                if str(response_code) == "200":
                     rpc.good_response_property = response_property
                     schema_obj = self._get_parser("$..schema").find(
                         response_property
                     )
-                    if len(schema_obj) == 0:
-                        (
-                            response_name,
-                            _,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            response_property
-                        )
-                        if response_name is not None:
-                            response = self._get_parser('$.."$ref"').find(
-                                self._get_object_from_ref(ref)
-                            )
-                            if len(response) > 0:
-                                (
-                                    _,
-                                    response_type,
-                                    _,
-                                    ref,
-                                ) = self._get_object_property_class_names(
-                                    response[0].value
-                                )
-                                if ref:
-                                    refs.append(ref)
-                    else:
-                        (
-                            _,
-                            response_type,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            schema_obj[0].value
-                        )
-                        if ref:
-                            refs.append(ref)
+                    (
+                        response_name,
+                        response_type,
+                        class_name,
+                        ref,
+                        proto_name,
+                    ) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                 else:
+                    schema_obj = self._get_parser("$..schema").find(
+                        response_property
+                    )
+                    (_, _, _, ref, _) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                     rpc.bad_responses.append(str(response_code))
 
             if response_type is None:
@@ -315,6 +301,7 @@ class Generator:
                 pass
 
             rpc.good_response_type = response_type
+            rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
             # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
@@ -419,6 +406,18 @@ class Generator:
             payload = json.dumps(payload)
         return payload
 
+    def from_exception(self, grpc_error):
+        # type: (grpc.RpcError) -> Error
+        err = None
+        if isinstance(grpc_error, grpc.RpcError):
+            err = self.error()
+            try:
+                err.deserialize(grpc_error.details())
+            except Exception as e:
+                err.code = 2 # code for unknown error
+                err.errors = [grpc_error.details()]
+        return err
+
     @property
     def request_timeout(self):
         \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
@@ -510,21 +509,24 @@ class Generator:
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
-                self._write(
-                    2, 'status_code_200 = response.get("status_code_200")'
-                )
-                self._write(2, "if status_code_200 is not None:")
                 if return_byte:
-                    self._write(
-                        3, "return io.BytesIO(res_obj.status_code_200)"
-                    )
+                    self._write(2, 'bytes = response.get("response_bytes")')
+                    self._write(2, "if bytes is not None:")
+                    self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
+                    self._write(
+                        2,
+                        'result = response.get("%s")'
+                        % rpc_method.proto_field_name,
+                    )
+                    self._write(2, "if result is not None:")
+
                     if including_default:
-                        self._write(3, "if len(status_code_200) == 0:")
+                        self._write(3, "if len(result) == 0:")
+                        self._write(4, "result = json_format.MessageToDict(")
                         self._write(
-                            4, "status_code_200 = json_format.MessageToDict("
+                            5, "res_obj.%s," % rpc_method.proto_field_name
                         )
-                        self._write(5, "res_obj.status_code_200,")
                         self._write(5, "preserving_proto_field_name=True,")
                         self._write(5, "including_default_value_fields=True")
                         self._write(4, ")")
@@ -533,23 +535,26 @@ class Generator:
                         "return self.%s().deserialize("
                         % rpc_method.good_response_type,
                     )
-                    self._write(4, "status_code_200")
+                    self._write(4, "result")
                     self._write(3, ")")
                 else:
-                    self._write(3, 'return response.get("status_code_200")')
-                for rsp_code in rpc_method.bad_responses:
-                    self._write(
-                        2,
-                        """if response.get("status_code_{code}") is not None:""".format(
-                            code=rsp_code
-                        ),
-                    )
-                    self._write(
-                        3,
-                        """raise Exception({code}, response.get("status_code_{code}"))""".format(
-                            code=rsp_code
-                        ),
-                    )
+                    self._write(2, 'resp_str = response.get("string")')
+                    self._write(2, "if resp_str is not None:")
+                    self._write(3, 'return response.get("string")')
+                # bad responses for now only has default which is not needed to be listed below
+                # for rsp_code in rpc_method.bad_responses:
+                #     self._write(
+                #         2,
+                #         """if response.get("status_code_{code}") is not None:""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
+                #     self._write(
+                #         3,
+                #         """raise Exception({code}, response.get("status_code_{code}"))""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
 
     def _process_good_response(self, rpc_method):
         including_default = False
@@ -604,6 +609,23 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
+            self._write()
+            self._write(1, "def from_exception(self, exception):")
+            self._write(2, "# type (Exception) -> Error")
+            self._write(2, "err_obj = None")
+            self._write(2, "if len(exception.args) != 2:")
+            self._write(3, "return err_obj")
+            self._write(2, "if isinstance(exception.args[0], int):")
+            self._write(3, "err_obj = self.error()")
+            self._write(3, "err_obj.code = exception.args[0]")
+            self._write(3, "if not isinstance(exception.args[1], dict):")
+            self._write(4, "err_obj.errors = [str(exception.args[1])]")
+            self._write(3, "else:")
+            self._write(4, "try:")
+            self._write(5, "err_obj.deserialize(exception.args[1])")
+            self._write(4, "except Exception as e:")
+            self._write(5, "err_obj.errors = [exception.args[1]]")
+            self._write(2, "return err_obj")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -1899,3 +1921,61 @@ class Generator:
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
+
+    def _camelcase_to_snakecase(self, value):
+        word = ""
+        if value is None:
+            return word
+
+        insert_underscore = False
+
+        for c in value:
+            if c.isupper() or c.isdigit():
+                if insert_underscore:
+                    word += "_" + c.lower()
+                    insert_underscore = False
+                else:
+                    word += c.lower()
+            else:
+                word += c
+                insert_underscore = True
+
+        return word
+
+    def _get_ref_from_response(self, schema_obj, response_property):
+        ref = None
+        response_name = None
+        response_type = None
+        class_name = None
+        if len(schema_obj) == 0:
+            (
+                response_name,
+                _,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(response_property)
+            proto_name = self._camelcase_to_snakecase(class_name)
+            if response_name is not None:
+                response = self._get_parser('$.."$ref"').find(
+                    self._get_object_from_ref(ref)
+                )
+                if len(response) > 0:
+                    (
+                        _,
+                        response_type,
+                        class_name,
+                        ref,
+                    ) = self._get_object_property_class_names(
+                        response[0].value
+                    )
+                    proto_name = self._camelcase_to_snakecase(class_name)
+        else:
+            (
+                _,
+                response_type,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(schema_obj[0].value)
+            proto_name = self._camelcase_to_snakecase(class_name)
+
+        return response_name, response_type, class_name, ref, proto_name
