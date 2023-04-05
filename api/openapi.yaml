@@ -89,8 +89,6 @@ components:
           $ref: "#/components/schemas/BoundaryValArray"
         enum_val_array:
           $ref: "#/components/schemas/EnumValArray"
-        null_val:
-          $ref: "#/components/schemas/NullVal"
         nested_ref_object:
           $ref: "#/components/shcemas/NestedRefObject"
 
@@ -310,14 +308,6 @@ components:
             bool_val:
               type: boolean
               default: true
-
-    NullVal:
-      type: object
-      properties:
-        string_null_val:
-          type:
-            - string
-            - 'null'
     
     NestedRefObject:
       type: object
