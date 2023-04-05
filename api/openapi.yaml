@@ -89,6 +89,8 @@ components:
           $ref: "#/components/schemas/BoundaryValArray"
         enum_val_array:
           $ref: "#/components/schemas/EnumValArray"
+        nested_ref_object:
+          $ref: "#/components/shcemas/NestedRefObject"
 
     ExtendedFeatures:
       type: object
@@ -306,3 +308,28 @@ components:
             bool_val:
               type: boolean
               default: true
+    
+    NestedRefObject:
+      type: object
+      properties:
+        name:
+          type: string
+        intermediate_node:
+          $ref: "#/components/schemas/IntermediateRefObject"
+
+    IntermediateRefObject:
+      type: object
+      properties:
+        name:
+          type: string
+        leaf_node:
+          $ref: "#/components/schemas/LeafVal"
+    
+    LeafVal:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: integer  
+    
