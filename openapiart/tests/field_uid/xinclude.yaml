@@ -1,7 +1,7 @@
 paths:
   /config:
     post:
-      tags: ['Bundler']
+      tags: ["Bundler"]
       operationId: set_config
       description: >-
         Sets configuration resources.
@@ -10,19 +10,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Field.Config'
+              $ref: "#/components/schemas/Field.Config"
       responses:
-        '200':
+        "200":
           x-field-uid: 1
-          description: 'Standard success binary payload'
+          description: "Standard success binary payload"
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
-        '400':
+        "400":
           x-field-uid: 2
-          description: 'error 4xx'
+          description: "error 4xx"
           content:
             application/json:
               schema:
@@ -33,9 +33,9 @@ paths:
                     items:
                       type: string
                     x-field-uid: 1
-        '500':
+        "500":
           x-field-uid: 4
-          description: 'error 5xx'
+          description: "error 5xx"
           content:
             application/json:
               schema:
@@ -50,9 +50,9 @@ components:
   schemas:
     Field.Config:
       x-include:
-        - '#/components/schemas/Global.Config'
+        - "#/components/schemas/Global.Config"
       type: object
-      x-reserved-field-uids: [2,3]
+      x-reserved-field-uids: [2, 3]
       description: |-
         This is a field uid object
       properties:
@@ -76,7 +76,7 @@ components:
         fieldenum:
           type: string
           x-field-uid: 4
-          x-reserved-field-uids: [2,4]
+          x-reserved-field-uids: [2, 4]
           x-enum:
             enum1:
               x-field-uid: 1
@@ -92,17 +92,15 @@ components:
             maxenum:
               x-field-uid: 536870912
         a:
-          x-status:
-            status: under-review
-            additional_information: property under review
+          x-status: 
+            status: under_review
           description: |-
             Small single line description
           type: string
           x-field-uid: 7
         b:
-          x-status:
+          x-status: 
             status: deprecated
-            additional_information: property under review
           description: |-
             Longer multi-line description
             Second line is here

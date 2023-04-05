@@ -19,6 +19,15 @@ class OpenApiArtPlugin(object):
         self._protobuf_package_name = kwargs["protobuf_package_name"]
         self._protobuf_file_name = kwargs["protobuf_package_name"]
         self._go_sdk_package_dir = kwargs["go_sdk_package_dir"]
+        self._generate_version_api = kwargs.get("generate_version_api")
+        if self._generate_version_api is None:
+            self._generate_version_api = False
+        self._api_version = kwargs.get("api_version")
+        if self._api_version is None:
+            self._api_version = ""
+        self._sdk_version = kwargs.get("sdk_version")
+        if self._sdk_version is None:
+            self._sdk_version = ""
         self._go_sdk_package_name = (
             None
             if "go_sdk_package_name" not in kwargs
@@ -78,3 +87,80 @@ class OpenApiArtPlugin(object):
                 + " */"
             )
         return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)
+
+
+class type_limits(object):
+
+    limits = {
+        "int32": (-2147483648, 2147483647),
+        "uint32": (0, 4294967295),
+        "int64": (-9223372036854775808, 9223372036854775807),
+        "uint64": (-0, 18446744073709551615),
+    }
+
+    @classmethod
+    def _min_max_in_range(cls, format, min, max):
+        if min is None or max is None:
+            return True
+        elif min is None or max is None:
+            if min is None:
+                min = max
+            if max is None:
+                max = min
+
+        if min > max:
+            return False
+
+        if format in cls.limits:
+            type_min, type_max = cls.limits[format]
+            return min >= type_min and max <= type_max
+        else:
+            raise Exception("unsupported integer format: {}".format(format))
+
+    @classmethod
+    def _format_from_range(cls, min, max):
+        if min is None and max is None:
+            return "int32"
+        elif min is None or max is None:
+            if min is None:
+                min = max
+            if max is None:
+                max = min
+
+        if max < min:
+            raise Exception("min %d cannot be less than max %d", min, max)
+
+        # TODO: this logic needs to be replaced with the one commented out below
+        if min > 2147483647 or max > 2147483647:
+            return "int64"
+        else:
+            return "int32"
+        # TODO: following snippet is more accurate but introduces breaking
+        # changes and hence commented out
+        # if self._min_max_in_range("uint32", min, max):
+        #     return "uint32"
+        # if self._min_max_in_range("uint64", min, max):
+        #     return "uint64"
+        # if self._min_max_in_range("int32", min, max):
+        #     return "int32"
+        # if self._min_max_in_range("int64", min, max):
+        #     return "int64"
+
+    @classmethod
+    def _get_integer_format(cls, type_format, min, max):
+        valid_formats = ["int32", "int64", "uint32", "uint64"]
+        if type_format is not None:
+            if type_format in valid_formats:
+                if not cls._min_max_in_range(type_format, min, max):
+                    raise Exception(
+                        "format {} is not compatible with [min,max] [{},{}]".format(
+                            type_format, min, max
+                        )
+                    )
+                return type_format
+            raise Exception(
+                "unsupported format %s, supported formats are: %s",
+                type_format,
+                valid_formats,
+            )
+        return cls._format_from_range(min, max)

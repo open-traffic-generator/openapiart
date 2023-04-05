@@ -8,6 +8,8 @@ TBD:
 - docstrings
 - type checking
 """
+from email import message
+from logging import warning
 import sys
 import yaml
 import os
@@ -30,6 +32,7 @@ class FluentRpc(object):
         self.request_class = None
         self.request_property = None
         self.good_response_type = None  # considering 200-ok
+        self.proto_field_name = None  # introduced in error-ux changes
         self.bad_responses = []  # != 200-ok
         self.description = None
         self.http_method = None
@@ -49,6 +52,9 @@ class Generator:
         protobuf_package_name,
         output_dir=None,
         extension_prefix=None,
+        generate_version_api=None,
+        api_version=None,
+        sdk_version=None,
     ):
         self._parsers = {}
         self._base_url = ""
@@ -68,6 +74,15 @@ class Generator:
         self._output_file = package_name
         self._docs_dir = os.path.join(self._src_dir, "..", "docs")
         self._deprecated_properties = {}
+        self._generate_version_api = generate_version_api
+        if self._generate_version_api is None:
+            self._generate_version_api = False
+        self._api_version = api_version
+        if self._api_version is None:
+            self._api_version = ""
+        self._sdk_version = sdk_version
+        if self._sdk_version is None:
+            self._sdk_version = ""
         self._get_openapi_file()
         # self._plugins = self._load_plugins()
 
@@ -176,7 +191,6 @@ class Generator:
         self._write_http_api_class(methods)
         self._write_rpc_api_class(rpc_methods)
         self._write_init()
-        self._write_deprecator()
         return self
 
     def _get_base_url(self):
@@ -249,51 +263,36 @@ class Generator:
                     rpc.request_class = class_name
 
             response_type = None
+            proto_name = None
             response_list = operation.get("responses")
             if response_list is None:
                 raise Exception("{} should have responses".format(method_name))
             for response_code, response_property in response_list.items():
-                if int(response_code) == 200:
+                if str(response_code) == "200":
                     rpc.good_response_property = response_property
                     schema_obj = self._get_parser("$..schema").find(
                         response_property
                     )
-                    if len(schema_obj) == 0:
-                        (
-                            response_name,
-                            _,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            response_property
-                        )
-                        if response_name is not None:
-                            response = self._get_parser('$.."$ref"').find(
-                                self._get_object_from_ref(ref)
-                            )
-                            if len(response) > 0:
-                                (
-                                    _,
-                                    response_type,
-                                    _,
-                                    ref,
-                                ) = self._get_object_property_class_names(
-                                    response[0].value
-                                )
-                                if ref:
-                                    refs.append(ref)
-                    else:
-                        (
-                            _,
-                            response_type,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            schema_obj[0].value
-                        )
-                        if ref:
-                            refs.append(ref)
+                    (
+                        response_name,
+                        response_type,
+                        class_name,
+                        ref,
+                        proto_name,
+                    ) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                 else:
+                    schema_obj = self._get_parser("$..schema").find(
+                        response_property
+                    )
+                    (_, _, _, ref, _) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                     rpc.bad_responses.append(str(response_code))
 
             if response_type is None:
@@ -302,13 +301,15 @@ class Generator:
                 pass
 
             rpc.good_response_type = response_type
+            rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
+            # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
                 "x-status"
-            ].get("status") in ["deprecated", "under-review"]:
+            ].get("status") in ["deprecated", "under_review"]:
                 rpc.x_status = (
                     path["operation"]["x-status"]["status"],
-                    path["operation"]["x-status"]["additional_information"],
+                    path["operation"]["x-status"]["information"],
                 )
             methods.append(
                 {
@@ -320,14 +321,13 @@ class Generator:
                     "url": self._base_url + path["url"],
                     "description": self._get_description(operation),
                     "response_type": response_type,
+                    # TODO: restore behavior
                     "x_status": (
                         path["operation"]["x-status"]["status"],
-                        path["operation"]["x-status"][
-                            "additional_information"
-                        ],
+                        path["operation"]["x-status"]["information"],
                     )
                     if path["operation"].get("x-status", {}).get("status")
-                    in ["deprecated", "under-review"]
+                    in ["deprecated", "under_review"]
                     else None,
                 }
             )
@@ -406,6 +406,18 @@ class Generator:
             payload = json.dumps(payload)
         return payload
 
+    def from_exception(self, grpc_error):
+        # type: (grpc.RpcError) -> Error
+        err = None
+        if isinstance(grpc_error, grpc.RpcError):
+            err = self.error()
+            try:
+                err.deserialize(grpc_error.details())
+            except Exception as e:
+                err.code = 2 # code for unknown error
+                err.errors = [grpc_error.details()]
+        return err
+
     @property
     def request_timeout(self):
         \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
@@ -436,17 +448,20 @@ class Generator:
             self._write(0, class_code)
             for rpc_method in rpc_methods:
                 self._write()
+                status_msg = ""
                 if rpc_method.x_status is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=rpc_method.x_status[0].replace("-", "_")
-                        ),
+                    status_msg = "%s api is %s, %s" % (
+                        rpc_method.method,
+                        rpc_method.x_status[0],
+                        rpc_method.x_status[1],
                     )
                     key = "{}.{}".format("GrpcApi", rpc_method.method)
                     self._deprecated_properties[key] = rpc_method.x_status[1]
+
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
+                    if status_msg != "":
+                        self._write(2, "self.add_warnings('%s')" % status_msg)
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
@@ -461,10 +476,19 @@ class Generator:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
+
+                    if status_msg != "":
+                        self._write(2, "self.add_warnings('%s')" % status_msg)
+
                     self._write(2, "pb_obj = json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
                     self._write(2, ")")
+                    if (
+                        self._generate_version_api
+                        and rpc_method.method != "get_version"
+                    ):
+                        self._write(2, "self._do_version_check_once()")
                     "%s=pb_obj" % rpc_method.request_property
                     self._write(
                         2,
@@ -485,21 +509,24 @@ class Generator:
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
-                self._write(
-                    2, 'status_code_200 = response.get("status_code_200")'
-                )
-                self._write(2, "if status_code_200 is not None:")
                 if return_byte:
-                    self._write(
-                        3, "return io.BytesIO(res_obj.status_code_200)"
-                    )
+                    self._write(2, 'bytes = response.get("response_bytes")')
+                    self._write(2, "if bytes is not None:")
+                    self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
+                    self._write(
+                        2,
+                        'result = response.get("%s")'
+                        % rpc_method.proto_field_name,
+                    )
+                    self._write(2, "if result is not None:")
+
                     if including_default:
-                        self._write(3, "if len(status_code_200) == 0:")
+                        self._write(3, "if len(result) == 0:")
+                        self._write(4, "result = json_format.MessageToDict(")
                         self._write(
-                            4, "status_code_200 = json_format.MessageToDict("
+                            5, "res_obj.%s," % rpc_method.proto_field_name
                         )
-                        self._write(5, "res_obj.status_code_200,")
                         self._write(5, "preserving_proto_field_name=True,")
                         self._write(5, "including_default_value_fields=True")
                         self._write(4, ")")
@@ -508,23 +535,26 @@ class Generator:
                         "return self.%s().deserialize("
                         % rpc_method.good_response_type,
                     )
-                    self._write(4, "status_code_200")
+                    self._write(4, "result")
                     self._write(3, ")")
                 else:
-                    self._write(3, 'return response.get("status_code_200")')
-                for rsp_code in rpc_method.bad_responses:
-                    self._write(
-                        2,
-                        """if response.get("status_code_{code}") is not None:""".format(
-                            code=rsp_code
-                        ),
-                    )
-                    self._write(
-                        3,
-                        """raise Exception({code}, response.get("status_code_{code}"))""".format(
-                            code=rsp_code
-                        ),
-                    )
+                    self._write(2, 'resp_str = response.get("string")')
+                    self._write(2, "if resp_str is not None:")
+                    self._write(3, 'return response.get("string")')
+                # bad responses for now only has default which is not needed to be listed below
+                # for rsp_code in rpc_method.bad_responses:
+                #     self._write(
+                #         2,
+                #         """if response.get("status_code_{code}") is not None:""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
+                #     self._write(
+                #         3,
+                #         """raise Exception({code}, response.get("status_code_{code}"))""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
 
     def _process_good_response(self, rpc_method):
         including_default = False
@@ -579,17 +609,28 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
+            self._write()
+            self._write(1, "def from_exception(self, exception):")
+            self._write(2, "# type (Exception) -> Error")
+            self._write(2, "err_obj = None")
+            self._write(2, "if len(exception.args) != 2:")
+            self._write(3, "return err_obj")
+            self._write(2, "if isinstance(exception.args[0], int):")
+            self._write(3, "err_obj = self.error()")
+            self._write(3, "err_obj.code = exception.args[0]")
+            self._write(3, "if not isinstance(exception.args[1], dict):")
+            self._write(4, "err_obj.errors = [str(exception.args[1])]")
+            self._write(3, "else:")
+            self._write(4, "try:")
+            self._write(5, "err_obj.deserialize(exception.args[1])")
+            self._write(4, "except Exception as e:")
+            self._write(5, "err_obj.errors = [exception.args[1]]")
+            self._write(2, "return err_obj")
 
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
                 if method["x_status"] is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=method["x_status"][0].replace("-", "_")
-                        ),
-                    )
                     key = "{}.{}".format("HttpApi", method["name"])
                     self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
@@ -607,6 +648,20 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
+
+                if method["x_status"] is not None:
+                    status_msg = "%s api is %s, %s" % (
+                        method["name"],
+                        method["x_status"][0],
+                        method["x_status"][1],
+                    )
+                    self._write(2, "self.add_warnings('%s')" % status_msg)
+
+                if (
+                    self._generate_version_api
+                    and method["name"] != "get_version"
+                ):
+                    self._write(2, "self._do_version_check_once()")
 
                 self._write(2, "return self._transport.send_recv(")
                 self._write(3, '"%s",' % method["http_method"])
@@ -643,21 +698,37 @@ class Generator:
             self._write()
             self._write(1, "__warnings__ = []")
             self._write(1, "def __init__(self, **kwargs):")
-            self._write(2, "pass")
+            if self._generate_version_api:
+                self._write(2, "self._version_meta = self.version()")
+                self._write(
+                    2,
+                    'self._version_meta.api_spec_version = "{}"'.format(
+                        self._api_version
+                    ),
+                )
+                self._write(
+                    2,
+                    'self._version_meta.sdk_version = "{}"'.format(
+                        self._sdk_version
+                    ),
+                )
+                self._write(
+                    2, 'self._version_check = kwargs.get("version_check")'
+                )
+                self._write(2, "if self._version_check is None:")
+                self._write(3, "self._version_check = False")
+                self._write(2, "self._version_check_err = None")
+            else:
+                self._write(2, "pass")
+
+            self._write()
+            self._write(1, "def add_warnings(self, msg):")
+            self._write(2, "print('[WARNING]: %s' % msg)")
+            self._write(2, "self.__warnings__.append(msg)")
+
             for method in methods:
                 print("generating method %s" % method["name"])
                 self._write()
-                if method["x_status"] is not None:
-                    self._write(
-                        1,
-                        "@OpenApiStatus.{func}".format(
-                            func=method["x_status"][0].replace("-", "_")
-                        ),
-                    )
-                    key = "{}.{}".format(
-                        "%s" % factory_class_name, method["name"]
-                    )
-                    self._deprecated_properties[key] = method["x_status"][1]
                 self._write(
                     1,
                     "def %s(%s):"
@@ -696,7 +767,7 @@ class Generator:
             self._write()
             self._write(1, "def close(self):")
             self._write(2, "pass")
-            self._write()
+            # self._write()
             # self._write(1, "def get_api_warnings(self):")
             # self._write(2, "return openapi_warnings")
             # self._write()
@@ -707,6 +778,93 @@ class Generator:
             # self._write(3, "del openapi_warnings[:]")
             # self._write(2, "else:")
             # self._write(3, "openapi_warnings.clear()")
+            self._generate_version_api_methods()
+
+    def _generate_version_api_methods(self):
+        if not self._generate_version_api:
+            return
+
+        self._write(
+            indent=1,
+            line="""def _check_client_server_version_compatibility(
+        self, client_ver, server_ver, component_name
+    ):
+        try:
+            c = semantic_version.Version(client_ver)
+        except Exception as e:
+            raise AssertionError(
+                "Client {} version '{}' is not a valid semver: {}".format(
+                    component_name, client_ver, e
+                )
+            )
+
+        try:
+            s = semantic_version.SimpleSpec(server_ver)
+        except Exception as e:
+            raise AssertionError(
+                "Server {} version '{}' is not a valid semver: {}".format(
+                    component_name, server_ver, e
+                )
+            )
+
+
+        err = "Client {} version '{}' is not semver compatible with Server {} version '{}'".format(
+            component_name, client_ver, component_name, server_ver
+        )
+
+        if not s.match(c):
+            raise Exception(err)
+
+    def get_local_version(self):
+        return self._version_meta
+
+    def get_remote_version(self):
+        return self.get_version()
+
+    def check_version_compatibility(self):
+        comp_err, api_err = self._do_version_check()
+        if comp_err is not None:
+            raise comp_err
+        if api_err is not None:
+            raise api_err
+
+    def _do_version_check(self):
+        local = self.get_local_version()
+        try:
+            remote = self.get_remote_version()
+        except Exception as e:
+            return None, e
+
+        try:
+            self._check_client_server_version_compatibility(
+                local.api_spec_version, remote.api_spec_version, "API spec"
+            )
+        except Exception as e:
+            msg = "client SDK version '{}' is not compatible with server SDK version '{}'".format(
+                local.sdk_version, remote.sdk_version
+            )
+            return Exception("{}: {}".format(msg, str(e))), None
+
+        return None, None
+
+    def _do_version_check_once(self):
+        if not self._version_check:
+            return
+
+        if self._version_check_err is not None:
+            raise self._version_check_err
+
+        comp_err, api_err = self._do_version_check()
+        if comp_err is not None:
+            self._version_check_err = comp_err
+            raise comp_err
+        if api_err is not None:
+            self._version_check_err = None
+            raise api_err
+
+        self._version_check = False
+        self._version_check_err = None""",
+        )
 
     def _get_object_property_class_names(self, ref):
         """Returns: `Tuple(object_name, property_name, class_name, ref_name)`"""
@@ -870,6 +1028,21 @@ class Generator:
                 if len(enum.value) > 0:
                     self._write()
 
+            # find x-status codes
+            status = self._get_status_dict(schema_object, class_name)
+            if len(status) > 0:
+                self._write(1, "_STATUS = {")
+                for name, value in status.items():
+                    if isinstance(name, (list, bool, int, float, tuple)):
+                        self._write(2, "%s: '%s'," % (name, value))
+                    else:
+                        self._write(2, "'%s': '%s'," % (name, value))
+                self._write(1, "} # type: Dict[str, Union(type)]")
+                self._write()
+            else:
+                self._write(1, "_STATUS= {} # type: Dict[str, Union(type)]")
+                self._write()
+
             # write def __init__(self)
             params = "self, parent=None"
             if "choice" in self._get_choice_names(schema_object):
@@ -893,11 +1066,15 @@ class Generator:
                 )
             if "choice" in self._get_choice_names(schema_object):
                 self._write(
-                    2, "if 'choice' in self._DEFAULTS and choice is None:"
+                    2,
+                    "if 'choice' in self._DEFAULTS and choice is None and self._DEFAULTS['choice'] in self._TYPES:",
                 )
                 self._write(3, "getattr(self, self._DEFAULTS['choice'])")
                 self._write(2, "else:")
-                self._write(3, "self.choice = choice")
+                self._write(3, "self._set_property('choice', choice)")
+
+            # write def set(self)
+            self._write_set_method(schema_object)
 
             # process properties - TBD use this one level up to process
             # schema, in requestBody, Response and also
@@ -912,6 +1089,31 @@ class Generator:
             self._write_openapi_object(ref[0], ref[3])
             if ref[1] is True:
                 self._write_openapi_list(ref[0], ref[2])
+
+    def _write_set_method(self, schema_object):
+        write_set = False
+        if "choice" in self._get_choice_names(schema_object):
+            write_set = False
+        init_params, properties, _ = self._get_property_param_string(
+            schema_object
+        )
+        if len(init_params) > 0:
+            write_set = True
+        params = ["self"]
+        for property in properties:
+            str = property + "=None"
+            params.append(str)
+        params = params if len(init_params) == 0 else ", ".join(params)
+        if write_set:
+            self._write(1, "def set(%s):" % (params))
+            self._write(
+                2, "for property_name, property_value in locals().items():"
+            )
+            self._write(
+                3,
+                "if property_name != 'self' and property_value is not None:",
+            )
+            self._write(4, "self._set_property(property_name, property_value)")
 
     def _get_simple_type_names(self, schema_object):
         simple_type_names = []
@@ -949,14 +1151,17 @@ class Generator:
             choice_names = self._get_choice_names(schema_object)
             excluded_property_names = []
             for choice_name in choice_names:
+
+                # this code is to allow choices with no properties
+                if choice_name not in schema_object["properties"]:
+                    excluded_property_names.append(choice_name)
+                    continue
+
                 if "$ref" not in schema_object["properties"][choice_name]:
                     continue
                 ref = schema_object["properties"][choice_name]["$ref"]
-                status = schema_object["properties"][choice_name].get(
-                    "x-status"
-                )
                 self._write_factory_method(
-                    None, choice_name, ref, property_status=status
+                    None, choice_name, ref, property_status=None
                 )
                 excluded_property_names.append(choice_name)
             for property_name in schema_object["properties"]:
@@ -1210,20 +1415,6 @@ class Generator:
             self._write()
         else:
             self._write(1, "@property")
-            if property_status is not None and property_status in [
-                "deprecated",
-                "under-review",
-            ]:
-                self._write(
-                    1,
-                    "@OpenApiStatus.{func}".format(
-                        func=property_status.replace("-", "_")
-                    ),
-                )
-                key = "{}.{}".format(class_name, method_name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "additional_information"
-                ]
             self._write(1, "def %s(self):" % (method_name))
             self._write(2, "# type: () -> %s" % (class_name))
             self._write(
@@ -1346,16 +1537,6 @@ class Generator:
             type_name = restriction
         self._write()
         self._write(1, "@property")
-        if property.get("x-status", {}).get("status") in [
-            "deprecated",
-            "under-review",
-        ]:
-            func = property["x-status"]["status"].replace("-", "_")
-            self._write(1, "@OpenApiStatus.{func}".format(func=func))
-            key = "{}.{}".format(klass_name, name)
-            self._deprecated_properties[key] = property["x-status"][
-                "additional_information"
-            ]
         self._write(1, "def %s(self):" % name)
         self._write(2, "# type: () -> %s" % (type_name))
         self._write(2, '"""%s getter' % (name))
@@ -1373,16 +1554,6 @@ class Generator:
             if name == "auto":
                 return
             self._write(1, "@%s.setter" % name)
-            if property.get("x-status", {}).get("status") in [
-                "deprecated",
-                "under-review",
-            ]:
-                func = property["x-status"]["status"].replace("-", "_")
-                self._write(1, "@OpenApiStatus.{func}".format(func=func))
-                key = "{}.{}".format(klass_name, name)
-                self._deprecated_properties[key] = property["x-status"][
-                    "additional_information"
-                ]
             self._write(1, "def %s(self, value):" % name)
             self._write(2, '"""%s setter' % (name))
             self._write()
@@ -1390,6 +1561,15 @@ class Generator:
             self._write()
             self._write(2, "value: %s" % restriction)
             self._write(2, '"""')
+            required, defaults = self._get_required_and_defaults(schema_object)
+            if len(required) > 0:
+                if name in required:
+                    self._write(2, "if value is None:")
+                    self._write(
+                        3,
+                        "raise TypeError('Cannot set required property %s as None')"
+                        % name,
+                    )
             if write_set_choice is True:
                 self._write(
                     2, "self._set_property('%s', value, '%s')" % (name, name)
@@ -1415,6 +1595,7 @@ class Generator:
         # remove tabs, multiple spaces
         description = re.sub(r"\n", ". ", yobject["description"])
         description = re.sub(r"\s+", " ", description)
+        description = re.sub(r" . ", " ", description)
         return description
         # doc_string = []
         # for line in re.split('\. ', description):
@@ -1422,6 +1603,59 @@ class Generator:
         #     if len(line) > 0:
         #         doc_string.append('%s  ' % line)
         # return doc_string
+
+    def _get_status_dict(self, yobject, class_name):
+        status = {}
+
+        if yobject.get("x-status", None) is not None:
+            status["self"] = self._get_status_msg(class_name, yobject, "class")
+
+        if yobject.get("properties", None) is None:
+            return status
+
+        for name in yobject["properties"]:
+            property_value = yobject["properties"][name]
+            if "x-status" in property_value:
+                status[name] = self._get_status_msg(
+                    name, property_value, "prop", class_name
+                )
+            elif "x-enum" in property_value:
+                for enum in property_value["x-enum"]:
+                    enum_value = property_value["x-enum"][enum]
+                    if "x-status" in enum_value:
+                        key = "%s.%s" % (name, enum)
+                        status[key] = self._get_status_msg(
+                            enum.upper(), enum_value, "enum", name
+                        )
+
+        return status
+
+    def _get_status_msg(
+        self, property_name, x_status_obj, prop_type, parent_name=None
+    ):
+        status_type = x_status_obj["x-status"].get("status")
+        info = x_status_obj["x-status"].get("information")
+
+        status_msg = ""
+        if prop_type == "prop":
+            status_msg = "%s property in schema %s is %s, %s" % (
+                property_name,
+                parent_name,
+                status_type,
+                info,
+            )
+            pass
+        elif prop_type == "enum":
+            status_msg = "%s enum in property %s is %s, %s" % (
+                property_name,
+                parent_name,
+                status_type,
+                info,
+            )
+        else:
+            status_msg = "%s is %s, %s" % (property_name, status_type, info)
+
+        return status_msg
 
     def _get_data_types(self, yproperty):
         data_type_map = {
@@ -1440,6 +1674,7 @@ class Generator:
 
     def _get_openapi_types(self, yobject):
         types = []
+        # TODO: revisit this portion for data type refactor
         if "properties" in yobject:
             for name in yobject["properties"]:
                 yproperty = yobject["properties"][name]
@@ -1492,16 +1727,17 @@ class Generator:
                     pt.update({"maxLength": yproperty["maxLength"]})
                 if len(pt) > 0:
                     types.append((name, pt))
-                if "x-constraint" in yproperty:
-                    cons_lst = []
-                    for cons in yproperty["x-constraint"]:
-                        ref, prop = cons.split("/properties/")
-                        klass = self._get_classname_from_ref(ref)
-                        cons_lst.append("%s.%s" % (klass, prop.strip("/")))
-                    if cons_lst != []:
-                        pt.update({"constraint": cons_lst})
-                if "x-unique" in yproperty:
-                    pt.update({"unique": '"%s"' % yproperty["x-unique"]})
+                # TODO: restore behavior
+                # if "x-constraint" in yproperty:
+                #     cons_lst = []
+                #     for cons in yproperty["x-constraint"]:
+                #         ref, prop = cons.split("/properties/")
+                #         klass = self._get_classname_from_ref(ref)
+                #         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
+                #     if cons_lst != []:
+                #         pt.update({"constraint": cons_lst})
+                # if "x-unique" in yproperty:
+                #     pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
 
     def _get_required_and_defaults(self, yobject):
@@ -1686,13 +1922,60 @@ class Generator:
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
 
-    def _write_deprecator(self):
-        with open(self._api_filename, "a") as self._fid:
-            self._write(0, "OpenApiStatus.messages = {")
-            for klass, msg in self._deprecated_properties.items():
-                if "\n" in msg:
-                    print(msg)
-                    self._write(1, '"{}" : """{}""",'.format(klass, msg))
+    def _camelcase_to_snakecase(self, value):
+        word = ""
+        if value is None:
+            return word
+
+        insert_underscore = False
+
+        for c in value:
+            if c.isupper() or c.isdigit():
+                if insert_underscore:
+                    word += "_" + c.lower()
+                    insert_underscore = False
                 else:
-                    self._write(1, '"{}" : "{}",'.format(klass, msg))
-            self._write(1, "}")
+                    word += c.lower()
+            else:
+                word += c
+                insert_underscore = True
+
+        return word
+
+    def _get_ref_from_response(self, schema_obj, response_property):
+        ref = None
+        response_name = None
+        response_type = None
+        class_name = None
+        if len(schema_obj) == 0:
+            (
+                response_name,
+                _,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(response_property)
+            proto_name = self._camelcase_to_snakecase(class_name)
+            if response_name is not None:
+                response = self._get_parser('$.."$ref"').find(
+                    self._get_object_from_ref(ref)
+                )
+                if len(response) > 0:
+                    (
+                        _,
+                        response_type,
+                        class_name,
+                        ref,
+                    ) = self._get_object_property_class_names(
+                        response[0].value
+                    )
+                    proto_name = self._camelcase_to_snakecase(class_name)
+        else:
+            (
+                _,
+                response_type,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(schema_obj[0].value)
+            proto_name = self._camelcase_to_snakecase(class_name)
+
+        return response_name, response_type, class_name, ref, proto_name

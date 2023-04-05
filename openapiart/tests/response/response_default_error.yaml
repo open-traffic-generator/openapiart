@@ -27,6 +27,6 @@ components:
       description: |-
         This is a field uid object
       properties:
-        camelCase:
+        bool_value:
           type: boolean
           x-field-uid: 1

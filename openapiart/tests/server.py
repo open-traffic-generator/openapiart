@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.CONFIG = None
 app.PACKAGE = None
 app.UPDATE_CONFIG = None
-app.PORT = 18080
+app.PORT = 8444
 app.HOST = "0.0.0.0"
 
 
@@ -18,11 +18,21 @@ app.HOST = "0.0.0.0"
 def set_config():
     config = app.PACKAGE.Api().prefix_config()
     config.deserialize(request.data.decode("utf-8"))
-    test = config.h
-    if test is not None and isinstance(test, bool) is False:
+    test = config.c
+    if test is not None and test == 500:
         return Response(
-            status=590,
+            status=500,
             response=json.dumps({"detail": "invalid data type"}),
+            headers={"Content-Type": "application/json"},
+        )
+    elif test is not None and test == 400:
+        err = app.PACKAGE.Api().error()
+        err.code = 400
+        err.kind = "validation"
+        err.errors = ["err for validation"]
+        return Response(
+            status=400,
+            response=err.serialize(),
             headers={"Content-Type": "application/json"},
         )
     else:
@@ -47,6 +57,15 @@ def get_config():
     app.CONFIG.required_object.e_b = 1.2
     serialized_config = app.CONFIG.serialize()
     return Response(serialized_config, mimetype="application/json", status=200)
+
+
+@app.route("/api/capabilities/version", methods=["GET"])
+def get_version():
+    return Response(
+        app.PACKAGE.Api().get_local_version().serialize(),
+        mimetype="application/json",
+        status=200,
+    )
 
 
 @app.after_request

@@ -14,8 +14,9 @@ sys.path.append(
 )
 pb2_grpc = importlib.import_module("sanity_pb2_grpc")
 pb2 = importlib.import_module("sanity_pb2")
+op = importlib.import_module("sanity")
 
-GRPC_PORT = 50051
+GRPC_PORT = 40052
 
 
 class OpenapiServicer(pb2_grpc.OpenapiServicer):
@@ -28,17 +29,9 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def SetConfig(self, request, context):
         self._log("Executing SetConfig")
-        response_400 = """
-            {
-                "status_code_400" : {
-                    "errors" : ["invalid value"]
-                }
-            }
-            """
-
         response_200 = """
             {
-                "status_code_200" : "%s"
+                "response_bytes" : "%s"
             }
         """ % base64.b64encode(
             b"success"
@@ -50,8 +43,17 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         self._prefix_config = json_format.MessageToDict(
             request.prefix_config, preserving_proto_field_name=True
         )
-        if test is not None and (test < 10 or test > 90):
-            res_obj = json_format.Parse(response_400, pb2.SetConfigResponse())
+        if test is not None and (test > 90):
+            err = op.api().error()
+            err.code = 13
+            err.errors = ["err1", "err2"]
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(err.serialize())
+            res_obj = pb2.SetConfigResponse()
+        elif test is not None and (test < 0):
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("some random error!")
+            res_obj = pb2.SetConfigResponse()
         else:
             res_obj = json_format.Parse(response_200, pb2.SetConfigResponse())
 
@@ -59,9 +61,18 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def GetConfig(self, request, context):
         self._log("Executing GetConfig")
-        response_200 = {"status_code_200": self._prefix_config}
+        response_200 = {"prefix_config": self._prefix_config}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetConfigResponse()
+        )
+        return res_obj
+
+    def GetVersion(self, request, context):
+        self._log("Executing GetVersion")
+        v = op.api().get_local_version()
+        response_200 = {"version": v.serialize(v.DICT)}
+        res_obj = json_format.Parse(
+            json.dumps(response_200), pb2.GetVersionResponse()
         )
         return res_obj
 

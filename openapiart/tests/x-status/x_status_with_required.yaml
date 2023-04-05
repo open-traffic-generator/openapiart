@@ -10,7 +10,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Field.Config"
+              $ref: "#/components/schemas/Config"
       responses:
         "200":
           x-field-uid: 1
@@ -22,11 +22,14 @@ paths:
                 format: binary
 components:
   schemas:
-    Field.Config:
+    Config:
       type: object
       description: |-
         This is a field uid object
+      required: [status]
       properties:
-        camelCase:
+        status:
           type: boolean
+          x-status:
+            status: deprecated
           x-field-uid: 1

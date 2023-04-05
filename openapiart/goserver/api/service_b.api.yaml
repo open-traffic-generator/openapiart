@@ -1,7 +1,7 @@
 openapi: 3.0.3
 
 info:
-  title: Schema for ServiceB
+  title: Schema for ServiceAbc
   version: 0.0.0
   description: >-
 
@@ -9,34 +9,27 @@ paths:
 
   /serviceb:
     get:
-      tags: [ServiceB]
+      tags: [ServiceAbc]
       operationId: GetAllItems
       description: return list of some items
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceB.ItemList'
+                $ref: './service_b.yaml#/components/schemas/ServiceAbc.ItemList'
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3
   /serviceb/{item_id}:
     get:
-      tags: [ServiceB]
+      tags: [ServiceAbc]
       operationId: GetSingleItem
       description: return single item
       parameters:
@@ -46,30 +39,23 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+                $ref: './service_b.yaml#/components/schemas/ServiceAbc.Item'
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3
   /serviceb/{item_id}/{level_2}:
     get:
-      tags: [ServiceB]
+      tags: [ServiceAbc]
       # operationId will be CamelCased, it is not possible to define a private method in an interface
       operationId: getSingleItemLevel2
       description: return single item
@@ -85,24 +71,17 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceB.Item'
+                $ref: './service_b.yaml#/components/schemas/ServiceAbc.Item'
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3

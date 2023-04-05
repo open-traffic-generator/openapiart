@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 type grpcTransport struct {
@@ -131,6 +133,10 @@ type Api interface {
 	Warnings() string
 	deprecated(message string)
 	under_review(message string)
+	addWarnings(message string)
+	fromHttpError(statusCode int, body []byte) Error
+	fromGrpcError(err error) (Error, bool)
+	FromError(err error) (Error, bool)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
@@ -172,6 +178,11 @@ func (api *api) Warnings() string {
 	return api.warnings
 }
 
+func (api *api) addWarnings(message string) {
+	fmt.Printf("[WARNING]: %s\n", message)
+	api.warnings = message
+}
+
 func (api *api) deprecated(message string) {
 	api.warnings = message
 	fmt.Printf("warning: %s\n", message)
@@ -180,6 +191,54 @@ func (api *api) deprecated(message string) {
 func (api *api) under_review(message string) {
 	api.warnings = message
 	fmt.Printf("warning: %s\n", message)
+}
+
+func (api *api) FromError(err error) (Error, bool) {
+	if rErr, ok := err.(Error); ok {
+		return rErr, true
+	}
+
+	rErr := NewError()
+	if err := rErr.FromJson(err.Error()); err == nil {
+		return rErr, true
+	}
+
+	return api.fromGrpcError(err)
+}
+
+func (api *api) setResponseErr(obj Error, code int32, message string) {
+	errors := []string{}
+	errors = append(errors, message)
+	obj.Msg().Code = code
+	obj.Msg().Errors = errors
+}
+
+func (api *api) fromGrpcError(err error) (Error, bool) {
+	st, ok := status.FromError(err)
+	if ok {
+		rErr := NewError()
+		if err := rErr.FromJson(st.Message()); err == nil {
+			rErr.Msg().Code = int32(st.Code())
+			return rErr, true
+		}
+
+		api.setResponseErr(rErr, int32(st.Code()), st.Message())
+		return rErr, true
+	}
+
+	return nil, false
+}
+
+func (api *api) fromHttpError(statusCode int, body []byte) Error {
+	rErr := NewError()
+	bStr := string(body)
+	if err := rErr.FromJson(bStr); err == nil {
+		return rErr
+	}
+
+	api.setResponseErr(rErr, int32(statusCode), bStr)
+
+	return rErr
 }
 
 // HttpRequestDoer will return True for HTTP transport
@@ -209,6 +268,7 @@ type Validation interface {
 	deprecated(message string)
 	under_review(message string)
 	Warnings() []string
+	addWarnings(message string)
 }
 
 func (obj *validation) validationResult() error {
@@ -229,6 +289,11 @@ func (obj *validation) Warnings() []string {
 		return warns
 	}
 	return obj.warnings
+}
+
+func (obj *validation) addWarnings(message string) {
+	fmt.Printf("[WARNING]: %s\n", message)
+	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) deprecated(message string) {
@@ -364,57 +429,85 @@ func (obj *validation) validateHexSlice(hex []string) error {
 	return obj.validateSlice(hex, "hex")
 }
 
-func (obj *validation) createMap(objName string) {
-	if obj.constraints == nil {
-		obj.constraints = make(map[string]map[string]Constraints)
-	}
-	_, ok := obj.constraints[objName]
-	if !ok {
-		obj.constraints[objName] = make(map[string]Constraints)
-	}
-}
+// TODO: restore behavior
+// func (obj *validation) createMap(objName string) {
+// 	if obj.constraints == nil {
+// 		obj.constraints = make(map[string]map[string]Constraints)
+// 	}
+// 	_, ok := obj.constraints[objName]
+// 	if !ok {
+// 		obj.constraints[objName] = make(map[string]Constraints)
+// 	}
+// }
 
-func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
-	if value == "" {
-		return true
+// TODO: restore behavior
+// func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
+// 	if value == "" {
+// 		return true
+// 	}
+
+// 	obj.createMap("globals")
+// 	_, ok := obj.constraints["globals"][value]
+// 	unique := false
+// 	if !ok {
+// 		obj.constraints["globals"][value] = object
+// 		obj.createMap(objectName)
+// 		obj.constraints[objectName][value] = object
+// 		unique = true
+// 	}
+// 	return unique
+// }
+
+// TODO: restore behavior
+// func (obj *validation) validateConstraint(objectName []string, value string) bool {
+// 	if value == "" {
+// 		return false
+// 	}
+// 	found := false
+// 	for _, object := range objectName {
+// 		obj_ := strings.Split(object, ".")
+// 		strukt, ok := obj.constraints[obj_[0]]
+// 		if !ok {
+// 			continue
+// 		}
+// 		for _, object := range strukt {
+// 			intf := object.ValueOf(obj_[1])
+// 			if intf == nil {
+// 				continue
+// 			}
+// 			if value == fmt.Sprintf("%v", intf) {
+// 				found = true
+// 				break
+// 			}
+// 		}
+// 		if found {
+// 			break
+// 		}
+// 	}
+// 	return found
+// }
+
+func checkClientServerVersionCompatibility(clientVer string, serverVer string, componentName string) error {
+
+	c, err := semver.NewVersion(clientVer)
+	if err != nil {
+		return fmt.Errorf("client %s version '%s' is not a valid semver", componentName, clientVer)
 	}
 
-	obj.createMap("globals")
-	_, ok := obj.constraints["globals"][value]
-	unique := false
-	if !ok {
-		obj.constraints["globals"][value] = object
-		obj.createMap(objectName)
-		obj.constraints[objectName][value] = object
-		unique = true
+	s, err := semver.NewConstraint(serverVer)
+	if err != nil {
+		return fmt.Errorf("server %s version '%s' is not a valid semver constraint", componentName, serverVer)
 	}
-	return unique
-}
 
-func (obj *validation) validateConstraint(objectName []string, value string) bool {
-	if value == "" {
-		return false
+	err = fmt.Errorf("client %s version '%s' is not semver compatible with server %s version constraint '%s'", componentName, clientVer, componentName, serverVer)
+	valid, errs := s.Validate(c)
+	if len(errs) != 0 {
+		return fmt.Errorf("%v: %v", err, errs)
 	}
-	found := false
-	for _, object := range objectName {
-		obj_ := strings.Split(object, ".")
-		strukt, ok := obj.constraints[obj_[0]]
-		if !ok {
-			continue
-		}
-		for _, object := range strukt {
-			intf := object.ValueOf(obj_[1])
-			if intf == nil {
-				continue
-			}
-			if value == fmt.Sprintf("%v", intf) {
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
+
+	if !valid {
+		return err
 	}
-	return found
+
+	return nil
 }
