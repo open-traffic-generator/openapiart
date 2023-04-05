@@ -278,7 +278,8 @@ class GoServerControllerGenerator(object):
                     result = {models_prefix}NewError()
                     err := result.FromJson(rsp_err.Error())
                     if err != nil {{
-                        result = nil
+                        result.Msg().Code = int32(status_code)
+                        result.Msg().Errors = []string{{rsp_err.Error()}}
                     }}
                 }}
             """.format(
@@ -289,15 +290,8 @@ class GoServerControllerGenerator(object):
                 """func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, status_code int, rsp_err error) {{
                 var result {models_prefix}{schema}
                 {set_errors}
-                if result != nil {{
-                    if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
-                        log.Print(err.Error())
-                    }}
-                }} else {{
-                    data := []byte(rsp_err.Error())
-                    if _, err := httpapi.WriteCustomJSONResponse(w, status_code, data); err != nil {{
-                        log.Print(err.Error())
-                    }}
+                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
+                    log.Print(err.Error())
                 }}
             }}
             """.format(

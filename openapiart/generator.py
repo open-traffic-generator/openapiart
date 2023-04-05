@@ -406,17 +406,38 @@ class Generator:
             payload = json.dumps(payload)
         return payload
 
+    def _raise_exception(self, grpc_error):
+        err = self.error()
+        try:
+            err.deserialize(grpc_error.details())
+        except Exception as _:
+            err.code = grpc_error.code().value[0]
+            err.errors = [grpc_error.details()]
+        raise Exception(err)
+
     def from_exception(self, grpc_error):
-        # type: (grpc.RpcError) -> Error
-        err = None
-        if isinstance(grpc_error, grpc.RpcError):
+        # type: (Exception) -> Union[Error, None]
+
+        if isinstance(grpc_error, Error):
+            return grpc_error
+        elif isinstance(grpc_error, grpc.RpcError):
             err = self.error()
-            try:
-                err.deserialize(grpc_error.details())
-            except Exception as e:
-                err.code = 2 # code for unknown error
-                err.errors = [grpc_error.details()]
-        return err
+            err.code = grpc_error.code().value[0]
+            err.errors = [grpc_error.details()]
+            return err
+        else:
+            if len(grpc_error.args) != 1:
+                return None
+
+            if isinstance(grpc_error.args[0], Error):
+                return grpc_error.args[0]
+            elif isinstance(grpc_error.args[0], str):
+                err = self.error()
+                try:
+                    err.deserialize(grpc_error.args[0])
+                except Exception as _:
+                    return None
+                return err
 
     @property
     def request_timeout(self):
@@ -498,11 +519,14 @@ class Generator:
                         ),
                     )
                     self._write(2, "stub = self._get_stub()")
+                    self._write(2, "try:")
                     self._write(
-                        2,
+                        3,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
+                    self._write(2, "except grpc.RpcError as grpc_error:")
+                    self._write(3, "self._raise_exception(grpc_error)")
                 including_default, return_byte = self._process_good_response(
                     rpc_method
                 )
@@ -611,20 +635,18 @@ class Generator:
             self._write(2, "self._transport.set_verify(value)")
             self._write()
             self._write(1, "def from_exception(self, exception):")
-            self._write(2, "# type (Exception) -> Error")
+            self._write(2, "# type (Exception) -> Union[Error, None]")
             self._write(2, "err_obj = None")
-            self._write(2, "if len(exception.args) != 2:")
+            self._write(2, "if len(exception.args) != 1:")
             self._write(3, "return err_obj")
-            self._write(2, "if isinstance(exception.args[0], int):")
+            self._write(2, "if isinstance(exception.args[0], Error):")
+            self._write(3, "return exception.args[0]")
+            self._write(2, "elif isinstance(exception.args[0], str):")
             self._write(3, "err_obj = self.error()")
-            self._write(3, "err_obj.code = exception.args[0]")
-            self._write(3, "if not isinstance(exception.args[1], dict):")
-            self._write(4, "err_obj.errors = [str(exception.args[1])]")
-            self._write(3, "else:")
-            self._write(4, "try:")
-            self._write(5, "err_obj.deserialize(exception.args[1])")
-            self._write(4, "except Exception as e:")
-            self._write(5, "err_obj.errors = [exception.args[1]]")
+            self._write(3, "try:")
+            self._write(4, "err_obj.deserialize(exception.args[0])")
+            self._write(3, "except Exception as _:")
+            self._write(4, "err_obj = None")
             self._write(2, "return err_obj")
 
             for method in methods:

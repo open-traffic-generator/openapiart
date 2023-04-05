@@ -51,12 +51,14 @@ def test_error_for_non_okay_error_codes(api):
     config.d_values = [config.A, config.B, config.C]
     config.level.l1_p1.l2_p1.l3_p1 = "test"
     config.level.l1_p2.l4_p1.l1_p2.l4_p1.l1_p1.l2_p1.l3_p1 = "test"
-    rest_error = "(500, {'detail': 'invalid data type'})"
     with pytest.raises(Exception) as execinfo:
         api.set_config(config)
-    assert str(execinfo.value.args) == rest_error
 
+    e = execinfo.value.args[0]
+    e.code == 500
+    assert str(e.errors[0]) == "{'detail': 'invalid data type'}"
     err = api.from_exception(execinfo.value)
+    assert err is not None
     assert err.code == 500
     assert str(err.errors[0]) == "{'detail': 'invalid data type'}"
 
@@ -74,7 +76,12 @@ def test_error_structure_for_non_okay_error_codes(api):
     with pytest.raises(Exception) as execinfo:
         api.set_config(config)
 
+    e = execinfo.value.args[0]
+    e.code == 400
+    assert e.kind == "validation"
+    assert e.errors[0] == "err for validation"
     err = api.from_exception(execinfo.value)
+    assert err is not None
     assert err.code == 400
     assert err.kind == "validation"
     assert err.errors[0] == "err for validation"
