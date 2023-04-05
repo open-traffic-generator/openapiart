@@ -366,31 +366,57 @@ class Bundler(object):
                     )
 
     def _validate_required_responses(self):
-        """Ensure all paths include a 400 and 500 response.
-
-        Print every path that does not include a 400 or 500 response.
+        """Ensure all paths include a 200 and default response.
 
         Returns
         -------
-        Exception: one or more paths is missing a 400 or 500 response
-        None: all paths have a 400 and 500 response
+        Exception: one or more paths is missing a 200 or default response
+        None: all paths have a 200 and default response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        required_error_codes = ["400", "500"]
+        required_responses = ["200", "default"]
         missing_paths = ""
         for response in responses:
-            missing = set(required_error_codes).difference(
-                set(response.value.keys())
-            )
-            if len(missing):
+            response_keys = [str(key) for key in response.value.keys()]
+            missing = set(required_responses).difference(set(response_keys))
+            if len(missing) > 0:
                 error_message = "{}: is missing the following required responses: {}".format(
                     response.full_path,
                     missing,
                 )
-                print(error_message)
                 missing_paths += "{}\n".format(error_message)
+
+            # TODO: need to check wheather every default schema points to
+
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
+
+        # There must be the Error structure in the yaml which should have required fields code and errors
+        err_schema = self._get_parser("$..Error").find(self._content)
+        if len(err_schema) == 0:
+            raise Exception("Error schema does not exsist")
+        elif len(err_schema) > 1:
+            raise Exception(
+                "There must be exactly one instance of Error schema"
+            )
+
+        required_err_nodes = ["code", "errors"]
+        schema = err_schema[0]
+
+        if "required" not in schema.value.keys():
+            raise Exception(
+                "Error schema in %s must have the required field in it"
+                % schema.full_path,
+            )
+
+        diff = set(required_err_nodes).difference(
+            set(schema.value["required"])
+        )
+        if len(diff):
+            raise Exception(
+                "Error schema must have %s as required properties"
+                % str(required_err_nodes)
+            )
         return None
 
     def _validate_file(self):
@@ -921,8 +947,17 @@ class Bundler(object):
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
         if format is not None:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["format"] = format
+            # else:
             schema["format"] = format
         if "length" in xpattern:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["minimum"] = 0
+            #     schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            # else:
             schema["minimum"] = 0
             schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 

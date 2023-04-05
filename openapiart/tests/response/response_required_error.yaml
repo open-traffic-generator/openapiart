@@ -1,19 +1,42 @@
-openapi: 3.1.0
-
-info:
-  title: Common schema definitions
-  version: 0.0.0
-  description: >-
-    This file contains component definitions used by multiple components
-
+paths:
+  /config:
+    post:
+      tags: ["Bundler"]
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Field.Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "Standard success binary payload"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          x-field-uid: 2
+          description: |-
+            The request did not succeed and server has responded with error details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
-
-    Common.ResponseSuccess:
+    Field.Config:
       type: object
+      description: |-
+        This is a field uid object
       properties:
-        message:
-          type: string
+        bool_value:
+          type: boolean
           x-field-uid: 1
     Error:
       description: |-
@@ -21,7 +44,6 @@ components:
       type: object
       required:
       - code
-      - errors
       properties:
         code:
            description: |-
