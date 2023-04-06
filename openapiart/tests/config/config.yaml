@@ -21,7 +21,7 @@ components:
           x-field-uid: 3
         space_1:
           type: integer
-          x-status: 
+          x-status:
             status: deprecated
           x-field-uid: 4
         full_duplex_100_mb:
@@ -51,7 +51,7 @@ components:
                 information: 500 can change to other values
               x-field-uid: 4
         a:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             Small single line description
@@ -69,7 +69,7 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
-          x-status: 
+          x-status:
             status: deprecated
           description: A list of enum values
           type: array
@@ -84,7 +84,7 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
-          x-status: 
+          x-status:
             status: deprecated
           description: A child object
           $ref: "#/components/schemas/EObject"
@@ -184,7 +184,7 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             string minimum&maximum Length
@@ -193,7 +193,7 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             Array of Hex
@@ -232,11 +232,47 @@ components:
           description: A list of objects with choice with and without properties
           type: array
           items:
-            $ref: '#/components/schemas/ChoiceObject'
+            $ref: "#/components/schemas/ChoiceObject"
           x-field-uid: 41
         required_choice_object:
           $ref: "#/components/schemas/RequiredChoiceParent"
           x-field-uid: 42
+        validate_uint32_1:
+          type: integer
+          minimum: 0
+          maximum: 4294967295
+          x-field-uid: 43
+        validate_uint32_2:
+          type: integer
+          format: uint32
+          x-field-uid: 44
+        validate_uint64_1:
+          type: integer
+          minimum: 0
+          maximum: 18446744073709551614
+          x-field-uid: 45
+        validate_uint64_2:
+          type: integer
+          format: uint64
+          x-field-uid: 46
+        validate_int32_1:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+          x-field-uid: 47
+        validate_int32_2:
+          type: integer
+          format: int32
+          x-field-uid: 48
+        validate_int64_1:
+          type: integer
+          minimum: 0
+          maximum: 9223372036854775807
+          x-field-uid: 49
+        validate_int64_2:
+          type: integer
+          format: int64
+          x-field-uid: 50
 
     WObject:
       required: [w_name]
@@ -286,7 +322,7 @@ components:
           default: 77.7
           x-status:
             status: deprecated
-            information: 
+            information:
           x-field-uid: 3
         choice:
           type: string
@@ -402,10 +438,10 @@ components:
             no_obj:
               x-field-uid: 3
         e_obj:
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 2
         f_obj:
-          $ref: '#/components/schemas/FObject'
+          $ref: "#/components/schemas/FObject"
           x-field-uid: 3
 
     KObject:
@@ -583,7 +619,7 @@ components:
           type: number
           format: double
           x-field-uid: 3
-    
+
     RequiredChoiceParent:
       type: object
       required: [choice]
@@ -597,7 +633,7 @@ components:
             no_obj:
               x-field-uid: 2
         intermediate_obj:
-          $ref: '#/components/schemas/RequiredChoiceIntermediate'
+          $ref: "#/components/schemas/RequiredChoiceIntermediate"
           x-field-uid: 2
     RequiredChoiceIntermediate:
       type: object
@@ -624,4 +660,3 @@ components:
         name:
           type: string
           x-field-uid: 1
-
