@@ -62,63 +62,62 @@ paths:
 
 components:
   schemas:
-    Config:
+    Test.Config:
       type: object
       properties:
         native_features:
           $ref: "#/components/schemas/NativeFeatures"
+          x-field-uid: 1
         extended_features:
           $ref: "#/components/schemas/ExtendedFeatures"
+          x-field-uid: 2
 
     NativeFeatures:
       type: object
       properties:
         required_val:
           $ref: "#/components/schemas/RequiredVal"
+          x-field-uid: 1
         optional_val:
           $ref: "#/components/schemas/OptionalVal"
+          x-field-uid: 2
         boundary_val:
           $ref: "#/components/schemas/BoundaryVal"
+          x-field-uid: 3
         enum_val:
           $ref: "#/components/schemas/EnumVal"
+          x-field-uid: 4
         required_val_array:
           $ref: "#/components/schemas/RequiredValArray"
+          x-field-uid: 5
         optional_val_array:
           $ref: "#/components/schemas/OptionalValArray"
+          x-field-uid: 6
         boundary_val_array:
           $ref: "#/components/schemas/BoundaryValArray"
+          x-field-uid: 7
         enum_val_array:
           $ref: "#/components/schemas/EnumValArray"
+          x-field-uid: 8
         nested_ref_object:
           $ref: "#/components/schemas/NestedRefObject"
+          x-field-uid: 9
 
     ExtendedFeatures:
       type: object
       properties:
         choice_val:
           $ref: "#/components/schemas/ChoiceVal"
-
-    ResponseOk:
-      type: object
-      properties:
-        warnings:
-          type: array
-          items:
-            type: string
-
-    ResponseError:
-      type: object
-      properties:
-        code:
-          type: string
-          default: internal
-          enum:
-            - validation
-            - internal
-        errors:
-          type: array
-          items:
-            type: string
+          x-field-uid: 1
+        choice_val_no_properties:
+          $ref: "#/components/schemas/ChoiceValWithNoProperties"
+          x-field-uid: 2
+        x_status_object:
+          $ref: "#/components/schemas/XStatusObject"
+          x-field-uid: 3
+        x_enum_object:
+          $ref: "#/components/schemas/XEnumObject"
+          x-field-uid: 4
 
     RequiredVal:
       type: object
@@ -130,12 +129,16 @@ components:
       properties:
         int_val:
           type: integer
+          x-field-uid: 1
         num_val:
           type: number
+          x-field-uid: 2
         str_val:
           type: string
+          x-field-uid: 3
         bool_val:
           type: boolean
+          x-field-uid: 4
 
     OptionalVal:
       type: object
@@ -143,15 +146,19 @@ components:
         int_val:
           type: integer
           default: 50
+          x-field-uid: 1
         num_val:
           type: number
           default: 50.05
+          x-field-uid: 2
         str_val:
           type: string
           default: default_str_val
+          x-field-uid: 3
         bool_val:
           type: boolean
           default: true
+          x-field-uid: 4
 
     BoundaryVal:
       type: object
@@ -161,11 +168,13 @@ components:
           default: 50
           minimum: 5
           maximum: 100
+          x-field-uid: 1
         num_val:
           type: number
           default: 50.05
           minimum: 5.0
           maximum: 100.0
+          x-field-uid: 2
 
     RequiredValArray:
       type: object
@@ -179,18 +188,22 @@ components:
           type: array
           items:
             type: integer
+          x-field-uid: 1
         num_vals:
           type: array
           items:
             type: number
+          x-field-uid: 2
         str_vals:
           type: array
           items:
             type: string
+          x-field-uid: 3
         bool_vals:
           type: array
           items:
             type: boolean
+          x-field-uid: 4
 
     OptionalValArray:
       type: object
@@ -202,6 +215,7 @@ components:
           default:
             - 10
             - 20
+          x-field-uid: 1
         num_vals:
           type: array
           items:
@@ -209,6 +223,7 @@ components:
           default:
             - 10.01
             - 20.02
+          x-field-uid: 2
         str_vals:
           type: array
           items:
@@ -216,6 +231,7 @@ components:
           default:
             - first_str
             - second_str
+          x-field-uid: 3
         bool_vals:
           type: array
           items:
@@ -223,6 +239,7 @@ components:
           default:
             - true
             - false
+          x-field-uid: 4
 
     BoundaryValArray:
       type: object
@@ -234,6 +251,7 @@ components:
             default: 50
             minimum: 5
             maximum: 100
+          x-field-uid: 1
         num_vals:
           type: array
           items:
@@ -241,6 +259,7 @@ components:
             default: 50.05
             minimum: 5.0
             maximum: 100.0
+          x-field-uid: 2
 
     EnumVal:
       type: object
@@ -252,6 +271,7 @@ components:
           enum:
             - first_val
             - second_val
+          x-field-uid: 1
         optional_enum:
           type: string
           default: default_val
@@ -259,6 +279,7 @@ components:
             - first_val
             - second_val
             - default_val
+          x-field-uid: 2
 
     EnumValArray:
       type: object
@@ -272,6 +293,7 @@ components:
             enum:
               - first_val
               - second_val
+          x-field-uid: 1
         optional_enums:
           type: array
           items:
@@ -281,55 +303,128 @@ components:
               - first_val
               - second_val
               - default_val
+          x-field-uid: 2
 
     ChoiceVal:
       type: object
       properties:
         mixed_val:
-          type: object
-          properties:
-            choice:
-              type: string
-              default: int_val
-              enum:
-                - int_val
-                - num_val
-                - str_val
-                - bool_val
-            int_val:
-              type: integer
-              default: 50
-            num_val:
-              type: number
-              default: 50.05
-            str_val:
-              type: string
-              default: default_str_val
-            bool_val:
-              type: boolean
-              default: true
+          $ref: "#/components/schemas/MixedVal"
+          x-field-uid: 1
+    
+    ChoiceValWithNoProperties:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            intermediate_obj:
+              x-field-uid: 1
+            no_obj:
+              x-field-uid: 2
+        intermediate_obj:
+          $ref: '#/components/schemas/RequiredChoice'
+          x-field-uid: 2
+    
+    RequiredChoice:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            f_a:
+              x-field-uid: 1
+            leaf:
+              x-field-uid: 2
+        f_a:
+          type: string
+          default: "some string"
+          x-field-uid: 2
+        leaf:
+          $ref: "#/components/schemas/LeafVal"
+          x-field-uid: 3
+
+    MixedVal:
+      type: object
+      properties:
+        choice:
+          type: string
+          default: int_val
+          enum:
+            - int_val
+            - num_val
+            - str_val
+            - bool_val
+          x-field-uid: 1
+        int_val:
+          type: integer
+          default: 50
+          x-field-uid: 2
+        num_val:
+          type: number
+          default: 50.05
+          x-field-uid: 3
+        str_val:
+          type: string
+          default: default_str_val
+          x-field-uid: 4
+        bool_val:
+          type: boolean
+          default: true
+          x-field-uid: 5
     
     NestedRefObject:
       type: object
       properties:
         name:
           type: string
+          x-field-uid: 1
         intermediate_node:
           $ref: "#/components/schemas/IntermediateRefObject"
+          x-field-uid: 2
 
     IntermediateRefObject:
       type: object
       properties:
         name:
           type: string
+          x-field-uid: 1
         leaf_node:
           $ref: "#/components/schemas/LeafVal"
+          x-field-uid: 2
     
     LeafVal:
       type: object
       properties:
         name:
           type: string
+          x-field-uid: 1
         value:
-          type: integer  
+          type: integer
+          x-field-uid: 2  
+    
+    XEnumObject:
+      type: object
+      properties:
+        x_enum_val:
+          description: |-
+            A property to showcase x-enum feature
+          type: string
+          default: third_val
+          x-field-uid: 1
+          x-enum:
+            first_val:
+              x-field-uid: 1
+            second_val:
+              x-field-uid: 2
+            third_val:
+              x-field-uid: 3
+            fourth_val:
+              x-field-uid: 4
+    
+    XStatusObject:  
     

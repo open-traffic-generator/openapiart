@@ -22,9 +22,9 @@ components:
         boundary_val:
           $ref: "#/components/schemas/BoundaryVal"
           x-field-uid: 3
-        enum_val:
-          $ref: "#/components/schemas/EnumVal"
-          x-field-uid: 4
+        # enum_val:
+        #   $ref: "#/components/schemas/EnumVal"
+        #   x-field-uid: 4
         required_val_array:
           $ref: "#/components/schemas/RequiredValArray"
           x-field-uid: 5
@@ -34,9 +34,9 @@ components:
         boundary_val_array:
           $ref: "#/components/schemas/BoundaryValArray"
           x-field-uid: 7
-        enum_val_array:
-          $ref: "#/components/schemas/EnumValArray"
-          x-field-uid: 8
+        # enum_val_array:
+        #   $ref: "#/components/schemas/EnumValArray"
+        #   x-field-uid: 8
         nested_ref_object:
           $ref: "#/components/schemas/NestedRefObject"
           x-field-uid: 9
@@ -47,6 +47,15 @@ components:
         choice_val:
           $ref: "#/components/schemas/ChoiceVal"
           x-field-uid: 1
+        choice_val_no_properties:
+          $ref: "#/components/schemas/ChoiceValWithNoProperties"
+          x-field-uid: 2
+        x_status_object:
+          $ref: "#/components/schemas/XStatusObject"
+          x-field-uid: 3
+        x_enum_object:
+          $ref: "#/components/schemas/XEnumObject"
+          x-field-uid: 4
 
     RequiredVal:
       type: object
@@ -165,9 +174,6 @@ components:
           type: array
           items:
             type: boolean
-          default:
-            - true
-            - false
           x-field-uid: 4
 
     BoundaryValArray:
@@ -209,7 +215,7 @@ components:
             - second_val
             - default_val
           x-field-uid: 2
-
+    
     EnumValArray:
       type: object
       required:
@@ -240,6 +246,42 @@ components:
         mixed_val:
           $ref: "#/components/schemas/MixedVal"
           x-field-uid: 1
+    
+    ChoiceValWithNoProperties:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            intermediate_obj:
+              x-field-uid: 1
+            no_obj:
+              x-field-uid: 2
+        intermediate_obj:
+          $ref: '#/components/schemas/RequiredChoice'
+          x-field-uid: 2
+    
+    RequiredChoice:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            f_a:
+              x-field-uid: 1
+            leaf:
+              x-field-uid: 2
+        f_a:
+          type: string
+          default: "some string"
+          x-field-uid: 2
+        leaf:
+          $ref: "#/components/schemas/LeafVal"
+          x-field-uid: 3
 
     MixedVal:
       type: object
@@ -247,11 +289,15 @@ components:
         choice:
           type: string
           default: int_val
-          enum:
-            - int_val
-            - num_val
-            - str_val
-            - bool_val
+          x-enum:
+            int_val:
+              x-field-uid: 1
+            num_val:
+              x-field-uid: 2
+            str_val:
+              x-field-uid: 3
+            bool_val:
+              x-field-uid: 4
           x-field-uid: 1
         int_val:
           type: integer
@@ -300,3 +346,48 @@ components:
           type: integer
           x-field-uid: 2  
     
+    XEnumObject:
+      type: object
+      properties:
+        x_enum_val:
+          description: |-
+            A property to showcase x-enum feature
+          type: string
+          default: third_val
+          x-field-uid: 1
+          x-enum:
+            first_val:
+              x-field-uid: 1
+            second_val:
+              x-field-uid: 2
+            third_val:
+              x-field-uid: 3
+            fourth_val:
+              x-field-uid: 4
+    
+    XStatusObject:
+      type: object
+      properties:
+        enum_property:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            deprecated:
+              x-field-uid: 1
+            under_review:
+              x-field-uid: 2
+            basic:
+              x-field-uid: 3
+        decprecated_property_1:
+          type: string
+          x-field-uid: 2
+        decprecated_property_2:
+          type: integer
+          x-field-uid: 3
+        under_review_property_1:
+          type: integer
+          x-field-uid: 4
+        under_review_property_2:
+          type: integer
+          x-field-uid: 5
+
