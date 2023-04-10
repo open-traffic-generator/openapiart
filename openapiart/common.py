@@ -133,6 +133,22 @@ class HttpTransport(object):
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             self.logger.warning("Certificate verification is disabled")
 
+    def _parse_response_error(self, response_code, response_text):
+        error_response = ""
+        try:
+            error_response = yaml.safe_load(response_text)
+        except Exception as _:
+            error_response = response_text
+
+        err_obj = Error()
+        try:
+            err_obj.deserialize(error_response)
+        except Exception as _:
+            err_obj.code = response_code
+            err_obj.errors = [str(error_response)]
+
+        raise Exception(err_obj)
+
     def send_recv(
         self,
         method,
@@ -183,9 +199,7 @@ class HttpTransport(object):
                 # content types
                 return response
         else:
-            raise Exception(
-                response.status_code, yaml.safe_load(response.text)
-            )
+            self._parse_response_error(response.status_code, response.text)
 
 
 class OpenApiStatus:
