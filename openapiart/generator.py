@@ -415,30 +415,6 @@ class Generator:
             err.errors = [grpc_error.details()]
         raise Exception(err)
 
-    def from_exception(self, grpc_error):
-        # type: (Exception) -> Union[Error, None]
-
-        if isinstance(grpc_error, Error):
-            return grpc_error
-        elif isinstance(grpc_error, grpc.RpcError):
-            err = self.error()
-            err.code = grpc_error.code().value[0]
-            err.errors = [grpc_error.details()]
-            return err
-        else:
-            if len(grpc_error.args) != 1:
-                return None
-
-            if isinstance(grpc_error.args[0], Error):
-                return grpc_error.args[0]
-            elif isinstance(grpc_error.args[0], str):
-                err = self.error()
-                try:
-                    err.deserialize(grpc_error.args[0])
-                except Exception as _:
-                    return None
-                return err
-
     @property
     def request_timeout(self):
         \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
@@ -633,21 +609,6 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
-            self._write()
-            self._write(1, "def from_exception(self, exception):")
-            self._write(2, "# type (Exception) -> Union[Error, None]")
-            self._write(2, "err_obj = None")
-            self._write(2, "if len(exception.args) != 1:")
-            self._write(3, "return err_obj")
-            self._write(2, "if isinstance(exception.args[0], Error):")
-            self._write(3, "return exception.args[0]")
-            self._write(2, "elif isinstance(exception.args[0], str):")
-            self._write(3, "err_obj = self.error()")
-            self._write(3, "try:")
-            self._write(4, "err_obj.deserialize(exception.args[0])")
-            self._write(3, "except Exception as _:")
-            self._write(4, "err_obj = None")
-            self._write(2, "return err_obj")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -747,6 +708,37 @@ class Generator:
             self._write(1, "def add_warnings(self, msg):")
             self._write(2, "print('[WARNING]: %s' % msg)")
             self._write(2, "self.__warnings__.append(msg)")
+
+            self._write()
+            self._write(1, "def _deserialize_error(self, err_string):")
+            self._write(2, "# type: (str) -> Union[Error, None]")
+            self._write(2, "err = self.error()")
+            self._write(2, "try:")
+            self._write(3, "err.deserialize(err_string)")
+            self._write(2, "except Exception:")
+            self._write(3, "err = None")
+            self._write(2, "return err")
+
+            self._write()
+            self._write(1, "def from_exception(self, error):")
+            self._write(2, "# type: (Exception) -> Union[Error, None]")
+            self._write(2, "if isinstance(error, Error):")
+            self._write(3, "return error")
+            self._write(2, "elif isinstance(error, grpc.RpcError):")
+            self._write(3, "err = self._deserialize_error(error.details())")
+            self._write(3, "if err is not None:")
+            self._write(4, "return err")
+            self._write(3, "err = self.error()")
+            self._write(3, "err.code = error.code().value[0]")
+            self._write(3, "err.errors = [error.details()]")
+            self._write(3, "return err")
+            self._write(2, "elif isinstance(error, Exception):")
+            self._write(3, "if len(error.args) != 1:")
+            self._write(4, "return None")
+            self._write(3, "if isinstance(error.args[0], Error):")
+            self._write(4, "return error.args[0]")
+            self._write(3, "elif isinstance(error.args[0], str):")
+            self._write(4, "return self._deserialize_error(error.args[0])")
 
             for method in methods:
                 print("generating method %s" % method["name"])

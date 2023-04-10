@@ -361,7 +361,7 @@ func TestHttpErrorStringSetConfig(t *testing.T) {
 	// if user wants to get the json now
 	errSt, _ := api.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(500))
-	assert.False(t, errSt.HasKind())
+	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "client error !!!!")
 }
 
