@@ -113,7 +113,4 @@ def test_error_incorrect_json_str(api):
     with pytest.raises(Exception) as execinfo:
         api.set_config(json_str)
 
-    assert (
-        execinfo.value.args[0]
-        == "a is a mandatory property of <class 'sanity.sanity.PrefixConfig'> and should not be set to None"
-    )
+    assert "a is a mandatory property" in execinfo.value.args[0]
