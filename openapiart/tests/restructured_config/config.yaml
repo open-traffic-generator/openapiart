@@ -276,11 +276,11 @@ components:
           type: string
           x-field-uid: 1
           x-enum:
-            f_a:
+            str_val:
               x-field-uid: 1
             leaf:
               x-field-uid: 2
-        f_a:
+        str_val:
           type: string
           default: "some string"
           x-field-uid: 2
