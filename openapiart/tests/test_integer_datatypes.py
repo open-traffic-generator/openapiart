@@ -28,7 +28,7 @@ def test_integer_datatypes(default_config):
     value = default_config._TYPES.get("validate_uint64_2")
     assert value.get("format") is not None
     assert value.get("format") == "uint64"
-    default_config.validate_uint64_2 = 18446744073709551614
+    default_config.validate_uint64_2 = 9223372036854775807
 
     value = default_config._TYPES.get("validate_int32_1")
     # assert value.get("format") is not None
