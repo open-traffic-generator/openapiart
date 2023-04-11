@@ -35,7 +35,7 @@ func TestRequiredErr(t *testing.T) {
 
 	err := config.Validate()
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "StrVal is required field on interface RequiredVal\nvalidation errors")
+	assert.Equal(t, err.Error(), "StrVal is required field on interface RequiredVal")
 }
 
 func TestRequiredArraySchema(t *testing.T) {
@@ -67,6 +67,6 @@ func TestRequiredArrayErr(t *testing.T) {
 
 	err := config.Validate()
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "StrVals is required field on interface RequiredValArray\nvalidation errors")
+	assert.Equal(t, err.Error(), "StrVals is required field on interface RequiredValArray")
 
 }

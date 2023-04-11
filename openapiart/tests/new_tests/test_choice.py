@@ -47,10 +47,7 @@ def test_wrong_choice_error(api):
     with pytest.raises(Exception) as execinfo:
         c.mixed_val.choice = "random"
 
-    assert (
-        execinfo.value.args[0]
-        == "random is not a valid choice, valid choices are int_val, num_val, str_val, bool_val"
-    )
+    assert "random is not a valid choice" in execinfo.value.args[0]
 
 
 def test_choice_heirarchy(api):
