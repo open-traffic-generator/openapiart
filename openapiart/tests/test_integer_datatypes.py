@@ -23,7 +23,7 @@ def test_integer_datatypes(default_config):
     # and remove the existing validation with int64
     # assert value.get("format") == "uint64"
     assert value.get("format") == "int64"
-    default_config.validate_uint64_1 = 18446744073709551614
+    default_config.validate_uint64_1 = 9223372036854775807
 
     value = default_config._TYPES.get("validate_uint64_2")
     assert value.get("format") is not None

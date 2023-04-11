@@ -249,7 +249,7 @@ components:
         validate_uint64_1:
           type: integer
           minimum: 0
-          maximum: 18446744073709551614
+          maximum: 9223372036854775807
           x-field-uid: 45
         validate_uint64_2:
           type: integer
