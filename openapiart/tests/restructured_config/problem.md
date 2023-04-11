@@ -5,4 +5,4 @@
 * min max not supported for type number
 * default value in array with min max not working properly
 * min max array does not raise exception for values not in range
-* golang does not provide error on wrong choice provided, intead sets the first choice available
+* golang does not provide error on wrong choice provided, instead sets the first choice available

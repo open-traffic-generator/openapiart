@@ -2,6 +2,9 @@ components:
   schemas:
     Test.Config:
       type: object
+      x-status:
+        status: under_review
+        information: "the whole schema is being reviewed"
       properties:
         native_features:
           $ref: "#/components/schemas/NativeFeatures"
@@ -51,6 +54,9 @@ components:
           $ref: "#/components/schemas/ChoiceValWithNoProperties"
           x-field-uid: 2
         x_status_object:
+          x-status:
+            status: under_review
+            information: test under_review
           $ref: "#/components/schemas/XStatusObject"
           x-field-uid: 3
         x_enum_object:
@@ -377,9 +383,15 @@ components:
           type: string
           x-field-uid: 1
           x-enum:
-            deprecated:
+            decprecated_property_1:
+              x-status:
+                status: deprecated
+                information: test deprecated
               x-field-uid: 1
-            under_review:
+            under_review_property_1:
+              x-status:
+                status: under_review
+                information: test under_review
               x-field-uid: 2
             basic:
               x-field-uid: 3
@@ -388,13 +400,19 @@ components:
           x-field-uid: 2
         decprecated_property_2:
           type: integer
+          x-status:
+            status: deprecated
+            information: test deprecated
           x-field-uid: 3
         under_review_property_1:
-          type: integer
+          type: string
           x-field-uid: 4
         under_review_property_2:
           type: integer
           x-field-uid: 5
+        basic:
+          type: string
+          x-field-uid: 6
     
     XFieldPatternObject:
       type: object
