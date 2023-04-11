@@ -40,6 +40,12 @@ components:
         nested_ref_object:
           $ref: "#/components/schemas/NestedRefObject"
           x-field-uid: 9
+        mixed_object:
+          $ref: "#/components/schemas/MixedObject"
+          x-field-uid: 10
+        number_type_object:
+          $ref: "#/components/schemas/NumberTypeObject"
+          x-field-uid: 11
 
     ExtendedFeatures:
       type: object
@@ -186,7 +192,7 @@ components:
           type: array
           items:
             type: integer
-            default: 
+            default:
               - 50
             minimum: 5
             maximum: 100
@@ -195,11 +201,116 @@ components:
           type: array
           items:
             type: number
-            default: 
+            default:
               - 50.05
             minimum: 5.0
             maximum: 100.0
           x-field-uid: 2
+
+    MixedObject:
+      description: |-
+        Format validation object
+      type: object
+      properties:
+        string_param:
+          type: string
+          x-field-uid: 1
+        integer:
+          type: integer
+          minimum: 10
+          maximum: 90
+          x-field-uid: 2
+        float:
+          type: number
+          format: float
+          x-field-uid: 3
+        double:
+          type: number
+          format: double
+          x-field-uid: 4
+        mac:
+          type: string
+          format: mac
+          x-field-uid: 5
+        ipv4:
+          type: string
+          format: ipv4
+          x-field-uid: 6
+        ipv6:
+          type: string
+          format: ipv6
+          x-field-uid: 7
+        hex:
+          type: string
+          format: hex
+          x-field-uid: 8
+        str_len:
+          x-status:
+            status: under_review
+          description: |-
+            string minimum&maximum Length
+          type: string
+          minLength: 3
+          maxLength: 6
+          x-field-uid: 9
+        integer64_1:
+          description: int64 type
+          type: integer
+          format: int64
+          x-field-uid: 10
+        integer64_2:
+          type: integer
+          minimum: 0
+          maximum: 4261412864
+          x-field-uid: 11
+        integer64_list:
+          description: int64 type list
+          type: array
+          items:
+            type: integer
+          minimum: 0
+          maximum: 4261412864
+          x-field-uid: 12
+
+    NumberTypeObject:
+      type: object
+      properties:
+        validate_uint32_1:
+          type: integer
+          minimum: 0
+          maximum: 4294967295
+          x-field-uid: 43
+        validate_uint32_2:
+          type: integer
+          format: uint32
+          x-field-uid: 44
+        validate_uint64_1:
+          type: integer
+          minimum: 0
+          maximum: 9223372036854775807
+          x-field-uid: 45
+        validate_uint64_2:
+          type: integer
+          format: uint64
+          x-field-uid: 46
+        validate_int32_1:
+          type: integer
+          minimum: 0
+          maximum: 2147483646
+          x-field-uid: 47
+        validate_int32_2:
+          type: integer
+          format: int32
+          x-field-uid: 48
+        validate_int64_1:
+          type: integer
+          minimum: 0
+          maximum: 9223372036854775807
+          x-field-uid: 49
+        validate_int64_2:
+          type: integer
+          format: int64
+          x-field-uid: 50
 
     EnumVal:
       type: object
@@ -220,7 +331,7 @@ components:
             - second_val
             - default_val
           x-field-uid: 2
-    
+
     EnumValArray:
       type: object
       required:
@@ -251,7 +362,7 @@ components:
         mixed_val:
           $ref: "#/components/schemas/MixedVal"
           x-field-uid: 1
-    
+
     ChoiceValWithNoProperties:
       type: object
       required: [choice]
@@ -265,9 +376,9 @@ components:
             no_obj:
               x-field-uid: 2
         intermediate_obj:
-          $ref: '#/components/schemas/RequiredChoice'
+          $ref: "#/components/schemas/RequiredChoice"
           x-field-uid: 2
-    
+
     RequiredChoice:
       type: object
       required: [choice]
@@ -320,7 +431,7 @@ components:
           type: boolean
           default: true
           x-field-uid: 5
-    
+
     NestedRefObject:
       type: object
       properties:
@@ -340,7 +451,7 @@ components:
         leaf_node:
           $ref: "#/components/schemas/LeafVal"
           x-field-uid: 2
-    
+
     LeafVal:
       type: object
       properties:
@@ -349,8 +460,8 @@ components:
           x-field-uid: 1
         value:
           type: integer
-          x-field-uid: 2  
-    
+          x-field-uid: 2
+
     XEnumObject:
       type: object
       properties:
@@ -369,7 +480,7 @@ components:
               x-field-uid: 3
             fourth_val:
               x-field-uid: 4
-    
+
     XStatusObject:
       type: object
       properties:
@@ -395,7 +506,7 @@ components:
         under_review_property_2:
           type: integer
           x-field-uid: 5
-    
+
     XFieldPatternObject:
       type: object
       properties:
@@ -425,7 +536,7 @@ components:
             default: 0.0.0.0
             features: [count]
           x-field-uid: 1
-    
+
     Ipv6PatternObject:
       description: Test ipv6 pattern
       type: object
@@ -436,7 +547,7 @@ components:
             default: "::"
             features: [count]
           x-field-uid: 1
-    
+
     MacPatternObject:
       description: Test mac pattern
       type: object
@@ -447,7 +558,7 @@ components:
             default: "00:00:00:00:00:00"
             features: [count, auto]
           x-field-uid: 1
-    
+
     IntegerPatternObject:
       description: Test integer pattern
       type: object
@@ -459,7 +570,7 @@ components:
             length: 8
             features: [count]
           x-field-uid: 1
-      
+
     ChecksumPatternObject:
       description: Test checksum pattern
       type: object
@@ -468,4 +579,3 @@ components:
           x-field-pattern:
             format: checksum
           x-field-uid: 1
-
