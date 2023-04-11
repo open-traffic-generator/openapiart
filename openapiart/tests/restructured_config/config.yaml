@@ -520,6 +520,9 @@ components:
           x-field-uid: 4
         under_review_property_2:
           type: integer
+          x-status:
+            status: under_review
+            information: test under_review
           x-field-uid: 5
         basic:
           type: string
