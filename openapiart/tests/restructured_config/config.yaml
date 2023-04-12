@@ -25,30 +25,24 @@ components:
         boundary_val:
           $ref: "#/components/schemas/BoundaryVal"
           x-field-uid: 3
-        # enum_val:
-        #   $ref: "#/components/schemas/EnumVal"
-        #   x-field-uid: 4
         required_val_array:
           $ref: "#/components/schemas/RequiredValArray"
-          x-field-uid: 5
+          x-field-uid: 4
         optional_val_array:
           $ref: "#/components/schemas/OptionalValArray"
-          x-field-uid: 6
+          x-field-uid: 5
         boundary_val_array:
           $ref: "#/components/schemas/BoundaryValArray"
-          x-field-uid: 7
-        # enum_val_array:
-        #   $ref: "#/components/schemas/EnumValArray"
-        #   x-field-uid: 8
+          x-field-uid: 6
         nested_ref_object:
           $ref: "#/components/schemas/NestedRefObject"
-          x-field-uid: 9
+          x-field-uid: 7
         mixed_object:
           $ref: "#/components/schemas/MixedObject"
-          x-field-uid: 10
+          x-field-uid: 8
         number_type_object:
           $ref: "#/components/schemas/NumberTypeObject"
-          x-field-uid: 11
+          x-field-uid: 9
 
     ExtendedFeatures:
       type: object
@@ -317,50 +311,6 @@ components:
           type: integer
           format: int64
           x-field-uid: 50
-
-    EnumVal:
-      type: object
-      required:
-        - required_enum
-      properties:
-        required_enum:
-          type: string
-          enum:
-            - first_val
-            - second_val
-          x-field-uid: 1
-        optional_enum:
-          type: string
-          default: default_val
-          enum:
-            - first_val
-            - second_val
-            - default_val
-          x-field-uid: 2
-
-    EnumValArray:
-      type: object
-      required:
-        - required_enums
-      properties:
-        required_enums:
-          type: array
-          items:
-            type: string
-            enum:
-              - first_val
-              - second_val
-          x-field-uid: 1
-        optional_enums:
-          type: array
-          items:
-            type: string
-            default: default_val
-            enum:
-              - first_val
-              - second_val
-              - default_val
-          x-field-uid: 2
 
     ChoiceVal:
       type: object
