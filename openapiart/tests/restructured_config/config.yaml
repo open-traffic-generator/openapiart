@@ -43,6 +43,11 @@ components:
         number_type_object:
           $ref: "#/components/schemas/NumberTypeObject"
           x-field-uid: 9
+        iter_object:
+          type: array
+          items:
+            $ref: "#/components/schemas/MixedObject"
+          x-field-uid: 10
 
     ExtendedFeatures:
       type: object
@@ -214,41 +219,47 @@ components:
       properties:
         string_param:
           type: string
+          default: "asdf"
           x-field-uid: 1
         integer:
           type: integer
+          default: 88
           minimum: 10
           maximum: 90
           x-field-uid: 2
         float:
           type: number
           format: float
+          default: 22.2
           x-field-uid: 3
         double:
           type: number
           format: double
+          default: 2342.22
           x-field-uid: 4
         mac:
           type: string
           format: mac
+          default: "00:00:fa:ce:fa:ce"
           x-field-uid: 5
         ipv4:
           type: string
           format: ipv4
+          default: "1.1.1.1"
           x-field-uid: 6
         ipv6:
           type: string
           format: ipv6
+          default: "::02"
           x-field-uid: 7
         hex:
           type: string
           format: hex
+          default: "0102030405060708090a0b0c0d0e0f"
           x-field-uid: 8
         str_len:
           x-status:
             status: under_review
-          description: |-
-            string minimum&maximum Length
           type: string
           minLength: 3
           maxLength: 6
@@ -477,7 +488,7 @@ components:
         basic:
           type: string
           x-field-uid: 6
-    
+
     XFieldPatternObject:
       type: object
       properties:
