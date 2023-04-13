@@ -6,7 +6,6 @@ pytest-cov
 jsonpath_ng
 openapi_spec_validator==0.3.0
 urllib3
-requests
 semantic_version
 protobuf==3.15.0 ;  python_version <= '3.6'
 protobuf==3.20.1 ;  python_version > '3.6'
