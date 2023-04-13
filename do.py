@@ -300,7 +300,7 @@ def install():
     )
 
 
-def install_only_package():
+def install_package_only():
     wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
     run(
         [
