@@ -793,6 +793,8 @@ class Bundler(object):
                     property_name="auto",
                 )
             if "metric_tags" in xpattern["features"]:
+                # skip this UID as it was previously being used for metric_groups
+                _ = auto_field.uid
                 metric_tags_schema_name = "{}.MetricTags".format(schema_name)
                 length = 65535
                 if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
@@ -816,14 +818,13 @@ class Bundler(object):
                     "required": ["name"],
                     "properties": {
                         "name": {
-                            "description": "Globally unique name of an object. It also serves as the primary key for arrays of objects.",
+                            "description": "Name used for metric tag",
                             "type": "string",
                             "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
                             "x-field-uid": metric_tags_auto_field.uid,
-                            "x-unique": "global",
                         },
                         "offset": {
-                            "description": "This is in bits and relative to start of the field",
+                            "description": "Offset in bits relative to start of field",
                             "type": "integer",
                             "default": 0,
                             "minimum": 0,
@@ -831,7 +832,7 @@ class Bundler(object):
                             "x-field-uid": metric_tags_auto_field.uid,
                         },
                         "length": {
-                            "description": "This is in bits",
+                            "description": "Length in bits",
                             "type": "integer",
                             "default": length,
                             "minimum": 1,
