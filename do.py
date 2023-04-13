@@ -300,6 +300,17 @@ def install():
     )
 
 
+def install_only_package():
+    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    run(
+        [
+            "{} -m pip install --force-reinstall --no-cache-dir {}".format(
+                py(), os.path.join("dist", wheel)
+            ),
+        ]
+    )
+
+
 def release():
     run(
         [

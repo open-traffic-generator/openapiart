@@ -34,7 +34,7 @@ def generate_requirements(path, file_name=None):
         new_pkgs = fh.read().splitlines()
         new_pkgs = list(set(new_pkgs) - set(not_required_pkgs))
 
-    final_pkgs = []
+    final_pkgs = new_pkgs
     for n_pkg in new_pkgs:
         for pkg in orig_packages:
             if n_pkg in pkg and pkg not in final_pkgs:
