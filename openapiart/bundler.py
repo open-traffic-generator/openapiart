@@ -795,7 +795,7 @@ class Bundler(object):
             if "metric_tags" in xpattern["features"]:
                 # skip this UID as it was previously being used for metric_groups
                 _ = auto_field.uid
-                metric_tags_schema_name = "{}.MetricTags".format(schema_name)
+                metric_tags_schema_name = "{}.MetricTag".format(schema_name)
                 length = 65535
                 if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
                     if "length" in xpattern:
