@@ -808,12 +808,7 @@ class Bundler(object):
                         length = 128
                 metric_tags_auto_field = AutoFieldUid()
                 metric_tags_schema = {
-                    "description": """A unique name is used to indicate to the system that the field may """
-                    """extend the metric row key and create an aggregate metric row for """
-                    """every unique value. """
-                    """To have metric tag columns appear in the flow metric rows the flow """
-                    """metric request allows for the metric_tag value to be specified """
-                    """as part of the request.""",
+                    "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
                     "type": "object",
                     "required": ["name"],
                     "properties": {
@@ -842,6 +837,7 @@ class Bundler(object):
                     },
                 }
                 schema["properties"]["metric_tags"] = {
+                    "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
                     "type": "array",
                     "items": {
                         "$ref": "#/components/schemas/{}".format(
