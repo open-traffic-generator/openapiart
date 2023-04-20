@@ -237,6 +237,18 @@ components:
         required_choice_object:
           $ref: "#/components/schemas/RequiredChoiceParent"
           x-field-uid: 42
+        g1:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: "#/components/schemas/GObject"
+          x-field-uid: 43
+        g2:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: "#/components/schemas/GObject"
+          x-field-uid: 44
 
     WObject:
       required: [w_name]

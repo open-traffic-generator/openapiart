@@ -792,17 +792,64 @@ class Bundler(object):
                     format,
                     property_name="auto",
                 )
-            if "metric_group" in xpattern["features"]:
-                schema["properties"]["metric_group"] = {
-                    "description": """A unique name is used to indicate to the system that the field may """
-                    """extend the metric row key and create an aggregate metric row for """
-                    """every unique value. """
-                    """To have metric group columns appear in the flow metric rows the flow """
-                    """metric request allows for the metric_group value to be specified """
-                    """as part of the request.""",
-                    "type": "string",
+            if "metric_tags" in xpattern["features"]:
+                # skip this UID as it was previously being used for metric_groups
+                _ = auto_field.uid
+                metric_tags_schema_name = "{}.MetricTag".format(schema_name)
+                length = 65535
+                if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                    if "length" in xpattern:
+                        length = int(xpattern["length"])
+                    elif xpattern["format"] == "mac":
+                        length = 48
+                    elif xpattern["format"] == "ipv4":
+                        length = 32
+                    elif xpattern["format"] == "ipv6":
+                        length = 128
+                metric_tags_auto_field = AutoFieldUid()
+                metric_tags_schema = {
+                    "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                        "name": {
+                            "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
+                            "type": "string",
+                            "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
+                            "x-field-uid": metric_tags_auto_field.uid,
+                        },
+                        "offset": {
+                            "description": "Offset in bits relative to start of corresponding header field",
+                            "type": "integer",
+                            "default": 0,
+                            "minimum": 0,
+                            "maximum": length - 1,
+                            "x-field-uid": metric_tags_auto_field.uid,
+                        },
+                        "length": {
+                            "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
+                            "type": "integer",
+                            "default": length,
+                            "minimum": 1,
+                            "maximum": length,
+                            "x-field-uid": metric_tags_auto_field.uid,
+                        },
+                    },
+                }
+                schema["properties"]["metric_tags"] = {
+                    "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/{}".format(
+                            metric_tags_schema_name
+                        )
+                    },
                     "x-field-uid": auto_field.uid,
                 }
+                self._content["components"]["schemas"][
+                    metric_tags_schema_name
+                ] = metric_tags_schema
+
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
                 xpattern["enums"]
