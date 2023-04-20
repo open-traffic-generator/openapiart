@@ -818,13 +818,13 @@ class Bundler(object):
                     "required": ["name"],
                     "properties": {
                         "name": {
-                            "description": "Name used for metric tag",
+                            "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
                             "type": "string",
                             "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
                             "x-field-uid": metric_tags_auto_field.uid,
                         },
                         "offset": {
-                            "description": "Offset in bits relative to start of field",
+                            "description": "Offset in bits relative to start of corresponding header field",
                             "type": "integer",
                             "default": 0,
                             "minimum": 0,
@@ -832,7 +832,7 @@ class Bundler(object):
                             "x-field-uid": metric_tags_auto_field.uid,
                         },
                         "length": {
-                            "description": "Length in bits",
+                            "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
                             "type": "integer",
                             "default": length,
                             "minimum": 1,
