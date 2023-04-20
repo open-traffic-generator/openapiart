@@ -37,9 +37,7 @@ def generate_requirements(path, file_name=None):
         new_pkgs = fh.read().splitlines()
         new_pkgs = list(set(new_pkgs) - set(not_required_pkgs))
 
-    with open(
-        os.path.join(os.path.dirname(base_dir), "test_requirements.txt"), "r"
-    ) as fh:
+    with open(os.path.join(base_dir, "test_requirements.txt"), "r") as fh:
         test_pkgs = fh.read().splitlines()
         test_pkgs = list(set(test_pkgs) - set(not_required_pkgs))
 
