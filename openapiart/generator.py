@@ -159,19 +159,19 @@ class Generator:
             os.path.join(os.path.dirname(__file__), "common.py"), "r"
         ) as fp:
             common_content = fp.read()
-            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
+            # cnf_text = "import sanity_pb2_grpc as pb2_grpc"
+            # modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+            #     pkg_name=self._package_name,
+            #     text=cnf_text.replace("sanity", self._protobuf_package_name),
+            # )
+            # common_content = common_content.replace(cnf_text, modify_text)
 
-            cnf_text = "import sanity_pb2 as pb2"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
+            # cnf_text = "import sanity_pb2 as pb2"
+            # modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
+            #     pkg_name=self._package_name,
+            #     text=cnf_text.replace("sanity", self._protobuf_package_name),
+            # )
+            # common_content = common_content.replace(cnf_text, modify_text)
 
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
@@ -377,6 +377,25 @@ class Generator:
             if "location" in kwargs and kwargs["location"] is not None
             else "localhost:50051"
         )
+
+        # importing all the dependencies related to grpc
+
+        self.grpc = importlib.import_module("grpc")
+
+        protobuf = importlib.import_module("google.protobuf")
+        self.json_format = getattr(protobuf, "json_format")
+
+        try:
+            module = importlib.import_module("{pkg}")
+            self.pb2_grpc = getattr(module, "{proto}_pb2_grpc")
+        except (ImportError, AttributeError):
+            self.pb2_grpc = importlib.import_module("{proto}_pb2_grpc")
+        try:
+            module = importlib.import_module("{pkg}")
+            self.pb2 = getattr(module, "{proto}_pb2")
+        except (ImportError, AttributeError):
+            self.pb2 = importlib.import_module("{proto}_pb2")
+
         self._transport = kwargs["transport"] if "transport" in kwargs else None
         self._logger = kwargs["logger"] if "logger" in kwargs else None
         self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
@@ -387,14 +406,14 @@ class Generator:
             stdout_handler.setFormatter(formatter)
             self._logger = logging.Logger(self.__module__, level=self._loglevel)
             self._logger.addHandler(stdout_handler)
-        self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        self._logger.debug("gRPCTransport args: {{}}".format(", ".join(["{{}}={{!r}}".format(k, v) for k, v in kwargs.items()])))
 
     def _get_stub(self):
         if self._stub is None:
             CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
                                ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
-            self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
-            self._stub = pb2_grpc.OpenapiStub(self._channel)
+            self._channel = self.grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            self._stub = self.pb2_grpc.OpenapiStub(self._channel)
         return self._stub
 
     def _serialize_payload(self, payload):
@@ -432,11 +451,26 @@ class Generator:
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
 
+    def from_exception(self, error):
+        # type: (Exception) -> Union[Error, None]
+        if isinstance(error, self.grpc.RpcError):
+            err = self._deserialize_error(error.details())
+            if err is not None:
+                return err
+            err = self.error()
+            err.code = error.code().value[0]
+            err.errors = [error.details()]
+            return err
+        else:
+            return self._parse_exception(error)
+
     def close(self):
         if self._channel is not None:
             self._channel.close()
             self._channel = None
-            self._stub = None"""
+            self._stub = None""".format(
+            pkg=self._package_name, proto=self._protobuf_package_name
+        )
 
         self._generated_classes.append("Transport")
         with open(self._api_filename, "a") as self._fid:
@@ -462,7 +496,7 @@ class Generator:
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
-                        "empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
+                        "empty = self.pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
                     )
                     self._write(
                         2,
@@ -477,9 +511,9 @@ class Generator:
                     if status_msg != "":
                         self._write(2, "self.add_warnings('%s')" % status_msg)
 
-                    self._write(2, "pb_obj = json_format.Parse(")
+                    self._write(2, "pb_obj = self.json_format.Parse(")
                     self._write(3, "self._serialize_payload(payload),")
-                    self._write(3, "pb2.%s()" % rpc_method.request_class)
+                    self._write(3, "self.pb2.%s()" % rpc_method.request_class)
                     self._write(2, ")")
                     if (
                         self._generate_version_api
@@ -489,7 +523,7 @@ class Generator:
                     "%s=pb_obj" % rpc_method.request_property
                     self._write(
                         2,
-                        "req_obj = pb2.{operation_name}Request({request_property}=pb_obj)".format(
+                        "req_obj = self.pb2.{operation_name}Request({request_property}=pb_obj)".format(
                             operation_name=rpc_method.operation_name,
                             request_property=rpc_method.request_property,
                         ),
@@ -501,12 +535,12 @@ class Generator:
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
-                    self._write(2, "except grpc.RpcError as grpc_error:")
+                    self._write(2, "except self.grpc.RpcError as grpc_error:")
                     self._write(3, "self._raise_exception(grpc_error)")
                 including_default, return_byte = self._process_good_response(
                     rpc_method
                 )
-                self._write(2, "response = json_format.MessageToDict(")
+                self._write(2, "response = self.json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
                 if return_byte:
@@ -523,7 +557,9 @@ class Generator:
 
                     if including_default:
                         self._write(3, "if len(result) == 0:")
-                        self._write(4, "result = json_format.MessageToDict(")
+                        self._write(
+                            4, "result = self.json_format.MessageToDict("
+                        )
                         self._write(
                             5, "res_obj.%s," % rpc_method.proto_field_name
                         )
@@ -609,6 +645,10 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
+            self._write()
+            self._write(1, "def from_exception(self, error):")
+            self._write(2, "# type: (Exception) -> Union[Error, None]")
+            self._write(2, "return self._parse_exception(error)")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -720,18 +760,10 @@ class Generator:
             self._write(2, "return err")
 
             self._write()
-            self._write(1, "def from_exception(self, error):")
+            self._write(1, "def _parse_exception(self, error):")
             self._write(2, "# type: (Exception) -> Union[Error, None]")
             self._write(2, "if isinstance(error, Error):")
             self._write(3, "return error")
-            self._write(2, "elif isinstance(error, grpc.RpcError):")
-            self._write(3, "err = self._deserialize_error(error.details())")
-            self._write(3, "if err is not None:")
-            self._write(4, "return err")
-            self._write(3, "err = self.error()")
-            self._write(3, "err.code = error.code().value[0]")
-            self._write(3, "err.errors = [error.details()]")
-            self._write(3, "return err")
             self._write(2, "elif isinstance(error, Exception):")
             self._write(3, "if len(error.args) != 1:")
             self._write(4, "return None")
