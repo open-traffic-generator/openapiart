@@ -382,8 +382,7 @@ class Generator:
 
         self.grpc = importlib.import_module("grpc")
 
-        protobuf = importlib.import_module("google.protobuf")
-        self.json_format = getattr(protobuf, "json_format")
+        protobuf = importlib.import_module("google.protobuf.json_format")
 
         try:
             module = importlib.import_module("{pkg}")
