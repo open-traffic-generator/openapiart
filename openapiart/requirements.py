@@ -25,9 +25,6 @@ def generate_requirements(path, file_name=None):
     not_required_pkgs = [
         "sanity",
         "typing_extensions",
-        "grpc",
-        "grpcio",
-        "protobuf",
         "grpcio-tools~=1.44.0 ; python_version > '2.7'",
         "grpcio-tools~=1.35.0 ; python_version == '2.7'",
     ]
@@ -55,13 +52,9 @@ def generate_requirements(path, file_name=None):
             if n_pkg in pkg and pkg not in final_pkgs:
                 final_pkgs.append(pkg)
 
-    required_grpc_pkgs = ["grpc", "protobuf"]
+    required_grpc_pkgs = ["grpc", "protobuf", "grpcio"]
 
-    grpc_pkg = []
-    for rg_pkg in required_grpc_pkgs:
-        for pkg in orig_packages:
-            if rg_pkg in pkg and pkg not in grpc_pkg:
-                grpc_pkg.append(pkg)
+    min_pkgs = list(set(new_pkgs) - set(required_grpc_pkgs))
 
     with open(os.path.join(save_path, "requirements.txt"), "w+") as fh:
         fh.write("--prefer-binary")
@@ -71,10 +64,10 @@ def generate_requirements(path, file_name=None):
         fh.flush()
         fh.close()
 
-    with open(os.path.join(save_path, "grpc-requirements.txt"), "w+") as fh:
+    with open(os.path.join(save_path, "minimum-requirements.txt"), "w+") as fh:
         fh.write("--prefer-binary")
         fh.write("\n")
-        for pkg in grpc_pkg:
+        for pkg in min_pkgs:
             fh.write(pkg + "\n")
         fh.flush()
         fh.close()
