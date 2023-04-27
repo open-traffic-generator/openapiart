@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net" modified="2023-04-27T08:48:02.847Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36" etag="_O73vBNwPYoJx0P3TqEM" version="21.2.2" type="device">
+  <diagram name="otlp_design_in_snappi" id="MMNPsdAWy_9MHpGwy-u-">
+    <mxGraphModel dx="2537" dy="904" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-1" value="" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="150" y="60" width="590" height="590" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-2" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;2. snappi/gosnappi&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="170" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-3" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="370" y="100" width="290" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-5" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;&amp;nbsp;I. Initiate tracer and setup batch&amp;nbsp; span processor, has the capability to accept a custom span processor for added customization&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" vertex="1" parent="1">
+          <mxGeometry x="392.5" y="130" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-6" value="&lt;div style=&quot;&quot;&gt;&lt;b style=&quot;font-size: 14px; background-color: initial;&quot;&gt;&amp;nbsp;II. Setup exporter based on the type of transport and endpoint to the OTLP collector.&lt;/b&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" vertex="1" parent="1">
+          <mxGeometry x="392.5" y="260" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-7" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;&amp;nbsp;III. Setup instrumentor for a particular transport GRP/HTTP based only transport selected by user&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;" vertex="1" parent="1">
+          <mxGeometry x="392.5" y="380" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-8" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;&amp;nbsp;IV. Utility for span and such as&amp;nbsp; starting, closing spans , setting span errors&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;" vertex="1" parent="1">
+          <mxGeometry x="392.5" y="500" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-9" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;fillColor=#d5e8d4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-80" y="320" as="sourcePoint" />
+            <mxPoint x="110" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-10" value="&lt;b style=&quot;border-color: var(--border-color);&quot;&gt;&lt;font style=&quot;border-color: var(--border-color); font-size: 16px;&quot;&gt;1.User provided values such&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;enable_telemetry, collector,_endpoint,&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;exporter_transport&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="-160" y="230" width="310" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-11" value="&lt;font size=&quot;1&quot; style=&quot;&quot;&gt;&lt;b style=&quot;font-size: 16px;&quot;&gt;3. Telemetry InfraStructure&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="410" y="70" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-13" value="" style="verticalLabelPosition=bottom;sketch=0;html=1;fillColor=#A153A0;strokeColor=#ffffff;verticalAlign=top;align=center;points=[[0,0.5,0],[0.125,0.25,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.875,0.25,0],[1,0.5,0],[0.875,0.75,0],[0.75,1,0],[0.5,1,0],[0.125,0.75,0]];pointerEvents=1;shape=mxgraph.cisco_safe.compositeIcon;bgIcon=mxgraph.cisco_safe.design.blank_device;resIcon=mxgraph.cisco_safe.design.log_collector_2;" vertex="1" parent="1">
+          <mxGeometry x="950" y="240" width="260" height="178" as="geometry" />
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-14" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;fillColor=#d5e8d4;strokeColor=#82b366;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="750" y="327.41" as="sourcePoint" />
+            <mxPoint x="920" y="327.91" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="840" y="327.91" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="1sSXlC8A9oI4-rQ88FFn-15" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;4. OTLP Collector&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="210" width="160" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
