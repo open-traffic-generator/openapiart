@@ -31,8 +31,8 @@ openapi_warnings = []
 # instantiate the logger
 stdout_handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
-    fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s",
-    # datefmt="%Y-%m-%d %H:%M:%S",
+    fmt="%(asctime)s.%(msecs)03d [%(name)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 formatter.converter = time.gmtime
 stdout_handler.setFormatter(formatter)
