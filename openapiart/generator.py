@@ -516,17 +516,13 @@ class Generator:
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
                 self._write(2, 'log.debug("Response - " + str(response))')
-                self._write(
-                    2, 'status_code_200 = response.get("status_code_200")'
-                )
-                self._write(2, "if status_code_200 is not None:")
                 if return_byte:
-                    self._write(3, 'bytes = response.get("response_bytes")')
+                    self._write(2, 'bytes = response.get("response_bytes")')
                     self._write(2, "if bytes is not None:")
                     self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
                     self._write(
-                        3,
+                        2,
                         'result = response.get("%s")'
                         % rpc_method.proto_field_name,
                     )
@@ -549,7 +545,7 @@ class Generator:
                     self._write(4, "result")
                     self._write(3, ")")
                 else:
-                    self._write(3, 'resp_str = response.get("string")')
+                    self._write(2, 'resp_str = response.get("string")')
                     self._write(2, "if resp_str is not None:")
                     self._write(3, 'return response.get("string")')
                 # bad responses for now only has default which is not needed to be listed below
