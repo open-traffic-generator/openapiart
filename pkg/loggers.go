@@ -71,7 +71,11 @@ func GetLogger(ctx string) zerolog.Logger {
 	GlobalCtx = ctx
 	var localLogger zerolog.Logger
 	if !LoggerFile {
-		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout}
+		zerolog.TimestampFunc = func() time.Time {
+			return time.Now().In(time.Local)
+		}
+		zerolog.TimeFieldFormat = time.RFC3339Nano
+		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-1-02T15:04:05.0000000000Z"}
 		localLogger = zerolog.New(consoleWriter).Level(GlobalLogLevel).With().Timestamp().Str("Module", ctx).Logger()
 
 	} else {
