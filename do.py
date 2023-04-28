@@ -143,18 +143,22 @@ def init(use_sdk=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if use_sdk is None:
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
+        test_req = os.path.join(
+            base_dir, "openapiart", "test_requirements.txt"
+        )
         run(
             [
                 py() + " -m pip install -r {}".format(req),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(test_req),
             ]
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
+        art_test = os.path.join(base_dir, "art", "test_requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(art_test),
             ]
         )
 
@@ -294,6 +298,17 @@ def install():
     run(
         [
             "{} -m pip install --force-reinstall --no-cache-dir {}[testing]".format(
+                py(), os.path.join("dist", wheel)
+            ),
+        ]
+    )
+
+
+def install_package_only():
+    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    run(
+        [
+            "{} -m pip install --force-reinstall --no-cache-dir {}".format(
                 py(), os.path.join("dist", wheel)
             ),
         ]

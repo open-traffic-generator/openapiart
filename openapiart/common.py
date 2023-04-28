@@ -133,6 +133,22 @@ class HttpTransport(object):
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             self.logger.warning("Certificate verification is disabled")
 
+    def _parse_response_error(self, response_code, response_text):
+        error_response = ""
+        try:
+            error_response = yaml.safe_load(response_text)
+        except Exception as _:
+            error_response = response_text
+
+        err_obj = Error()
+        try:
+            err_obj.deserialize(error_response)
+        except Exception as _:
+            err_obj.code = response_code
+            err_obj.errors = [str(error_response)]
+
+        raise Exception(err_obj)
+
     def send_recv(
         self,
         method,
@@ -183,9 +199,7 @@ class HttpTransport(object):
                 # content types
                 return response
         else:
-            raise Exception(
-                response.status_code, yaml.safe_load(response.text)
-            )
+            self._parse_response_error(response.status_code, response.text)
 
 
 class OpenApiStatus:
@@ -403,10 +417,12 @@ class OpenApiValidator(object):
         except Exception:
             return False
 
-    def validate_integer(self, value, min, max):
+    def validate_integer(self, value, min, max, type_format=None):
         if value is None or not isinstance(value, int):
             return False
-        if value < 0:
+        if type_format == "uint32" and value < 0:
+            return False
+        if type_format == "uint64" and value < 0:
             return False
         if min is not None and value < min:
             return False
@@ -476,8 +492,11 @@ class OpenApiValidator(object):
             list: "list",
             "int64": "integer",
             "int32": "integer",
+            "uint64": "integer",
+            "uint32": "integer",
             "double": "float",
         }
+        type_format = type_
         if type_ in type_map:
             type_ = type_map[type_]
         if itemtype is not None and itemtype in type_map:
@@ -500,7 +519,7 @@ class OpenApiValidator(object):
             )
             verdict = False
         elif type_ == "integer":
-            verdict = v_obj(value, min, max)
+            verdict = v_obj(value, min, max, type_format)
             if verdict is True:
                 return
             min_max = ""
@@ -724,9 +743,16 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 if isinstance(value, OpenApiObject):
                     self._raise_status_warnings(key, value)
             elif value is not None:
-                if self._TYPES.get(key, {}).get("format", "") == "int64":
+                if (
+                    self._TYPES.get(key, {}).get("format", "") == "int64"
+                    or self._TYPES.get(key, {}).get("format", "") == "uint64"
+                ):
                     value = str(value)
-                elif self._TYPES.get(key, {}).get("itemformat", "") == "int64":
+                elif (
+                    self._TYPES.get(key, {}).get("itemformat", "") == "int64"
+                    or self._TYPES.get(key, {}).get("itemformat", "")
+                    == "uint64"
+                ):
                     value = [str(v) for v in value]
                 output[key] = value
                 self._raise_status_warnings(key, value)
@@ -772,10 +798,15 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         property_value = self._DEFAULTS[property_name]
                 self._set_choice(property_name)
                 # convert int64(will be string on wire) to to int
-                if self._TYPES[property_name].get("format", "") == "int64":
+                if (
+                    self._TYPES[property_name].get("format", "") == "int64"
+                    or self._TYPES[property_name].get("format", "") == "uint64"
+                ):
                     property_value = int(property_value)
                 elif (
                     self._TYPES[property_name].get("itemformat", "") == "int64"
+                    or self._TYPES[property_name].get("itemformat", "")
+                    == "uint64"
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value

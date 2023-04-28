@@ -342,7 +342,7 @@ func TestErrorDetailsIncorrectFormat(t *testing.T) {
 			"e_b" : 2
 	    }`
 
-	object := openapiart.NewErrorDetails()
+	object := openapiart.NewError()
 	assert.NotNil(t, object.FromYaml(incorrect_format))
 	assert.NotNil(t, object.FromJson(incorrect_format))
 	assert.NotNil(t, object.FromPbText(incorrect_format))

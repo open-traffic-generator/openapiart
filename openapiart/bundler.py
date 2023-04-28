@@ -366,31 +366,57 @@ class Bundler(object):
                     )
 
     def _validate_required_responses(self):
-        """Ensure all paths include a 400 and 500 response.
-
-        Print every path that does not include a 400 or 500 response.
+        """Ensure all paths include a 200 and default response.
 
         Returns
         -------
-        Exception: one or more paths is missing a 400 or 500 response
-        None: all paths have a 400 and 500 response
+        Exception: one or more paths is missing a 200 or default response
+        None: all paths have a 200 and default response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        required_error_codes = ["400", "500"]
+        required_responses = ["200", "default"]
         missing_paths = ""
         for response in responses:
-            missing = set(required_error_codes).difference(
-                set(response.value.keys())
-            )
-            if len(missing):
+            response_keys = [str(key) for key in response.value.keys()]
+            missing = set(required_responses).difference(set(response_keys))
+            if len(missing) > 0:
                 error_message = "{}: is missing the following required responses: {}".format(
                     response.full_path,
                     missing,
                 )
-                print(error_message)
                 missing_paths += "{}\n".format(error_message)
+
+            # TODO: need to check wheather every default schema points to
+
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
+
+        # There must be the Error structure in the yaml which should have required fields code and errors
+        err_schema = self._get_parser("$..Error").find(self._content)
+        if len(err_schema) == 0:
+            raise Exception("Error schema does not exsist")
+        elif len(err_schema) > 1:
+            raise Exception(
+                "There must be exactly one instance of Error schema"
+            )
+
+        required_err_nodes = ["code", "errors"]
+        schema = err_schema[0]
+
+        if "required" not in schema.value.keys():
+            raise Exception(
+                "Error schema in %s must have the required field in it"
+                % schema.full_path,
+            )
+
+        diff = set(required_err_nodes).difference(
+            set(schema.value["required"])
+        )
+        if len(diff):
+            raise Exception(
+                "Error schema must have %s as required properties"
+                % str(required_err_nodes)
+            )
         return None
 
     def _validate_file(self):
@@ -766,17 +792,10 @@ class Bundler(object):
                     format,
                     property_name="auto",
                 )
-            if "metric_group" in xpattern["features"]:
-                schema["properties"]["metric_group"] = {
-                    "description": """A unique name is used to indicate to the system that the field may """
-                    """extend the metric row key and create an aggregate metric row for """
-                    """every unique value. """
-                    """To have metric group columns appear in the flow metric rows the flow """
-                    """metric request allows for the metric_group value to be specified """
-                    """as part of the request.""",
-                    "type": "string",
-                    "x-field-uid": auto_field.uid,
-                }
+
+            # skip this UID as it was previously being used for metric_groups
+            _ = auto_field.uid
+
         if "enums" in xpattern:
             schema["properties"]["value"]["enum"] = copy.deepcopy(
                 xpattern["enums"]
@@ -838,6 +857,64 @@ class Bundler(object):
             self._content["components"]["schemas"][
                 counter_pattern_name
             ] = counter_schema
+
+        if "features" in xpattern and "metric_tags" in xpattern["features"]:
+
+            metric_tags_schema_name = "{}.MetricTag".format(schema_name)
+            length = 65535
+            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                if "length" in xpattern:
+                    length = int(xpattern["length"])
+                elif xpattern["format"] == "mac":
+                    length = 48
+                elif xpattern["format"] == "ipv4":
+                    length = 32
+                elif xpattern["format"] == "ipv6":
+                    length = 128
+            metric_tags_auto_field = AutoFieldUid()
+            metric_tags_schema = {
+                "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
+                        "type": "string",
+                        "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
+                        "x-field-uid": metric_tags_auto_field.uid,
+                    },
+                    "offset": {
+                        "description": "Offset in bits relative to start of corresponding header field",
+                        "type": "integer",
+                        "default": 0,
+                        "minimum": 0,
+                        "maximum": length - 1,
+                        "x-field-uid": metric_tags_auto_field.uid,
+                    },
+                    "length": {
+                        "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
+                        "type": "integer",
+                        "default": length,
+                        "minimum": 1,
+                        "maximum": length,
+                        "x-field-uid": metric_tags_auto_field.uid,
+                    },
+                },
+            }
+            schema["properties"]["metric_tags"] = {
+                "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/{}".format(
+                        metric_tags_schema_name
+                    )
+                },
+                "x-field-uid": auto_field.uid,
+            }
+            self._content["components"]["schemas"][
+                metric_tags_schema_name
+            ] = metric_tags_schema
+
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
             xpattern,
@@ -871,8 +948,17 @@ class Bundler(object):
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
         if format is not None:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["format"] = format
+            # else:
             schema["format"] = format
         if "length" in xpattern:
+            # TODO: fix this
+            # if property_name == "values":
+            #     schema["items"]["minimum"] = 0
+            #     schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            # else:
             schema["minimum"] = 0
             schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 

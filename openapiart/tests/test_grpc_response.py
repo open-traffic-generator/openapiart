@@ -1,3 +1,6 @@
+import grp
+from traceback import format_exception
+import grpc
 import pytest
 import json
 
@@ -62,6 +65,38 @@ def test_grpc_valid_inversion_check(utils, grpc_api):
     finally:
         grpc_api.get_local_version().api_spec_version = "0.1.0"
         grpc_api._version_check = False
+
+
+def test_grpc_set_config_error_struct(utils, grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    payload["l"]["integer"] = 100
+    try:
+        grpc_api.set_config(payload)
+    except Exception as e:
+        e_obj = e.args[0]
+        assert e_obj.code == 13
+        assert e_obj.errors[1] == "err2"
+        err_obj = grpc_api.from_exception(e)
+        assert err_obj is not None
+        assert err_obj.code == 13
+        assert err_obj.errors[1] == "err2"
+
+
+def test_grpc_set_config_error_str(utils, grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    payload["l"]["integer"] = -3
+    try:
+        grpc_api.set_config(payload)
+    except Exception as e:
+        e_obj = e.args[0]
+        assert e_obj.code == 13
+        assert e_obj.errors[0] == "some random error!"
+        err_obj = grpc_api.from_exception(e)
+        assert err_obj is not None
+        assert err_obj.code == 13
+        assert err_obj.errors[0] == "some random error!"
 
 
 if __name__ == "__main__":

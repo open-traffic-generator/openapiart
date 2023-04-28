@@ -18,27 +18,21 @@ paths:
       operationId: GetRootResponse
       description: simple GET api with single return type
       responses:
-        200:
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3
+
     delete:
       tags: [ApiTest]
       operationId: dummyResponseTest
@@ -51,20 +45,14 @@ paths:
               schema:
                 type: string
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3
+      
     post:
       tags: [ApiTest]
       operationId: PostRootResponse
@@ -75,24 +63,17 @@ paths:
             schema:
               $ref: './service_a.yaml#/components/schemas/ApiTest.InputBody'
       responses:
-        200:
+        '200':
           description: OK
           content:
             application/json:
               schema:
                 $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
           x-field-uid: 1
-        '400':
+        default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
+                $ref: './common.yaml#/components/schemas/Error'
           x-field-uid: 2
-        '500':
-          description: Error500
-          content:
-            application/json:
-              schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseError'
-          x-field-uid: 3
