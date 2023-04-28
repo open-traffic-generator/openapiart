@@ -31,7 +31,7 @@ func TestPostRootResponse(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodPost, "/api/apitest", nil)
 	wr := httptest.NewRecorder()
 	router.ServeHTTP(wr, req)
-	assert.Equal(t, http.StatusInternalServerError, wr.Code)
+	assert.Equal(t, http.StatusBadRequest, wr.Code)
 
 	inputbody := openapiart.NewApiTestInputBody().SetSomeString("this is the input body")
 	j, _ := inputbody.ToJson()

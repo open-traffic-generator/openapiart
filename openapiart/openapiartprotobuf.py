@@ -1,6 +1,6 @@
 import subprocess
 import os
-from .openapiartplugin import OpenApiArtPlugin
+from .openapiartplugin import OpenApiArtPlugin, type_limits
 
 
 class OpenApiArtProtobuf(OpenApiArtPlugin):
@@ -168,10 +168,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     response_fields.append(response_field)
             self._write("message {} {{".format(operation.response))
             for response_field in response_fields:
+                if response_field.type == "Error":
+                    continue
                 self._write(
-                    "optional {} {} = {};".format(
+                    "{} {} = {};".format(
                         response_field.type,
-                        response_field.name,
+                        self._lowercase(response_field.type)
+                        if response_field.type != "bytes"
+                        else "response_bytes",
                         response_field.field_uid,
                     ),
                     indent=1,
@@ -209,7 +213,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write('import "google/protobuf/descriptor.proto";')
         self._write('import "google/protobuf/empty.proto";')
 
-    def _get_field_type(self, property_name, openapi_object):
+    def _get_field_type(
+        self,
+        property_name,
+        openapi_object,
+        outer_format=None,
+        outer_min=None,
+        outer_max=None,
+    ):
         """Convert openapi type -> protobuf type
 
         - type:number -> float
@@ -218,6 +229,8 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         - type:integer -> int32
         - type:integer [format:int32] -> int32
         - type:integer [format:int64] -> int64
+        - type:integer [format:uint32] -> uint32
+        - type:integer [format:uint64] -> uint64
         - type:boolean -> bool
         - type:string -> string
         - type:string [format:binary] -> bytes
@@ -228,7 +241,10 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 return "bool"
             if type == "string":
                 if "format" in openapi_object:
-                    if openapi_object["format"] == "binary":
+                    if (
+                        str(outer_format) == "binary"
+                        or openapi_object["format"] == "binary"
+                    ):
                         return "bytes"
                 elif "x-enum" in openapi_object:
                     enum_msg = self._camelcase("{}".format(property_name))
@@ -241,36 +257,47 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     return enum_msg + ".Enum"
                 return "string"
             if type == "integer":
-                format = openapi_object.get("format")
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    return "int64"
-                if format is not None and "int64" in format:
-                    return "int64"
-                return "int32"
+                if outer_min is not None:
+                    min = outer_min
+                if outer_max is not None:
+                    max = outer_max
+                if outer_format is not None:
+                    type_format = outer_format
+                return type_limits._get_integer_format(type_format, min, max)
             if type == "number":
                 if "format" in openapi_object:
-                    if openapi_object["format"] == "double":
+                    if (
+                        str(outer_format) == "double"
+                        or openapi_object["format"] == "double"
+                    ):
                         return "double"
-                    elif openapi_object["format"] == "float":
+                    elif (
+                        str(outer_format) == "float"
+                        or openapi_object["format"] == "float"
+                    ):
                         return "float"
                 return "float"
             if type == "array":
-                item_type = self._get_field_type(
-                    property_name, openapi_object["items"]
-                )
-                format = openapi_object.get("format")
+                # TODO: outer min/max shouldn't exist for arrays
+                type_format = openapi_object.get("format")
                 min = openapi_object.get("minimum")
                 max = openapi_object.get("maximum")
-                if (min is not None and min > 2147483647) or (
-                    max is not None and max > 2147483647
-                ):
-                    item_type = item_type.replace("32", "64")
-                if format is not None and "int64" in format:
-                    item_type = item_type.replace("32", "64")
+
+                item_type = self._get_field_type(
+                    property_name,
+                    openapi_object["items"],
+                    outer_format=type_format,
+                    outer_min=min,
+                    outer_max=max,
+                )
+
+                if item_type == "integer":
+                    item_type = type_limits._get_integer_format(
+                        type_format, min, max
+                    )
                 return "repeated " + item_type
         elif "$ref" in openapi_object:
             return openapi_object["$ref"].split("/")[-1].replace(".", "")
@@ -401,9 +428,19 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
     def _write_service(self):
         self._write()
         paths_object = self._openapi["paths"]
+        self._write(self._justify_desc(self._get_description(paths_object)))
+        self._write("//")
         self._write(
-            self._justify_desc(self._get_description(paths_object), indent=1)
+            "// For all RPCs defined in this service, API Server SHOULD provide JSON"
         )
+        self._write(
+            "// representation of `Error` message as an error string upon failure, ensuring"
+        )
+        self._write(
+            "// name of enum constants (instead of value) for `kind` property is present"
+        )
+        self._write("// in the representation")
+
         self._write("service {name} {{".format(name=self.proto_service_name))
         self._write()
         for url, path_object in self._openapi["paths"].items():

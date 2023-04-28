@@ -7,7 +7,7 @@ info:
 components:
   schemas:
 
-    ServiceB.Item:
+    ServiceAbc.Item:
       type: object
       properties:
         some_id:
@@ -22,11 +22,11 @@ components:
         level_2:
           type: string
           x-field-uid: 4
-    ServiceB.ItemList:
+    ServiceAbc.ItemList:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/ServiceB.Item'
+            $ref: '#/components/schemas/ServiceAbc.Item'
           x-field-uid: 1

@@ -71,7 +71,7 @@ jobs:
       - name: Install dependencies
         run: |
           python do.py setup
-          python do.py install
+          python do.py install_package_only
       - name: Run artifact generation
         run: |
           python do.py generate python True
@@ -86,6 +86,7 @@ jobs:
         run: ls -R
       - name: Run python tests
         run: |
+          python do.py install
           sudo python do.py testpy
 
   go_tests:
