@@ -16,6 +16,7 @@ class GoTidy(object):
             )
         )
         self._format_go()
+        self._replace_specific_versions()
         self._tidy_mod()
 
     def _format_go(self):
@@ -34,6 +35,28 @@ class GoTidy(object):
             process.wait()
         except Exception as e:
             print("Bypassed formatting of generated go ux file: {}".format(e))
+
+    def _replace_specific_versions(self):
+        imports = []
+        with open(os.path.join(self._output_root_path, "go.mod"), "r") as fh:
+            imports = fh.read().splitlines()
+
+        new_imports = []
+        for pkg in imports:
+            if "go.opentelemetry.io/contrib" in pkg:
+                module = pkg.split(" ")[0]
+                new_imports.append(module + " v0.37.0")
+            elif "go.opentelemetry.io/otel" in pkg:
+                module = pkg.split(" ")[0]
+                new_imports.append(module + " v1.14.0")
+            else:
+                new_imports.append(pkg)
+
+        with open(os.path.join(self._output_root_path, "go.mod"), "w") as fh:
+            for npkg in new_imports:
+                fh.write(npkg + "\n")
+            fh.flush()
+            fh.close()
 
     def _tidy_mod(self):
         """Tidy the mod file"""
