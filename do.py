@@ -270,7 +270,7 @@ def go_lint():
     output = run(["go version"], capture_output=True)
     if "go1.17" in output or "go1.18" in output:
         print("Using older linter version for go version older than 1.19")
-        version = "1.46.2"
+        version = "1.47.3"
     else:
         version = "1.51.1"
 
@@ -280,7 +280,6 @@ def go_lint():
     )
     run([pkg])
     os.chdir("pkg")
-    run(["go mod tidy"])
     run(["golangci-lint run -v"])
 
 

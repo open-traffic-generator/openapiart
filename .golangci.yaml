@@ -3,8 +3,3 @@ linters-settings:
     checks:
       - all
       - '-SA1019' # disable the rule SA1019 for deprecation errors
-
-issues:
-  exclude-rules:
-    - path: /
-      text: "can't run linter goanalysis_metalinter: buildir: failed to load package trace"
