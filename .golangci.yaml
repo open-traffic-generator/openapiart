@@ -5,5 +5,6 @@ linters-settings:
       - '-SA1019' # disable the rule SA1019 for deprecation errors
 
 issues:
-  exclude:
-    - "Running error: 1 error occurred:\n\t* can't run linter goanalysis_metalinter: buildir: failed to load package trace: could not load export data: no export data for \"go.opentelemetry.io/otel/sdk/trace\"\n\n"
+  exclude-rules:
+    - path: /
+      text: "can't run linter goanalysis_metalinter: buildir: failed to load package trace"
