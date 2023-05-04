@@ -270,17 +270,17 @@ def go_lint():
     output = run(["go version"], capture_output=True)
     if "go1.17" in output or "go1.18" in output:
         print("Using older linter version for go version older than 1.19")
-        version = "1.47.3"
+        version = "1.46.2"
     else:
         version = "1.51.1"
 
-    pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-        "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
-        version,
-    )
-    run([pkg])
-    os.chdir("pkg")
-    run(["golangci-lint run -v"])
+        pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+            "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
+            version,
+        )
+        run([pkg])
+        os.chdir("pkg")
+        run(["golangci-lint run -v"])
 
 
 def dist():
