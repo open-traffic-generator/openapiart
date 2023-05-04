@@ -280,6 +280,7 @@ def go_lint():
     )
     run([pkg])
     os.chdir("pkg")
+    run(["go mod tidy"])
     run(["golangci-lint run -v"])
 
 
