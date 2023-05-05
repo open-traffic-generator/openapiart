@@ -274,13 +274,13 @@ def go_lint():
     else:
         version = "1.51.1"
 
-        pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-            "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
-            version,
-        )
-        run([pkg])
-        os.chdir("pkg")
-        run(["golangci-lint run -v"])
+    pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+        "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
+        version,
+    )
+    run([pkg])
+    os.chdir("pkg")
+    run(["golangci-lint run -v"])
 
 
 def dist():

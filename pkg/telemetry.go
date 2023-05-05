@@ -3,33 +3,40 @@ package openapiart
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type telemetry struct {
 	transport     string
 	endpoint      string
 	rootCtx       context.Context
+	spanProcessor sdktrace.SpanProcessor
 	traceProvider *sdktrace.TracerProvider
 }
 
 type Telemetry interface {
 	isOTLPEnabled() bool
 	getRootContext() context.Context
-	WithExporterTrasnport(transport string) Telemetry
+	WithHTTP() Telemetry
+	WithGRPC() Telemetry
 	WithExporterEndPoint(endpoint string) Telemetry
 	WithRootContext(ctx context.Context) Telemetry
-	StartTracing() (Telemetry, error)
-	StopTracing()
+	WithCustomSpanProcess(spanProcessor sdktrace.SpanProcessor) Telemetry
+	Start() (Telemetry, error)
+	Stop()
 	NewSpan(ctx context.Context, name string) (context.Context, trace.Span)
 	SetSpanStatus(span trace.Span, code codes.Code, description string)
 	SetSpanAttributes(span trace.Span, attrs []attribute.KeyValue)
@@ -63,11 +70,15 @@ func (t *telemetry) getRootContext() context.Context {
 	return context.Background()
 }
 
-// Sets the transport which is to be used to communicate with the OTLP collector.
-// Available options are HTTP/GRPC
-// Default value is HTTP
-func (t *telemetry) WithExporterTrasnport(transport string) Telemetry {
-	t.transport = transport
+// Sets the transport to HTTP which uses REST communication
+func (t *telemetry) WithHTTP() Telemetry {
+	t.transport = "HTTP"
+	return t
+}
+
+// Sets the transport to GRPC
+func (t *telemetry) WithGRPC() Telemetry {
+	t.transport = "GRPC"
 	return t
 }
 
@@ -85,24 +96,58 @@ func (t *telemetry) WithRootContext(ctx context.Context) Telemetry {
 	return t
 }
 
+// Gives ability to the user to set a custom span processor for processing the spans
+func (t *telemetry) WithCustomSpanProcess(spanProcessor sdktrace.SpanProcessor) Telemetry {
+	t.spanProcessor = spanProcessor
+	return t
+}
+
 // Initiates the trace provider with proper resources, exporter information
 // and span processors
-func (t *telemetry) StartTracing() (Telemetry, error) {
+func (t *telemetry) Start() (Telemetry, error) {
 
 	if t.isOTLPEnabled() {
 
-		// creating exporter for now only concentrating on http
-		exporter, err := otlptrace.New(
-			context.Background(),
-			otlptracehttp.NewClient(
-				otlptracehttp.WithInsecure(),
-				otlptracehttp.WithEndpoint(t.endpoint),
-			),
-		)
+		var exporter *otlptrace.Exporter
+		var err error
 
-		// raising error if exporter creation had some issues
-		if err != nil {
-			return nil, fmt.Errorf("Error creating OTLP trace exporter: %v", err)
+		if t.transport == "HTTP" {
+
+			// creating exporter which communicates with the OTLP collector
+			exporter, err = otlptrace.New(
+				context.Background(),
+				otlptracehttp.NewClient(
+					otlptracehttp.WithInsecure(),
+					otlptracehttp.WithEndpoint(t.endpoint),
+				),
+			)
+
+			// raising error if exporter creation had some issues
+			if err != nil {
+				return nil, fmt.Errorf("Error creating OTLP trace exporter: %v\n", err)
+			}
+
+		} else if t.transport == "GRPC" {
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			conn, err := grpc.DialContext(ctx, t.endpoint,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithBlock(),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create gRPC connection to collector: %w", err)
+			}
+
+			exporter, err = otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+
+			// raising error if exporter creation had some issues
+			if err != nil {
+				return nil, fmt.Errorf("Error creating OTLP trace exporter: %v\n", err)
+			}
+
+		} else {
+			return nil, fmt.Errorf("transport %s is not supported", t.transport)
 		}
 
 		// defining the service name
@@ -118,8 +163,14 @@ func (t *telemetry) StartTracing() (Telemetry, error) {
 			return nil, fmt.Errorf("Error setting resources for OTLP trace: %v", err)
 		}
 
-		// Selecting batch span processor as of now
-		spanProcessor := sdktrace.NewBatchSpanProcessor(exporter)
+		var spanProcessor sdktrace.SpanProcessor
+
+		// by default we use BatchSpanProcessor
+		if t.spanProcessor != nil {
+			spanProcessor = t.spanProcessor
+		} else {
+			spanProcessor = sdktrace.NewBatchSpanProcessor(exporter)
+		}
 
 		// Creating the traceProvider
 		traceProvider := sdktrace.NewTracerProvider(
@@ -145,7 +196,7 @@ func (t *telemetry) StartTracing() (Telemetry, error) {
 }
 
 // Gracefully shuts down the trace provider and flushes the collector streams.
-func (t *telemetry) StopTracing() {
+func (t *telemetry) Stop() {
 	if t.isOTLPEnabled() {
 		if err := t.traceProvider.Shutdown(context.Background()); err != nil {
 			fmt.Println("Failed shutting down trace provider")
