@@ -569,10 +569,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         url = url[1:]
                     http.request = """{struct}Json, err := {struct}.ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
+                    parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
+                    kvs := []attribute.KeyValue{{}}
+                    kvs = append(kvs, attribute.String("request", {struct}.String()))
+                    api.Telemetry().SetSpanAttributes(span, kvs)
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
                     """.format(
                         url=http_url,
                         struct=new.struct,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
@@ -601,8 +608,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             operation_name=rpc.operation_name,
                         )
                     )
-                    http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
+                    http.request = """parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
+                    kvs := []attribute.KeyValue{{}}
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
                         url=http_url,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
@@ -773,7 +785,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            func (api *{internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+            func (api *{internal_struct_name}) httpSendRecv(ctx context.Context, urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -787,7 +799,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
-                req = req.WithContext(httpClient.ctx)
+                if ctx != nil {{
+                    req = req.WithContext(ctx)
+                }} else {{
+                    req = req.WithContext(httpClient.ctx)
+                }}
                 response, err := httpClient.client.Do(req)
                 return response, err
             }}
@@ -957,18 +973,26 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += "return nil, api.fromHttpError(resp.StatusCode, bodyBytes)"
+                    error_handling += """err := api.fromHttpError(resp.StatusCode, bodyBytes)
+                    api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
+                    return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """return bodyBytes, nil"""
+                success_handling = """kvs = append(kvs, attribute.String("response", string(bodyBytes)))
+                api.Telemetry().SetSpanAttributes(span, kvs)
+                return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
+                kvs = append(kvs, attribute.String("response", bodyString))
+                api.Telemetry().SetSpanAttributes(span, kvs)
                 return &bodyString, nil"""
             else:
                 success_handling = """obj := api.{success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
+                    kvs = append(kvs, attribute.String("response", obj.String()))
+                    api.Telemetry().SetSpanAttributes(span, kvs)
                     return obj, nil""".format(
                     success_method=success_method,
                     struct=http.request_return_type,
