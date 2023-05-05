@@ -28,6 +28,18 @@ if sys.version_info[0] == 3:
 
 openapi_warnings = []
 
+# instantiate the logger
+stdout_handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    fmt="%(asctime)s.%(msecs)03d [%(name)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+formatter.converter = time.gmtime
+stdout_handler.setFormatter(formatter)
+log = logging.getLogger("common")
+log.addHandler(stdout_handler)
+log.info("Logger instantiated")
+
 
 class Transport:
     HTTP = "http"
@@ -71,6 +83,15 @@ def api(
     - ext (str): Name of an extension package
     """
     params = locals()
+
+    if logger is not None:
+        global log
+        log = logger
+    log.setLevel(loglevel)
+
+    if version_check is False:
+        log.warning("Version check is disabled")
+
     transport_types = ["http", "grpc"]
     if ext is None:
         transport = "http" if transport is None else transport
@@ -81,8 +102,10 @@ def api(
                 )
             )
         if transport == "http":
+            log.info("Transport set to HTTP")
             return HttpApi(**params)
         else:
+            log.info("Transport set to GRPC")
             return GrpcApi(**params)
     try:
         if transport is not None:
@@ -105,21 +128,7 @@ class HttpTransport(object):
             else "https://localhost:443"
         )
         self.verify = kwargs["verify"] if "verify" in kwargs else False
-        self.logger = kwargs["logger"] if "logger" in kwargs else None
-        self.loglevel = (
-            kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        )
-        if self.logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(
-                fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self.logger = logging.Logger(self.__module__, level=self.loglevel)
-            self.logger.addHandler(stdout_handler)
-        self.logger.debug(
+        log.debug(
             "HttpTransport args: {}".format(
                 ", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])
             )
@@ -131,7 +140,7 @@ class HttpTransport(object):
         self.verify = verify
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.logger.warning("Certificate verification is disabled")
+            log.warning("Certificate verification is disabled")
 
     def _parse_response_error(self, response_code, response_text):
         error_response = ""
@@ -170,6 +179,10 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
+        log.debug("Request url - " + str(url))
+        log.debug("Method - " + str(method))
+        log.debug("Request headers - " + str(headers))
+        log.debug("Request payload - " + str(data))
         response = self._session.request(
             method=method,
             url=url,
@@ -179,6 +192,10 @@ class HttpTransport(object):
             # TODO: add a timeout here
             headers=headers,
         )
+        log.debug("Response status code - " + str(response.status_code))
+        log.debug("Response header - " + str(response.headers))
+        log.debug("Response content - " + str(response.content))
+        log.debug("Response text - " + str(response.text))
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
@@ -214,6 +231,12 @@ class OpenApiStatus:
             # cls.logger.warning(cls.messages[key])
             logging.warning(cls.messages[key])
             object.__warnings__.append(cls.messages[key])
+            log.warning(
+                "["
+                + OpenApiStatus.warn.__name__
+                + "] cls.messages[key]-"
+                + cls.messages[key]
+            )
             # openapi_warnings.append(cls.messages[key])
 
     @staticmethod
@@ -228,6 +251,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.deprecated.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
     @staticmethod
     def under_review(func_or_data):
@@ -241,6 +270,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.under_review.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
 
 class OpenApiBase(object):
@@ -355,6 +390,7 @@ class OpenApiValidator(object):
                 return False
             return all([0 <= int(oct, 16) <= 255 for oct in mac.split(":")])
         except Exception:
+            log.debug("Validating MAC address - " + str(mac) + " failed ")
             return False
 
     def validate_ipv4(self, ip):
@@ -369,6 +405,7 @@ class OpenApiValidator(object):
         try:
             return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
+            log.debug("Validating IPv4 address - " + str(ip) + " failed")
             return False
 
     def validate_ipv6(self, ip):
@@ -406,6 +443,7 @@ class OpenApiValidator(object):
                 ]
             )
         except Exception:
+            log.debug("Validating IPv6 address - " + str(ip) + " failed")
             return False
 
     def validate_hex(self, hex):
@@ -415,6 +453,7 @@ class OpenApiValidator(object):
             int(hex, 16)
             return True
         except Exception:
+            log.debug("Validating HEX value - " + str(hex) + " failed")
             return False
 
     def validate_integer(self, value, min, max, type_format=None):

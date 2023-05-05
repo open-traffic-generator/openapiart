@@ -173,6 +173,12 @@ class Generator:
             )
             common_content = common_content.replace(cnf_text, modify_text)
 
+            cnf_text = 'log = logging.getLogger("common")'
+            modify_text = 'log = logging.getLogger("{pkg_name}")'.format(
+                pkg_name=self._package_name
+            )
+            common_content = common_content.replace(cnf_text, modify_text)
+
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
@@ -378,16 +384,7 @@ class Generator:
             else "localhost:50051"
         )
         self._transport = kwargs["transport"] if "transport" in kwargs else None
-        self._logger = kwargs["logger"] if "logger" in kwargs else None
-        self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        if self._logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self._logger = logging.Logger(self.__module__, level=self._loglevel)
-            self._logger.addHandler(stdout_handler)
-        self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        log.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
     def _get_stub(self):
         if self._stub is None:
@@ -457,6 +454,9 @@ class Generator:
 
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
+                    )
                     if status_msg != "":
                         self._write(2, "self.add_warnings('%s')" % status_msg)
                     self._write(2, "stub = self._get_stub()")
@@ -472,6 +472,12 @@ class Generator:
                 else:
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
+                    )
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
+                    )
+                    self._write(
+                        2, 'log.debug("Request payload - " + str(payload))'
                     )
 
                     if status_msg != "":
@@ -509,6 +515,7 @@ class Generator:
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
+                self._write(2, 'log.debug("Response - " + str(response))')
                 if return_byte:
                     self._write(2, 'bytes = response.get("response_bytes")')
                     self._write(2, "if bytes is not None:")
@@ -631,6 +638,7 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
+                self._write(2, 'log.info("Executing ' + method["name"] + '")')
 
                 if method["x_status"] is not None:
                     status_msg = "%s api is %s, %s" % (
@@ -830,9 +838,11 @@ class Generator:
             raise Exception(err)
 
     def get_local_version(self):
+        log.info("Local Version is " + str(self._version_meta))
         return self._version_meta
 
     def get_remote_version(self):
+        log.info("Remote Version is " + str(self.get_version()))
         return self.get_version()
 
     def check_version_compatibility(self):

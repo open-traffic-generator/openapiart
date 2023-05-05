@@ -25,6 +25,8 @@ class FluentRpc(object):
         self.method_description = None
         self.status = {}
         self.struct = None
+        self.log_request = None
+        self.log_response = None
 
 
 class FluentRpcResponse(object):
@@ -295,6 +297,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
         self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "loggers.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "loggers.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
+        self._filename = os.path.normpath(
             os.path.join(self._ux_path, "common.go")
         )
         self._init_fp(self._filename)
@@ -559,6 +570,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         struct=new.struct
                     )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")\n'
+                        % rpc.operation_name
+                    )
+                    rpc.log_request += (
+                        'logs.Debug().Str("Request", %s.String()).Msg("")'
+                        % new.struct
+                    )
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
                             operation_name=rpc.operation_name,
@@ -602,6 +621,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
+                    )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")' % rpc.operation_name
                     )
                     rpc.http_call = (
                         """return api.http{operation_name}()""".format(
@@ -660,6 +682,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
+            var logs zerolog.Logger
+
             type versionMeta struct {{
                 checkVersion  bool
                 localVersion  Version
@@ -733,6 +757,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 api.tracer = &telemetry{{transport: "HTTP"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
+                logs = GetLogger("openapiart")
+                logs.Info().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
@@ -918,6 +944,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
                     {validate}
+                    {log_request}
                     {version_check}
 
                     if api.hasHttpTransport() {{
@@ -963,6 +990,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    log_request=rpc.log_request
+                    if rpc.log_request is not None
+                    else "",
                 )
             )
 
@@ -1010,6 +1040,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.StatusCode == 200 {{
+                        logs.Debug().Str("Response", string(bodyBytes)).Msg("")
                         {success_handling}
                     }} else {{
                         {error_handling}
