@@ -590,9 +590,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{return nil, err}}
                     parentCtx := api.Telemetry().getRootContext()
                     newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
-                    kvs := []attribute.KeyValue{{}}
-                    kvs = append(kvs, attribute.String("request", {struct}.String()))
-                    api.Telemetry().SetSpanAttributes(span, kvs)
+                    span.AddEvent(fmt.Sprintf("REQUEST PAYLOAD: %s", {struct}.String()))
                     defer api.Telemetry().CloseSpan(span)
                     resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
                     """.format(
@@ -632,7 +630,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                     http.request = """parentCtx := api.Telemetry().getRootContext()
                     newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
-                    kvs := []attribute.KeyValue{{}}
                     defer api.Telemetry().CloseSpan(span)
                     resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
                         url=http_url,
@@ -889,16 +886,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for rpc in self._api.external_rpc_methods:
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
-                        kvs = append(kvs, attribute.String("response", string(resp.ResponseBytes)))
-                        api.Telemetry().SetSpanAttributes(span, kvs)
+                        span.AddEvent(fmt.Sprintf("RESPONSE: %s", string(resp.ResponseBytes)))
                         return resp.ResponseBytes, nil
                     }
                     return nil, nil"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetString_() != "" {
                         status_code_value := resp.GetString_()
-                        kvs = append(kvs, attribute.String("response", status_code_value))
-                        api.Telemetry().SetSpanAttributes(span, kvs)
+                        span.AddEvent(fmt.Sprintf("RESPONSE: %s", status_code_value))
                         return &status_code_value, nil
                     }
                     return nil, nil"""
@@ -906,8 +901,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return_value = """ret := New{struct}()
                     if resp.Get{struct}() != nil {{
                         ret.SetMsg(resp.Get{struct}())
-                        kvs = append(kvs, attribute.String("response", ret.String()))
-                        api.Telemetry().SetSpanAttributes(span, kvs)
+                        span.AddEvent(fmt.Sprintf("RESPONSE: %s", ret.String()))
                         return ret, nil
                     }}
 
@@ -919,8 +913,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             set_span_attrs = ""
             if rpc.struct is not None:
-                set_span_attrs = """kvs = append(kvs, attribute.String("request", {struct}.String()))
-                    api.Telemetry().SetSpanAttributes(span, kvs)""".format(
+                set_span_attrs = """span.AddEvent(fmt.Sprintf("REQUEST: %s", {struct}.String()))""".format(
                     struct=rpc.struct
                 )
 
@@ -954,7 +947,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     // adding spans grpc transport for OTLP instrumentation
                     parentCtx := api.Telemetry().getRootContext()
                     newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
-                    kvs := []attribute.KeyValue{{}}
                     {span_attrs}
                     defer api.Telemetry().CloseSpan(span)
 
@@ -1008,21 +1000,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """kvs = append(kvs, attribute.String("response", string(bodyBytes)))
-                api.Telemetry().SetSpanAttributes(span, kvs)
+                success_handling = """span.AddEvent(fmt.Sprintf("RESPONSE: %s", string(bodyBytes)))
                 return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
-                kvs = append(kvs, attribute.String("response", bodyString))
-                api.Telemetry().SetSpanAttributes(span, kvs)
+                span.AddEvent(fmt.Sprintf("RESPONSE: %s", bodyString))
                 return &bodyString, nil"""
             else:
                 success_handling = """obj := api.{success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
-                    kvs = append(kvs, attribute.String("response", obj.String()))
-                    api.Telemetry().SetSpanAttributes(span, kvs)
+                    span.AddEvent(fmt.Sprintf("RESPONSE: %s", obj.String()))
                     return obj, nil""".format(
                     success_method=success_method,
                     struct=http.request_return_type,
