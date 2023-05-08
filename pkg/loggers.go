@@ -75,7 +75,7 @@ func GetLogger(ctx string) zerolog.Logger {
 			return time.Now().In(time.Local)
 		}
 		zerolog.TimeFieldFormat = time.RFC3339Nano
-		consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-1-02T15:04:05.000Z"}
+		consoleWriter := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-1-02T15:04:05.000Z"}
 		localLogger = zerolog.New(consoleWriter).Level(GlobalLogLevel).With().Timestamp().Str("Module", ctx).Logger()
 
 	} else {
@@ -103,7 +103,7 @@ func initLogger() (err error) {
 
 func RefreshLogLevel(logLevel zerolog.Level) {
 	if !LoggerFile {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(logLevel)
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).Level(logLevel)
 	} else {
 		log.Logger = log.Level(logLevel)
 	}

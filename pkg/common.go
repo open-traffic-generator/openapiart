@@ -139,15 +139,15 @@ type Api interface {
 	deprecated(message string)
 	under_review(message string)
 	addWarnings(message string)
+	fromHttpError(statusCode int, body []byte) Error
+	fromGrpcError(err error) (Error, bool)
+	FromError(err error) (Error, bool)
 	SetLogger(logger zerolog.Logger)
 	SetLogLevel(loglevel zerolog.Level)
 	// By default choice is false which outputs the log to Console.
 	// To set output to file assign choice to true
 	// and to reset back to console set choice to false
 	SetLogOutputToFile(choice bool)
-	fromHttpError(statusCode int, body []byte) Error
-	fromGrpcError(err error) (Error, bool)
-	FromError(err error) (Error, bool)
 }
 
 // NewGrpcTransport sets the underlying transport of the Api as grpc
