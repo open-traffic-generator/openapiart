@@ -29,15 +29,15 @@ if sys.version_info[0] == 3:
 openapi_warnings = []
 
 # instantiate the logger
-stdout_handler = logging.StreamHandler(sys.stdout)
+stderr_handler = logging.StreamHandler(sys.stderr)
 formatter = logging.Formatter(
     fmt="%(asctime)s.%(msecs)03d [%(name)s] [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 formatter.converter = time.gmtime
-stdout_handler.setFormatter(formatter)
+stderr_handler.setFormatter(formatter)
 log = logging.getLogger("common")
-log.addHandler(stdout_handler)
+log.addHandler(stderr_handler)
 log.info("Logger instantiated")
 
 
@@ -77,7 +77,7 @@ def api(
       man-in-the-middle (MitM) attacks. Setting verify to `False`
       may be useful during local development or testing.
     - logger (logging.Logger): A user defined logging.logger, if none is provided
-      then a default logger with a stdout handler will be provided
+      then a default logger with a stderr handler will be provided
     - loglevel (logging.loglevel): The logging package log level.
       The default loglevel is logging.INFO
     - ext (str): Name of an extension package
