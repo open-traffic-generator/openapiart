@@ -36,6 +36,7 @@ type Telemetry interface {
 	NewSpan(ctx context.Context, name string) (context.Context, trace.Span)
 	SetSpanStatus(span trace.Span, code codes.Code, description string)
 	SetSpanAttributes(span trace.Span, attrs []attribute.KeyValue)
+	SetSpanEvent(span trace.Span, eventStr string)
 	CloseSpan(span trace.Span)
 	View()
 }
@@ -229,5 +230,12 @@ func (t *telemetry) SetSpanStatus(span trace.Span, code codes.Code, description 
 func (t *telemetry) SetSpanAttributes(span trace.Span, attrs []attribute.KeyValue) {
 	if t.isOTLPEnabled() {
 		span.SetAttributes(attrs...)
+	}
+}
+
+// This method is used to set event to a particular span.
+func (t *telemetry) SetSpanEvent(span trace.Span, eventStr string) {
+	if t.isOTLPEnabled() {
+		span.AddEvent(eventStr)
 	}
 }
