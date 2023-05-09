@@ -752,7 +752,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
-                api.tracer = &telemetry{{transport: "HTTP"}}
+                api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
                 logs = GetLogger("openapiart")
                 logs.Info().Str("Logger Initialized", "log").Msg("")
