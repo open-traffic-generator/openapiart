@@ -706,8 +706,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
-                logs = GetLogger("openapiart")
-                logs.Info().Str("Logger Initialized", "log").Msg("")
+                logs = GetLogger("{pb_pkg_name}")
+                logs.Debug().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
