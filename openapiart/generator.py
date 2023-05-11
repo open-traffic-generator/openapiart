@@ -385,6 +385,7 @@ class Generator:
         )
         self._transport = kwargs["transport"] if "transport" in kwargs else None
         log.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        self._telemetry.initiate_grpc_instrumentation()
 
     def _get_stub(self):
         if self._stub is None:
@@ -453,6 +454,7 @@ class Generator:
                     self._deprecated_properties[key] = rpc_method.x_status[1]
 
                 if rpc_method.request_class is None:
+                    self._write(1, "@Telemetry.create_child_span")
                     self._write(1, "def %s(self):" % rpc_method.method)
                     self._write(
                         2, 'log.info("Executing ' + rpc_method.method + '")'
@@ -470,6 +472,7 @@ class Generator:
                         % rpc_method.operation_name,
                     )
                 else:
+                    self._write(1, "@Telemetry.create_child_span")
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
@@ -478,6 +481,10 @@ class Generator:
                     )
                     self._write(
                         2, 'log.debug("Request payload - " + str(payload))'
+                    )
+                    self._write(
+                        2,
+                        'self._telemetry.set_span_event("REQUEST: %s" % str(payload))',
                     )
 
                     if status_msg != "":
@@ -516,6 +523,10 @@ class Generator:
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
                 self._write(2, 'log.debug("Response - " + str(response))')
+                self._write(
+                    2,
+                    'self._telemetry.set_span_event("RESPONSE: %s" % str(response))',
+                )
                 if return_byte:
                     self._write(2, 'bytes = response.get("response_bytes")')
                     self._write(2, "if bytes is not None:")
@@ -608,6 +619,7 @@ class Generator:
             self._write(1, "def __init__(self, **kwargs):")
             self._write(2, "super(HttpApi, self).__init__(**kwargs)")
             self._write(2, "self._transport = HttpTransport(**kwargs)")
+            self._write(2, "self._telemetry.initiate_http_instrumentation()")
             self._write()
             self._write(1, "@property")
             self._write(1, "def verify(self):")
@@ -623,6 +635,7 @@ class Generator:
                 if method["x_status"] is not None:
                     key = "{}.{}".format("HttpApi", method["name"])
                     self._deprecated_properties[key] = method["x_status"][1]
+                self._write(1, "@Telemetry.create_child_span")
                 self._write(
                     1,
                     "def %s(%s):"
@@ -711,6 +724,17 @@ class Generator:
                 self._write(2, "self._version_check_err = None")
             else:
                 self._write(2, "pass")
+            self._write(
+                2, 'endpoint = kwargs.get("telemetry_collector_endpoint")'
+            )
+            self._write(
+                2, 'transport = kwargs.get("telemetry_collector_transport")'
+            )
+            self._write(2, "self._telemetry = Telemetry(endpoint, transport)")
+
+            self._write()
+            self._write(1, "def tracer(self):")
+            self._write(2, "return self._telemetry._tracer")
 
             self._write()
             self._write(1, "def add_warnings(self, msg):")

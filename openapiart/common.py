@@ -54,6 +54,8 @@ def api(
     loglevel=logging.INFO,
     ext=None,
     version_check=False,
+    telemetry_collector_endpoint=None,
+    telemetry_collector_transport="http",
 ):
     """Create an instance of an Api class
 
@@ -91,6 +93,14 @@ def api(
 
     if version_check is False:
         log.warning("Version check is disabled")
+
+    if telemetry_collector_endpoint is not None:
+        if sys.version_info[0] == 3 and sys.version_info[1] >= 7:
+            log.info("Telemetry feature enabled")
+        else:
+            raise Exception(
+                "Telemetry feature is only available for python version >= 3.7"
+            )
 
     transport_types = ["http", "grpc"]
     if ext is None:
@@ -1152,3 +1162,96 @@ class OpenApiIter(OpenApiBase):
         raise NotImplementedError(
             "validating an OpenApiIter object is not supported"
         )
+
+
+class Telemetry(object):
+    def __init__(self, endpoint, transport):
+        self.transport = transport
+        self.endpoint = endpoint
+        self.is_telemetry_enabled = False
+        self._tracer = None
+        self._trace_provider = None
+        self._resource = None
+        self._batch_span_processor = None
+        self._trace = None
+        self._http_exporter = None
+        self._grpc_exporter = None
+        self._http_instrumentor = None
+        self._grpc_instrumentor = None
+        if self.endpoint is not None:
+            self.is_telemetry_enabled = True
+            self._initiate_tracer()
+
+    def _initiate_tracer(self):
+        import warnings
+
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        self._trace = importlib.import_module("opentelemetry.trace")
+        self._trace_provider = importlib.import_module(
+            "opentelemetry.sdk.trace"
+        )
+        self._trace_provider = getattr(self._trace_provider, "TracerProvider")
+        self._resource = importlib.import_module("opentelemetry.sdk.resources")
+        self._resource = getattr(self._resource, "Resource")
+        self._batch_span_processor = importlib.import_module(
+            "opentelemetry.sdk.trace.export"
+        )
+        self._batch_span_processor = getattr(
+            self._batch_span_processor, "BatchSpanProcessor"
+        )
+        self._grpc_exporter = importlib.import_module(
+            "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
+        )
+        self._grpc_exporter = getattr(self._grpc_exporter, "OTLPSpanExporter")
+        self._http_exporter = importlib.import_module(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+        )
+        self._http_exporter = getattr(self._http_exporter, "OTLPSpanExporter")
+
+        provider = self._trace_provider(
+            resource=self._resource.create({"service.name": "snappi"})
+        )
+        self._trace.set_tracer_provider(provider)
+        if self.transport == "http":
+            otlp_exporter = self._http_exporter(endpoint=self.endpoint)
+        else:
+            otlp_exporter = self._grpc_exporter(
+                endpoint=self.endpoint, insecure=True
+            )
+        span_processor = self._batch_span_processor(otlp_exporter)
+        provider.add_span_processor(span_processor)
+        tracer = self._trace.get_tracer(__name__)
+        self._tracer = tracer
+
+    def initiate_http_instrumentation(self):
+        if self.is_telemetry_enabled:
+            from opentelemetry.instrumentation.requests import (
+                RequestsInstrumentor,
+            )
+
+            RequestsInstrumentor().instrument()
+
+    def initiate_grpc_instrumentation(self):
+        if self.is_telemetry_enabled:
+            from opentelemetry.instrumentation.grpc import (
+                GrpcInstrumentorClient,
+            )
+
+            GrpcInstrumentorClient().instrument()
+
+    def set_span_event(self, message):
+        if self.is_telemetry_enabled:
+            current_span = self._trace.get_current_span()
+            current_span.add_event(message)
+
+    @staticmethod
+    def create_child_span(func):
+        def tracing(self, *args, **kwargs):
+            if self._telemetry.is_telemetry_enabled:
+                name = func.__name__
+                with self.tracer().start_as_current_span(name):
+                    return func(self, *args, **kwargs)
+            else:
+                return func(self, *args, **kwargs)
+
+        return tracing
