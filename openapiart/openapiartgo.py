@@ -754,8 +754,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
-                logs = GetLogger("openapiart")
-                logs.Info().Str("Logger Initialized", "log").Msg("")
+                logs = GetLogger("{pb_pkg_name}")
+                logs.Debug().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
