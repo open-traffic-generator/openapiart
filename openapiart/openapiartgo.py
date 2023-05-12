@@ -589,7 +589,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     http.request = """{struct}Json, err := {struct}.ToJson()
                     if err != nil {{return nil, err}}
                     parentCtx := api.Telemetry().getRootContext()
-                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
                     api.Telemetry().SetSpanEvent(span, fmt.Sprintf("REQUEST PAYLOAD: %s", {struct}.String()))
                     defer api.Telemetry().CloseSpan(span)
                     resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
@@ -629,7 +629,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         )
                     )
                     http.request = """parentCtx := api.Telemetry().getRootContext()
-                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
                     defer api.Telemetry().CloseSpan(span)
                     resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
                         url=http_url,
@@ -946,7 +946,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
                     // adding spans grpc transport for OTLP instrumentation
                     parentCtx := api.Telemetry().getRootContext()
-                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}")
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
                     {span_attrs}
                     defer api.Telemetry().CloseSpan(span)
 

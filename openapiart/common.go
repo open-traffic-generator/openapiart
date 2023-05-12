@@ -122,12 +122,13 @@ func (obj *httpTransport) SetVerify(value bool) HttpTransport {
 type api struct {
 	grpc     *grpcTransport
 	http     *httpTransport
-	tracer   *telemetry
+	tracer   Telemetry
 	warnings string
 }
 
 type Api interface {
 	Telemetry() Telemetry
+	SetCustomTelemetry(telObj Telemetry)
 	NewGrpcTransport() GrpcTransport
 	hasGrpcTransport() bool
 	NewHttpTransport() HttpTransport
@@ -273,6 +274,11 @@ func (api *api) fromHttpError(statusCode int, body []byte) Error {
 // Returns instance of telemetry operations
 func (api *api) Telemetry() Telemetry {
 	return api.tracer
+}
+
+// Returns instance of telemetry operations
+func (api *api) SetCustomTelemetry(telObj Telemetry) {
+	api.tracer = telObj
 }
 
 // HttpRequestDoer will return True for HTTP transport
