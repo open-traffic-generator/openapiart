@@ -1003,10 +1003,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", string(bodyBytes)))
+                success_handling = """logs.Debug().Str("Response", string(bodyBytes)).Msg("")
+                api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", string(bodyBytes)))
                 return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
+                logs.Debug().Str("Response", bodyString).Msg("")
                 api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", bodyString))
                 return &bodyString, nil"""
             else:
@@ -1015,6 +1017,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", obj.String()))
+                    jsonStr, err := obj.toJsonRaw()
+                    if err != nil {{
+                        return nil,err
+                    }}
+                    logs.Debug().RawJSON("Response", []byte(jsonStr)).Msg("")
                     return obj, nil""".format(
                     success_method=success_method,
                     struct=http.request_return_type,
@@ -1032,7 +1039,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         return nil, err
                     }}
                     if resp.StatusCode == 200 {{
-                        logs.Debug().Str("Response", string(bodyBytes)).Msg("")
                         {success_handling}
                     }} else {{
                         {error_handling}
