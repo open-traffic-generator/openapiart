@@ -574,10 +574,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         'logs.Info().Msg("Executing %s")\n'
                         % rpc.operation_name
                     )
-                    rpc.log_request += (
-                        'logs.Debug().Str("Request", %s.String()).Msg("")'
-                        % new.struct
+                    rpc.log_request += """jsonStr, err := {struct}.toJsonRaw()
+                    if err != nil {{
+                        return nil, err
+                    }}""".format(
+                        struct=new.struct
                     )
+                    rpc.log_request += '\nlogs.Debug().RawJSON("Request", []byte(jsonStr)).Msg("")\n'
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
                             operation_name=rpc.operation_name,
@@ -1337,6 +1340,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
+            func (obj *{struct}) toJsonRaw() (string, error) {{
+                vErr := obj.validateToAndFrom()
+                if vErr != nil {{
+                    return "", vErr
+                }}
+                opts := protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: false,
+                }}
+                data, err := opts.Marshal(obj.Msg())
+                if err != nil {{
+                    return "", err
+                }}
+                return string(data), nil
+            }}
+
             func (obj *{struct}) ToJson() (string, error) {{
                 vErr := obj.validateToAndFrom()
                 if vErr != nil {{
@@ -1443,6 +1463,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "ToYaml() (string, error)",
             "// ToJson marshals {interface} to JSON text",
             "ToJson() (string, error)",
+            "// toJsonRaw marshals {interface} to Raw JSON text",
+            "toJsonRaw() (string, error)",
             "// FromProto unmarshals {interface} from protobuf object *{pb_pkg_name}.{interface}",
             "FromProto(msg *{pb_pkg_name}.{interface}) ({interface}, error)",
             "// FromPbText unmarshals {interface} from protobuf text",
