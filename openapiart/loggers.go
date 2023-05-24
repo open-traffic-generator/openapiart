@@ -21,8 +21,9 @@ type openapiartlog struct {
 var (
 	Openapiartlog  *openapiartlog
 	GlobalLogger   *zerolog.Logger
-	GlobalLogLevel zerolog.Level
-	LoggerFile     bool
+	GlobalLogLevel zerolog.Level = zerolog.InfoLevel
+	LoggerFile     bool          = false
+	LogFileName    string
 	GlobalCtx      string
 )
 
@@ -40,9 +41,7 @@ func initOpenapiartlog() error {
 	}
 	*Openapiartlog.LogDir = path.Join(*Openapiartlog.RootDir, "logs")
 	GlobalLogger = nil
-	GlobalLogLevel = zerolog.InfoLevel
 	GlobalCtx = ""
-	LoggerFile = false
 	return nil
 }
 
@@ -67,6 +66,7 @@ func GetLogger(ctx string) zerolog.Logger {
 		}
 	}
 	GlobalCtx = ctx
+	LogFileName = ctx
 	var localLogger zerolog.Logger
 	if !LoggerFile {
 		zerolog.TimestampFunc = func() time.Time {
@@ -88,7 +88,7 @@ func GetLogger(ctx string) zerolog.Logger {
 
 func initLogger() (err error) {
 	writer := lumberjack.Logger{
-		Filename:   path.Join(*Openapiartlog.LogDir, "openapiartlog.log"),
+		Filename:   path.Join(*Openapiartlog.LogDir, fmt.Sprintf("%s.log", LogFileName)),
 		MaxSize:    *Openapiartlog.MaxLogSizeMB,
 		MaxBackups: *Openapiartlog.MaxLogBackups,
 	}
