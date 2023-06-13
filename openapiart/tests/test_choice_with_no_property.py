@@ -35,7 +35,7 @@ def test_choice_with_iter_objects(api):
     # default choice with no properties should be set properly
     c_obj = config.choice_object.add()
     assert c_obj.choice == "no_obj"
-    assert len(c_obj._properties) == 1
+    assert len(c_obj._properties) == 2
 
     # acesing of objects with choice set to choice with no property should work
     c_obj = config.choice_object[0]
@@ -66,7 +66,7 @@ def test_choice_in_choice_heirarchy(api):
     # default choice with no properties should be set properly
     c_obj = config.choice_object.add()
     assert c_obj.choice == "no_obj"
-    assert len(c_obj._properties) == 1
+    assert len(c_obj._properties) == 2
 
     # acesing of objects with choice set to choice with no property should work
     c_obj = config.choice_object[0]

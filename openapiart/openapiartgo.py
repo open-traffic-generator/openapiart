@@ -349,7 +349,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return external
 
     def _get_external_struct_name(self, openapi_name):
-        return self._get_external_field_name(openapi_name).replace("_", "")
+        struct_name = self._get_external_field_name(openapi_name).replace(
+            "_", ""
+        )
+        return "StringVal" if struct_name == "String" else struct_name
 
     def _resolve_response(self, parser_result):
         """returns the inner response type if any"""

@@ -249,6 +249,10 @@ components:
           items:
             $ref: "#/components/schemas/GObject"
           x-field-uid: 44
+        string:
+          description: Just a string property
+          type: string
+          x-field-uid: 45
 
     WObject:
       required: [w_name]
@@ -413,12 +417,18 @@ components:
               x-field-uid: 2
             no_obj:
               x-field-uid: 3
+            string:
+              x-field-uid: 4
         e_obj:
           $ref: '#/components/schemas/EObject'
           x-field-uid: 2
         f_obj:
           $ref: '#/components/schemas/FObject'
           x-field-uid: 3
+        string:
+          description: Value represented in string format
+          type: string
+          x-field-uid: 4
 
     KObject:
       type: object
