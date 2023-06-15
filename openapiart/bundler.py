@@ -374,7 +374,8 @@ class Bundler(object):
         None: all paths have a 200 and default response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        required_responses = ["200", "default"]
+        required_responses = ["default"]
+        required_ranges = [range(200, 300)]
         missing_paths = ""
         for response in responses:
             response_keys = [str(key) for key in response.value.keys()]
@@ -386,6 +387,16 @@ class Bundler(object):
                 )
                 missing_paths += "{}\n".format(error_message)
 
+            missing = []
+            for r in required_ranges:
+                if len([resp for resp in response_keys if resp.isnumeric() and int(resp) in r]) == 0:
+                    missing.append(r)
+            if len(missing) > 0:
+                error_message = "{}: is missing the following required response ranges: {}".format(
+                    response.full_path,
+                    missing,
+                )
+                missing_paths += "{}\n".format(error_message)
             # TODO: need to check wheather every default schema points to
 
         if len(missing_paths) > 0:

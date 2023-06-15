@@ -44,6 +44,29 @@ paths:
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default
           x-field-uid: 2
+    post:
+      tags: ["Bundler"]
+      operationId: create_configuration
+      description: >-
+        Creates configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../config/config.yaml#/components/schemas/Update.Config"
+      responses:
+        "201":
+          description: |-
+            New configuratio has been created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
     get:
       tags: ["Bundler"]
       operationId: get_config
@@ -52,6 +75,22 @@ paths:
       responses:
         "200":
           description: Config response
+          content:
+            application/json:
+              schema:
+                $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
+    delete:
+      tags: ["Bundler"]
+      operationId: del_config
+      description: >-
+        Deletes the configuration resources.
+      responses:
+        "204":
+          description: Successful deletion of the configuration
           content:
             application/json:
               schema:
