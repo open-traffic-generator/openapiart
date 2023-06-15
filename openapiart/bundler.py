@@ -389,7 +389,16 @@ class Bundler(object):
 
             missing = []
             for r in required_ranges:
-                if len([resp for resp in response_keys if resp.isnumeric() and int(resp) in r]) == 0:
+                if (
+                    len(
+                        [
+                            resp
+                            for resp in response_keys
+                            if resp.isnumeric() and int(resp) in r
+                        ]
+                    )
+                    == 0
+                ):
                     missing.append(r)
             if len(missing) > 0:
                 error_message = "{}: is missing the following required response ranges: {}".format(
