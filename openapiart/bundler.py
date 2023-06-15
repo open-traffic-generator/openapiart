@@ -397,7 +397,7 @@ class Bundler(object):
                             if resp.isnumeric() and int(resp) in r
                         ]
                     )
-                    == 0:
+                    == 0
                 ):
                     missing.append(r)
             if len(missing) > 0:
