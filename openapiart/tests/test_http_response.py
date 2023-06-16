@@ -85,3 +85,32 @@ def test_error_structure_for_non_okay_error_codes(api):
     assert err.code == 400
     assert err.kind == "validation"
     assert err.errors[0] == "err for validation"
+
+
+def test_http_accepts_yaml_str(api):
+    config = api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 50
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    config.d_values = [config.A, config.B, config.C]
+    config.level.l1_p1.l2_p1.l3_p1 = "test"
+    config.level.l1_p2.l4_p1.l1_p2.l4_p1.l1_p1.l2_p1.l3_p1 = "test"
+
+    s_obj = config.serialize()
+    api.set_config(s_obj)
+
+
+def test_error_incorrect_json_str(api):
+    json_str = """
+        {
+            "abc": 456,
+            "bcd": "fgh"
+        }
+    """
+
+    with pytest.raises(Exception) as execinfo:
+        api.set_config(json_str)
+
+    print(execinfo.value)
