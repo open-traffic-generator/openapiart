@@ -475,6 +475,12 @@ def build(sdk="all", env_setup=None):
         print("\nvirtualenv already exists.\n")
 
     py.path = os.path.join(".env", "bin", "python")
+    print(
+        "\nWill be using the following python interpreter path "
+        + py.path
+        + "\n"
+    )
+
     print("\nStep 2: Install current changes of openapiart to venv\n")
     base_dir = os.path.dirname(os.path.abspath(__file__))
     test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
