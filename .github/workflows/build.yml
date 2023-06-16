@@ -160,6 +160,7 @@ jobs:
         run: |
           python do.py setup_ext 1.20
       - name: Trigger dev workflow
+        run: |
           python do.py build
 
   proto_yml_generation_test:
