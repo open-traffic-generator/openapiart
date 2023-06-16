@@ -10,5 +10,5 @@ RUN apt-get update \
     && apt-get -y install curl git vim unzip python-is-python3 python3-pip
 WORKDIR ${SRC_ROOT}
 RUN python do.py setup_ext
-RUN python do.py build python
+RUN python do.py build
 CMD ["/bin/bash"]
