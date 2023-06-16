@@ -166,16 +166,22 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     else:
                         response_field.type = "string"
                     response_fields.append(response_field)
+            field_name_repeat = {}
             self._write("message {} {{".format(operation.response))
             for response_field in response_fields:
                 if response_field.type == "Error":
                     continue
+                field_name = self._lowercase(response_field.type) if response_field.type != "bytes" else "response_bytes"
+                if field_name in field_name_repeat:
+                    repeat = str(field_name_repeat [field_name])
+                    field_name_repeat [field_name] += 1
+                    field_name += str(repeat)
+                else:
+                    field_name_repeat [field_name]  = 1
                 self._write(
                     "{} {} = {};".format(
                         response_field.type,
-                        self._lowercase(response_field.type)
-                        if response_field.type != "bytes"
-                        else "response_bytes",
+                        field_name,
                         response_field.field_uid,
                     ),
                     indent=1,
