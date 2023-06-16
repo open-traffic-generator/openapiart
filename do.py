@@ -281,6 +281,7 @@ def go_lint():
     run([pkg])
     os.chdir("pkg")
     run(["golangci-lint run -v"])
+    os.chdir("..")
 
 
 def dist():
@@ -465,6 +466,42 @@ def getstatusoutput(command):
         subprocess.getstatusoutput(command)[0],
         subprocess.getstatusoutput(command)[1],
     )
+
+
+def build(clean_env="false", sdk="all"):
+    print("\nStep 1: Set up virtaul env, if does not exsists already")
+
+    if clean_env.lower() == "true":
+        print("\nCleaning up exsisting env")
+        run(["rm -rf .env"])
+
+    if not os.path.exists(".env"):
+        setup()
+    else:
+        print("virtualenv already exists will be the exsisting one\n")
+
+    py.path = os.path.join(".env", "bin", "python")
+    print("\nStep 2: Install current changes of openapiart to venv\n")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
+    run([py() + " setup.py install", py() + " -m pip install -r " + test_req])
+    print("\nStep 3: Generating python and Go SDKs\n")
+    generate(sdk=sdk, cicd="True")
+    if sdk == "python" or sdk == "all":
+        print("\nStep 4: Perform Python lint\n")
+        lint()
+        print("\nStep 5: Run Python Tests\n")
+        testpy()
+    else:
+        print("\nSkipping Step 4: python lint and Step 5: run python tests\n")
+    if sdk == "go" or sdk == "all":
+        print("\nStep 6: Run Go Lint\n")
+        go_lint()
+        print("\nStep 7: Run Go Tests")
+        testgo()
+    else:
+        print("\nStep 6: Perform Go lint and Step 7: run go tests\n")
+    print("\nBuild Successfull\n")
 
 
 def main():

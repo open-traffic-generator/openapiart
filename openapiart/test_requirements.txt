@@ -1,5 +1,5 @@
 twine
-flask
+flask==2.2.5
 pytest
 flake8
 pytest-cov
