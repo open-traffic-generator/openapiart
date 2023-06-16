@@ -1085,6 +1085,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
             new.generated = True
 
         self._build_setters_getters(new)
+
+
+
+
+
         internal_items = []
         internal_items_nil = []
         for field in new.interface_fields:

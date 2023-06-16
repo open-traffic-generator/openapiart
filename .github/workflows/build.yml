@@ -37,7 +37,7 @@ jobs:
           python do.py install
       - name: Run python lint
         run: |
-          python do.py lint
+          python do.py lint true
       - name: Archive generated artifacts
         if: always()
         uses: actions/upload-artifact@v2
