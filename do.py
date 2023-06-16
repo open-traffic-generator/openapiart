@@ -179,7 +179,7 @@ def lint(check="false"):
     ret, out = getstatusoutput(py() + " -m black " + " ".join(paths) + cmd)
     if ret == 1:
         raise Exception(
-            "Black formatting failed, with black {} version to format the files\n{}".format(
+            "Black formatting failed, with black version {}.\n{}".format(
                 BLACK_VERSION, out
             )
         )
