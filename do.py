@@ -163,7 +163,7 @@ def init(use_sdk=None):
         )
 
 
-def lint():
+def lint(check="false"):
     paths = [
         pkg()[0],
         "openapiart",
@@ -172,27 +172,19 @@ def lint():
     ]
     # --check will check for any files to be formatted with black
     # if linting fails, format the files with black and commit
-    ret, out = getstatusoutput(
-        py()
-        + " -m black "
-        + " ".join(paths)
-        + " --exclude=openapiart/common.py --check --required-version {}".format(
-            BLACK_VERSION
-        )
-    )
+    cmd = " --exclude=openapiart/common.py"
+    if check.lower() == "true":
+        cmd += " --check"
+    cmd += " --required-version {}".format(BLACK_VERSION)
+    ret, out = getstatusoutput(py() + " -m black " + " ".join(paths) + cmd)
     if ret == 1:
-        out = out.split("\n")
-        out = [
-            e.replace("would reformat", "Black formatting failed for")
-            for e in out
-            if "would reformat" in e
-        ]
-        print("\n".join(out))
         raise Exception(
-            "Black formatting failed, use black {} version to format the files".format(
-                BLACK_VERSION
+            "Black formatting failed, with black version {}.\n{}".format(
+                BLACK_VERSION, out
             )
         )
+    else:
+        print(out)
     run(
         [
             py() + " -m flake8 " + " ".join(paths),

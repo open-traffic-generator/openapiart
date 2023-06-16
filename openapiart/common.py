@@ -175,6 +175,7 @@ class HttpTransport(object):
         payload=None,
         return_object=None,
         headers=None,
+        request_class=None,
     ):
         url = "%s%s" % (self.location, relative_url)
         data = None
@@ -184,6 +185,8 @@ class HttpTransport(object):
                 data = payload
                 headers["Content-Type"] = "application/octet-stream"
             elif isinstance(payload, (str, unicode)):
+                if request_class is not None:
+                    request_class().deserialize(payload)
                 data = payload
             elif isinstance(payload, OpenApiBase):
                 data = payload.serialize()
