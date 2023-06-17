@@ -483,8 +483,12 @@ def build(sdk="all", env_setup=None):
 
     print("\nStep 2: Install current changes of openapiart to venv\n")
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    req = os.path.join(base_dir, "openapiart", "requirements.txt")
     test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
-    run([py() + " setup.py install", py() + " -m pip install -r " + test_req])
+    for r in [req, test_req]:
+	run([py() + " -m pip install -r " + r])
+    
+    run([py() + " setup.py install"])
     print("\nStep 3: Generating python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":

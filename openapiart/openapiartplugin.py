@@ -90,7 +90,6 @@ class OpenApiArtPlugin(object):
 
 
 class type_limits(object):
-
     limits = {
         "int32": (-2147483648, 2147483647),
         "uint32": (0, 4294967295),
