@@ -423,7 +423,10 @@ def py():
         print(py.path)
         return py.path
     except AttributeError:
-        py.path = os.path.join(".env", "bin", "python")
+        if on_linux() or on_macos():
+            py.path = os.path.join(".env", "bin", "python")
+        else:
+            py.path = os.path.join(".env", "Scripts", "python")
         if not os.path.exists(py.path):
             py.path = sys.executable
 
@@ -481,14 +484,18 @@ def build(sdk="all", env_setup=None):
     if env_setup is not None and env_setup.lower() == "clean":
         print("\nCleaning up exsisting env")
         clean()
-        run(["rm -rf .env"])
+        rm_path(".env")
 
     if not os.path.exists(".env"):
         setup()
     else:
         print("\nvirtualenv already exists.\n")
 
-    py.path = os.path.join(".env", "bin", "python")
+    if on_linux() or on_macos():
+        py.path = os.path.join(".env", "bin", "python")
+    else:
+        py.path = os.path.join(".env", "Scripts", "python")
+
     print(
         "\nWill be using the following python interpreter path "
         + py.path
