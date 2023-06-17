@@ -7,7 +7,7 @@ import subprocess
 import platform
 
 
-BLACK_VERSION = "23.3.0"
+BLACK_VERSION = "22.1.0"
 GO_VERSION = "1.20"
 PROTOC_VERSION = "23.3"
 
