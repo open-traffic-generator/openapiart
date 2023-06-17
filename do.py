@@ -9,7 +9,7 @@ import platform
 
 BLACK_VERSION = "23.3.0"
 GO_VERSION = "1.20"
-PROTOC_VERSION = "3.20.3"
+PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
 LOCAL_PATH = os.path.join(os.path.expanduser("~"), ".local")

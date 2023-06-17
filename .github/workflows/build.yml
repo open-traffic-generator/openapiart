@@ -64,7 +64,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
-          version: "3.20"
+          version: "23.3"
       - name: Trigger dev workflow
         run: |
           python do.py build
@@ -86,7 +86,7 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
-          version: "3.20"
+          version: "23.3"
       - name: Trigger dev workflow
         run: |
           python do.py build
