@@ -463,7 +463,7 @@ def getstatusoutput(command):
 
 
 def build(sdk="all", env_setup=None):
-    print("\nStep 1: Set up virtaul env")
+    print("\nSTEP 1: Set up virtual environment")
 
     if env_setup is not None and env_setup.lower() == "clean":
         print("\nCleaning up exsisting env")
@@ -481,31 +481,28 @@ def build(sdk="all", env_setup=None):
         + "\n"
     )
 
-    print("\nStep 2: Install current changes of openapiart to venv\n")
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    req = os.path.join(base_dir, "openapiart", "requirements.txt")
-    test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
-    for r in [req, test_req]:
-	run([py() + " -m pip install -r " + r])
-    
+    print(
+        "\nSTEP 2: Install openapiart with current changes against virtual environment\n"
+    )
+    init()
     run([py() + " setup.py install"])
-    print("\nStep 3: Generating python and Go SDKs\n")
+    print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":
-        print("\nStep 4: Perform Python lint\n")
+        print("\nSTEP 4: Perform Python lint\n")
         lint()
-        print("\nStep 5: Run Python Tests\n")
+        print("\nSTEP 5: Run Python Tests\n")
         testpy()
     else:
-        print("\nSkipping Step 4: python lint and Step 5: run python tests\n")
+        print("\nSkipping STEP 4: python lint and STEP 5: run python tests\n")
     if sdk == "go" or sdk == "all":
-        print("\nStep 6: Run Go Lint\n")
+        print("\nSTEP 6: Run Go Lint\n")
         go_lint()
-        print("\nStep 7: Run Go Tests")
+        print("\nSTEP 7: Run Go Tests")
         testgo()
     else:
-        print("\nStep 6: Perform Go lint and Step 7: run go tests\n")
-    print("\nBuild Successfull\n")
+        print("\nSkipping STEP 6: Perform Go lint and STEP 7: Run go tests\n")
+    print("\nBuild Succeeded\n")
 
 
 def main():
