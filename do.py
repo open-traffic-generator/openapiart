@@ -83,7 +83,9 @@ def get_go(version=GO_VERSION, targz=None):
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
+    cmd = "go install"
+    if on_linux() or on_macos():
+        cmd = "CGO_ENABLED=0 {}".format(cmd)
     run(
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0",
@@ -276,8 +278,12 @@ def go_lint():
         else:
             version = "1.51.1"
 
-        pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-            "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
+        pkg = "go install"
+        if on_linux() or on_macos():
+            pkg = "CGO_ENABLED=0 {}".format(pkg)
+
+        pkg = "{} -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+            pkg,
             version,
         )
         run([pkg])
