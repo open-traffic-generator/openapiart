@@ -39,9 +39,17 @@ def on_x86():
     return arch() == "x86_64"
 
 
-def on_linux():
+def get_platform():
     print("The platform is {}".format(sys.platform))
-    return "linux" in sys.platform
+    return sys.platform
+
+
+def on_linux():
+    return "linux" in get_platform()
+
+
+def on_macos():
+    return "darwin" in get_platform()
 
 
 def get_go(version=GO_VERSION, targz=None):
@@ -116,7 +124,6 @@ def setup_ext(go_version=GO_VERSION, protoc_version=PROTOC_VERSION):
     if on_linux():
         get_go(go_version)
         get_protoc(protoc_version)
-        get_go_deps()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
@@ -161,6 +168,8 @@ def init(use_sdk=None):
                 py() + " -m pip install -r {}".format(art_test),
             ]
         )
+
+    get_go_deps()
 
 
 def lint(check="false"):
