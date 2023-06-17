@@ -332,12 +332,16 @@ def clean():
         "dist",
         "build",
         "*.egg-info",
+        "cov_report",
+        "art",
     ]
     recursive_patterns = [
         ".pytest_cache",
         "__pycache__",
         "*.pyc",
         "*.log",
+        "coverage.txt",
+        ".coverage",
     ]
 
     for pattern in pwd_patterns:
@@ -467,6 +471,7 @@ def build(sdk="all", env_setup=None):
 
     if env_setup is not None and env_setup.lower() == "clean":
         print("\nCleaning up exsisting env")
+        clean()
         run(["rm -rf .env"])
 
     if not os.path.exists(".env"):
