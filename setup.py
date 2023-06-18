@@ -8,7 +8,7 @@ pkg_name = "openapiart"
 version = "0.2.24"
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(base_dir, "README.md")) as fid:
+with open(os.path.join(base_dir, "readme.md")) as fid:
     long_description = fid.read()
 
 requirements_path = os.path.join(base_dir, "openapiart", "requirements.txt")
