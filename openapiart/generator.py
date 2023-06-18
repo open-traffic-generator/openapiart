@@ -20,6 +20,7 @@ import importlib
 from jsonpath_ng import parse
 from .openapiartplugin import OpenApiArtPlugin
 
+# TODO: get rid of this
 MODELS_RELEASE = "v0.3.3"
 
 
