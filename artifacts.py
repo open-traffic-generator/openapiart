@@ -50,13 +50,13 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         proto_service="Openapi",
         generate_version_api=True,
     )
-    if sdk == "proto" or sdk is None:
+    if sdk == "proto" or sdk is None or sdk == "all":
         open_api.GenerateProtoDef(package_name="sanity")
 
-    if sdk == "python" or sdk is None:
+    if sdk == "python" or sdk is None or sdk == "all":
         open_api.GeneratePythonSdk(package_name="sanity")
 
-    if sdk == "go" or sdk is None:
+    if sdk == "go" or sdk is None or sdk == "all":
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",

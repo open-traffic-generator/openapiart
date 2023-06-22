@@ -314,6 +314,7 @@ class Generator:
             methods.append(
                 {
                     "name": method_name,
+                    "class_name": rpc.request_class,
                     "args": ["self"]
                     if len(request) == 0
                     else ["self", "payload"],
@@ -404,6 +405,8 @@ class Generator:
             payload = payload.serialize()
         if isinstance(payload, dict):
             payload = json.dumps(payload)
+        elif isinstance(payload, (str, unicode)):
+            payload = json.dumps(yaml.safe_load(payload))
         return payload
 
     def _raise_exception(self, grpc_error):
@@ -667,6 +670,8 @@ class Generator:
                         else "None"
                     ),
                 )
+                if method["class_name"] is not None:
+                    self._write(3, "request_class=%s," % method["class_name"])
                 self._write(2, ")")
 
     def _write_api_class(self, methods, factories):

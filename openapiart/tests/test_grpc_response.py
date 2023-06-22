@@ -99,5 +99,18 @@ def test_grpc_set_config_error_str(utils, grpc_api):
         assert err_obj.errors[0] == "some random error!"
 
 
+def test_grpc_accept_yaml(grpc_api):
+    config = grpc_api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 50
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    config.d_values = [config.A, config.B, config.C]
+
+    s_obj = config.serialize(encoding="yaml")
+    grpc_api.set_config(s_obj)
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
