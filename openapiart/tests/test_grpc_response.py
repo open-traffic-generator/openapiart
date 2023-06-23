@@ -1,3 +1,5 @@
+import grp
+from traceback import format_exception
 import grpc
 import pytest
 import json
@@ -71,10 +73,13 @@ def test_grpc_set_config_error_struct(utils, grpc_api):
     payload["l"]["integer"] = 100
     try:
         grpc_api.set_config(payload)
-    except grpc.RpcError as e:
+    except Exception as e:
+        e_obj = e.args[0]
+        assert e_obj.code == 13
+        assert e_obj.errors[1] == "err2"
         err_obj = grpc_api.from_exception(e)
+        assert err_obj is not None
         assert err_obj.code == 13
-        assert len(err_obj.errors) == 2
         assert err_obj.errors[1] == "err2"
 
 
@@ -84,11 +89,27 @@ def test_grpc_set_config_error_str(utils, grpc_api):
     payload["l"]["integer"] = -3
     try:
         grpc_api.set_config(payload)
-    except grpc.RpcError as e:
+    except Exception as e:
+        e_obj = e.args[0]
+        assert e_obj.code == 13
+        assert e_obj.errors[0] == "some random error!"
         err_obj = grpc_api.from_exception(e)
-        assert err_obj.code == 2
-        assert len(err_obj.errors) == 1
+        assert err_obj is not None
+        assert err_obj.code == 13
         assert err_obj.errors[0] == "some random error!"
+
+
+def test_grpc_accept_yaml(grpc_api):
+    config = grpc_api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 50
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    config.d_values = [config.A, config.B, config.C]
+
+    s_obj = config.serialize(encoding="yaml")
+    grpc_api.set_config(s_obj)
 
 
 if __name__ == "__main__":

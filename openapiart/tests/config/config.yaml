@@ -273,6 +273,18 @@ components:
           type: integer
           format: int64
           x-field-uid: 50
+        g1:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: "#/components/schemas/GObject"
+          x-field-uid: 51
+        g2:
+          description: A list of objects with choice and properties
+          type: array
+          items:
+            $ref: "#/components/schemas/GObject"
+          x-field-uid: 52
 
     WObject:
       required: [w_name]

@@ -314,6 +314,7 @@ class Generator:
             methods.append(
                 {
                     "name": method_name,
+                    "class_name": rpc.request_class,
                     "args": ["self"]
                     if len(request) == 0
                     else ["self", "payload"],
@@ -404,19 +405,18 @@ class Generator:
             payload = payload.serialize()
         if isinstance(payload, dict):
             payload = json.dumps(payload)
+        elif isinstance(payload, (str, unicode)):
+            payload = json.dumps(yaml.safe_load(payload))
         return payload
 
-    def from_exception(self, grpc_error):
-        # type: (grpc.RpcError) -> Error
-        err = None
-        if isinstance(grpc_error, grpc.RpcError):
-            err = self.error()
-            try:
-                err.deserialize(grpc_error.details())
-            except Exception as e:
-                err.code = 2 # code for unknown error
-                err.errors = [grpc_error.details()]
-        return err
+    def _raise_exception(self, grpc_error):
+        err = self.error()
+        try:
+            err.deserialize(grpc_error.details())
+        except Exception as _:
+            err.code = grpc_error.code().value[0]
+            err.errors = [grpc_error.details()]
+        raise Exception(err)
 
     @property
     def request_timeout(self):
@@ -498,11 +498,14 @@ class Generator:
                         ),
                     )
                     self._write(2, "stub = self._get_stub()")
+                    self._write(2, "try:")
                     self._write(
-                        2,
+                        3,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
+                    self._write(2, "except grpc.RpcError as grpc_error:")
+                    self._write(3, "self._raise_exception(grpc_error)")
                 including_default, return_byte = self._process_good_response(
                     rpc_method
                 )
@@ -609,23 +612,6 @@ class Generator:
             self._write(1, "@verify.setter")
             self._write(1, "def verify(self, value):")
             self._write(2, "self._transport.set_verify(value)")
-            self._write()
-            self._write(1, "def from_exception(self, exception):")
-            self._write(2, "# type (Exception) -> Error")
-            self._write(2, "err_obj = None")
-            self._write(2, "if len(exception.args) != 2:")
-            self._write(3, "return err_obj")
-            self._write(2, "if isinstance(exception.args[0], int):")
-            self._write(3, "err_obj = self.error()")
-            self._write(3, "err_obj.code = exception.args[0]")
-            self._write(3, "if not isinstance(exception.args[1], dict):")
-            self._write(4, "err_obj.errors = [str(exception.args[1])]")
-            self._write(3, "else:")
-            self._write(4, "try:")
-            self._write(5, "err_obj.deserialize(exception.args[1])")
-            self._write(4, "except Exception as e:")
-            self._write(5, "err_obj.errors = [exception.args[1]]")
-            self._write(2, "return err_obj")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -684,6 +670,8 @@ class Generator:
                         else "None"
                     ),
                 )
+                if method["class_name"] is not None:
+                    self._write(3, "request_class=%s," % method["class_name"])
                 self._write(2, ")")
 
     def _write_api_class(self, methods, factories):
@@ -725,6 +713,37 @@ class Generator:
             self._write(1, "def add_warnings(self, msg):")
             self._write(2, "print('[WARNING]: %s' % msg)")
             self._write(2, "self.__warnings__.append(msg)")
+
+            self._write()
+            self._write(1, "def _deserialize_error(self, err_string):")
+            self._write(2, "# type: (str) -> Union[Error, None]")
+            self._write(2, "err = self.error()")
+            self._write(2, "try:")
+            self._write(3, "err.deserialize(err_string)")
+            self._write(2, "except Exception:")
+            self._write(3, "err = None")
+            self._write(2, "return err")
+
+            self._write()
+            self._write(1, "def from_exception(self, error):")
+            self._write(2, "# type: (Exception) -> Union[Error, None]")
+            self._write(2, "if isinstance(error, Error):")
+            self._write(3, "return error")
+            self._write(2, "elif isinstance(error, grpc.RpcError):")
+            self._write(3, "err = self._deserialize_error(error.details())")
+            self._write(3, "if err is not None:")
+            self._write(4, "return err")
+            self._write(3, "err = self.error()")
+            self._write(3, "err.code = error.code().value[0]")
+            self._write(3, "err.errors = [error.details()]")
+            self._write(3, "return err")
+            self._write(2, "elif isinstance(error, Exception):")
+            self._write(3, "if len(error.args) != 1:")
+            self._write(4, "return None")
+            self._write(3, "if isinstance(error.args[0], Error):")
+            self._write(4, "return error.args[0]")
+            self._write(3, "elif isinstance(error.args[0], str):")
+            self._write(4, "return self._deserialize_error(error.args[0])")
 
             for method in methods:
                 print("generating method %s" % method["name"])

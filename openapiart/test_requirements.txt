@@ -1,0 +1,9 @@
+twine
+flask; python_version <= '3.6'
+flask==2.2.5; python_version > '3.6'
+pytest
+flake8
+pytest-cov
+jsonpath_ng
+urllib3
+semantic_version

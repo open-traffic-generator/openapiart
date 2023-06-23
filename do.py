@@ -143,23 +143,27 @@ def init(use_sdk=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if use_sdk is None:
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
+        test_req = os.path.join(
+            base_dir, "openapiart", "test_requirements.txt"
+        )
         run(
             [
                 py() + " -m pip install -r {}".format(req),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(test_req),
             ]
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
+        art_test = os.path.join(base_dir, "art", "test_requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(art_test),
             ]
         )
 
 
-def lint():
+def lint(check="false"):
     paths = [
         pkg()[0],
         "openapiart",
@@ -168,27 +172,19 @@ def lint():
     ]
     # --check will check for any files to be formatted with black
     # if linting fails, format the files with black and commit
-    ret, out = getstatusoutput(
-        py()
-        + " -m black "
-        + " ".join(paths)
-        + " --exclude=openapiart/common.py --check --required-version {}".format(
-            BLACK_VERSION
-        )
-    )
+    cmd = " --exclude=openapiart/common.py"
+    if check.lower() == "true":
+        cmd += " --check"
+    cmd += " --required-version {}".format(BLACK_VERSION)
+    ret, out = getstatusoutput(py() + " -m black " + " ".join(paths) + cmd)
     if ret == 1:
-        out = out.split("\n")
-        out = [
-            e.replace("would reformat", "Black formatting failed for")
-            for e in out
-            if "would reformat" in e
-        ]
-        print("\n".join(out))
         raise Exception(
-            "Black formatting failed, use black {} version to format the files".format(
-                BLACK_VERSION
+            "Black formatting failed, with black version {}.\n{}".format(
+                BLACK_VERSION, out
             )
         )
+    else:
+        print(out)
     run(
         [
             py() + " -m flake8 " + " ".join(paths),
@@ -263,20 +259,23 @@ def testgo():
 
 
 def go_lint():
-    output = run(["go version"], capture_output=True)
-    if "go1.17" in output or "go1.18" in output:
-        print("Using older linter version for go version older than 1.19")
-        version = "1.46.2"
-    else:
-        version = "1.51.1"
+    try:
+        output = run(["go version"], capture_output=True)
+        if "go1.17" in output or "go1.18" in output:
+            print("Using older linter version for go version older than 1.19")
+            version = "1.46.2"
+        else:
+            version = "1.51.1"
 
-    pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-        "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
-        version,
-    )
-    run([pkg])
-    os.chdir("pkg")
-    run(["golangci-lint run -v"])
+        pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+            "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
+            version,
+        )
+        run([pkg])
+        os.chdir("pkg")
+        run(["golangci-lint run -v"])
+    finally:
+        os.chdir("..")
 
 
 def dist():
@@ -294,6 +293,17 @@ def install():
     run(
         [
             "{} -m pip install --force-reinstall --no-cache-dir {}[testing]".format(
+                py(), os.path.join("dist", wheel)
+            ),
+        ]
+    )
+
+
+def install_package_only():
+    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    run(
+        [
+            "{} -m pip install --force-reinstall --no-cache-dir {}".format(
                 py(), os.path.join("dist", wheel)
             ),
         ]
@@ -450,6 +460,48 @@ def getstatusoutput(command):
         subprocess.getstatusoutput(command)[0],
         subprocess.getstatusoutput(command)[1],
     )
+
+
+def build(sdk="all", env_setup=None):
+    print("\nStep 1: Set up virtaul env")
+
+    if env_setup is not None and env_setup.lower() == "clean":
+        print("\nCleaning up exsisting env")
+        run(["rm -rf .env"])
+
+    if not os.path.exists(".env"):
+        setup()
+    else:
+        print("\nvirtualenv already exists.\n")
+
+    py.path = os.path.join(".env", "bin", "python")
+    print(
+        "\nWill be using the following python interpreter path "
+        + py.path
+        + "\n"
+    )
+
+    print("\nStep 2: Install current changes of openapiart to venv\n")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
+    run([py() + " setup.py install", py() + " -m pip install -r " + test_req])
+    print("\nStep 3: Generating python and Go SDKs\n")
+    generate(sdk=sdk, cicd="True")
+    if sdk == "python" or sdk == "all":
+        print("\nStep 4: Perform Python lint\n")
+        lint()
+        print("\nStep 5: Run Python Tests\n")
+        testpy()
+    else:
+        print("\nSkipping Step 4: python lint and Step 5: run python tests\n")
+    if sdk == "go" or sdk == "all":
+        print("\nStep 6: Run Go Lint\n")
+        go_lint()
+        print("\nStep 7: Run Go Tests")
+        testgo()
+    else:
+        print("\nStep 6: Perform Go lint and Step 7: run go tests\n")
+    print("\nBuild Successfull\n")
 
 
 def main():

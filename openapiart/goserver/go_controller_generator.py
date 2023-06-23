@@ -166,16 +166,16 @@ class GoServerControllerGenerator(object):
                         item = {new_modelname}()
                         err := item.FromJson(string(body))
                         if err != nil {{
-                            ctrl.{rsp_400_error}(w, 400, err)
+                            ctrl.{rsp_400_error}(w, "validation", err)
                             return
                         }}
                     }} else {{
-                        ctrl.{rsp_400_error}(w, 400, readError)
+                        ctrl.{rsp_400_error}(w, "validation", readError)
                         return
                     }}
                 }} else {{
                     bodyError := errors.New(\"Request does not have a body\")
-                    ctrl.{rsp_500_error}(w, 400, bodyError)
+                    ctrl.{rsp_500_error}(w, "validation", bodyError)
                     return
                 }}
                 result, err := ctrl.handler.{operation_name}(item, r)""".format(
@@ -195,7 +195,7 @@ class GoServerControllerGenerator(object):
 
         w.write_line(
             """if err != nil {{
-                ctrl.{rsp_error}(w, 500, err)
+                ctrl.{rsp_error}(w, "internal", err)
                 return
             }}
             """.format(
@@ -226,7 +226,7 @@ class GoServerControllerGenerator(object):
             if self._need_warning_check(route, response):
                 rsp_section = """data, err := {mrl_name}MrlOpts.Marshal(result.{struct}().Msg())
                         if err != nil {{
-                            ctrl.{rsp_400_error}(w, 400, err)
+                            ctrl.{rsp_400_error}(w, "validation", err)
                         }}
                         httpapi.WriteCustomJSONResponse(w, 200, data)
                     """.format(
@@ -256,7 +256,7 @@ class GoServerControllerGenerator(object):
                 )
             )
         w.write_line(
-            'ctrl.{rsp_500_error}(w, 500, errors.New("Unknown error"))'.format(
+            'ctrl.{rsp_500_error}(w, "internal", errors.New("Unknown error"))'.format(
                 rsp_500_error=rsp_error
             )
         )
@@ -278,7 +278,12 @@ class GoServerControllerGenerator(object):
                     result = {models_prefix}NewError()
                     err := result.FromJson(rsp_err.Error())
                     if err != nil {{
-                        result = nil
+                        result.Msg().Code = statusCode
+                        err = result.SetKind(errorKind)
+                        if err != nil {{
+                            log.Print(err.Error())
+                        }}
+                        result.Msg().Errors = []string{{rsp_err.Error()}}
                     }}
                 }}
             """.format(
@@ -286,18 +291,17 @@ class GoServerControllerGenerator(object):
             )
 
             w.write_line(
-                """func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, status_code int, rsp_err error) {{
+                """func (ctrl *{struct_name}) {method_name}(w http.ResponseWriter, errorKind {models_prefix}ErrorKindEnum, rsp_err error) {{
                 var result {models_prefix}{schema}
+                var statusCode int32
+                if errorKind == "validation" {{
+                    statusCode = 400
+                }} else if errorKind == "internal" {{
+                    statusCode = 500
+                }}
                 {set_errors}
-                if result != nil {{
-                    if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
-                        log.Print(err.Error())
-                    }}
-                }} else {{
-                    data := []byte(rsp_err.Error())
-                    if _, err := httpapi.WriteCustomJSONResponse(w, status_code, data); err != nil {{
-                        log.Print(err.Error())
-                    }}
+                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
+                    log.Print(err.Error())
                 }}
             }}
             """.format(
