@@ -102,6 +102,7 @@ class Bundler(object):
         self._resolve_license()
         self._resolve_x_enum(self._content)
         self._generate_version_api_spec(self._content)
+        self._validate_integer_type()
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
@@ -425,6 +426,32 @@ class Bundler(object):
             yobject = yaml.safe_load(fid)
             openapi_spec_validator.validate_v3_spec(yobject)
         print("validating complete")
+
+    def _validate_integer_type(self):
+        """Find all instances type in the openapi content
+        and check for allowed format
+        """
+        import jsonpath_ng
+
+        for type in self._get_parser("$..type").find(self._content):
+            valid_formats = ["int64", "int32", "uint32", "uint64"]
+            if type.value == "integer":
+                parent = jsonpath_ng.Parent().find(type)[0]
+                parent_schema = parent.value
+                if "format" not in parent_schema:
+                    print(
+                        "[WARNING]: %s has no format specified"
+                        % parent.full_path
+                    )
+                elif parent_schema["format"] not in valid_formats:
+                    raise Exception(
+                        "%s has type integer of unsporrted format %s, supported formats are %s"
+                        % (
+                            parent.full_path,
+                            parent_schema["format"],
+                            str(valid_formats),
+                        )
+                    )
 
     def _read_file(self, base_dir, filename):
         filename = os.path.join(base_dir, filename)
