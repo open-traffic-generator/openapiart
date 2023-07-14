@@ -345,7 +345,7 @@ func TestAuto(t *testing.T) {
 		t,
 		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
 		config.AutoFieldTest().Choice())
-	assert.Equal(t, int32(0), config.AutoFieldTest().Auto())
+	assert.Equal(t, uint32(0), config.AutoFieldTest().Auto())
 
 	config.AutoFieldTest().SetValue(10)
 	assert.Equal(
