@@ -1,6 +1,7 @@
 package openapiart_test
 
 import (
+	"fmt"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -127,16 +128,17 @@ func TestConfigGeneratedValidate(t *testing.T) {
 	_ = v25.Validate()
 	v29 := config.IntegerPattern()
 	v30 := v29.Integer()
-	v30.SetValue(-1).SetValues([]int32{-1})
+	v30.SetValue(1).SetValues([]int32{-1})
+	fmt.Println(v30)
 	v31 := v30.Increment()
-	v31.SetStart(-1).SetStep(-1)
+	v31.SetStart(1).SetStep(1)
 	data31, _ := opts.Marshal(v31.Msg())
 	assert.NotNil(t, v31.FromJson(string(data31)))
 	assert.NotNil(t, v31.FromYaml(string(data31)))
 	prot_marshal31, _ := proto.Marshal(v31.Msg())
 	assert.NotNil(t, v31.FromPbText(string(prot_marshal31)))
 	v32 := v30.Decrement()
-	v32.SetStart(-1).SetStep(-1)
+	v32.SetStart(1).SetStep(1)
 	data32, _ := opts.Marshal(v32.Msg())
 	assert.NotNil(t, v32.FromJson(string(data32)))
 	assert.NotNil(t, v32.FromYaml(string(data32)))

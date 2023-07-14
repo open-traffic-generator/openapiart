@@ -861,9 +861,11 @@ class Bundler(object):
                     },
                 },
             }
+
             if "features" in xpattern and "count" in xpattern["features"]:
                 counter_schema["properties"]["count"] = {
                     "type": "integer",
+                    "format": "uint32",
                     "default": 1,
                     "x-field-uid": counter_auto_field.uid,
                 }
@@ -974,6 +976,10 @@ class Bundler(object):
                     schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
+
+        if xpattern["format"] == "integer" and property_name != "values":
+            schema["format"] = "uint32"
+
         if format is not None:
             # TODO: fix this
             # if property_name == "values":
