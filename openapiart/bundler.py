@@ -444,7 +444,7 @@ class Bundler(object):
                         % parent.full_path
                     )
                 elif parent_schema["format"] not in valid_formats:
-                    raise Exception(
+                    self._errors.append(
                         "%s has type integer of unsporrted format %s, supported formats are %s"
                         % (
                             parent.full_path,
