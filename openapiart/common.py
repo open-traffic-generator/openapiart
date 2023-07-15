@@ -903,11 +903,17 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             msg = "property {} shall be of type {} at {}".format(
                 property_name, details["type"], self.__class__
             )
+
+            itemtype = (
+                details.get("itemformat")
+                if "itemformat" in details
+                else details.get("itemtype")
+            )
             self.types_validation(
                 property_value,
                 details["type"],
                 msg,
-                details.get("itemtype"),
+                itemtype,
                 details.get("minimum"),
                 details.get("maximum"),
                 details.get("minLength"),
