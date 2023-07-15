@@ -1016,20 +1016,18 @@ class Bundler(object):
                 schema["default"] = [schema["default"]]
 
         if xpattern["format"] == "integer":
-            format = "uint32"
+            fmt = "uint32"
             if "length" in xpattern and xpattern["length"] > 32:
-                format = "uint64"
-            if property_name == "values":
-                schema["items"]["format"] = format
-            else:
-                schema["format"] = format
+                fmt = "uint64"
+        elif format is not None:
+            fmt = format
 
-        # if format is not None:
-        # TODO: fix this
-        # if property_name == "values":
-        #     schema["items"]["format"] = format
-        # else:
-        # schema["format"] = format
+        if fmt is not None:
+            # TODO: fix this
+            if property_name == "values":
+                schema["items"]["format"] = fmt
+            else:
+                schema["format"] = fmt
         if "length" in xpattern:
             # TODO: fix this
             # if property_name == "values":

@@ -2482,7 +2482,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.max is None and type_max is not None:
                     field.max = type_max
             if field.min is not None:
-                line.append("{pointer}{value} < {min}")
+                if "uint" in field.type and field.min == 0:
+                    pass
+                else:
+                    line.append("{pointer}{value} < {min}")
             if field.max is not None:
                 line.append("{pointer}{value} > {max}")
             inner_body += (

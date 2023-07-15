@@ -165,7 +165,7 @@ func TestConfigGeneratedValidate(t *testing.T) {
 	prot_marshal35, _ := proto.Marshal(v35.Msg())
 	assert.NotNil(t, v35.FromPbText(string(prot_marshal35)))
 	v36 := config.HeaderChecksum()
-	v36.SetCustom(12345)
+	v36.SetCustom(12345678)
 	data36, _ := opts.Marshal(v36.Msg())
 	assert.NotNil(t, v36.FromJson(string(data36)))
 	assert.NotNil(t, v36.FromYaml(string(data36)))
