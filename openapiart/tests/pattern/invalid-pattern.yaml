@@ -1,0 +1,61 @@
+paths:
+  /config:
+    post:
+      tags: ["Bundler"]
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "Standard success binary payload"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    Config:
+      type: object
+      description: |-
+        This is a field uid object
+      properties:
+        ipv4:
+          x-field-pattern:
+            format: ipv4
+            default: 0.0.0.0
+            features: [count]
+          x-field-uid: 1
+        ipv6:
+          x-field-pattern:
+            format: ipv6
+            default: "::"
+            features: [count]
+          x-field-uid: 2
+        mac:
+          x-field-pattern:
+            format: mac
+            default: "00:00:00:00:00:00"
+            features: [count, auto]
+          x-field-uid: 3
+        integer:
+          x-field-pattern:
+            format: integer
+            default: 0
+            features: [count]
+          x-field-uid: 4
+        checksum:
+          x-field-pattern:
+            format: checksum
+          x-field-uid: 5
+        wrong:
+          x-field-pattern:
+            format: random
+          x-field-uid: 6

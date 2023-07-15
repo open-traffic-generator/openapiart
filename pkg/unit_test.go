@@ -59,7 +59,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.Ipv6Pattern().Ipv6().Increment().SetStart("2000::1").SetStep("::1").SetCount(100)
 	config.Ipv6Pattern().Ipv6().Decrement().SetStart("3000::1").SetStep("::1").SetCount(100)
 	config.IntegerPattern().Integer().SetValue(1)
-	config.IntegerPattern().Integer().SetValues([]int32{1, 2, 3})
+	config.IntegerPattern().Integer().SetValues([]uint32{1, 2, 3})
 	config.IntegerPattern().Integer().Increment().SetStart(1).SetStart(1).SetCount(100)
 	config.IntegerPattern().Integer().Decrement().SetStart(1).SetStart(1).SetCount(100)
 	config.MacPattern().Mac().SetValue("00:00:00:00:00:0a")
@@ -1587,7 +1587,7 @@ func TestChoiceDefaults(t *testing.T) {
 	j3, err3 := integer.ToJson()
 	assert.Nil(t, err3)
 	require.JSONEq(t, json3, j3)
-	integer.Integer().SetValues([]int32{1, 2, 3})
+	integer.Integer().SetValues([]uint32{1, 2, 3})
 	json4 := `
 	{
 		"integer":  {

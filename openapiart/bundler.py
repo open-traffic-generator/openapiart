@@ -93,6 +93,7 @@ class Bundler(object):
             self._read_file(self._base_dir, self._api_filename)
 
         self._resolve_x_include()
+        self._validate_x_field_pattern()
         self._resolve_x_pattern("x-field-pattern")
         self._resolve_x_constraint()
         self._resolve_x_status()
@@ -663,6 +664,37 @@ class Bundler(object):
                                 )
                             )
 
+    def _validate_x_field_pattern(self):
+        for xpattern_path in self._get_parser("$..x-field-pattern").find(
+            self._content
+        ):
+            xpattern = xpattern_path.value
+
+            if "format" not in xpattern:
+                self._errors.append(
+                    "{} is not valid, format is mandatory for x-field-pattern".format(
+                        str(xpattern_path.full_path)
+                    )
+                )
+            elif xpattern["format"] == "integer" and "length" not in xpattern:
+                self._errors.append(
+                    "{} property using x-field-pattern with format integer must contain length property".format(
+                        str(xpattern_path.full_path)
+                    )
+                )
+            valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
+            if xpattern["format"] not in valid_formats:
+                self._errors.append(
+                    "%s has unspported format %s , valid formats are %s"
+                    % (
+                        str(xpattern_path.full_path),
+                        xpattern["format"],
+                        str(valid_formats),
+                    )
+                )
+        if len(self._errors) > 0:
+            self._validate_errors()
+
     def _resolve_x_pattern(self, pattern_extension):
         """Find all instances of pattern_extension in the openapi content
         and generate a #/components/schemas/... pattern schema object that is
@@ -681,6 +713,7 @@ class Bundler(object):
             property_name = xpattern_path.full_path.left.right.fields[0]
             property_schema = jsonpath_ng.Parent().find(xpattern_path)[0].value
             xpattern = xpattern_path.value
+
             schema_name = "Pattern.{}.{}".format(
                 "".join(
                     [
@@ -723,6 +756,8 @@ class Bundler(object):
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
         auto_field = AutoFieldUid()
+        length = int(xpattern.get("length", 8))
+        format = "uint32" if length <= 32 else "uint64"
         schema = {
             "description": description,
             "type": "object",
@@ -750,8 +785,9 @@ class Bundler(object):
                 "custom": {
                     "description": "A custom checksum value",
                     "type": "integer",
+                    "format": format,
                     "minimum": 0,
-                    "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
+                    "maximum": 2**length - 1,
                     "x-field-uid": auto_field.uid,
                 },
             },
@@ -915,6 +951,7 @@ class Bundler(object):
                     "offset": {
                         "description": "Offset in bits relative to start of corresponding header field",
                         "type": "integer",
+                        "format": "uint32",
                         "default": 0,
                         "minimum": 0,
                         "maximum": length - 1,
@@ -923,6 +960,7 @@ class Bundler(object):
                     "length": {
                         "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
                         "type": "integer",
+                        "format": "uint32",
                         "default": length,
                         "minimum": 1,
                         "maximum": length,
@@ -977,15 +1015,21 @@ class Bundler(object):
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
 
-        if xpattern["format"] == "integer" and property_name != "values":
-            schema["format"] = "uint32"
+        if xpattern["format"] == "integer":
+            format = "uint32"
+            if "length" in xpattern and xpattern["length"] > 32:
+                format = "uint64"
+            if property_name == "values":
+                schema["items"]["format"] = format
+            else:
+                schema["format"] = format
 
-        if format is not None:
-            # TODO: fix this
-            # if property_name == "values":
-            #     schema["items"]["format"] = format
-            # else:
-            schema["format"] = format
+        # if format is not None:
+        # TODO: fix this
+        # if property_name == "values":
+        #     schema["items"]["format"] = format
+        # else:
+        # schema["format"] = format
         if "length" in xpattern:
             # TODO: fix this
             # if property_name == "values":
