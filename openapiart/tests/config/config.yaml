@@ -249,6 +249,46 @@ components:
           items:
             $ref: "#/components/schemas/GObject"
           x-field-uid: 44
+        int32_param:
+          description: int32 type
+          type: integer
+          format: int32
+          x-field-uid: 45
+        int32_list_param:
+          description: int32 type list
+          type: array
+          items:
+            type: integer
+            format: int32
+          minimum: -23456
+          maximum: 23456
+          x-field-uid: 46
+        uint32_param:
+          description: uint32 type
+          type: integer
+          format: uint32
+          x-field-uid: 47
+        uint32_list_param:
+          description: uint32 type list
+          type: array
+          items:
+            type: integer
+            format: uint32
+          minimum: 0
+          maximum: 4294967293
+          x-field-uid: 48
+        uint64_param:
+          description: uint64 type
+          type: integer
+          format: uint64
+          x-field-uid: 49
+        uint64_list_param:
+          description: uint64 type list
+          type: array
+          items:
+            type: integer
+            format: uint64
+          x-field-uid: 50
 
     WObject:
       required: [w_name]

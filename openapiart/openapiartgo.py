@@ -1,5 +1,6 @@
 from .openapiartplugin import OpenApiArtPlugin, type_limits
 import os
+import re
 import subprocess
 
 
@@ -2123,7 +2124,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if (
                     (field.min is not None and field.min > 2147483647)
                     or (field.max is not None and field.max > 2147483647)
-                    and "int" in field.type
+                    and re.match("^int|^\\[\\]int", field.type)
                 ):
                     field.type = field.type.replace("32", "64")
                 if (

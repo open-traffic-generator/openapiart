@@ -722,6 +722,102 @@ func TestInterger64(t *testing.T) {
 	assert.Nil(t, err1)
 }
 
+func TestInt32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	int_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_param": 100
+	}`
+	err := config.FromJson(int_32)
+	fmt.Println(config.Int32Param())
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_list_param": ["100", "-1", "-500", 500]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	fmt.Println(config.Int32ListParam())
+	assert.Nil(t, err1)
+}
+
+func TestUint32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_param": 22
+	}`
+	err := config.FromJson(uint_32)
+	fmt.Println(config.Uint32Param())
+	assert.Nil(t, err)
+	uint32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_list_param": ["100", "0", "500"]
+	}`
+	err1 := config.FromJson(uint32_list_str)
+	fmt.Println(config.Uint32ListParam())
+	assert.Nil(t, err1)
+}
+
+func TestUInt64Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_64 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_param": 4294967395
+	}`
+	err := config.FromJson(uint_64)
+	fmt.Println(config.Uint64Param())
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_list_param": ["4294967395", "4294967396", "4294967397"]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	fmt.Println(config.Uint64ListParam())
+	assert.Nil(t, err1)
+}
+
 func TestFromJsonToCleanObject(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	config.SetA("abcd")
