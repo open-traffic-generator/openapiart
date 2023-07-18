@@ -130,21 +130,14 @@ class type_limits(object):
         if max < min:
             raise Exception("min %d cannot be less than max %d", min, max)
 
-        # TODO: this logic needs to be replaced with the one commented out below
-        if min > 2147483647 or max > 2147483647:
-            return "int64"
-        else:
+        if cls._min_max_in_range("uint32", min, max):
+            return "uint32"
+        if cls._min_max_in_range("uint64", min, max):
+            return "uint64"
+        if cls._min_max_in_range("int32", min, max):
             return "int32"
-        # TODO: following snippet is more accurate but introduces breaking
-        # changes and hence commented out
-        # if self._min_max_in_range("uint32", min, max):
-        #     return "uint32"
-        # if self._min_max_in_range("uint64", min, max):
-        #     return "uint64"
-        # if self._min_max_in_range("int32", min, max):
-        #     return "int32"
-        # if self._min_max_in_range("int64", min, max):
-        #     return "int64"
+        if cls._min_max_in_range("int64", min, max):
+            return "int64"
 
     @classmethod
     def _get_integer_format(cls, type_format, min, max):
