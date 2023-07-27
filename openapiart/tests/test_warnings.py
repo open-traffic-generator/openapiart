@@ -2,7 +2,6 @@ import pytest
 
 
 def test_warnings_with_api(api, capfd):
-
     u_conf = api.update_config()
     u_conf.g.gobject(g_a="abcd")
 

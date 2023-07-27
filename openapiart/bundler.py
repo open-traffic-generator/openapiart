@@ -455,7 +455,6 @@ class Bundler(object):
         self._resolve_refs(base_dir, yobject)
 
     def _check_upper_case(self, value):
-
         for c in value:
             if c.isupper():
                 return True
@@ -859,7 +858,6 @@ class Bundler(object):
             ] = counter_schema
 
         if "features" in xpattern and "metric_tags" in xpattern["features"]:
-
             metric_tags_schema_name = "{}.MetricTag".format(schema_name)
             length = 65535
             if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
@@ -1110,7 +1108,6 @@ class Bundler(object):
         return dst
 
     def _get_schema_object(self, base_dir, schema_path):
-
         json_path = "$..'%s'" % schema_path.split("/")[-1]
         schema_object = self._get_parser(json_path).find(self._content)
         if len(schema_object) == 0:
