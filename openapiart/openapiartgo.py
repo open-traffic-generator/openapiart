@@ -924,7 +924,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
             status_type = rpc.status.get("status")
             status_str = ""
             if status_type is not None:
-
                 status_str = self._get_status_msg(
                     rpc.operation_name, status_type, info, "api"
                 )
@@ -1903,7 +1902,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         else enum_field.default
                     )
                     if enum_field.isArray:
-
                         default_value = "{type}{{{value}}}".format(
                             type=enum_field.type,
                             value='"{}"'.format('", "'.join(default_value))
@@ -2576,7 +2574,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         status_body = ""
         status_msg = ""
         if field.status is not None:
-
             status_msg = self._get_status_msg(
                 field.name,
                 field.status,

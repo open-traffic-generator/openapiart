@@ -1,4 +1,3 @@
-import grp
 from traceback import format_exception
 import grpc
 import pytest

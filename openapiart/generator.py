@@ -20,6 +20,7 @@ import importlib
 from jsonpath_ng import parse
 from .openapiartplugin import OpenApiArtPlugin
 
+# TODO: get rid of this
 MODELS_RELEASE = "v0.3.3"
 
 
@@ -97,7 +98,7 @@ class Generator:
     def _load_plugins(self):
         plugins = []
         pkg_dir = os.path.dirname(__file__)
-        for (_, name, _) in pkgutil.iter_modules([pkg_dir]):
+        for _, name, _ in pkgutil.iter_modules([pkg_dir]):
             module_name = "openapiart." + name
             importlib.import_module(module_name)
             obj = sys.modules[module_name]
@@ -1204,7 +1205,6 @@ class Generator:
             choice_names = self._get_choice_names(schema_object)
             excluded_property_names = []
             for choice_name in choice_names:
-
                 # this code is to allow choices with no properties
                 if choice_name not in schema_object["properties"]:
                     excluded_property_names.append(choice_name)
