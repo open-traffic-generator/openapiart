@@ -1,12 +1,9 @@
-# OpenAPIArt 
+# openapiart - OpenAPI Artifact Generator
 
 [![CICD](https://github.com/open-traffic-generator/openapiart/workflows/CICD/badge.svg)](https://github.com/open-traffic-generator/openapiart/actions)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![pypi](https://img.shields.io/pypi/v/openapiart.svg)](https://pypi.org/project/openapiart)
 [![python](https://img.shields.io/pypi/pyversions/openapiart.svg)](https://pypi.python.org/pypi/openapiart)
 [![license](https://img.shields.io/badge/license-MIT-green.svg)](https://en.wikipedia.org/wiki/MIT_License)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/open-traffic-generator/openapiart.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/open-traffic-generator/openapiart/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/open-traffic-generator/openapiart.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/open-traffic-generator/openapiart/context:python)
 
 The `OpenAPIArt` (OpenAPI Artifact Generator) python package does the following:
 - pre-processes OpenAPI yaml files according to the [MODELGUIDE](../main/MODELGUIDE.md)
