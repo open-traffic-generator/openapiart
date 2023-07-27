@@ -93,8 +93,7 @@ class Bundler(object):
             self._read_file(self._base_dir, self._api_filename)
 
         self._resolve_x_include()
-        self._validate_x_field_pattern()
-        self._resolve_x_pattern("x-field-pattern")
+        self._resolve_x_field_pattern()
         self._resolve_x_constraint()
         self._resolve_x_status()
         self._remove_x_include()
@@ -632,10 +631,10 @@ class Bundler(object):
                     stacks[1].frame.f_locals["key"],
                 )
                 self._errors.append(
-                    "Property {property} should not contain {keys} with format {format}".format(
+                    "Property {property} should not contain {keys} with format {fmt}".format(
                         property=property,
                         keys=intersect_keys,
-                        format=value["format"],
+                        fmt=value["format"],
                     )
                 )
 
@@ -663,38 +662,39 @@ class Bundler(object):
                                 )
                             )
 
-    def _validate_x_field_pattern(self):
-        for xpattern_path in self._get_parser("$..x-field-pattern").find(
-            self._content
-        ):
-            xpattern = xpattern_path.value
+    def _validate_x_field_pattern(self, xpattern_path):
+        xpattern = xpattern_path.value
 
-            if "format" not in xpattern:
-                self._errors.append(
-                    "{} is not valid, format is mandatory for x-field-pattern".format(
-                        str(xpattern_path.full_path)
-                    )
+        if "format" not in xpattern:
+            self._errors.append(
+                "{} is not valid, format is mandatory for x-field-pattern".format(
+                    str(xpattern_path.full_path)
                 )
-            elif xpattern["format"] == "integer" and "length" not in xpattern:
-                self._errors.append(
-                    "{} property using x-field-pattern with format integer must contain length property".format(
-                        str(xpattern_path.full_path)
-                    )
+            )
+        elif xpattern["format"] == "integer" and "length" not in xpattern:
+            self._errors.append(
+                "{} property using x-field-pattern with format integer must contain length property".format(
+                    str(xpattern_path.full_path)
                 )
-            valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
-            if xpattern["format"] not in valid_formats:
-                self._errors.append(
-                    "%s has unspported format %s , valid formats are %s"
-                    % (
-                        str(xpattern_path.full_path),
-                        xpattern["format"],
-                        str(valid_formats),
-                    )
+            )
+        elif xpattern["format"] == "integer" and xpattern["length"] > 64:
+            self._errors.append(
+                "{} property using x-field-pattern with format integer cannot have length greater than 64".format(
+                    str(xpattern_path.full_path)
                 )
-        if len(self._errors) > 0:
-            self._validate_errors()
+            )
+        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
+        if xpattern["format"] not in valid_formats:
+            self._errors.append(
+                "%s has unspported format %s , valid formats are %s"
+                % (
+                    str(xpattern_path.full_path),
+                    xpattern["format"],
+                    str(valid_formats),
+                )
+            )
 
-    def _resolve_x_pattern(self, pattern_extension):
+    def _resolve_x_field_pattern(self):
         """Find all instances of pattern_extension in the openapi content
         and generate a #/components/schemas/... pattern schema object that is
         specific to the property hosting the pattern extension content.
@@ -702,9 +702,13 @@ class Bundler(object):
         """
         import jsonpath_ng
 
+        pattern_extension = "x-field-pattern"
         for xpattern_path in self._get_parser(
             "$..{}".format(pattern_extension)
         ).find(self._content):
+
+            self._validate_x_field_pattern(xpattern_path)
+
             print("generating %s..." % (str(xpattern_path.full_path)))
             object_name = xpattern_path.full_path.left.left.left.right.fields[
                 0
@@ -727,10 +731,10 @@ class Bundler(object):
                     ]
                 ),
             )
-            format = None
+            fmt = None
             type_name = xpattern["format"]
             if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
-                format = type_name
+                fmt = type_name
                 type_name = "string"
             description = "TBD"
             if "description" in xpattern:
@@ -744,7 +748,7 @@ class Bundler(object):
                 )
             else:
                 self._generate_value_schema(
-                    xpattern, schema_name, description, type_name, format
+                    xpattern, schema_name, description, type_name, fmt
                 )
 
             property_schema["$ref"] = "#/components/schemas/{}".format(
@@ -752,11 +756,14 @@ class Bundler(object):
             )
             del property_schema[pattern_extension]
 
+        if len(self._errors) > 0:
+            self._validate_errors()
+
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
         auto_field = AutoFieldUid()
         length = int(xpattern.get("length", 8))
-        format = "uint32" if length <= 32 else "uint64"
+        fmt = "uint32" if length <= 32 else "uint64"
         schema = {
             "description": description,
             "type": "object",
@@ -784,7 +791,7 @@ class Bundler(object):
                 "custom": {
                     "description": "A custom checksum value",
                     "type": "integer",
-                    "format": format,
+                    "format": fmt,
                     "minimum": 0,
                     "maximum": 2**length - 1,
                     "x-field-uid": auto_field.uid,
@@ -794,7 +801,7 @@ class Bundler(object):
         self._content["components"]["schemas"][schema_name] = schema
 
     def _generate_value_schema(
-        self, xpattern, schema_name, description, type_name, format
+        self, xpattern, schema_name, description, type_name, fmt
     ):
         auto_field = AutoFieldUid()
         xconstants = (
@@ -851,7 +858,7 @@ class Bundler(object):
                 self._apply_common_x_field_pattern_properties(
                     schema["properties"]["auto"],
                     xpattern,
-                    format,
+                    fmt,
                     property_name="auto",
                 )
 
@@ -907,13 +914,13 @@ class Bundler(object):
             self._apply_common_x_field_pattern_properties(
                 counter_schema["properties"]["start"],
                 xpattern,
-                format,
+                fmt,
                 property_name="start",
             )
             self._apply_common_x_field_pattern_properties(
                 counter_schema["properties"]["step"],
                 xpattern,
-                format,
+                fmt,
                 property_name="step",
             )
             if xconstants is not None:
@@ -983,19 +990,19 @@ class Bundler(object):
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
             xpattern,
-            format,
+            fmt,
             property_name="value",
         )
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["values"],
             xpattern,
-            format,
+            fmt,
             property_name="values",
         )
         self._content["components"]["schemas"][schema_name] = schema
 
     def _apply_common_x_field_pattern_properties(
-        self, schema, xpattern, format, property_name
+        self, schema, xpattern, fmt, property_name
     ):
         # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
         step_defaults = {
@@ -1006,26 +1013,27 @@ class Bundler(object):
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
-                if format in step_defaults:
-                    schema["default"] = step_defaults[format]
+                if fmt in step_defaults:
+                    schema["default"] = step_defaults[fmt]
                 else:
                     schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
 
+        finalised_format = None
         if xpattern["format"] == "integer":
-            fmt = "uint32"
+            finalised_format = "uint32"
             if "length" in xpattern and xpattern["length"] > 32:
-                fmt = "uint64"
-        elif format is not None:
-            fmt = format
+                finalised_format = "uint64"
+        elif fmt is not None:
+            finalised_format = fmt
 
-        if fmt is not None:
+        if finalised_format is not None:
             # TODO: fix this
             if property_name == "values":
-                schema["items"]["format"] = fmt
+                schema["items"]["format"] = finalised_format
             else:
-                schema["format"] = fmt
+                schema["format"] = finalised_format
         if "length" in xpattern:
             # TODO: fix this
             # if property_name == "values":

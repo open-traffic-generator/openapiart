@@ -59,3 +59,10 @@ components:
           x-field-pattern:
             format: random
           x-field-uid: 6
+        int_128:
+          x-field-pattern:
+            format: integer
+            length: 128
+            default: 0
+            features: [count]
+          x-field-uid: 7

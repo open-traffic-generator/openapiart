@@ -25,6 +25,7 @@ def test_validate_pattern():
     error_msgs = [
         "components.schemas.Config.properties.integer.x-field-pattern property using x-field-pattern with format integer must contain length property",
         "components.schemas.Config.properties.wrong.x-field-pattern has unspported format random , valid formats are ['integer', 'ipv4', 'ipv6', 'mac', 'checksum']",
+        "components.schemas.Config.properties.int_128.x-field-pattern property using x-field-pattern with format integer cannot have length greater than 64",
     ]
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
@@ -33,4 +34,4 @@ def test_validate_pattern():
         )
     error_value = execinfo.value.args[0]
     for msg in error_msgs:
-        str_compare(msg, error_value)
+        assert str_compare(msg, error_value)
