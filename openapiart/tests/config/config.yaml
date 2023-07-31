@@ -289,6 +289,54 @@ components:
             type: integer
             format: uint64
           x-field-uid: 50
+        auto_uint32_param:
+          description: |-
+            should automatically set type to uint32
+          type: integer
+          minimum: 64
+          maximum: 9000
+          x-field-uid: 51
+        auto_uint32_list_param:
+          description: |-
+            should automatically set type to []uint32
+          type: array
+          items:
+            type: integer
+          minimum: 64
+          maximum: 9000
+          x-field-uid: 52
+        auto_uint64_param:
+          description: |-
+            should automatically set to uint32
+          type: integer
+          minimum: 64
+          maximum: 4294967301
+          x-field-uid: 53
+        auto_uint64_list_param:
+          description: |-
+            should automatically set type to []uint64
+          type: array
+          items:
+            type: integer
+            minimum: 64
+            maximum: 4294967301
+          x-field-uid: 54
+        auto_int64_param:
+          description: |-
+            should automatically set to int64
+          type: integer
+          minimum: -2147483649
+          maximum: 9000
+          x-field-uid: 55
+        auto_int64_list_param:
+          description: |-
+            should automatically set type to []int64
+          type: array
+          items:
+            type: integer
+          minimum: -1
+          maximum: 2147483649
+          x-field-uid: 56
 
     WObject:
       required: [w_name]

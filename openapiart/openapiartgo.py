@@ -2925,18 +2925,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
             leaf = leaf[attr]
         return leaf
 
-    def _get_struct_field_type(self, property_schema, fluent_field=None):
+    def _get_struct_field_type(
+        self, property_schema, fluent_field=None, min=None, max=None
+    ):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
         if "type" in property_schema:
             oapi_type = property_schema["type"]
             if oapi_type.lower() in self._oapi_go_types:
-                go_type = "{oapi_go_types}".format(
-                    oapi_go_types=self._oapi_go_types[oapi_type.lower()]
-                )
+                if property_schema["type"] == "integer":
+                    go_type = type_limits._get_integer_format(
+                        property_schema.get("format"),
+                        property_schema.get("minimum", min),
+                        property_schema.get("maximum", max),
+                    )
+                else:
+                    go_type = "{oapi_go_types}".format(
+                        oapi_go_types=self._oapi_go_types[oapi_type.lower()]
+                    )
             if oapi_type == "array":
                 go_type += "[]" + self._get_struct_field_type(
-                    property_schema["items"], fluent_field
+                    property_schema["items"],
+                    fluent_field,
+                    property_schema.get("minimum"),
+                    property_schema.get("maximum"),
                 ).replace("*", "")
                 if "format" in property_schema["items"]:
                     fluent_field.itemformat = property_schema["items"][
