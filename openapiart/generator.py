@@ -1737,6 +1737,18 @@ class Generator:
                 if min_max > 2147483647:
                     if key not in pt or pt[key].startswith("int"):
                         pt.update({key: r"'int64'"})
+
+                if "items" in yproperty:
+                    item_prop = yproperty["items"]
+                    if item_prop.get("minimum") is not None:
+                        yproperty["minimum"] = item_prop.get("minimum")
+                    if item_prop.get("maximum") is not None:
+                        yproperty["maximum"] = item_prop.get("maximum")
+                    if item_prop.get("minLength") is not None:
+                        yproperty["minLength"] = item_prop.get("minLength")
+                    if item_prop.get("maxLength") is not None:
+                        yproperty["maxLength"] = item_prop.get("maxLength")
+
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:

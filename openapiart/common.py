@@ -438,8 +438,8 @@ class OpenApiValidator(object):
                 value < -2147483648 or value > 2147483647
             ):
                 return False
-            elif type_format == "int32" and (
-                value < -2147483648 or value > 2147483647
+            elif type_format == "int64" and (
+                value < -9223372036854775808 or value > 9223372036854775807
             ):
                 return False
         return True

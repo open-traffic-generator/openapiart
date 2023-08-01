@@ -804,9 +804,10 @@ class Bundler(object):
         self, xpattern, schema_name, description, type_name, fmt
     ):
         auto_field = AutoFieldUid()
-        xconstants = (
-            xpattern["x-constants"] if "x-constants" in xpattern else None
-        )
+
+        pattern_length = int(xpattern.get("length", 8))
+        pattern_fmt = "uint32" if pattern_length <= 32 else "uint64"
+
         schema = {
             "description": description,
             "type": "object",
@@ -831,8 +832,6 @@ class Bundler(object):
                 },
             },
         }
-        if xconstants is not None:
-            schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
             if "auto" in xpattern["features"]:
                 if "default" not in xpattern:
@@ -865,13 +864,6 @@ class Bundler(object):
             # skip this UID as it was previously being used for metric_groups
             _ = auto_field.uid
 
-        if "enums" in xpattern:
-            schema["properties"]["value"]["enum"] = copy.deepcopy(
-                xpattern["enums"]
-            )
-            schema["properties"]["values"]["items"]["enum"] = copy.deepcopy(
-                xpattern["enums"]
-            )
         if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
             counter_pattern_name = "{}.Counter".format(schema_name)
             schema["properties"]["choice"]["x-enum"]["increment"] = {
@@ -907,7 +899,7 @@ class Bundler(object):
             if "features" in xpattern and "count" in xpattern["features"]:
                 counter_schema["properties"]["count"] = {
                     "type": "integer",
-                    "format": "uint32",
+                    "format": pattern_fmt,
                     "default": 1,
                     "x-field-uid": counter_auto_field.uid,
                 }
@@ -923,8 +915,7 @@ class Bundler(object):
                 fmt,
                 property_name="step",
             )
-            if xconstants is not None:
-                counter_schema["x-constants"] = copy.deepcopy(xconstants)
+
             self._content["components"]["schemas"][
                 counter_pattern_name
             ] = counter_schema
@@ -956,7 +947,7 @@ class Bundler(object):
                     "offset": {
                         "description": "Offset in bits relative to start of corresponding header field",
                         "type": "integer",
-                        "format": "uint32",
+                        "format": pattern_fmt,
                         "default": 0,
                         "minimum": 0,
                         "maximum": length - 1,
@@ -965,7 +956,7 @@ class Bundler(object):
                     "length": {
                         "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
                         "type": "integer",
-                        "format": "uint32",
+                        "format": pattern_fmt,
                         "default": length,
                         "minimum": 1,
                         "maximum": length,
@@ -1029,19 +1020,17 @@ class Bundler(object):
             finalised_format = fmt
 
         if finalised_format is not None:
-            # TODO: fix this
             if property_name == "values":
                 schema["items"]["format"] = finalised_format
             else:
                 schema["format"] = finalised_format
-        if "length" in xpattern:
-            # TODO: fix this
-            # if property_name == "values":
-            #     schema["items"]["minimum"] = 0
-            #     schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
-            # else:
-            schema["minimum"] = 0
-            schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+        if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
+            if property_name == "values":
+                schema["items"]["minimum"] = 0
+                schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            else:
+                schema["minimum"] = 0
+                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:
