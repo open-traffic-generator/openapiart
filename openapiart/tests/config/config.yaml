@@ -325,8 +325,8 @@ components:
           description: |-
             should automatically set to int64
           type: integer
-          minimum: -2147483649
-          maximum: 9000
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
           x-field-uid: 55
         auto_int64_list_param:
           description: |-
