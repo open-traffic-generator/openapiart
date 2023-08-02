@@ -2091,16 +2091,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.isEnum = (
                 len(self._get_parser("$..enum").find(property_schema)) > 0
             )
-            field.hasminmax = (
-                "minimum" in property_schema or "maximum" in property_schema
-            )
-            field.hasminmaxlength = (
-                "minLength" in property_schema
-                or "maxLength" in property_schema
-            )
             field.isArray = (
                 "type" in property_schema
                 and property_schema["type"] == "array"
+            )
+            minmax_schema = property_schema
+            if field.isArray:
+                if "items" in property_schema:
+                    minmax_schema = property_schema["items"]
+
+            field.hasminmax = (
+                "minimum" in minmax_schema or "maximum" in minmax_schema
+            )
+            field.hasminmaxlength = (
+                "minLength" in minmax_schema or "maxLength" in minmax_schema
             )
             if field.isEnum:
                 field.enums = (
@@ -2111,13 +2115,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.hasminmax:
                 field.min = (
                     None
-                    if "minimum" not in property_schema
-                    else property_schema["minimum"]
+                    if "minimum" not in minmax_schema
+                    else minmax_schema["minimum"]
                 )
                 field.max = (
                     None
-                    if "maximum" not in property_schema
-                    else property_schema["maximum"]
+                    if "maximum" not in minmax_schema
+                    else minmax_schema["maximum"]
                 )
             if field.hasminmaxlength:
                 field.min_length = (

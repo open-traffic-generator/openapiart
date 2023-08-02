@@ -805,6 +805,10 @@ class Bundler(object):
     ):
         auto_field = AutoFieldUid()
 
+        xconstants = (
+            xpattern["x-constants"] if "x-constants" in xpattern else None
+        )
+
         pattern_length = int(xpattern.get("length", 8))
         pattern_fmt = "uint32" if pattern_length <= 32 else "uint64"
 
@@ -832,6 +836,8 @@ class Bundler(object):
                 },
             },
         }
+        if xconstants is not None:
+            schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
             if "auto" in xpattern["features"]:
                 if "default" not in xpattern:
@@ -915,6 +921,9 @@ class Bundler(object):
                 fmt,
                 property_name="step",
             )
+
+            if xconstants is not None:
+                counter_schema["x-constants"] = copy.deepcopy(xconstants)
 
             self._content["components"]["schemas"][
                 counter_pattern_name

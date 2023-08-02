@@ -310,7 +310,7 @@ components:
             should automatically set to uint32
           type: integer
           minimum: 64
-          maximum: 4294967301
+          maximum: 429496730100
           x-field-uid: 53
         auto_uint64_list_param:
           description: |-
@@ -319,7 +319,7 @@ components:
           items:
             type: integer
             minimum: 64
-            maximum: 4294967301
+            maximum: 429496730100
           x-field-uid: 54
         auto_int64_param:
           description: |-
