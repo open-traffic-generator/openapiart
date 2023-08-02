@@ -2119,18 +2119,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if "maximum" not in property_schema
                     else property_schema["maximum"]
                 )
-                if (
-                    (field.min is not None and field.min > 2147483647)
-                    or (field.max is not None and field.max > 2147483647)
-                    and re.match("^int|^\\[\\]int", field.type)
-                ):
-                    field.type = field.type.replace("32", "64")
-                if (
-                    (field.min is not None and field.min > 4294967295)
-                    or (field.max is not None and field.max > 4294967295)
-                    and "uint" in field.type
-                ):
-                    field.type = field.type.replace("32", "64")
             if field.hasminmaxlength:
                 field.min_length = (
                     None
