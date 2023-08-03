@@ -227,7 +227,7 @@ def generate_from_yaml(sdk="all"):
     )
     run(
         [
-            py() + "  -m openapiart --config_file" + yaml_file,
+            py() + "  -m openapiart --config_file " + yaml_file,
         ]
     )
 
