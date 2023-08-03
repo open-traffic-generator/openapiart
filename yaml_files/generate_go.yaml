@@ -7,8 +7,6 @@ api_files:
 artifact_dir: art
 generate_version_api: true
 languages:
-  python:
-    package_name: sanity
   go:
     sdk:
       package_dir: github.com/open-traffic-generator/openapiart/pkg
