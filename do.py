@@ -225,9 +225,11 @@ def generate_from_yaml(sdk="all"):
     yaml_file = os.path.normpath(
         os.path.join(os.path.dirname(__file__), yaml_file)
     )
-    from openapiart.generate_from_yaml import GenerateFromYaml
-
-    GenerateFromYaml(yaml_file)
+    run(
+        [
+            py() + "  -m openapiart --config_file" + yaml_file,
+        ]
+    )
 
 
 def testpy():
