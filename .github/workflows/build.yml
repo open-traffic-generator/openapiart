@@ -78,6 +78,8 @@ jobs:
           python do.py setup_ext "1.20"
       - name: Generate Python SDK
         run: |
+          python -m pip install -r ./openapiart/requirements.txt
+          python -m pip install -r ./openapiart/test_requirements.txt
           python do.py generate_from_yaml python
       - name: Test python SDK
         run: |
