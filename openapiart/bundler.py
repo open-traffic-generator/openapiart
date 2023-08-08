@@ -870,64 +870,77 @@ class Bundler(object):
             # skip this UID as it was previously being used for metric_groups
             _ = auto_field.uid
 
-        if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
-            counter_pattern_name = "{}.Counter".format(schema_name)
-            schema["properties"]["choice"]["x-enum"]["increment"] = {
-                "x-field-uid": 4
-            }
-            schema["properties"]["choice"]["x-enum"]["decrement"] = {
-                "x-field-uid": 5
-            }
-            schema["properties"]["increment"] = {
-                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
-            }
-            schema["properties"]["increment"]["x-field-uid"] = auto_field.uid
-            schema["properties"]["decrement"] = {
-                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
-            }
-            schema["properties"]["decrement"]["x-field-uid"] = auto_field.uid
-            counter_auto_field = AutoFieldUid()
-            counter_schema = {
-                "description": "{} counter pattern".format(xpattern["format"]),
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": type_name,
-                        "x-field-uid": counter_auto_field.uid,
-                    },
-                    "step": {
-                        "type": type_name,
-                        "x-field-uid": counter_auto_field.uid,
-                    },
-                },
-            }
-
-            if "features" in xpattern and "count" in xpattern["features"]:
-                counter_schema["properties"]["count"] = {
-                    "type": "integer",
-                    "format": pattern_fmt,
-                    "default": 1,
-                    "x-field-uid": counter_auto_field.uid,
+        if "features" in xpattern and "count" in xpattern["features"]:
+            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                counter_pattern_name = "{}.Counter".format(schema_name)
+                schema["properties"]["choice"]["x-enum"]["increment"] = {
+                    "x-field-uid": 4
                 }
-            self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["start"],
-                xpattern,
-                fmt,
-                property_name="start",
-            )
-            self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["step"],
-                xpattern,
-                fmt,
-                property_name="step",
-            )
+                schema["properties"]["choice"]["x-enum"]["decrement"] = {
+                    "x-field-uid": 5
+                }
+                schema["properties"]["increment"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        counter_pattern_name
+                    )
+                }
+                schema["properties"]["increment"][
+                    "x-field-uid"
+                ] = auto_field.uid
+                schema["properties"]["decrement"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        counter_pattern_name
+                    )
+                }
+                schema["properties"]["decrement"][
+                    "x-field-uid"
+                ] = auto_field.uid
+                counter_auto_field = AutoFieldUid()
+                counter_schema = {
+                    "description": "{} counter pattern".format(
+                        xpattern["format"]
+                    ),
+                    "type": "object",
+                    "properties": {
+                        "start": {
+                            "type": type_name,
+                            "x-field-uid": counter_auto_field.uid,
+                        },
+                        "step": {
+                            "type": type_name,
+                            "x-field-uid": counter_auto_field.uid,
+                        },
+                        "count": {
+                            "type": "integer",
+                            "x-field-uid": counter_auto_field.uid,
+                        },
+                    },
+                }
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["start"],
+                    xpattern,
+                    fmt,
+                    property_name="start",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["step"],
+                    xpattern,
+                    fmt,
+                    property_name="step",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["count"],
+                    xpattern,
+                    pattern_fmt,
+                    property_name="count",
+                )
 
-            if xconstants is not None:
-                counter_schema["x-constants"] = copy.deepcopy(xconstants)
+                if xconstants is not None:
+                    counter_schema["x-constants"] = copy.deepcopy(xconstants)
 
-            self._content["components"]["schemas"][
-                counter_pattern_name
-            ] = counter_schema
+                self._content["components"]["schemas"][
+                    counter_pattern_name
+                ] = counter_schema
 
         if "features" in xpattern and "metric_tags" in xpattern["features"]:
             metric_tags_schema_name = "{}.MetricTag".format(schema_name)
@@ -1017,6 +1030,8 @@ class Bundler(object):
                     schema["default"] = step_defaults[fmt]
                 else:
                     schema["default"] = 1
+            elif property_name == "count":
+                schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
 

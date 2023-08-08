@@ -99,7 +99,7 @@ class type_limits(object):
 
     @classmethod
     def _min_max_in_range(cls, format, min, max):
-        if min is None or max is None:
+        if min is None and max is None:
             return True
         elif min is None or max is None:
             if min is None:
@@ -141,18 +141,18 @@ class type_limits(object):
     @classmethod
     def _get_integer_format(cls, type_format, min, max):
         valid_formats = ["int32", "int64", "uint32", "uint64"]
-        if type_format is not None:
-            if type_format in valid_formats:
-                if not cls._min_max_in_range(type_format, min, max):
-                    raise Exception(
-                        "format {} is not compatible with [min,max] [{},{}]".format(
-                            type_format, min, max
-                        )
+        if type_format is None:
+            type_format = "int32"
+        if type_format in valid_formats:
+            if not cls._min_max_in_range(type_format, min, max):
+                raise Exception(
+                    "format {} is not compatible with [min,max] [{},{}]".format(
+                        type_format, min, max
                     )
-                return type_format
-            raise Exception(
-                "unsupported format %s, supported formats are: %s",
-                type_format,
-                valid_formats,
-            )
-        return cls._format_from_range(min, max)
+                )
+            return type_format
+        raise Exception(
+            "unsupported format %s, supported formats are: %s",
+            type_format,
+            valid_formats,
+        )

@@ -1747,7 +1747,7 @@ class Generator:
                 )
 
                 if len(ref) == 0 and (
-                    pt.get("type", "") == "int" or pt.get("itemtype") == "int"
+                    pt.get("type") == "int" or pt.get("itemtype") == "int"
                 ):
                     fmt = pt.get(key)
                     fmt = fmt.replace("'", "") if fmt is not None else fmt

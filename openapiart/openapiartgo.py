@@ -171,6 +171,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "string": "string",
             "boolean": "bool",
             "integer": "int32",
+            "int32": "int32",
             "int64": "int64",
             "uint32": "uint32",
             "uint64": "uint64",
@@ -2099,6 +2100,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.isArray:
                 if "items" in property_schema:
                     minmax_schema = property_schema["items"]
+                    if (
+                        "minimum" not in minmax_schema
+                        and "minimum" in property_schema
+                    ):
+                        minmax_schema["minimum"] = property_schema["minimum"]
+                    if (
+                        "maximum" not in minmax_schema
+                        and "maximum" in property_schema
+                    ):
+                        minmax_schema["maximum"] = property_schema["maximum"]
 
             field.hasminmax = (
                 "minimum" in minmax_schema or "maximum" in minmax_schema
@@ -2472,7 +2483,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.max is None and type_max is not None:
                     field.max = type_max
             if field.min is not None:
-                if "uint" in field.type and field.min == 0:
+                if field.min == 0 and (
+                    field.type.startswith("uint")
+                    or field.type.startswith("[]uint")
+                ):
                     pass
                 else:
                     line.append("{pointer}{value} < {min}")
@@ -2952,13 +2966,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     go_type = "{oapi_go_type}".format(
                         oapi_go_type=self._oapi_go_types[type_format.lower()]
                     )
-                elif property_schema["format"].lower() in self._oapi_go_types:
-                    go_type = "{oapi_go_type}".format(
-                        oapi_go_type=self._oapi_go_types[
-                            property_schema["format"].lower()
-                        ]
-                    )
-                else:
+                elif (
+                    property_schema["format"].lower()
+                    not in self._oapi_go_types
+                ):
                     fluent_field.format = property_schema["format"].lower()
         elif "$ref" in property_schema:
             ref = property_schema["$ref"]

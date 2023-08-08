@@ -701,12 +701,10 @@ func TestInterger64(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"integer64": 100,
-		"auto_int64_param": 9000
+		"integer64": 100
 	}`
 	err := config.FromJson(int_64)
 	assert.Equal(t, config.Integer64(), int64(100))
-	assert.Equal(t, config.AutoInt64Param(), int64(9000))
 	assert.Nil(t, err)
 	int_64_str := `{
 		"a":"asdf", 
@@ -716,11 +714,9 @@ func TestInterger64(t *testing.T) {
 		"required_object" : {
 			"e_a" : 1, 
 			"e_b" : 2
-		},
-		"auto_int64_list_param": ["100", "-1", "2", "1"]
+		}
 	}`
 	err1 := config.FromJson(int_64_str)
-	assert.Equal(t, config.AutoInt64ListParam(), []int64{100, -1, 2, 1})
 	assert.Nil(t, err1)
 }
 
@@ -735,10 +731,12 @@ func TestInt32Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"int32_param": 100
+		"int32_param": 100,
+		"auto_int32_param": 101
 	}`
 	err := config.FromJson(int_32)
 	assert.Equal(t, config.Int32Param(), int32(100))
+	assert.Equal(t, config.AutoInt32Param(), int32(101))
 	assert.Nil(t, err)
 	int32_list_str := `{
 		"a":"asdf", 
@@ -749,10 +747,12 @@ func TestInt32Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"int32_list_param": ["100", "-1", "-500", 500]
+		"int32_list_param": ["100", "-1", "-500", 500],
+		"auto_int32_list_param": ["100", "1001", "72", "909"]
 	}`
 	err1 := config.FromJson(int32_list_str)
 	assert.Equal(t, config.Int32ListParam(), []int32{100, -1, -500, 500})
+	assert.Equal(t, config.AutoInt32ListParam(), []int32{100, 1001, 72, 909})
 	assert.Nil(t, err1)
 }
 
@@ -767,12 +767,10 @@ func TestUint32Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"uint32_param": 22,
-		"auto_uint32_param": 9000
+		"uint32_param": 22
 	}`
 	err := config.FromJson(uint_32)
 	assert.Equal(t, config.Uint32Param(), uint32(22))
-	assert.Equal(t, config.AutoUint32Param(), uint32(9000))
 	assert.Nil(t, err)
 	uint32_list_str := `{
 		"a":"asdf", 
@@ -783,12 +781,10 @@ func TestUint32Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"uint32_list_param": ["100", "0", "500"],
-		"auto_uint32_list_param": [64, 899, 9000]
+		"uint32_list_param": ["100", "0", "500"]
 	}`
 	err1 := config.FromJson(uint32_list_str)
 	assert.Equal(t, config.Uint32ListParam(), []uint32{100, 0, 500})
-	assert.Equal(t, config.AutoUint32ListParam(), []uint32{64, 899, 9000})
 	assert.Nil(t, err1)
 }
 
@@ -803,11 +799,9 @@ func TestUInt64Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"uint64_param": 4294967395,
-		"auto_uint64_param": 4294967301
+		"uint64_param": 4294967395
 	}`
 	err := config.FromJson(uint_64)
-	assert.Equal(t, config.AutoUint64Param(), uint64(4294967301))
 	assert.Nil(t, err)
 	int32_list_str := `{
 		"a":"asdf", 
@@ -818,12 +812,10 @@ func TestUInt64Param(t *testing.T) {
 			"e_a" : 1, 
 			"e_b" : 2
 		},
-		"uint64_list_param": ["4294967395", "4294967396", "4294967397"],
-		"auto_uint64_list_param": ["4294967395", "4294967396", "4294967397"]
+		"uint64_list_param": ["4294967395", "4294967396", "4294967397"]
 	}`
 	err1 := config.FromJson(int32_list_str)
 	assert.Equal(t, config.Uint64ListParam(), []uint64{4294967395, 4294967396, 4294967397})
-	assert.Equal(t, config.AutoUint64ListParam(), []uint64{4294967395, 4294967396, 4294967397})
 	assert.Nil(t, err1)
 }
 
