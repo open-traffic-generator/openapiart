@@ -792,7 +792,6 @@ class Bundler(object):
                     "description": "A custom checksum value",
                     "type": "integer",
                     "format": fmt,
-                    "minimum": 0,
                     "maximum": 2**length - 1,
                     "x-field-uid": auto_field.uid,
                 },
@@ -971,7 +970,6 @@ class Bundler(object):
                         "type": "integer",
                         "format": pattern_fmt,
                         "default": 0,
-                        "minimum": 0,
                         "maximum": length - 1,
                         "x-field-uid": metric_tags_auto_field.uid,
                     },
@@ -1050,10 +1048,8 @@ class Bundler(object):
                 schema["format"] = finalised_format
         if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
             if property_name == "values":
-                schema["items"]["minimum"] = 0
                 schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
             else:
-                schema["minimum"] = 0
                 schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_recursive_x_include(self, include_value):
