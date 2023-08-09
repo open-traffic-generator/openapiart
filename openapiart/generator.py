@@ -18,7 +18,7 @@ import requests
 import pkgutil
 import importlib
 from jsonpath_ng import parse
-from .openapiartplugin import OpenApiArtPlugin
+from .openapiartplugin import OpenApiArtPlugin, type_limits
 
 # TODO: get rid of this
 MODELS_RELEASE = "v0.3.3"
@@ -1728,14 +1728,34 @@ class Generator:
                                 % yproperty["items"]["format"]
                             }
                         )
-                min_max = yproperty.get("maximum", yproperty.get("minimum", 0))
+
+                if "items" in yproperty:
+                    item_prop = yproperty["items"]
+                    if item_prop.get("minimum") is not None:
+                        yproperty["minimum"] = item_prop.get("minimum")
+                    if item_prop.get("maximum") is not None:
+                        yproperty["maximum"] = item_prop.get("maximum")
+                    if item_prop.get("minLength") is not None:
+                        yproperty["minLength"] = item_prop.get("minLength")
+                    if item_prop.get("maxLength") is not None:
+                        yproperty["maxLength"] = item_prop.get("maxLength")
+
                 key = (
                     "itemformat"
                     if pt.get("itemtype") is not None
                     else "format"
                 )
-                if min_max > 2147483647:
-                    pt.update({key: r"'int64'"})
+
+                if len(ref) == 0 and (
+                    pt.get("type") == "int" or pt.get("itemtype") == "int"
+                ):
+                    fmt = pt.get(key)
+                    fmt = fmt.replace("'", "") if fmt is not None else fmt
+                    final_fmt = type_limits._get_integer_format(
+                        fmt, yproperty.get("minimum"), yproperty.get("maximum")
+                    )
+                    pt.update({key: "'%s'" % final_fmt})
+
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:

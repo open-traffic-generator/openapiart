@@ -423,14 +423,25 @@ class OpenApiValidator(object):
     def validate_integer(self, value, min, max, type_format=None):
         if value is None or not isinstance(value, int):
             return False
-        if type_format == "uint32" and value < 0:
-            return False
-        if type_format == "uint64" and value < 0:
-            return False
         if min is not None and value < min:
             return False
         if max is not None and value > max:
             return False
+        if type_format is not None:
+            if type_format == "uint32" and (value < 0 or value > 4294967295):
+                return False
+            elif type_format == "uint64" and (
+                value < 0 or value > 18446744073709551615
+            ):
+                return False
+            elif type_format == "int32" and (
+                value < -2147483648 or value > 2147483647
+            ):
+                return False
+            elif type_format == "int64" and (
+                value < -9223372036854775808 or value > 9223372036854775807
+            ):
+                return False
         return True
 
     def validate_float(self, value):
@@ -903,11 +914,17 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             msg = "property {} shall be of type {} at {}".format(
                 property_name, details["type"], self.__class__
             )
+
+            itemtype = (
+                details.get("itemformat")
+                if "itemformat" in details
+                else details.get("itemtype")
+            )
             self.types_validation(
                 property_value,
                 details["type"],
                 msg,
-                details.get("itemtype"),
+                itemtype,
                 details.get("minimum"),
                 details.get("maximum"),
                 details.get("minLength"),

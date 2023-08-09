@@ -46,7 +46,7 @@ func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.Pref
 	config.Ipv6Pattern().Ipv6().Increment().SetStart("2000::1").SetStep("::1").SetCount(100)
 	config.Ipv6Pattern().Ipv6().Decrement().SetStart("3000::1").SetStep("::1").SetCount(100)
 	config.IntegerPattern().Integer().SetValue(1)
-	config.IntegerPattern().Integer().SetValues([]int32{1, 2, 3})
+	config.IntegerPattern().Integer().SetValues([]uint32{1, 2, 3})
 	config.IntegerPattern().Integer().Increment().SetStart(1).SetStart(1).SetCount(100)
 	config.IntegerPattern().Integer().Decrement().SetStart(1).SetStart(1).SetCount(100)
 	config.MacPattern().Mac().SetValue("00:00:00:00:00:0a")
@@ -345,7 +345,7 @@ func TestAuto(t *testing.T) {
 		t,
 		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
 		config.AutoFieldTest().Choice())
-	assert.Equal(t, int32(0), config.AutoFieldTest().Auto())
+	assert.Equal(t, uint32(0), config.AutoFieldTest().Auto())
 
 	config.AutoFieldTest().SetValue(10)
 	assert.Equal(

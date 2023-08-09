@@ -458,7 +458,7 @@ func TestConfigGenerated(t *testing.T) {
 	config.SetMacPattern(v25)
 	v29 := config.IntegerPattern()
 	v30 := v29.Integer()
-	v30.SetValue(248).SetValues([]int32{65})
+	v30.SetValue(248).SetValues([]uint32{65})
 	v31 := v30.Increment()
 	v31.SetStart(229).SetStep(169).SetCount(1)
 	v31.HasStart()
