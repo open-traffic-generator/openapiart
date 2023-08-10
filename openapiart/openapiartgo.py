@@ -1,5 +1,6 @@
 from .openapiartplugin import OpenApiArtPlugin, type_limits
 import os
+import re
 import subprocess
 
 
@@ -173,6 +174,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "string": "string",
             "boolean": "bool",
             "integer": "int32",
+            "int32": "int32",
             "int64": "int64",
             "uint32": "uint32",
             "uint64": "uint64",
@@ -2241,16 +2243,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.isEnum = (
                 len(self._get_parser("$..enum").find(property_schema)) > 0
             )
-            field.hasminmax = (
-                "minimum" in property_schema or "maximum" in property_schema
-            )
-            field.hasminmaxlength = (
-                "minLength" in property_schema
-                or "maxLength" in property_schema
-            )
             field.isArray = (
                 "type" in property_schema
                 and property_schema["type"] == "array"
+            )
+            minmax_schema = property_schema
+            if field.isArray:
+                if "items" in property_schema:
+                    minmax_schema = property_schema["items"]
+                    if (
+                        "minimum" not in minmax_schema
+                        and "minimum" in property_schema
+                    ):
+                        minmax_schema["minimum"] = property_schema["minimum"]
+                    if (
+                        "maximum" not in minmax_schema
+                        and "maximum" in property_schema
+                    ):
+                        minmax_schema["maximum"] = property_schema["maximum"]
+
+            field.hasminmax = (
+                "minimum" in minmax_schema or "maximum" in minmax_schema
+            )
+            field.hasminmaxlength = (
+                "minLength" in minmax_schema or "maxLength" in minmax_schema
             )
             if field.isEnum:
                 field.enums = (
@@ -2261,26 +2277,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.hasminmax:
                 field.min = (
                     None
-                    if "minimum" not in property_schema
-                    else property_schema["minimum"]
+                    if "minimum" not in minmax_schema
+                    else minmax_schema["minimum"]
                 )
                 field.max = (
                     None
-                    if "maximum" not in property_schema
-                    else property_schema["maximum"]
+                    if "maximum" not in minmax_schema
+                    else minmax_schema["maximum"]
                 )
-                if (
-                    (field.min is not None and field.min > 2147483647)
-                    or (field.max is not None and field.max > 2147483647)
-                    and "int" in field.type
-                ):
-                    field.type = field.type.replace("32", "64")
-                if (
-                    (field.min is not None and field.min > 4294967295)
-                    or (field.max is not None and field.max > 4294967295)
-                    and "uint" in field.type
-                ):
-                    field.type = field.type.replace("32", "64")
             if field.hasminmaxlength:
                 field.min_length = (
                     None
@@ -2630,7 +2634,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.max is None and type_max is not None:
                     field.max = type_max
             if field.min is not None:
-                line.append("{pointer}{value} < {min}")
+                if field.min == 0 and (
+                    field.type.startswith("uint")
+                    or field.type.startswith("[]uint")
+                ):
+                    pass
+                else:
+                    line.append("{pointer}{value} < {min}")
             if field.max is not None:
                 line.append("{pointer}{value} > {max}")
             inner_body += (
@@ -3072,18 +3082,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
             leaf = leaf[attr]
         return leaf
 
-    def _get_struct_field_type(self, property_schema, fluent_field=None):
+    def _get_struct_field_type(
+        self, property_schema, fluent_field=None, min=None, max=None
+    ):
         """Convert openapi type, format, items, $ref keywords to a go type"""
         go_type = ""
         if "type" in property_schema:
             oapi_type = property_schema["type"]
             if oapi_type.lower() in self._oapi_go_types:
-                go_type = "{oapi_go_types}".format(
-                    oapi_go_types=self._oapi_go_types[oapi_type.lower()]
-                )
+                if property_schema["type"] == "integer":
+                    go_type = type_limits._get_integer_format(
+                        property_schema.get("format"),
+                        property_schema.get("minimum", min),
+                        property_schema.get("maximum", max),
+                    )
+                else:
+                    go_type = "{oapi_go_types}".format(
+                        oapi_go_types=self._oapi_go_types[oapi_type.lower()]
+                    )
             if oapi_type == "array":
                 go_type += "[]" + self._get_struct_field_type(
-                    property_schema["items"], fluent_field
+                    property_schema["items"],
+                    fluent_field,
+                    property_schema.get("minimum"),
+                    property_schema.get("maximum"),
                 ).replace("*", "")
                 if "format" in property_schema["items"]:
                     fluent_field.itemformat = property_schema["items"][
@@ -3095,13 +3117,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     go_type = "{oapi_go_type}".format(
                         oapi_go_type=self._oapi_go_types[type_format.lower()]
                     )
-                elif property_schema["format"].lower() in self._oapi_go_types:
-                    go_type = "{oapi_go_type}".format(
-                        oapi_go_type=self._oapi_go_types[
-                            property_schema["format"].lower()
-                        ]
-                    )
-                else:
+                elif (
+                    property_schema["format"].lower()
+                    not in self._oapi_go_types
+                ):
                     fluent_field.format = property_schema["format"].lower()
         elif "$ref" in property_schema:
             ref = property_schema["$ref"]

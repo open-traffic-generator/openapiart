@@ -59,7 +59,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.Ipv6Pattern().Ipv6().Increment().SetStart("2000::1").SetStep("::1").SetCount(100)
 	config.Ipv6Pattern().Ipv6().Decrement().SetStart("3000::1").SetStep("::1").SetCount(100)
 	config.IntegerPattern().Integer().SetValue(1)
-	config.IntegerPattern().Integer().SetValues([]int32{1, 2, 3})
+	config.IntegerPattern().Integer().SetValues([]uint32{1, 2, 3})
 	config.IntegerPattern().Integer().Increment().SetStart(1).SetStart(1).SetCount(100)
 	config.IntegerPattern().Integer().Decrement().SetStart(1).SetStart(1).SetCount(100)
 	config.MacPattern().Mac().SetValue("00:00:00:00:00:0a")
@@ -704,7 +704,7 @@ func TestInterger64(t *testing.T) {
 		"integer64": 100
 	}`
 	err := config.FromJson(int_64)
-	fmt.Println(config.Integer64())
+	assert.Equal(t, config.Integer64(), int64(100))
 	assert.Nil(t, err)
 	int_64_str := `{
 		"a":"asdf", 
@@ -714,11 +714,108 @@ func TestInterger64(t *testing.T) {
 		"required_object" : {
 			"e_a" : 1, 
 			"e_b" : 2
-		},
-		"integer64": "100"
+		}
 	}`
 	err1 := config.FromJson(int_64_str)
-	fmt.Println(config.Integer64())
+	assert.Nil(t, err1)
+}
+
+func TestInt32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	int_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_param": 100,
+		"auto_int32_param": 101
+	}`
+	err := config.FromJson(int_32)
+	assert.Equal(t, config.Int32Param(), int32(100))
+	assert.Equal(t, config.AutoInt32Param(), int32(101))
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_list_param": ["100", "-1", "-500", 500],
+		"auto_int32_list_param": ["100", "1001", "72", "909"]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	assert.Equal(t, config.Int32ListParam(), []int32{100, -1, -500, 500})
+	assert.Equal(t, config.AutoInt32ListParam(), []int32{100, 1001, 72, 909})
+	assert.Nil(t, err1)
+}
+
+func TestUint32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_param": 22
+	}`
+	err := config.FromJson(uint_32)
+	assert.Equal(t, config.Uint32Param(), uint32(22))
+	assert.Nil(t, err)
+	uint32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_list_param": ["100", "0", "500"]
+	}`
+	err1 := config.FromJson(uint32_list_str)
+	assert.Equal(t, config.Uint32ListParam(), []uint32{100, 0, 500})
+	assert.Nil(t, err1)
+}
+
+func TestUInt64Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_64 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_param": 4294967395
+	}`
+	err := config.FromJson(uint_64)
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_list_param": ["4294967395", "4294967396", "4294967397"]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	assert.Equal(t, config.Uint64ListParam(), []uint64{4294967395, 4294967396, 4294967397})
 	assert.Nil(t, err1)
 }
 
@@ -1587,7 +1684,7 @@ func TestChoiceDefaults(t *testing.T) {
 	j3, err3 := integer.ToJson()
 	assert.Nil(t, err3)
 	require.JSONEq(t, json3, j3)
-	integer.Integer().SetValues([]int32{1, 2, 3})
+	integer.Integer().SetValues([]uint32{1, 2, 3})
 	json4 := `
 	{
 		"integer":  {
