@@ -21,12 +21,13 @@ components:
           x-field-uid: 3
         space_1:
           type: integer
-          x-status: 
+          x-status:
             status: deprecated
           x-field-uid: 4
         full_duplex_100_mb:
           type: integer
-          minimum: 0
+          format: int64
+          minimum: -10
           maximum: 4261412864
           x-field-uid: 5
         response:
@@ -51,7 +52,7 @@ components:
                 information: 500 can change to other values
               x-field-uid: 4
         a:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             Small single line description
@@ -69,7 +70,7 @@ components:
           type: integer
           x-field-uid: 9
         d_values:
-          x-status: 
+          x-status:
             status: deprecated
           description: A list of enum values
           type: array
@@ -84,7 +85,7 @@ components:
                 x-field-uid: 3
           x-field-uid: 10
         e:
-          x-status: 
+          x-status:
             status: deprecated
           description: A child object
           $ref: "#/components/schemas/EObject"
@@ -173,7 +174,8 @@ components:
           type: array
           items:
             type: integer
-          minimum: 0
+            format: int64
+          minimum: -12
           maximum: 4261412864
           x-field-uid: 31
         header_checksum:
@@ -184,7 +186,7 @@ components:
             length: 16
           x-field-uid: 32
         str_len:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             string minimum&maximum Length
@@ -193,7 +195,7 @@ components:
           maxLength: 6
           x-field-uid: 33
         hex_slice:
-          x-status: 
+          x-status:
             status: under_review
           description: |-
             Array of Hex
@@ -232,7 +234,7 @@ components:
           description: A list of objects with choice with and without properties
           type: array
           items:
-            $ref: '#/components/schemas/ChoiceObject'
+            $ref: "#/components/schemas/ChoiceObject"
           x-field-uid: 41
         required_choice_object:
           $ref: "#/components/schemas/RequiredChoiceParent"
@@ -249,6 +251,62 @@ components:
           items:
             $ref: "#/components/schemas/GObject"
           x-field-uid: 44
+        int32_param:
+          description: int32 type
+          type: integer
+          format: int32
+          x-field-uid: 45
+        int32_list_param:
+          description: int32 type list
+          type: array
+          items:
+            type: integer
+            format: int32
+          minimum: -23456
+          maximum: 23456
+          x-field-uid: 46
+        uint32_param:
+          description: uint32 type
+          type: integer
+          format: uint32
+          x-field-uid: 47
+        uint32_list_param:
+          description: uint32 type list
+          type: array
+          items:
+            type: integer
+            format: uint32
+          minimum: 0
+          maximum: 4294967293
+          x-field-uid: 48
+        uint64_param:
+          description: uint64 type
+          type: integer
+          format: uint64
+          x-field-uid: 49
+        uint64_list_param:
+          description: uint64 type list
+          type: array
+          items:
+            type: integer
+            format: uint64
+          x-field-uid: 50
+        auto_int32_param:
+          description: |-
+            should automatically set type to int32
+          type: integer
+          minimum: 64
+          maximum: 9000
+          x-field-uid: 51
+        auto_int32_list_param:
+          description: |-
+            should automatically set type to []int32
+          type: array
+          items:
+            type: integer
+          minimum: 64
+          maximum: 9000
+          x-field-uid: 52
 
     WObject:
       required: [w_name]
@@ -298,7 +356,7 @@ components:
           default: 77.7
           x-status:
             status: deprecated
-            information: 
+            information:
           x-field-uid: 3
         choice:
           type: string
@@ -414,10 +472,10 @@ components:
             no_obj:
               x-field-uid: 3
         e_obj:
-          $ref: '#/components/schemas/EObject'
+          $ref: "#/components/schemas/EObject"
           x-field-uid: 2
         f_obj:
-          $ref: '#/components/schemas/FObject'
+          $ref: "#/components/schemas/FObject"
           x-field-uid: 3
 
     KObject:
@@ -439,7 +497,7 @@ components:
           x-field-uid: 1
         integer:
           type: integer
-          minimum: 10
+          minimum: -10
           maximum: 90
           x-field-uid: 2
         float:
@@ -477,7 +535,7 @@ components:
           x-field-uid: 1
         integer:
           type: integer
-          minimum: 10
+          minimum: -10
           maximum: 90
           x-field-uid: 2
         float:
@@ -595,7 +653,7 @@ components:
           type: number
           format: double
           x-field-uid: 3
-    
+
     RequiredChoiceParent:
       type: object
       required: [choice]
@@ -609,7 +667,7 @@ components:
             no_obj:
               x-field-uid: 2
         intermediate_obj:
-          $ref: '#/components/schemas/RequiredChoiceIntermediate'
+          $ref: "#/components/schemas/RequiredChoiceIntermediate"
           x-field-uid: 2
     RequiredChoiceIntermediate:
       type: object
@@ -636,4 +694,3 @@ components:
         name:
           type: string
           x-field-uid: 1
-
