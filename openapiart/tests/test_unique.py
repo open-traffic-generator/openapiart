@@ -3,7 +3,6 @@ import pytest
 
 @pytest.mark.skip(reason="shall be restored")
 def test_unique(config):
-
     # Update: There is no global and local diff
     # everything is considered as global now
     # *************** global unique ****************
@@ -14,7 +13,6 @@ def test_unique(config):
         config.validate()
         pytest.fail("validation failed")
     except Exception as e:
-
         if "global_unique_similar_obj already exists" not in str(e):
             pytest.fail("global_unique_similar_obj validation failed")
 

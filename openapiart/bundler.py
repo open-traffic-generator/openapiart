@@ -93,7 +93,7 @@ class Bundler(object):
             self._read_file(self._base_dir, self._api_filename)
 
         self._resolve_x_include()
-        self._resolve_x_pattern("x-field-pattern")
+        self._resolve_x_field_pattern()
         self._resolve_x_constraint()
         self._resolve_x_status()
         self._remove_x_include()
@@ -102,6 +102,7 @@ class Bundler(object):
         self._resolve_license()
         self._resolve_x_enum(self._content)
         self._generate_version_api_spec(self._content)
+        self._validate_integer_type()
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_errors()
@@ -366,31 +367,57 @@ class Bundler(object):
                     )
 
     def _validate_required_responses(self):
-        """Ensure all paths include a 400 and 500 response.
-
-        Print every path that does not include a 400 or 500 response.
+        """Ensure all paths include a 200 and default response.
 
         Returns
         -------
-        Exception: one or more paths is missing a 400 or 500 response
-        None: all paths have a 400 and 500 response
+        Exception: one or more paths is missing a 200 or default response
+        None: all paths have a 200 and default response
         """
         responses = self._get_parser("$..paths..responses").find(self._content)
-        required_error_codes = ["400", "500"]
+        required_responses = ["200", "default"]
         missing_paths = ""
         for response in responses:
-            missing = set(required_error_codes).difference(
-                set(response.value.keys())
-            )
-            if len(missing):
+            response_keys = [str(key) for key in response.value.keys()]
+            missing = set(required_responses).difference(set(response_keys))
+            if len(missing) > 0:
                 error_message = "{}: is missing the following required responses: {}".format(
                     response.full_path,
                     missing,
                 )
-                print(error_message)
                 missing_paths += "{}\n".format(error_message)
+
+            # TODO: need to check wheather every default schema points to
+
         if len(missing_paths) > 0:
             raise Exception(missing_paths)
+
+        # There must be the Error structure in the yaml which should have required fields code and errors
+        err_schema = self._get_parser("$..Error").find(self._content)
+        if len(err_schema) == 0:
+            raise Exception("Error schema does not exsist")
+        elif len(err_schema) > 1:
+            raise Exception(
+                "There must be exactly one instance of Error schema"
+            )
+
+        required_err_nodes = ["code", "errors"]
+        schema = err_schema[0]
+
+        if "required" not in schema.value.keys():
+            raise Exception(
+                "Error schema in %s must have the required field in it"
+                % schema.full_path,
+            )
+
+        diff = set(required_err_nodes).difference(
+            set(schema.value["required"])
+        )
+        if len(diff):
+            raise Exception(
+                "Error schema must have %s as required properties"
+                % str(required_err_nodes)
+            )
         return None
 
     def _validate_file(self):
@@ -399,6 +426,32 @@ class Bundler(object):
             yobject = yaml.safe_load(fid)
             openapi_spec_validator.validate_v3_spec(yobject)
         print("validating complete")
+
+    def _validate_integer_type(self):
+        """Find all instances type in the openapi content
+        and check for allowed format
+        """
+        import jsonpath_ng
+
+        for type in self._get_parser("$..type").find(self._content):
+            valid_formats = ["int64", "int32", "uint32", "uint64"]
+            if type.value == "integer":
+                parent = jsonpath_ng.Parent().find(type)[0]
+                parent_schema = parent.value
+                if "format" not in parent_schema:
+                    print(
+                        "[WARNING]: %s has no format specified"
+                        % parent.full_path
+                    )
+                elif parent_schema["format"] not in valid_formats:
+                    self._errors.append(
+                        "%s has type integer of unsporrted format %s, supported formats are %s"
+                        % (
+                            parent.full_path,
+                            parent_schema["format"],
+                            str(valid_formats),
+                        )
+                    )
 
     def _read_file(self, base_dir, filename):
         filename = os.path.join(base_dir, filename)
@@ -429,7 +482,6 @@ class Bundler(object):
         self._resolve_refs(base_dir, yobject)
 
     def _check_upper_case(self, value):
-
         for c in value:
             if c.isupper():
                 return True
@@ -579,10 +631,10 @@ class Bundler(object):
                     stacks[1].frame.f_locals["key"],
                 )
                 self._errors.append(
-                    "Property {property} should not contain {keys} with format {format}".format(
+                    "Property {property} should not contain {keys} with format {fmt}".format(
                         property=property,
                         keys=intersect_keys,
-                        format=value["format"],
+                        fmt=value["format"],
                     )
                 )
 
@@ -610,7 +662,39 @@ class Bundler(object):
                                 )
                             )
 
-    def _resolve_x_pattern(self, pattern_extension):
+    def _validate_x_field_pattern(self, xpattern_path):
+        xpattern = xpattern_path.value
+
+        if "format" not in xpattern:
+            self._errors.append(
+                "{} is not valid, format is mandatory for x-field-pattern".format(
+                    str(xpattern_path.full_path)
+                )
+            )
+        elif xpattern["format"] == "integer" and "length" not in xpattern:
+            self._errors.append(
+                "{} property using x-field-pattern with format integer must contain length property".format(
+                    str(xpattern_path.full_path)
+                )
+            )
+        elif xpattern["format"] == "integer" and xpattern["length"] > 64:
+            self._errors.append(
+                "{} property using x-field-pattern with format integer cannot have length greater than 64".format(
+                    str(xpattern_path.full_path)
+                )
+            )
+        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
+        if xpattern["format"] not in valid_formats:
+            self._errors.append(
+                "%s has unspported format %s , valid formats are %s"
+                % (
+                    str(xpattern_path.full_path),
+                    xpattern["format"],
+                    str(valid_formats),
+                )
+            )
+
+    def _resolve_x_field_pattern(self):
         """Find all instances of pattern_extension in the openapi content
         and generate a #/components/schemas/... pattern schema object that is
         specific to the property hosting the pattern extension content.
@@ -618,9 +702,13 @@ class Bundler(object):
         """
         import jsonpath_ng
 
+        pattern_extension = "x-field-pattern"
         for xpattern_path in self._get_parser(
             "$..{}".format(pattern_extension)
         ).find(self._content):
+
+            self._validate_x_field_pattern(xpattern_path)
+
             print("generating %s..." % (str(xpattern_path.full_path)))
             object_name = xpattern_path.full_path.left.left.left.right.fields[
                 0
@@ -628,6 +716,7 @@ class Bundler(object):
             property_name = xpattern_path.full_path.left.right.fields[0]
             property_schema = jsonpath_ng.Parent().find(xpattern_path)[0].value
             xpattern = xpattern_path.value
+
             schema_name = "Pattern.{}.{}".format(
                 "".join(
                     [
@@ -642,10 +731,10 @@ class Bundler(object):
                     ]
                 ),
             )
-            format = None
+            fmt = None
             type_name = xpattern["format"]
             if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
-                format = type_name
+                fmt = type_name
                 type_name = "string"
             description = "TBD"
             if "description" in xpattern:
@@ -659,7 +748,7 @@ class Bundler(object):
                 )
             else:
                 self._generate_value_schema(
-                    xpattern, schema_name, description, type_name, format
+                    xpattern, schema_name, description, type_name, fmt
                 )
 
             property_schema["$ref"] = "#/components/schemas/{}".format(
@@ -667,9 +756,14 @@ class Bundler(object):
             )
             del property_schema[pattern_extension]
 
+        if len(self._errors) > 0:
+            self._validate_errors()
+
     def _generate_checksum_schema(self, xpattern, schema_name, description):
         """Generate a checksum schema object"""
         auto_field = AutoFieldUid()
+        length = int(xpattern.get("length", 8))
+        fmt = "uint32" if length <= 32 else "uint64"
         schema = {
             "description": description,
             "type": "object",
@@ -697,8 +791,8 @@ class Bundler(object):
                 "custom": {
                     "description": "A custom checksum value",
                     "type": "integer",
-                    "minimum": 0,
-                    "maximum": 2 ** int(xpattern.get("length", 8)) - 1,
+                    "format": fmt,
+                    "maximum": 2**length - 1,
                     "x-field-uid": auto_field.uid,
                 },
             },
@@ -706,12 +800,17 @@ class Bundler(object):
         self._content["components"]["schemas"][schema_name] = schema
 
     def _generate_value_schema(
-        self, xpattern, schema_name, description, type_name, format
+        self, xpattern, schema_name, description, type_name, fmt
     ):
         auto_field = AutoFieldUid()
+
         xconstants = (
             xpattern["x-constants"] if "x-constants" in xpattern else None
         )
+
+        pattern_length = int(xpattern.get("length", 8))
+        pattern_fmt = "uint32" if pattern_length <= 32 else "uint64"
+
         schema = {
             "description": description,
             "type": "object",
@@ -763,97 +862,158 @@ class Bundler(object):
                 self._apply_common_x_field_pattern_properties(
                     schema["properties"]["auto"],
                     xpattern,
-                    format,
+                    fmt,
                     property_name="auto",
                 )
-            if "metric_group" in xpattern["features"]:
-                schema["properties"]["metric_group"] = {
-                    "description": """A unique name is used to indicate to the system that the field may """
-                    """extend the metric row key and create an aggregate metric row for """
-                    """every unique value. """
-                    """To have metric group columns appear in the flow metric rows the flow """
-                    """metric request allows for the metric_group value to be specified """
-                    """as part of the request.""",
-                    "type": "string",
-                    "x-field-uid": auto_field.uid,
+
+            # skip this UID as it was previously being used for metric_groups
+            _ = auto_field.uid
+
+        if "features" in xpattern and "count" in xpattern["features"]:
+            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                counter_pattern_name = "{}.Counter".format(schema_name)
+                schema["properties"]["choice"]["x-enum"]["increment"] = {
+                    "x-field-uid": 4
                 }
-        if "enums" in xpattern:
-            schema["properties"]["value"]["enum"] = copy.deepcopy(
-                xpattern["enums"]
-            )
-            schema["properties"]["values"]["items"]["enum"] = copy.deepcopy(
-                xpattern["enums"]
-            )
-        if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
-            counter_pattern_name = "{}.Counter".format(schema_name)
-            schema["properties"]["choice"]["x-enum"]["increment"] = {
-                "x-field-uid": 4
-            }
-            schema["properties"]["choice"]["x-enum"]["decrement"] = {
-                "x-field-uid": 5
-            }
-            schema["properties"]["increment"] = {
-                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
-            }
-            schema["properties"]["increment"]["x-field-uid"] = auto_field.uid
-            schema["properties"]["decrement"] = {
-                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
-            }
-            schema["properties"]["decrement"]["x-field-uid"] = auto_field.uid
-            counter_auto_field = AutoFieldUid()
-            counter_schema = {
-                "description": "{} counter pattern".format(xpattern["format"]),
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": type_name,
-                        "x-field-uid": counter_auto_field.uid,
+                schema["properties"]["choice"]["x-enum"]["decrement"] = {
+                    "x-field-uid": 5
+                }
+                schema["properties"]["increment"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        counter_pattern_name
+                    )
+                }
+                schema["properties"]["increment"][
+                    "x-field-uid"
+                ] = auto_field.uid
+                schema["properties"]["decrement"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        counter_pattern_name
+                    )
+                }
+                schema["properties"]["decrement"][
+                    "x-field-uid"
+                ] = auto_field.uid
+                counter_auto_field = AutoFieldUid()
+                counter_schema = {
+                    "description": "{} counter pattern".format(
+                        xpattern["format"]
+                    ),
+                    "type": "object",
+                    "properties": {
+                        "start": {
+                            "type": type_name,
+                            "x-field-uid": counter_auto_field.uid,
+                        },
+                        "step": {
+                            "type": type_name,
+                            "x-field-uid": counter_auto_field.uid,
+                        },
+                        "count": {
+                            "type": "integer",
+                            "x-field-uid": counter_auto_field.uid,
+                        },
                     },
-                    "step": {
-                        "type": type_name,
-                        "x-field-uid": counter_auto_field.uid,
+                }
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["start"],
+                    xpattern,
+                    fmt,
+                    property_name="start",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["step"],
+                    xpattern,
+                    fmt,
+                    property_name="step",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    counter_schema["properties"]["count"],
+                    xpattern,
+                    pattern_fmt,
+                    property_name="count",
+                )
+
+                if xconstants is not None:
+                    counter_schema["x-constants"] = copy.deepcopy(xconstants)
+
+                self._content["components"]["schemas"][
+                    counter_pattern_name
+                ] = counter_schema
+
+        if "features" in xpattern and "metric_tags" in xpattern["features"]:
+            metric_tags_schema_name = "{}.MetricTag".format(schema_name)
+            length = 65535
+            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                if "length" in xpattern:
+                    length = int(xpattern["length"])
+                elif xpattern["format"] == "mac":
+                    length = 48
+                elif xpattern["format"] == "ipv4":
+                    length = 32
+                elif xpattern["format"] == "ipv6":
+                    length = 128
+            metric_tags_auto_field = AutoFieldUid()
+            metric_tags_schema = {
+                "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
+                        "type": "string",
+                        "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
+                        "x-field-uid": metric_tags_auto_field.uid,
+                    },
+                    "offset": {
+                        "description": "Offset in bits relative to start of corresponding header field",
+                        "type": "integer",
+                        "format": pattern_fmt,
+                        "default": 0,
+                        "maximum": length - 1,
+                        "x-field-uid": metric_tags_auto_field.uid,
+                    },
+                    "length": {
+                        "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
+                        "type": "integer",
+                        "format": pattern_fmt,
+                        "default": length,
+                        "minimum": 1,
+                        "maximum": length,
+                        "x-field-uid": metric_tags_auto_field.uid,
                     },
                 },
             }
-            if "features" in xpattern and "count" in xpattern["features"]:
-                counter_schema["properties"]["count"] = {
-                    "type": "integer",
-                    "default": 1,
-                    "x-field-uid": counter_auto_field.uid,
-                }
-            self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["start"],
-                xpattern,
-                format,
-                property_name="start",
-            )
-            self._apply_common_x_field_pattern_properties(
-                counter_schema["properties"]["step"],
-                xpattern,
-                format,
-                property_name="step",
-            )
-            if xconstants is not None:
-                counter_schema["x-constants"] = copy.deepcopy(xconstants)
+            schema["properties"]["metric_tags"] = {
+                "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/{}".format(
+                        metric_tags_schema_name
+                    )
+                },
+                "x-field-uid": auto_field.uid,
+            }
             self._content["components"]["schemas"][
-                counter_pattern_name
-            ] = counter_schema
+                metric_tags_schema_name
+            ] = metric_tags_schema
+
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
             xpattern,
-            format,
+            fmt,
             property_name="value",
         )
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["values"],
             xpattern,
-            format,
+            fmt,
             property_name="values",
         )
         self._content["components"]["schemas"][schema_name] = schema
 
     def _apply_common_x_field_pattern_properties(
-        self, schema, xpattern, format, property_name
+        self, schema, xpattern, fmt, property_name
     ):
         # type: (Dict, Dict, str, Union[Literal["start"], Literal["step"], Literal["value"], Literal["values"]])
         step_defaults = {
@@ -864,26 +1024,33 @@ class Bundler(object):
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
-                if format in step_defaults:
-                    schema["default"] = step_defaults[format]
+                if fmt in step_defaults:
+                    schema["default"] = step_defaults[fmt]
                 else:
                     schema["default"] = 1
+            elif property_name == "count":
+                schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
-        if format is not None:
-            # TODO: fix this
-            # if property_name == "values":
-            #     schema["items"]["format"] = format
-            # else:
-            schema["format"] = format
-        if "length" in xpattern:
-            # TODO: fix this
-            # if property_name == "values":
-            #     schema["items"]["minimum"] = 0
-            #     schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
-            # else:
-            schema["minimum"] = 0
-            schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+
+        finalised_format = None
+        if xpattern["format"] == "integer":
+            finalised_format = "uint32"
+            if "length" in xpattern and xpattern["length"] > 32:
+                finalised_format = "uint64"
+        elif fmt is not None:
+            finalised_format = fmt
+
+        if finalised_format is not None:
+            if property_name == "values":
+                schema["items"]["format"] = finalised_format
+            else:
+                schema["format"] = finalised_format
+        if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
+            if property_name == "values":
+                schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+            else:
+                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:
@@ -1033,7 +1200,6 @@ class Bundler(object):
         return dst
 
     def _get_schema_object(self, base_dir, schema_path):
-
         json_path = "$..'%s'" % schema_path.split("/")[-1]
         schema_object = self._get_parser(json_path).find(self._content)
         if len(schema_object) == 0:

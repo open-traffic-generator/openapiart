@@ -9,7 +9,7 @@ import platform
 
 BLACK_VERSION = "22.1.0"
 GO_VERSION = "1.20"
-PROTOC_VERSION = "3.20.3"
+PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
 LOCAL_PATH = os.path.join(os.path.expanduser("~"), ".local")
@@ -39,9 +39,17 @@ def on_x86():
     return arch() == "x86_64"
 
 
-def on_linux():
+def get_platform():
     print("The platform is {}".format(sys.platform))
-    return "linux" in sys.platform
+    return sys.platform
+
+
+def on_linux():
+    return "linux" in get_platform()
+
+
+def on_macos():
+    return "darwin" in get_platform()
 
 
 def get_go(version=GO_VERSION, targz=None):
@@ -75,7 +83,9 @@ def get_go(version=GO_VERSION, targz=None):
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
+    cmd = "go install"
+    if on_linux() or on_macos():
+        cmd = "CGO_ENABLED=0 {}".format(cmd)
     run(
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0",
@@ -116,7 +126,6 @@ def setup_ext(go_version=GO_VERSION, protoc_version=PROTOC_VERSION):
     if on_linux():
         get_go(go_version)
         get_protoc(protoc_version)
-        get_go_deps()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
@@ -143,23 +152,29 @@ def init(use_sdk=None):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if use_sdk is None:
         req = os.path.join(base_dir, "openapiart", "requirements.txt")
+        test_req = os.path.join(
+            base_dir, "openapiart", "test_requirements.txt"
+        )
         run(
             [
                 py() + " -m pip install -r {}".format(req),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(test_req),
             ]
         )
     else:
         art_path = os.path.join(base_dir, "art", "requirements.txt")
+        art_test = os.path.join(base_dir, "art", "test_requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
-                py() + " -m pip install -r test_requirements.txt",
+                py() + " -m pip install -r {}".format(art_test),
             ]
         )
 
+    get_go_deps()
 
-def lint():
+
+def lint(check="false"):
     paths = [
         pkg()[0],
         "openapiart",
@@ -168,27 +183,19 @@ def lint():
     ]
     # --check will check for any files to be formatted with black
     # if linting fails, format the files with black and commit
-    ret, out = getstatusoutput(
-        py()
-        + " -m black "
-        + " ".join(paths)
-        + " --exclude=openapiart/common.py --check --required-version {}".format(
-            BLACK_VERSION
-        )
-    )
+    cmd = " --exclude=openapiart/common.py"
+    if check.lower() == "true":
+        cmd += " --check"
+    cmd += " --required-version {}".format(BLACK_VERSION)
+    ret, out = getstatusoutput(py() + " -m black " + " ".join(paths) + cmd)
     if ret == 1:
-        out = out.split("\n")
-        out = [
-            e.replace("would reformat", "Black formatting failed for")
-            for e in out
-            if "would reformat" in e
-        ]
-        print("\n".join(out))
         raise Exception(
-            "Black formatting failed, use black {} version to format the files".format(
-                BLACK_VERSION
+            "Black formatting failed, with black version {}.\n{}".format(
+                BLACK_VERSION, out
             )
         )
+    else:
+        print(out)
     run(
         [
             py() + " -m flake8 " + " ".join(paths),
@@ -263,20 +270,27 @@ def testgo():
 
 
 def go_lint():
-    output = run(["go version"], capture_output=True)
-    if "go1.17" in output or "go1.18" in output:
-        print("Using older linter version for go version older than 1.19")
-        version = "1.46.2"
-    else:
-        version = "1.51.1"
+    try:
+        output = run(["go version"], capture_output=True)
+        if "go1.17" in output or "go1.18" in output:
+            print("Using older linter version for go version older than 1.19")
+            version = "1.46.2"
+        else:
+            version = "1.51.1"
 
-    pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-        "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
-        version,
-    )
-    run([pkg])
-    os.chdir("pkg")
-    run(["golangci-lint run -v"])
+        pkg = "go install"
+        if on_linux() or on_macos():
+            pkg = "CGO_ENABLED=0 {}".format(pkg)
+
+        pkg = "{} -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+            pkg,
+            version,
+        )
+        run([pkg])
+        os.chdir("pkg")
+        run(["golangci-lint run -v"])
+    finally:
+        os.chdir("..")
 
 
 def dist():
@@ -294,6 +308,17 @@ def install():
     run(
         [
             "{} -m pip install --force-reinstall --no-cache-dir {}[testing]".format(
+                py(), os.path.join("dist", wheel)
+            ),
+        ]
+    )
+
+
+def install_package_only():
+    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    run(
+        [
+            "{} -m pip install --force-reinstall --no-cache-dir {}".format(
                 py(), os.path.join("dist", wheel)
             ),
         ]
@@ -322,12 +347,16 @@ def clean():
         "dist",
         "build",
         "*.egg-info",
+        "cov_report",
+        "art",
     ]
     recursive_patterns = [
         ".pytest_cache",
         "__pycache__",
         "*.pyc",
         "*.log",
+        "coverage.txt",
+        ".coverage",
     ]
 
     for pattern in pwd_patterns:
@@ -400,7 +429,10 @@ def py():
         print(py.path)
         return py.path
     except AttributeError:
-        py.path = os.path.join(".env", "bin", "python")
+        if on_linux() or on_macos():
+            py.path = os.path.join(".env", "bin", "python")
+        else:
+            py.path = os.path.join(".env", "Scripts", "python")
         if not os.path.exists(py.path):
             py.path = sys.executable
 
@@ -450,6 +482,54 @@ def getstatusoutput(command):
         subprocess.getstatusoutput(command)[0],
         subprocess.getstatusoutput(command)[1],
     )
+
+
+def build(sdk="all", env_setup=None):
+    print("\nSTEP 1: Set up virtual environment")
+
+    if env_setup is not None and env_setup.lower() == "clean":
+        print("\nCleaning up exsisting env")
+        clean()
+        rm_path(".env")
+
+    if not os.path.exists(".env"):
+        setup()
+    else:
+        print("\nvirtualenv already exists.\n")
+
+    if on_linux() or on_macos():
+        py.path = os.path.join(".env", "bin", "python")
+    else:
+        py.path = os.path.join(".env", "Scripts", "python")
+
+    print(
+        "\nWill be using the following python interpreter path "
+        + py.path
+        + "\n"
+    )
+
+    print(
+        "\nSTEP 2: Install openapiart with current changes against virtual environment\n"
+    )
+    init()
+    run([py() + " setup.py install"])
+    print("\nSTEP 3: Generating Python and Go SDKs\n")
+    generate(sdk=sdk, cicd="True")
+    if sdk == "python" or sdk == "all":
+        print("\nSTEP 4: Perform Python lint\n")
+        lint()
+        print("\nSTEP 5: Run Python Tests\n")
+        testpy()
+    else:
+        print("\nSkipping STEP 4: python lint and STEP 5: run python tests\n")
+    if sdk == "go" or sdk == "all":
+        print("\nSTEP 6: Run Go Lint\n")
+        go_lint()
+        print("\nSTEP 7: Run Go Tests")
+        testgo()
+    else:
+        print("\nSkipping STEP 6: Perform Go lint and STEP 7: Run go tests\n")
+    print("\nBuild Succeeded\n")
 
 
 def main():

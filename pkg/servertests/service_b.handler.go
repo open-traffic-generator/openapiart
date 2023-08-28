@@ -11,29 +11,29 @@ import (
 )
 
 type serviceBHandler struct {
-	controller interfaces.ServiceBController
+	controller interfaces.ServiceAbcController
 }
 
-func NewServiceBHandler() interfaces.ServiceBHandler {
+func NewServiceBHandler() interfaces.ServiceAbcHandler {
 	handler := new(serviceBHandler)
-	handler.controller = controllers.NewHttpServiceBController(handler)
+	handler.controller = controllers.NewHttpServiceAbcController(handler)
 	return handler
 }
 
-func (h *serviceBHandler) GetController() interfaces.ServiceBController {
+func (h *serviceBHandler) GetController() interfaces.ServiceAbcController {
 	return h.controller
 }
-func (h *serviceBHandler) GetAllItems(r *http.Request) openapiart.GetAllItemsResponse {
+func (h *serviceBHandler) GetAllItems(r *http.Request) (openapiart.GetAllItemsResponse, error) {
 	items := h.getItems()
 	result := openapiart.NewGetAllItemsResponse()
-	result.StatusCode200().Items().Append(items...)
-	return result
+	result.ServiceAbcItemList().Items().Append(items...)
+	return result, nil
 }
-func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleItemResponse {
+func (h *serviceBHandler) GetSingleItem(r *http.Request) (openapiart.GetSingleItemResponse, error) {
 	vars := mux.Vars(r)
-	id := vars[interfaces.ServiceBItemId]
+	id := vars[interfaces.ServiceAbcItemId]
 	items := h.getItems()
-	var item openapiart.ServiceBItem
+	var item openapiart.ServiceAbcItem
 	for _, i := range items {
 		if i.SomeId() == id {
 			item = i
@@ -42,29 +42,34 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) openapiart.GetSingleIte
 	}
 	result := openapiart.NewGetSingleItemResponse()
 	if item != nil {
-		result.SetStatusCode200(item)
+		result.SetServiceAbcItem(item)
 	} else {
-		result.StatusCode400().SetMessage(fmt.Sprintf("not found: id '%s'", id))
+		err := openapiart.NewError()
+		var code int32 = 500
+		err.Msg().Code = &code
+		err.Msg().Errors = []string{fmt.Sprintf("not found: id '%s'", id)}
+		jsonStr, _ := err.ToJson()
+		return nil, fmt.Errorf(jsonStr)
 	}
-	return result
+	return result, nil
 }
-func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) openapiart.GetSingleItemLevel2Response {
+func (h *serviceBHandler) GetSingleItemLevel2(r *http.Request) (openapiart.GetSingleItemLevel2Response, error) {
 	vars := mux.Vars(r)
-	id1 := vars[interfaces.ServiceBItemId]
-	id2 := vars[interfaces.ServiceBLevel2]
+	id1 := vars[interfaces.ServiceAbcItemId]
+	id2 := vars[interfaces.ServiceAbcLevel2]
 	result := openapiart.NewGetSingleItemLevel2Response()
-	result.StatusCode200().SetPathId(id1).SetLevel2(id2)
-	return result
+	result.ServiceAbcItem().SetPathId(id1).SetLevel2(id2)
+	return result, nil
 }
 
-func (h *serviceBHandler) getItems() []openapiart.ServiceBItem {
-	item1 := openapiart.NewServiceBItem()
+func (h *serviceBHandler) getItems() []openapiart.ServiceAbcItem {
+	item1 := openapiart.NewServiceAbcItem()
 	item1.SetSomeId("1")
 	item1.SetSomeString("item 1")
-	item2 := openapiart.NewServiceBItem()
+	item2 := openapiart.NewServiceAbcItem()
 	item2.SetSomeId("2")
 	item2.SetSomeString("item 2")
-	return []openapiart.ServiceBItem{
+	return []openapiart.ServiceAbcItem{
 		item1,
 		item2,
 	}

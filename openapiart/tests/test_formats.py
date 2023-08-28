@@ -37,7 +37,7 @@ def test_formats_bad_integer(config, value):
         pass
 
 
-@pytest.mark.parametrize("value", [6, 100, -20])
+@pytest.mark.parametrize("value", [-36, 100, -20])
 def test_formats_integer_to_be_removed(config, value):
     try:
         config.l.integer = value

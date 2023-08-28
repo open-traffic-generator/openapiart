@@ -59,7 +59,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.Ipv6Pattern().Ipv6().Increment().SetStart("2000::1").SetStep("::1").SetCount(100)
 	config.Ipv6Pattern().Ipv6().Decrement().SetStart("3000::1").SetStep("::1").SetCount(100)
 	config.IntegerPattern().Integer().SetValue(1)
-	config.IntegerPattern().Integer().SetValues([]int32{1, 2, 3})
+	config.IntegerPattern().Integer().SetValues([]uint32{1, 2, 3})
 	config.IntegerPattern().Integer().Increment().SetStart(1).SetStart(1).SetCount(100)
 	config.IntegerPattern().Integer().Decrement().SetStart(1).SetStart(1).SetCount(100)
 	config.MacPattern().Mac().SetValue("00:00:00:00:00:0a")
@@ -704,7 +704,7 @@ func TestInterger64(t *testing.T) {
 		"integer64": 100
 	}`
 	err := config.FromJson(int_64)
-	fmt.Println(config.Integer64())
+	assert.Equal(t, config.Integer64(), int64(100))
 	assert.Nil(t, err)
 	int_64_str := `{
 		"a":"asdf", 
@@ -714,11 +714,108 @@ func TestInterger64(t *testing.T) {
 		"required_object" : {
 			"e_a" : 1, 
 			"e_b" : 2
-		},
-		"integer64": "100"
+		}
 	}`
 	err1 := config.FromJson(int_64_str)
-	fmt.Println(config.Integer64())
+	assert.Nil(t, err1)
+}
+
+func TestInt32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	int_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_param": 100,
+		"auto_int32_param": 101
+	}`
+	err := config.FromJson(int_32)
+	assert.Equal(t, config.Int32Param(), int32(100))
+	assert.Equal(t, config.AutoInt32Param(), int32(101))
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"int32_list_param": ["100", "-1", "-500", 500],
+		"auto_int32_list_param": ["100", "1001", "72", "909"]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	assert.Equal(t, config.Int32ListParam(), []int32{100, -1, -500, 500})
+	assert.Equal(t, config.AutoInt32ListParam(), []int32{100, 1001, 72, 909})
+	assert.Nil(t, err1)
+}
+
+func TestUint32Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_32 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_param": 22
+	}`
+	err := config.FromJson(uint_32)
+	assert.Equal(t, config.Uint32Param(), uint32(22))
+	assert.Nil(t, err)
+	uint32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint32_list_param": ["100", "0", "500"]
+	}`
+	err1 := config.FromJson(uint32_list_str)
+	assert.Equal(t, config.Uint32ListParam(), []uint32{100, 0, 500})
+	assert.Nil(t, err1)
+}
+
+func TestUInt64Param(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	uint_64 := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_param": 4294967395
+	}`
+	err := config.FromJson(uint_64)
+	assert.Nil(t, err)
+	int32_list_str := `{
+		"a":"asdf", 
+		"b" : 65, 
+		"c" : 33,
+		"response" : "status_200", 
+		"required_object" : {
+			"e_a" : 1, 
+			"e_b" : 2
+		},
+		"uint64_list_param": ["4294967395", "4294967396", "4294967397"]
+	}`
+	err1 := config.FromJson(int32_list_str)
+	assert.Equal(t, config.Uint64ListParam(), []uint64{4294967395, 4294967396, 4294967397})
 	assert.Nil(t, err1)
 }
 
@@ -939,8 +1036,8 @@ func TestListClear(t *testing.T) {
 func TestConfigHas200Result(t *testing.T) {
 	// https://github.com/open-traffic-generator/openapiart/issues/242
 	cfg := openapiart.NewSetConfigResponse()
-	cfg.SetStatusCode200([]byte("anything"))
-	assert.True(t, cfg.HasStatusCode200())
+	cfg.SetResponseBytes([]byte("anything"))
+	assert.True(t, cfg.HasResponseBytes())
 }
 
 func TestFromJsonErrors(t *testing.T) {
@@ -1009,7 +1106,7 @@ func TestEObjectValidation(t *testing.T) {
 	eObject := openapiart.NewEObject()
 	err := eObject.Validate()
 	if assert.Error(t, err) {
-		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
+		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject")
 	}
 }
 
@@ -1276,15 +1373,10 @@ func TestUpdateConfig(t *testing.T) {
 func TestNewSetConfigResponse(t *testing.T) {
 	api := openapiart.NewApi()
 	new_resp := api.NewSetConfigResponse()
-	new_resp.SetStatusCode200([]byte{0, 1})
-	new_resp.SetStatusCode400(new_resp.StatusCode400())
-	new_resp.SetStatusCode500(new_resp.StatusCode500())
-	new_resp.SetStatusCode404(new_resp.StatusCode400())
+	new_resp.SetResponseBytes([]byte{0, 1})
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode400()
-	new_resp.HasStatusCode404()
-	new_resp.HasStatusCode500()
+	new_resp.HasResponseBytes()
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1301,7 +1393,7 @@ func TestNewUpdateConfigResponse(t *testing.T) {
 	new_resp := api.NewUpdateConfigurationResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode200()
+	new_resp.HasPrefixConfig()
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1318,7 +1410,7 @@ func TestNewGetConfigResponse(t *testing.T) {
 	new_resp := api.NewGetConfigResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode200()
+	new_resp.HasPrefixConfig()
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1335,7 +1427,7 @@ func TestNewGetMetricsResponse(t *testing.T) {
 	new_resp := api.NewGetMetricsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode200()
+	new_resp.HasMetrics()
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1352,7 +1444,7 @@ func TestNewGetWarningsResponse(t *testing.T) {
 	new_resp := api.NewGetWarningsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode200()
+	new_resp.HasWarningDetails()
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1369,8 +1461,8 @@ func TestNewClearWarningsResponse(t *testing.T) {
 	new_resp := api.NewClearWarningsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
-	new_resp.HasStatusCode200()
-	new_resp.SetStatusCode200("success")
+	new_resp.HasResponseString()
+	new_resp.SetResponseString("success")
 	respJson, err := new_resp.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_resp.ToYaml()
@@ -1382,25 +1474,11 @@ func TestNewClearWarningsResponse(t *testing.T) {
 	assert.Nil(t, new_resp.FromPbText(respPbText))
 }
 
-func TestNewErrorDetails(t *testing.T) {
-	new_err := openapiart.NewErrorDetails()
-	new_err.SetMsg(new_err.Msg())
-	new_err.Msg()
-	respJson, err := new_err.ToJson()
-	assert.Nil(t, err)
-	respYaml, err := new_err.ToYaml()
-	assert.Nil(t, err)
-	respPbText, err := new_err.ToPbText()
-	assert.Nil(t, err)
-	assert.Nil(t, new_err.FromJson(respJson))
-	assert.Nil(t, new_err.FromYaml(respYaml))
-	assert.Nil(t, new_err.FromPbText(respPbText))
-}
-
 func TestNewError(t *testing.T) {
 	new_err := openapiart.NewError()
-	new_err.SetMsg(new_err.Msg())
-	new_err.Msg()
+	var code int32 = 500
+	new_err.Msg().Code = &code
+	new_err.Msg().Errors = []string{"err1"}
 	respJson, err := new_err.ToJson()
 	assert.Nil(t, err)
 	respYaml, err := new_err.ToYaml()
@@ -1410,7 +1488,10 @@ func TestNewError(t *testing.T) {
 	assert.Nil(t, new_err.FromJson(respJson))
 	assert.Nil(t, new_err.FromYaml(respYaml))
 	assert.Nil(t, new_err.FromPbText(respPbText))
-	new_err.SetErrors(new_err.Errors())
+	er := new_err.SetErrors(new_err.Errors())
+	if er != nil {
+		fmt.Println(er)
+	}
 }
 
 func TestNewMetrics(t *testing.T) {
@@ -1608,7 +1689,7 @@ func TestChoiceDefaults(t *testing.T) {
 	j3, err3 := integer.ToJson()
 	assert.Nil(t, err3)
 	require.JSONEq(t, json3, j3)
-	integer.Integer().SetValues([]int32{1, 2, 3})
+	integer.Integer().SetValues([]uint32{1, 2, 3})
 	json4 := `
 	{
 		"integer":  {
@@ -1625,9 +1706,9 @@ func TestChoiceDefaults(t *testing.T) {
 
 func TestSetterWrapperHolder(t *testing.T) {
 	metricsResp := openapiart.NewGetMetricsResponse()
-	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	metricsResp.SetMetrics(openapiart.NewMetrics())
 	json1 := `{
-		"status_code_200":  {
+		"metrics":  {
 			"choice": "ports"
 		}
 	}`
@@ -1635,9 +1716,9 @@ func TestSetterWrapperHolder(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson)
 	fmt.Println(metricsrespJson)
-	metricsResp.StatusCode200().Ports().Add().SetName("abc").SetRxFrames(100).SetTxFrames(100)
+	metricsResp.Metrics().Ports().Add().SetName("abc").SetRxFrames(100).SetTxFrames(100)
 	json := `{
-		"status_code_200":  {
+		"metrics":  {
 		  "choice": "ports",
 		  "ports":  [
 			{
@@ -1652,7 +1733,7 @@ func TestSetterWrapperHolder(t *testing.T) {
 	assert.Nil(t, err)
 	fmt.Println(metricsrespJson1)
 	require.JSONEq(t, json, metricsrespJson1)
-	metricsResp.SetStatusCode200(openapiart.NewMetrics())
+	metricsResp.SetMetrics(openapiart.NewMetrics())
 	metricsrespJson2, err := metricsResp.ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson2)

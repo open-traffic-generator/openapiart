@@ -18,8 +18,9 @@ import requests
 import pkgutil
 import importlib
 from jsonpath_ng import parse
-from .openapiartplugin import OpenApiArtPlugin
+from .openapiartplugin import OpenApiArtPlugin, type_limits
 
+# TODO: get rid of this
 MODELS_RELEASE = "v0.3.3"
 
 
@@ -32,6 +33,7 @@ class FluentRpc(object):
         self.request_class = None
         self.request_property = None
         self.good_response_type = None  # considering 200-ok
+        self.proto_field_name = None  # introduced in error-ux changes
         self.bad_responses = []  # != 200-ok
         self.description = None
         self.http_method = None
@@ -96,7 +98,7 @@ class Generator:
     def _load_plugins(self):
         plugins = []
         pkg_dir = os.path.dirname(__file__)
-        for (_, name, _) in pkgutil.iter_modules([pkg_dir]):
+        for _, name, _ in pkgutil.iter_modules([pkg_dir]):
             module_name = "openapiart." + name
             importlib.import_module(module_name)
             obj = sys.modules[module_name]
@@ -262,51 +264,36 @@ class Generator:
                     rpc.request_class = class_name
 
             response_type = None
+            proto_name = None
             response_list = operation.get("responses")
             if response_list is None:
                 raise Exception("{} should have responses".format(method_name))
             for response_code, response_property in response_list.items():
-                if int(response_code) == 200:
+                if str(response_code) == "200":
                     rpc.good_response_property = response_property
                     schema_obj = self._get_parser("$..schema").find(
                         response_property
                     )
-                    if len(schema_obj) == 0:
-                        (
-                            response_name,
-                            _,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            response_property
-                        )
-                        if response_name is not None:
-                            response = self._get_parser('$.."$ref"').find(
-                                self._get_object_from_ref(ref)
-                            )
-                            if len(response) > 0:
-                                (
-                                    _,
-                                    response_type,
-                                    _,
-                                    ref,
-                                ) = self._get_object_property_class_names(
-                                    response[0].value
-                                )
-                                if ref:
-                                    refs.append(ref)
-                    else:
-                        (
-                            _,
-                            response_type,
-                            _,
-                            ref,
-                        ) = self._get_object_property_class_names(
-                            schema_obj[0].value
-                        )
-                        if ref:
-                            refs.append(ref)
+                    (
+                        response_name,
+                        response_type,
+                        class_name,
+                        ref,
+                        proto_name,
+                    ) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                 else:
+                    schema_obj = self._get_parser("$..schema").find(
+                        response_property
+                    )
+                    (_, _, _, ref, _) = self._get_ref_from_response(
+                        schema_obj, response_property
+                    )
+                    if ref:
+                        refs.append(ref)
                     rpc.bad_responses.append(str(response_code))
 
             if response_type is None:
@@ -315,6 +302,7 @@ class Generator:
                 pass
 
             rpc.good_response_type = response_type
+            rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
             # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
@@ -327,6 +315,7 @@ class Generator:
             methods.append(
                 {
                     "name": method_name,
+                    "class_name": rpc.request_class,
                     "args": ["self"]
                     if len(request) == 0
                     else ["self", "payload"],
@@ -417,7 +406,18 @@ class Generator:
             payload = payload.serialize()
         if isinstance(payload, dict):
             payload = json.dumps(payload)
+        elif isinstance(payload, (str, unicode)):
+            payload = json.dumps(yaml.safe_load(payload))
         return payload
+
+    def _raise_exception(self, grpc_error):
+        err = self.error()
+        try:
+            err.deserialize(grpc_error.details())
+        except Exception as _:
+            err.code = grpc_error.code().value[0]
+            err.errors = [grpc_error.details()]
+        raise Exception(err)
 
     @property
     def request_timeout(self):
@@ -499,32 +499,38 @@ class Generator:
                         ),
                     )
                     self._write(2, "stub = self._get_stub()")
+                    self._write(2, "try:")
                     self._write(
-                        2,
+                        3,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
+                    self._write(2, "except grpc.RpcError as grpc_error:")
+                    self._write(3, "self._raise_exception(grpc_error)")
                 including_default, return_byte = self._process_good_response(
                     rpc_method
                 )
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
-                self._write(
-                    2, 'status_code_200 = response.get("status_code_200")'
-                )
-                self._write(2, "if status_code_200 is not None:")
                 if return_byte:
-                    self._write(
-                        3, "return io.BytesIO(res_obj.status_code_200)"
-                    )
+                    self._write(2, 'bytes = response.get("response_bytes")')
+                    self._write(2, "if bytes is not None:")
+                    self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
+                    self._write(
+                        2,
+                        'result = response.get("%s")'
+                        % rpc_method.proto_field_name,
+                    )
+                    self._write(2, "if result is not None:")
+
                     if including_default:
-                        self._write(3, "if len(status_code_200) == 0:")
+                        self._write(3, "if len(result) == 0:")
+                        self._write(4, "result = json_format.MessageToDict(")
                         self._write(
-                            4, "status_code_200 = json_format.MessageToDict("
+                            5, "res_obj.%s," % rpc_method.proto_field_name
                         )
-                        self._write(5, "res_obj.status_code_200,")
                         self._write(5, "preserving_proto_field_name=True,")
                         self._write(5, "including_default_value_fields=True")
                         self._write(4, ")")
@@ -533,23 +539,26 @@ class Generator:
                         "return self.%s().deserialize("
                         % rpc_method.good_response_type,
                     )
-                    self._write(4, "status_code_200")
+                    self._write(4, "result")
                     self._write(3, ")")
                 else:
-                    self._write(3, 'return response.get("status_code_200")')
-                for rsp_code in rpc_method.bad_responses:
-                    self._write(
-                        2,
-                        """if response.get("status_code_{code}") is not None:""".format(
-                            code=rsp_code
-                        ),
-                    )
-                    self._write(
-                        3,
-                        """raise Exception({code}, response.get("status_code_{code}"))""".format(
-                            code=rsp_code
-                        ),
-                    )
+                    self._write(2, 'resp_str = response.get("string")')
+                    self._write(2, "if resp_str is not None:")
+                    self._write(3, 'return response.get("string")')
+                # bad responses for now only has default which is not needed to be listed below
+                # for rsp_code in rpc_method.bad_responses:
+                #     self._write(
+                #         2,
+                #         """if response.get("status_code_{code}") is not None:""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
+                #     self._write(
+                #         3,
+                #         """raise Exception({code}, response.get("status_code_{code}"))""".format(
+                #             code=rsp_code
+                #         ),
+                #     )
 
     def _process_good_response(self, rpc_method):
         including_default = False
@@ -662,6 +671,8 @@ class Generator:
                         else "None"
                     ),
                 )
+                if method["class_name"] is not None:
+                    self._write(3, "request_class=%s," % method["class_name"])
                 self._write(2, ")")
 
     def _write_api_class(self, methods, factories):
@@ -703,6 +714,37 @@ class Generator:
             self._write(1, "def add_warnings(self, msg):")
             self._write(2, "print('[WARNING]: %s' % msg)")
             self._write(2, "self.__warnings__.append(msg)")
+
+            self._write()
+            self._write(1, "def _deserialize_error(self, err_string):")
+            self._write(2, "# type: (str) -> Union[Error, None]")
+            self._write(2, "err = self.error()")
+            self._write(2, "try:")
+            self._write(3, "err.deserialize(err_string)")
+            self._write(2, "except Exception:")
+            self._write(3, "err = None")
+            self._write(2, "return err")
+
+            self._write()
+            self._write(1, "def from_exception(self, error):")
+            self._write(2, "# type: (Exception) -> Union[Error, None]")
+            self._write(2, "if isinstance(error, Error):")
+            self._write(3, "return error")
+            self._write(2, "elif isinstance(error, grpc.RpcError):")
+            self._write(3, "err = self._deserialize_error(error.details())")
+            self._write(3, "if err is not None:")
+            self._write(4, "return err")
+            self._write(3, "err = self.error()")
+            self._write(3, "err.code = error.code().value[0]")
+            self._write(3, "err.errors = [error.details()]")
+            self._write(3, "return err")
+            self._write(2, "elif isinstance(error, Exception):")
+            self._write(3, "if len(error.args) != 1:")
+            self._write(4, "return None")
+            self._write(3, "if isinstance(error.args[0], Error):")
+            self._write(4, "return error.args[0]")
+            self._write(3, "elif isinstance(error.args[0], str):")
+            self._write(4, "return self._deserialize_error(error.args[0])")
 
             for method in methods:
                 print("generating method %s" % method["name"])
@@ -1129,7 +1171,6 @@ class Generator:
             choice_names = self._get_choice_names(schema_object)
             excluded_property_names = []
             for choice_name in choice_names:
-
                 # this code is to allow choices with no properties
                 if choice_name not in schema_object["properties"]:
                     excluded_property_names.append(choice_name)
@@ -1652,6 +1693,7 @@ class Generator:
 
     def _get_openapi_types(self, yobject):
         types = []
+        # TODO: revisit this portion for data type refactor
         if "properties" in yobject:
             for name in yobject["properties"]:
                 yproperty = yobject["properties"][name]
@@ -1686,14 +1728,34 @@ class Generator:
                                 % yproperty["items"]["format"]
                             }
                         )
-                min_max = yproperty.get("maximum", yproperty.get("minimum", 0))
+
+                if "items" in yproperty:
+                    item_prop = yproperty["items"]
+                    if item_prop.get("minimum") is not None:
+                        yproperty["minimum"] = item_prop.get("minimum")
+                    if item_prop.get("maximum") is not None:
+                        yproperty["maximum"] = item_prop.get("maximum")
+                    if item_prop.get("minLength") is not None:
+                        yproperty["minLength"] = item_prop.get("minLength")
+                    if item_prop.get("maxLength") is not None:
+                        yproperty["maxLength"] = item_prop.get("maxLength")
+
                 key = (
                     "itemformat"
                     if pt.get("itemtype") is not None
                     else "format"
                 )
-                if min_max > 2147483647:
-                    pt.update({key: r"'int64'"})
+
+                if len(ref) == 0 and (
+                    pt.get("type") == "int" or pt.get("itemtype") == "int"
+                ):
+                    fmt = pt.get(key)
+                    fmt = fmt.replace("'", "") if fmt is not None else fmt
+                    final_fmt = type_limits._get_integer_format(
+                        fmt, yproperty.get("minimum"), yproperty.get("maximum")
+                    )
+                    pt.update({key: "'%s'" % final_fmt})
+
                 if len(ref) == 0 and "minimum" in yproperty:
                     pt.update({"minimum": yproperty["minimum"]})
                 if len(ref) == 0 and "maximum" in yproperty:
@@ -1898,3 +1960,61 @@ class Generator:
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
+
+    def _camelcase_to_snakecase(self, value):
+        word = ""
+        if value is None:
+            return word
+
+        insert_underscore = False
+
+        for c in value:
+            if c.isupper() or c.isdigit():
+                if insert_underscore:
+                    word += "_" + c.lower()
+                    insert_underscore = False
+                else:
+                    word += c.lower()
+            else:
+                word += c
+                insert_underscore = True
+
+        return word
+
+    def _get_ref_from_response(self, schema_obj, response_property):
+        ref = None
+        response_name = None
+        response_type = None
+        class_name = None
+        if len(schema_obj) == 0:
+            (
+                response_name,
+                _,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(response_property)
+            proto_name = self._camelcase_to_snakecase(class_name)
+            if response_name is not None:
+                response = self._get_parser('$.."$ref"').find(
+                    self._get_object_from_ref(ref)
+                )
+                if len(response) > 0:
+                    (
+                        _,
+                        response_type,
+                        class_name,
+                        ref,
+                    ) = self._get_object_property_class_names(
+                        response[0].value
+                    )
+                    proto_name = self._camelcase_to_snakecase(class_name)
+        else:
+            (
+                _,
+                response_type,
+                class_name,
+                ref,
+            ) = self._get_object_property_class_names(schema_obj[0].value)
+            proto_name = self._camelcase_to_snakecase(class_name)
+
+        return response_name, response_type, class_name, ref, proto_name

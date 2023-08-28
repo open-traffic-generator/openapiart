@@ -107,11 +107,11 @@ class GoServerInterfaceGenerator(object):
             if request_body is not None:
                 full_requestname = request_body.full_model_name
                 w.write_line(
-                    f"{r.operation_name}(rbody {full_requestname}, r *http.Request) {full_responsename}"
+                    f"{r.operation_name}(rbody {full_requestname}, r *http.Request) ({full_responsename}, error)"
                 )
             else:
                 w.write_line(
-                    f"{r.operation_name}(r *http.Request) {full_responsename}"
+                    f"{r.operation_name}(r *http.Request) ({full_responsename}, error)"
                 )
         w.pop_indent()
         w.write_line("}", "")
