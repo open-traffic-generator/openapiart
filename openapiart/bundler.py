@@ -98,7 +98,7 @@ class Bundler(object):
         self._resolve_x_status()
         self._remove_x_include()
         # TODO: restore behavior
-        # self._resolve_x_unique()
+        self._resolve_x_unique()
         self._resolve_license()
         self._resolve_x_enum(self._content)
         self._generate_version_api_spec(self._content)

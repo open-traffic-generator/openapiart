@@ -313,6 +313,7 @@ components:
       properties:
         w_name:
           type: string
+          x-unique: global
           x-field-uid: 1
 
     ZObject:
@@ -320,6 +321,7 @@ components:
       properties:
         name:
           type: string
+          x-unique: global
           x-field-uid: 1
 
     YObject:

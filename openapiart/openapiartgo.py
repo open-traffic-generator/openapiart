@@ -2081,7 +2081,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             # TODO: restore behavior
             # self._parse_x_constraints(field, property_schema)
-            # self._parse_x_unique(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2387,7 +2387,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         return body
 
-    def _validate_unique(self, new, field):
+    def _validate_unique(self, new, field, optional_field=False):
         body = ""
         if field.x_unique is not None:
             body = """if !vObj.isUnique("{struct}", obj.{name}(), obj) {{
@@ -2395,6 +2395,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}""".format(
                 struct=new.struct, name=field.name
             )
+            if optional_field:
+                body = """if obj.Has{name}() {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
         return body
 
     def _validate_types(self, new, field):
@@ -2465,11 +2471,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 else "",
             )
             # TODO: restore behavior
-            # unique = self._validate_unique(new, field)
-            # body += "else " + unique if unique != "" else unique
+            unique = self._validate_unique(new, field)
+            body += "else " + unique if unique != "" else unique
         # TODO: restore behavior
-        # if field.isOptional is True:
-        #     body += self._validate_unique(new, field)
+        if field.isOptional is True:
+            body += self._validate_unique(new, field, optional_field=True)
         # body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
