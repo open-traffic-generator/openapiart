@@ -1154,7 +1154,7 @@ class Bundler(object):
     def _resolve_x_unique(self):
         """validate the x-unique field and make sure it is [global]"""
         for xunique in self._get_parser("$..x-unique").find(self._content):
-            if xunique.value in ["global"]:
+            if xunique.value in ["global", "local"]:
                 continue
             raise Exception("x-unique can have only 'global'")
 

@@ -2390,10 +2390,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _validate_unique(self, new, field, optional_field=False):
         body = ""
         if field.x_unique is not None:
-            body = """if !vObj.isUnique("{struct}", obj.{name}(), obj) {{
+            body = """if !{obj}.isUnique("{struct}", obj.{name}(), obj) {{
                 vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
-                struct=new.struct, name=field.name
+                struct=new.struct,
+                name=field.name,
+                obj="vObj" if field.x_unique == "global" else "obj",
             )
             if optional_field:
                 body = """if obj.Has{name}() {{
