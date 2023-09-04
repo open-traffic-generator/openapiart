@@ -1154,9 +1154,21 @@ class Bundler(object):
     def _resolve_x_unique(self):
         """validate the x-unique field and make sure it is [global]"""
         for xunique in self._get_parser("$..x-unique").find(self._content):
+            parent_schema_object = jsonpath_ng.Parent().find(xunique)[0].value
+            if (
+                "type" in parent_schema_object
+                and parent_schema_object["type"] != "string"
+            ):
+                raise Exception(
+                    "invalid x-unique type %s in %s, x-unique is only allowed on string values"
+                    % (parent_schema_object["type"], str(xunique.full_path))
+                )
             if xunique.value in ["global", "local"]:
                 continue
-            raise Exception("x-unique can have only 'global'")
+            raise Exception(
+                "invalid value %s for x-unique in %s, x-unique can only have one of the following ['global', 'local']"
+                % (xunique.value, str(xunique.full_path))
+            )
 
     def _resolve_x_constraint(self):
         """Find all instances of x-constraint in the openapi content
