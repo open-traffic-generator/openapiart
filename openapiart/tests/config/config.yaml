@@ -314,6 +314,13 @@ components:
           items:
             $ref: "#/components/schemas/LocalUniqueObj"
           x-field-uid: 53
+        unique_obj_list:
+          description: |-
+            property to check local unique feature for x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalUniqueObj"
+          x-field-uid: 54
 
     WObject:
       required: [w_name]

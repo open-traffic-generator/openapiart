@@ -440,16 +440,16 @@ func (obj *validation) createMap(objName string) {
 }
 
 // TODO: restore behavior
-func (obj *validation) isUnique(objectName, value string, object Constraints) bool {
+func (obj *validation) isUnique(objectName, value string, scope string, object Constraints) bool {
 	if value == "" {
 		return true
 	}
 
-	obj.createMap("globals")
-	_, ok := obj.constraints["globals"][value]
+	obj.createMap(scope)
+	_, ok := obj.constraints[scope][value]
 	unique := false
 	if !ok {
-		obj.constraints["globals"][value] = object
+		obj.constraints[scope][value] = object
 		// obj.createMap(objectName)
 		// obj.constraints[objectName][value] = object
 		unique = true
