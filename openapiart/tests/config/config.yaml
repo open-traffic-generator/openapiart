@@ -713,5 +713,4 @@ components:
           x-field-uid: 1
         last_name:
           type: string
-          x-unique: local
           x-field-uid: 2

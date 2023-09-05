@@ -47,7 +47,7 @@ def test_unique(config):
 
     # Two similar objects with different name
     config.x_list[1].name = "local_unique_similar1"
-    config.validate()
+    config.serialize()
 
     # Two different objects with same name
     config.name = "local_global_mix"
@@ -58,12 +58,25 @@ def test_unique(config):
     except Exception as e:
         if "local_global_mix already exists" not in str(e):
             pytest.fail("local_unique_similar validation failed")
-    try:
+
+    # check local unique for contents of a list
+    config.x_list[2].name = "random"
+    config.serialize()
+
+    config.local_unique_obj_list.localuniqueobj(first_name="str1")
+    config.local_unique_obj_list.localuniqueobj(first_name="str1")
+    with pytest.raises(Exception) as execinfo:
         config.serialize()
-        pytest.fail("serialization failed")
-    except Exception as e:
-        if "local_global_mix already exists" not in str(e):
-            pytest.fail("local_unique_similar validation failed")
+    assert execinfo.value.args[0] in "first_name with str1 already exists"
+
+    config.local_unique_obj_list[-1].first_name = "str2"
+    s_obj = config.serialize(encoding="dict")
+
+    with pytest.raises(Exception) as execinfo:
+        s_obj["local_unique_obj_list"][-1]["first_name"] = "str1"
+        config.deserialize(s_obj)
+    assert execinfo.value.args[0] in "first_name with str1 already exists"
+
     # **********************************************
 
     # config.z_object.name = "local_unique"
