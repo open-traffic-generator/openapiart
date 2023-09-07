@@ -304,7 +304,6 @@ class Generator:
             rpc.good_response_type = response_type
             rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
-            # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
                 "x-status"
             ].get("status") in ["deprecated", "under_review"]:

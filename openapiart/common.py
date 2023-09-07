@@ -276,7 +276,6 @@ class OpenApiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
-        # TODO: restore behavior
         self._clear_globals()
         if encoding == OpenApiBase.JSON:
             data = json.dumps(self._encode(), indent=2, sort_keys=True)
@@ -286,7 +285,6 @@ class OpenApiBase(object):
             data = self._encode()
         else:
             raise NotImplementedError("Encoding %s not supported" % encoding)
-        # TODO: restore behavior
         self._validate_coded()
         return data
 
@@ -310,12 +308,10 @@ class OpenApiBase(object):
         - obj(OpenApiObject): This object with all the
             serialized_object deserialized within.
         """
-        # TODO: restore behavior
         self._clear_globals()
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
-        # TODO: restore behavior
         self._validate_coded()
         return self
 
@@ -774,8 +770,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
-            # TODO: restore behavior
             self._validate_unique_and_name(key, value, True)
+            # TODO: restore behavior
             # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
@@ -1000,7 +996,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
-        # TODO: restore behavior
         self._validate_coded()
 
     def get(self, name, with_default=False):

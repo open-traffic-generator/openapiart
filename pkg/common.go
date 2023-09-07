@@ -428,7 +428,6 @@ func (obj *validation) validateHexSlice(hex []string) error {
 	return obj.validateSlice(hex, "hex")
 }
 
-// TODO: restore behavior
 func (obj *validation) createMap(objName string) {
 	if obj.constraints == nil {
 		obj.constraints = make(map[string]map[string]Constraints)
@@ -439,7 +438,6 @@ func (obj *validation) createMap(objName string) {
 	}
 }
 
-// TODO: restore behavior
 func (obj *validation) isUnique(objectName, value string, scope string, object Constraints) bool {
 	if value == "" {
 		return true

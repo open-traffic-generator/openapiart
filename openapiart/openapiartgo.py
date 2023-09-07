@@ -2470,12 +2470,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else "",
             )
-            # TODO: restore behavior
             unique = self._validate_unique(new, field)
             body += "else " + unique if unique != "" else unique
-        # TODO: restore behavior
         if field.isOptional is True:
             body += self._validate_unique(new, field, optional_field=True)
+        # TODO: restore behavior
         # body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
