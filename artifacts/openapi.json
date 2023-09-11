@@ -1,0 +1,2285 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "OpenAPIArt Test API",
+        "description": "Demonstrates the features of the OpenAPIArt package",
+        "version": "0.0.1",
+        "contact": {
+            "x-info": "Any feedback such as bugs/enhancements/questions regarding OpenApiArt is \nwelcomed by using the contact url.      ",
+            "url": "https://github.com/open-traffic-generator/openapiart/issues"
+        },
+        "license": {
+            "name": "NO-LICENSE-PRESENT"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{hostname}:{port}/{basePath}",
+            "variables": {
+                "hostname": {
+                    "default": "0.0.0.0"
+                },
+                "port": {
+                    "default": "8080"
+                },
+                "basePath": {
+                    "default": "api"
+                }
+            }
+        }
+    ],
+    "paths": {
+        "/config": {
+            "post": {
+                "tags": [
+                    "Bundler"
+                ],
+                "operationId": "set_config",
+                "description": "Sets configuration resources.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Prefix.Config"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "x-field-uid": 1,
+                        "description": "Standard success binary payload",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Bundler"
+                ],
+                "operationId": "update_configuration",
+                "description": "Deprecated: please use post instead\n\nSets configuration resources.",
+                "x-status": {
+                    "status": "deprecated",
+                    "information": "please use post instead"
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Update.Config"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "success 2xx",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Prefix.Config"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Bundler"
+                ],
+                "operationId": "get_config",
+                "description": "Gets the configuration resources.",
+                "responses": {
+                    "200": {
+                        "description": "Config response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Prefix.Config"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "tags": [
+                    "Metrics"
+                ],
+                "operationId": "get_metrics",
+                "description": "Gets metrics.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Metrics.Request"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unique metrics response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Metrics"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/warnings": {
+            "get": {
+                "tags": [
+                    "Metrics"
+                ],
+                "operationId": "get_warnings",
+                "description": "Gets warnings.",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/Warnings",
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Metrics"
+                ],
+                "operationId": "clear_warnings",
+                "description": "Clears warnings.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/apitest": {
+            "get": {
+                "tags": [
+                    "ApiTest"
+                ],
+                "operationId": "GetRootResponse",
+                "description": "simple GET api with single return type",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Common.ResponseSuccess"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "ApiTest"
+                ],
+                "operationId": "dummyResponseTest",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "ApiTest"
+                ],
+                "operationId": "PostRootResponse",
+                "description": "simple POST api with single return type",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ApiTest.InputBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Common.ResponseSuccess"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            }
+        },
+        "/serviceb": {
+            "get": {
+                "tags": [
+                    "ServiceAbc"
+                ],
+                "operationId": "GetAllItems",
+                "description": "return list of some items",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServiceAbc.ItemList"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            }
+        },
+        "/serviceb/{item_id}": {
+            "get": {
+                "tags": [
+                    "ServiceAbc"
+                ],
+                "operationId": "GetSingleItem",
+                "description": "return single item",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "item_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServiceAbc.Item"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            }
+        },
+        "/serviceb/{item_id}/{level_2}": {
+            "get": {
+                "tags": [
+                    "ServiceAbc"
+                ],
+                "operationId": "getSingleItemLevel2",
+                "description": "return single item",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "item_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "level_2",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServiceAbc.Item"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            }
+        },
+        "/capabilities/version": {
+            "get": {
+                "tags": [
+                    "Capabilities"
+                ],
+                "operationId": "get_version",
+                "responses": {
+                    "200": {
+                        "description": "Version details from API server",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Version"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "responses": {
+            "Warnings": {
+                "description": "Success warning payload similar to otg Success",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Warning.Details"
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Error.Details": {
+                "type": "object",
+                "properties": {
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Warning.Details": {
+                "type": "object",
+                "properties": {
+                    "warnings": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Error": {
+                "description": "Error response generated while serving API request.",
+                "type": "object",
+                "required": [
+                    "code",
+                    "errors"
+                ],
+                "properties": {
+                    "code": {
+                        "description": "Numeric status code based on underlying transport being used.",
+                        "type": "integer",
+                        "x-field-uid": 1
+                    },
+                    "kind": {
+                        "description": "Kind of error message.",
+                        "type": "string",
+                        "x-enum": {
+                            "transport": {
+                                "x-field-uid": 1
+                            },
+                            "validation": {
+                                "x-field-uid": 2
+                            },
+                            "internal": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "x-field-uid": 2,
+                        "enum": [
+                            "transport",
+                            "validation",
+                            "internal"
+                        ]
+                    },
+                    "errors": {
+                        "description": "List of error messages generated while serving API request.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Prefix.Config": {
+                "type": "object",
+                "required": [
+                    "a",
+                    "b",
+                    "c",
+                    "required_object"
+                ],
+                "description": "Container which retains the configuration",
+                "properties": {
+                    "required_object": {
+                        "description": "A required object that MUST be generated as such.",
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 1
+                    },
+                    "optional_object": {
+                        "description": "An optional object that MUST be generated as such.",
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 2
+                    },
+                    "ieee_802_1qbb": {
+                        "type": "boolean",
+                        "x-field-uid": 3
+                    },
+                    "space_1": {
+                        "type": "integer",
+                        "x-status": {
+                            "status": "deprecated",
+                            "information": "Information TBD"
+                        },
+                        "x-field-uid": 4,
+                        "description": "Deprecated: Information TBD\n\nDescription TBD"
+                    },
+                    "full_duplex_100_mb": {
+                        "type": "integer",
+                        "format": "int64",
+                        "minimum": -10,
+                        "maximum": 4261412864,
+                        "x-field-uid": 5
+                    },
+                    "response": {
+                        "description": "Indicate to the server what response should be returned",
+                        "type": "string",
+                        "default": "status_200",
+                        "x-field-uid": 6,
+                        "x-enum": {
+                            "status_200": {
+                                "x-field-uid": 1
+                            },
+                            "status_400": {
+                                "x-field-uid": 2
+                            },
+                            "status_404": {
+                                "x-status": {
+                                    "status": "deprecated",
+                                    "information": "new code will be coming soon"
+                                },
+                                "x-field-uid": 3,
+                                "description": "Deprecated: new code will be coming soon\n\nDescription TBD"
+                            },
+                            "status_500": {
+                                "x-status": {
+                                    "status": "under_review",
+                                    "information": "500 can change to other values"
+                                },
+                                "x-field-uid": 4,
+                                "description": "Under Review: 500 can change to other values\n\nDescription TBD"
+                            }
+                        },
+                        "enum": [
+                            "status_200",
+                            "status_400",
+                            "status_404",
+                            "status_500"
+                        ]
+                    },
+                    "a": {
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "Information TBD"
+                        },
+                        "description": "Under Review: Information TBD\n\nSmall single line description",
+                        "type": "string",
+                        "x-field-uid": 7
+                    },
+                    "b": {
+                        "description": "Longer multi-line description\nSecond line is here\nThird line",
+                        "type": "number",
+                        "format": "float",
+                        "x-field-uid": 8
+                    },
+                    "c": {
+                        "type": "integer",
+                        "x-field-uid": 9
+                    },
+                    "d_values": {
+                        "x-status": {
+                            "status": "deprecated",
+                            "information": "Information TBD"
+                        },
+                        "description": "Deprecated: Information TBD\n\nA list of enum values",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "x-enum": {
+                                "a": {
+                                    "x-field-uid": 1
+                                },
+                                "b": {
+                                    "x-field-uid": 2
+                                },
+                                "c": {
+                                    "x-field-uid": 3
+                                }
+                            },
+                            "enum": [
+                                "a",
+                                "b",
+                                "c"
+                            ]
+                        },
+                        "x-field-uid": 10
+                    },
+                    "e": {
+                        "x-status": {
+                            "status": "deprecated",
+                            "information": "Information TBD"
+                        },
+                        "description": "Deprecated: Information TBD\n\nA child object",
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 11
+                    },
+                    "f": {
+                        "description": "An object with only choice(s)",
+                        "$ref": "#/components/schemas/FObject",
+                        "x-field-uid": 12
+                    },
+                    "g": {
+                        "description": "A list of objects with choice and properties",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GObject"
+                        },
+                        "x-field-uid": 13
+                    },
+                    "h": {
+                        "description": "A boolean value",
+                        "type": "boolean",
+                        "default": true,
+                        "x-field-uid": 14
+                    },
+                    "i": {
+                        "description": "A byte string",
+                        "type": "string",
+                        "format": "binary",
+                        "x-field-uid": 15
+                    },
+                    "j": {
+                        "description": "A list of objects with only choice",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/JObject"
+                        },
+                        "x-field-uid": 16
+                    },
+                    "k": {
+                        "description": "A nested object with only one property which is a choice object",
+                        "$ref": "#/components/schemas/KObject",
+                        "x-field-uid": 17
+                    },
+                    "l": {
+                        "$ref": "#/components/schemas/LObject",
+                        "x-field-uid": 18
+                    },
+                    "list_of_string_values": {
+                        "description": "A list of string values",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-field-uid": 19
+                    },
+                    "list_of_integer_values": {
+                        "description": "A list of integer values",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "x-field-uid": 20
+                    },
+                    "level": {
+                        "$ref": "#/components/schemas/Level.One",
+                        "x-field-uid": 21
+                    },
+                    "mandatory": {
+                        "$ref": "#/components/schemas/Mandate",
+                        "x-field-uid": 22
+                    },
+                    "ipv4_pattern": {
+                        "$ref": "#/components/schemas/Ipv4Pattern",
+                        "x-field-uid": 23
+                    },
+                    "ipv6_pattern": {
+                        "$ref": "#/components/schemas/Ipv6Pattern",
+                        "x-field-uid": 24
+                    },
+                    "mac_pattern": {
+                        "$ref": "#/components/schemas/MacPattern",
+                        "x-field-uid": 25
+                    },
+                    "integer_pattern": {
+                        "$ref": "#/components/schemas/IntegerPattern",
+                        "x-field-uid": 26
+                    },
+                    "checksum_pattern": {
+                        "$ref": "#/components/schemas/ChecksumPattern",
+                        "x-field-uid": 27
+                    },
+                    "case": {
+                        "$ref": "#/components/schemas/Layer1Ieee802x",
+                        "x-field-uid": 28
+                    },
+                    "m_object": {
+                        "$ref": "#/components/schemas/MObject",
+                        "x-field-uid": 29
+                    },
+                    "integer64": {
+                        "description": "int64 type",
+                        "type": "integer",
+                        "format": "int64",
+                        "x-field-uid": 30
+                    },
+                    "integer64_list": {
+                        "description": "int64 type list",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "minimum": -12,
+                        "maximum": 4261412864,
+                        "x-field-uid": 31
+                    },
+                    "header_checksum": {
+                        "x-field-uid": 32,
+                        "$ref": "#/components/schemas/Pattern.Prefix.Config.HeaderChecksum"
+                    },
+                    "str_len": {
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "Information TBD"
+                        },
+                        "description": "Under Review: Information TBD\n\nstring minimum&maximum Length",
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 6,
+                        "x-field-uid": 33
+                    },
+                    "hex_slice": {
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "Information TBD"
+                        },
+                        "description": "Under Review: Information TBD\n\nArray of Hex",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "hex"
+                        },
+                        "x-field-uid": 34
+                    },
+                    "auto_field_test": {
+                        "x-field-uid": 35,
+                        "$ref": "#/components/schemas/Pattern.Prefix.Config.AutoFieldTest"
+                    },
+                    "name": {
+                        "x-field-uid": 36,
+                        "type": "string"
+                    },
+                    "w_list": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WObject"
+                        },
+                        "x-field-uid": 37
+                    },
+                    "x_list": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ZObject"
+                        },
+                        "x-field-uid": 38
+                    },
+                    "z_object": {
+                        "$ref": "#/components/schemas/ZObject",
+                        "x-field-uid": 39
+                    },
+                    "y_object": {
+                        "$ref": "#/components/schemas/YObject",
+                        "x-field-uid": 40
+                    },
+                    "choice_object": {
+                        "description": "A list of objects with choice with and without properties",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChoiceObject"
+                        },
+                        "x-field-uid": 41
+                    },
+                    "required_choice_object": {
+                        "$ref": "#/components/schemas/RequiredChoiceParent",
+                        "x-field-uid": 42
+                    },
+                    "g1": {
+                        "description": "A list of objects with choice and properties",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GObject"
+                        },
+                        "x-field-uid": 43
+                    },
+                    "g2": {
+                        "description": "A list of objects with choice and properties",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GObject"
+                        },
+                        "x-field-uid": 44
+                    },
+                    "int32_param": {
+                        "description": "int32 type",
+                        "type": "integer",
+                        "format": "int32",
+                        "x-field-uid": 45
+                    },
+                    "int32_list_param": {
+                        "description": "int32 type list",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "minimum": -23456,
+                        "maximum": 23456,
+                        "x-field-uid": 46
+                    },
+                    "uint32_param": {
+                        "description": "uint32 type",
+                        "type": "integer",
+                        "format": "uint32",
+                        "x-field-uid": 47
+                    },
+                    "uint32_list_param": {
+                        "description": "uint32 type list",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "uint32"
+                        },
+                        "minimum": 0,
+                        "maximum": 4294967293,
+                        "x-field-uid": 48
+                    },
+                    "uint64_param": {
+                        "description": "uint64 type",
+                        "type": "integer",
+                        "format": "uint64",
+                        "x-field-uid": 49
+                    },
+                    "uint64_list_param": {
+                        "description": "uint64 type list",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "uint64"
+                        },
+                        "x-field-uid": 50
+                    },
+                    "auto_int32_param": {
+                        "description": "should automatically set type to int32",
+                        "type": "integer",
+                        "minimum": 64,
+                        "maximum": 9000,
+                        "x-field-uid": 51
+                    },
+                    "auto_int32_list_param": {
+                        "description": "should automatically set type to []int32",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minimum": 64,
+                        "maximum": 9000,
+                        "x-field-uid": 52
+                    }
+                }
+            },
+            "WObject": {
+                "required": [
+                    "w_name"
+                ],
+                "properties": {
+                    "w_name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "ZObject": {
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "YObject": {
+                "properties": {
+                    "y_name": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-constraint": [
+                            "/components/schemas/ZObject/properties/name",
+                            "/components/schemas/WObject/properties/w_name"
+                        ],
+                        "description": "TBD\n\nx-constraint:\n- /components/schemas/ZObject/properties/name\n- /components/schemas/WObject/properties/w_name\n"
+                    }
+                }
+            },
+            "Layer1Ieee802x": {
+                "type": "object",
+                "properties": {
+                    "flow_control": {
+                        "type": "boolean",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "GObject": {
+                "type": "object",
+                "x-status": {
+                    "status": "deprecated",
+                    "information": "new schema Jobject to be used"
+                },
+                "properties": {
+                    "g_a": {
+                        "type": "string",
+                        "default": "asdf",
+                        "x-field-uid": 1
+                    },
+                    "g_b": {
+                        "type": "integer",
+                        "default": 6,
+                        "x-field-uid": 2
+                    },
+                    "g_c": {
+                        "type": "number",
+                        "default": 77.7,
+                        "x-status": {
+                            "status": "deprecated",
+                            "information": "Information TBD"
+                        },
+                        "x-field-uid": 3,
+                        "description": "Deprecated: Information TBD\n\nDescription TBD"
+                    },
+                    "choice": {
+                        "type": "string",
+                        "default": "g_d",
+                        "x-field-uid": 4,
+                        "x-enum": {
+                            "g_d": {
+                                "x-field-uid": 1
+                            },
+                            "g_e": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "g_d",
+                            "g_e"
+                        ]
+                    },
+                    "g_d": {
+                        "type": "string",
+                        "default": "some string",
+                        "x-field-uid": 5
+                    },
+                    "g_e": {
+                        "type": "number",
+                        "format": "double",
+                        "default": 3.0,
+                        "x-field-uid": 6
+                    },
+                    "g_f": {
+                        "description": "Another enum to test protbuf enum generation",
+                        "type": "string",
+                        "default": "a",
+                        "x-field-uid": 7,
+                        "x-enum": {
+                            "a": {
+                                "x-field-uid": 1
+                            },
+                            "b": {
+                                "x-field-uid": 2
+                            },
+                            "c": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "enum": [
+                            "a",
+                            "b",
+                            "c"
+                        ]
+                    },
+                    "name": {
+                        "x-field-uid": 8,
+                        "type": "string"
+                    }
+                },
+                "description": "Deprecated: new schema Jobject to be used\n\nDescription TBD"
+            },
+            "EObject": {
+                "type": "object",
+                "required": [
+                    "e_a",
+                    "e_b"
+                ],
+                "properties": {
+                    "e_a": {
+                        "type": "number",
+                        "format": "float",
+                        "x-field-uid": 1
+                    },
+                    "e_b": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 2
+                    },
+                    "name": {
+                        "x-field-uid": 3,
+                        "type": "string"
+                    },
+                    "m_param1": {
+                        "x-field-uid": 4,
+                        "type": "string"
+                    },
+                    "m_param2": {
+                        "x-field-uid": 5,
+                        "type": "string"
+                    }
+                }
+            },
+            "FObject": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "f_a",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "f_a": {
+                                "x-field-uid": 1
+                            },
+                            "f_b": {
+                                "x-field-uid": 2
+                            },
+                            "f_c": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "enum": [
+                            "f_a",
+                            "f_b",
+                            "f_c"
+                        ]
+                    },
+                    "f_a": {
+                        "type": "string",
+                        "default": "some string",
+                        "x-field-uid": 2
+                    },
+                    "f_b": {
+                        "type": "number",
+                        "format": "double",
+                        "default": 3.0,
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "JObject": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "j_a",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "j_a": {
+                                "x-field-uid": 1
+                            },
+                            "j_b": {
+                                "x-status": {
+                                    "status": "deprecated",
+                                    "information": "use j_a instead"
+                                },
+                                "x-field-uid": 2,
+                                "description": "Deprecated: use j_a instead\n\nDescription TBD"
+                            }
+                        },
+                        "enum": [
+                            "j_a",
+                            "j_b"
+                        ]
+                    },
+                    "j_a": {
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 2
+                    },
+                    "j_b": {
+                        "$ref": "#/components/schemas/FObject",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "ChoiceObject": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "no_obj",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "e_obj": {
+                                "x-field-uid": 1
+                            },
+                            "f_obj": {
+                                "x-field-uid": 2
+                            },
+                            "no_obj": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "enum": [
+                            "e_obj",
+                            "f_obj",
+                            "no_obj"
+                        ]
+                    },
+                    "e_obj": {
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 2
+                    },
+                    "f_obj": {
+                        "$ref": "#/components/schemas/FObject",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "KObject": {
+                "type": "object",
+                "properties": {
+                    "e_object": {
+                        "$ref": "#/components/schemas/EObject",
+                        "x-field-uid": 1
+                    },
+                    "f_object": {
+                        "$ref": "#/components/schemas/FObject",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "LObject": {
+                "description": "Format validation object",
+                "type": "object",
+                "properties": {
+                    "string_param": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "integer": {
+                        "type": "integer",
+                        "minimum": -10,
+                        "maximum": 90,
+                        "x-field-uid": 2
+                    },
+                    "float": {
+                        "type": "number",
+                        "format": "float",
+                        "x-field-uid": 3
+                    },
+                    "double": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 4
+                    },
+                    "mac": {
+                        "type": "string",
+                        "format": "mac",
+                        "x-field-uid": 5
+                    },
+                    "ipv4": {
+                        "type": "string",
+                        "format": "ipv4",
+                        "x-field-uid": 6
+                    },
+                    "ipv6": {
+                        "type": "string",
+                        "format": "ipv6",
+                        "x-field-uid": 7
+                    },
+                    "hex": {
+                        "type": "string",
+                        "format": "hex",
+                        "x-field-uid": 8
+                    }
+                }
+            },
+            "MObject": {
+                "description": "Required format validation object",
+                "type": "object",
+                "required": [
+                    "string_param",
+                    "integer",
+                    "float",
+                    "double",
+                    "mac",
+                    "ipv4",
+                    "ipv6",
+                    "hex"
+                ],
+                "properties": {
+                    "string_param": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "integer": {
+                        "type": "integer",
+                        "minimum": -10,
+                        "maximum": 90,
+                        "x-field-uid": 2
+                    },
+                    "float": {
+                        "type": "number",
+                        "format": "float",
+                        "x-field-uid": 3
+                    },
+                    "double": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 4
+                    },
+                    "mac": {
+                        "type": "string",
+                        "format": "mac",
+                        "x-field-uid": 5
+                    },
+                    "ipv4": {
+                        "type": "string",
+                        "format": "ipv4",
+                        "x-field-uid": 6
+                    },
+                    "ipv6": {
+                        "type": "string",
+                        "format": "ipv6",
+                        "x-field-uid": 7
+                    },
+                    "hex": {
+                        "type": "string",
+                        "format": "hex",
+                        "x-field-uid": 8
+                    }
+                }
+            },
+            "Mandate": {
+                "description": "Object to Test required Parameter",
+                "type": "object",
+                "required": [
+                    "required_param"
+                ],
+                "properties": {
+                    "required_param": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Update.Config": {
+                "description": "Under Review: the whole schema is being reviewed\n\nObject to Test required Parameter",
+                "x-status": {
+                    "status": "under_review",
+                    "information": "the whole schema is being reviewed"
+                },
+                "type": "object",
+                "properties": {
+                    "g": {
+                        "description": "A list of objects with choice and properties",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GObject"
+                        },
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Metrics.Request": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "port",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "port": {
+                                "x-field-uid": 1
+                            },
+                            "flow": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "port",
+                            "flow"
+                        ]
+                    },
+                    "port": {
+                        "type": "string",
+                        "x-field-uid": 2
+                    },
+                    "flow": {
+                        "type": "string",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Metrics": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "ports",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "ports": {
+                                "x-field-uid": 1
+                            },
+                            "flows": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "ports",
+                            "flows"
+                        ]
+                    },
+                    "ports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Port.Metric"
+                        },
+                        "x-field-uid": 2
+                    },
+                    "flows": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Flow.Metric"
+                        },
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Port.Metric": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "tx_frames",
+                    "rx_frames"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "tx_frames": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 2
+                    },
+                    "rx_frames": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Flow.Metric": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "tx_frames",
+                    "rx_frames"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "tx_frames": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 2
+                    },
+                    "rx_frames": {
+                        "type": "number",
+                        "format": "double",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "RequiredChoiceParent": {
+                "type": "object",
+                "required": [
+                    "choice"
+                ],
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "intermediate_obj": {
+                                "x-field-uid": 1
+                            },
+                            "no_obj": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "intermediate_obj",
+                            "no_obj"
+                        ]
+                    },
+                    "intermediate_obj": {
+                        "$ref": "#/components/schemas/RequiredChoiceIntermediate",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "RequiredChoiceIntermediate": {
+                "type": "object",
+                "required": [
+                    "choice"
+                ],
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "f_a": {
+                                "x-field-uid": 1
+                            },
+                            "leaf": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "f_a",
+                            "leaf"
+                        ]
+                    },
+                    "f_a": {
+                        "type": "string",
+                        "default": "some string",
+                        "x-field-uid": 2
+                    },
+                    "leaf": {
+                        "$ref": "#/components/schemas/RequiredChoiceIntermeLeaf",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "RequiredChoiceIntermeLeaf": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Level.One": {
+                "description": "To Test Multi level non-primitive types",
+                "properties": {
+                    "l1_p1": {
+                        "description": "Level one",
+                        "$ref": "#/components/schemas/Level.Two",
+                        "x-field-uid": 1
+                    },
+                    "l1_p2": {
+                        "description": "Level one to four",
+                        "$ref": "#/components/schemas/Level.Four",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "Level.Two": {
+                "description": "Test Level 2",
+                "properties": {
+                    "l2_p1": {
+                        "description": "Level Two",
+                        "$ref": "#/components/schemas/Level.Three",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Level.Three": {
+                "description": "Test Level3",
+                "properties": {
+                    "l3_p1": {
+                        "description": "Set value at Level 3",
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Level.Four": {
+                "description": "Test level4 redundant junk testing",
+                "properties": {
+                    "l4_p1": {
+                        "description": "loop over level 1",
+                        "$ref": "#/components/schemas/Level.One",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Ipv4Pattern": {
+                "description": "Test ipv4 pattern",
+                "type": "object",
+                "properties": {
+                    "ipv4": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.Ipv4Pattern.Ipv4"
+                    }
+                }
+            },
+            "Ipv6Pattern": {
+                "description": "Test ipv6 pattern",
+                "type": "object",
+                "properties": {
+                    "ipv6": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.Ipv6Pattern.Ipv6"
+                    }
+                }
+            },
+            "MacPattern": {
+                "description": "Test mac pattern",
+                "type": "object",
+                "properties": {
+                    "mac": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.MacPattern.Mac"
+                    }
+                }
+            },
+            "IntegerPattern": {
+                "description": "Test integer pattern",
+                "type": "object",
+                "properties": {
+                    "integer": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.IntegerPattern.Integer"
+                    }
+                }
+            },
+            "ChecksumPattern": {
+                "description": "Test checksum pattern",
+                "type": "object",
+                "properties": {
+                    "checksum": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.ChecksumPattern.Checksum"
+                    }
+                }
+            },
+            "Common.ResponseSuccess": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "ApiTest.InputBody": {
+                "type": "object",
+                "properties": {
+                    "some_string": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "ServiceAbc.Item": {
+                "type": "object",
+                "properties": {
+                    "some_id": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "some_string": {
+                        "type": "string",
+                        "x-field-uid": 2
+                    },
+                    "path_id": {
+                        "type": "string",
+                        "x-field-uid": 3
+                    },
+                    "level_2": {
+                        "type": "string",
+                        "x-field-uid": 4
+                    }
+                }
+            },
+            "ServiceAbc.ItemList": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceAbc.Item"
+                        },
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "Pattern.Prefix.Config.HeaderChecksum": {
+                "description": "Header checksum",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "description": "The type of checksum",
+                        "type": "string",
+                        "x-enum": {
+                            "generated": {
+                                "x-field-uid": 1
+                            },
+                            "custom": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "generated",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "generated",
+                            "custom"
+                        ]
+                    },
+                    "generated": {
+                        "description": "A system generated checksum value",
+                        "type": "string",
+                        "x-enum": {
+                            "good": {
+                                "x-field-uid": 1
+                            },
+                            "bad": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "good",
+                        "x-field-uid": 2,
+                        "enum": [
+                            "good",
+                            "bad"
+                        ]
+                    },
+                    "custom": {
+                        "description": "A custom checksum value",
+                        "type": "integer",
+                        "format": "uint32",
+                        "maximum": 65535,
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Pattern.Prefix.Config.AutoFieldTest.Counter": {
+                "description": "integer counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "x-field-uid": 1,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "step": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    }
+                }
+            },
+            "Pattern.Prefix.Config.AutoFieldTest": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "auto": {
+                                "x-field-uid": 1
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "auto",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "auto",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "uint32",
+                            "maximum": 255
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            0
+                        ]
+                    },
+                    "auto": {
+                        "description": "The OTG implementation can provide a system generated\nvalue for this property. If the OTG is unable to generate a value\nthe default value must be used.",
+                        "type": "integer",
+                        "x-field-uid": 4,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.Prefix.Config.AutoFieldTest.Counter",
+                        "x-field-uid": 6
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.Prefix.Config.AutoFieldTest.Counter",
+                        "x-field-uid": 7
+                    }
+                }
+            },
+            "Pattern.Ipv4Pattern.Ipv4.Counter": {
+                "description": "ipv4 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.1",
+                        "format": "ipv4"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.Ipv4Pattern.Ipv4": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv4"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "0.0.0.0"
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.Ipv4Pattern.Ipv4.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.Ipv4Pattern.Ipv4.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.Ipv6Pattern.Ipv6.Counter": {
+                "description": "ipv6 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "::",
+                        "format": "ipv6"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "::1",
+                        "format": "ipv6"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.Ipv6Pattern.Ipv6": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "::",
+                        "format": "ipv6"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv6"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "::"
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.Ipv6Pattern.Ipv6.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.Ipv6Pattern.Ipv6.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.MacPattern.Mac.Counter": {
+                "description": "mac counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "00:00:00:00:00:01",
+                        "format": "mac"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.MacPattern.Mac": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "auto": {
+                                "x-field-uid": 1
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "auto",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "auto",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "mac"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "00:00:00:00:00:00"
+                        ]
+                    },
+                    "auto": {
+                        "description": "The OTG implementation can provide a system generated\nvalue for this property. If the OTG is unable to generate a value\nthe default value must be used.",
+                        "type": "string",
+                        "x-field-uid": 4,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.MacPattern.Mac.Counter",
+                        "x-field-uid": 6
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.MacPattern.Mac.Counter",
+                        "x-field-uid": 7
+                    }
+                }
+            },
+            "Pattern.IntegerPattern.Integer.Counter": {
+                "description": "integer counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "x-field-uid": 1,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "step": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    }
+                }
+            },
+            "Pattern.IntegerPattern.Integer": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "uint32",
+                            "maximum": 255
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            0
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.IntegerPattern.Integer.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.IntegerPattern.Integer.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.ChecksumPattern.Checksum": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "description": "The type of checksum",
+                        "type": "string",
+                        "x-enum": {
+                            "generated": {
+                                "x-field-uid": 1
+                            },
+                            "custom": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "generated",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "generated",
+                            "custom"
+                        ]
+                    },
+                    "generated": {
+                        "description": "A system generated checksum value",
+                        "type": "string",
+                        "x-enum": {
+                            "good": {
+                                "x-field-uid": 1
+                            },
+                            "bad": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "good",
+                        "x-field-uid": 2,
+                        "enum": [
+                            "good",
+                            "bad"
+                        ]
+                    },
+                    "custom": {
+                        "description": "A custom checksum value",
+                        "type": "integer",
+                        "format": "uint32",
+                        "maximum": 255,
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Version": {
+                "description": "Version details",
+                "type": "object",
+                "properties": {
+                    "api_spec_version": {
+                        "description": "Version of API specification",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 1
+                    },
+                    "sdk_version": {
+                        "description": "Version of SDK generated from API specification",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 2
+                    },
+                    "app_version": {
+                        "description": "Version of application consuming or serving the API",
+                        "type": "string",
+                        "default": "",
+                        "x-field-uid": 3
+                    }
+                }
+            }
+        }
+    }
+}

@@ -162,8 +162,8 @@ def init(use_sdk=None):
             ]
         )
     else:
-        art_path = os.path.join(base_dir, "art", "requirements.txt")
-        art_test = os.path.join(base_dir, "art", "test_requirements.txt")
+        art_path = os.path.join(base_dir, "artifacts", "requirements.txt")
+        art_test = os.path.join(base_dir, "artifacts", "test_requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
@@ -348,7 +348,7 @@ def clean():
         "build",
         "*.egg-info",
         "cov_report",
-        "art",
+        "artifacts",
     ]
     recursive_patterns = [
         ".pytest_cache",

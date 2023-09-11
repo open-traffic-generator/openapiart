@@ -16,9 +16,14 @@
 import sys
 import os
 import importlib
+import shutil
 
 
 def create_openapi_artifacts(openapiart_class, sdk=None):
+
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    artifacts_dir = os.path.join(base_dir, "artifacts")
+
     open_api = openapiart_class(
         api_files=[
             os.path.join(
@@ -41,7 +46,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
                 "./openapiart/goserver/api/service_b.api.yaml",
             ),
         ],
-        artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
+        artifact_dir=os.path.join(os.path.dirname(__file__), "artifacts"),
         extension_prefix="sanity",
         proto_service="Openapi",
         generate_version_api=True,
@@ -51,6 +56,10 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
 
     if sdk == "python" or sdk is None or sdk == "all":
         open_api.GeneratePythonSdk(package_name="sanity")
+        shutil.move(
+            os.path.join(artifacts_dir, "requirements.txt"),
+            os.path.join(artifacts_dir, "sanity"),
+        )
 
     if sdk == "go" or sdk is None or sdk == "all":
         open_api.GenerateGoSdk(
@@ -66,6 +75,20 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         open_api.GoTidy(
             relative_package_dir="pkg",
         )
+        # copy all the files to artifacts/openapiart
+        go_path = os.path.join(artifacts_dir, "openapiart_go")
+        shutil.copytree(
+            os.path.join(base_dir, "pkg", "httpapi"),
+            os.path.join(go_path, "httpapi"),
+            dirs_exist_ok=True,
+        )
+        shutil.copytree(
+            os.path.join(base_dir, "pkg", "sanity"),
+            os.path.join(go_path, "sanity"),
+            dirs_exist_ok=True,
+        )
+        # files = ["openapiart.go", "go.mod", "go.sum"]
+        # shutil.copy(os.path.join)
 
 
 if __name__ == "__main__":
