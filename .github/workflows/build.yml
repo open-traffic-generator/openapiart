@@ -68,13 +68,19 @@ jobs:
       - name: Trigger dev workflow
         run: |
           python do.py build
-      - name: Archive generated artifacts
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: gen_packages
-          path: |
-            artifacts
+      - name: Commit packages
+        run: |
+          git config user.name "Github Actions Bot"
+          git config user.email "actions@github.com"
+          git pull
+          git add --force artifacts/\*
+          if git status --porcelain | grep .
+            then
+              git commit -m "Update auto generated go code"
+              git push
+            else
+              echo "No change in auto generated go code"
+          fi
 
   dev_workflow_docker:
     runs-on: ubuntu-latest
@@ -143,7 +149,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        go-version: ["1.17.13", "1.18.10", "1.19.5", "1.20"]
+        go-version: ["1.18.10", "1.19.5", "1.20"]
       fail-fast: false
     steps:
       - name: Checkout source
@@ -170,19 +176,6 @@ jobs:
       - name: Run go lint
         run: |
           python do.py go_lint
-      # - name: Commit generated go code
-      #   run: |
-      #     git config user.name "Github Actions Bot"
-      #     git config user.email "actions@github.com"
-      #     git pull
-      #     git add --force artifacts/openapiart/\*
-      #     if git status --porcelain | grep .
-      #       then
-      #         git commit -m "Update auto generated go code"
-      #         git push
-      #       else
-      #         echo "No change in auto generated go code"
-      #     fi
       - name: Archive generated artifacts
         if: always()
         uses: actions/upload-artifact@v2
