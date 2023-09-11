@@ -730,11 +730,9 @@ class Generator:
                 self._write(2, "self._version_check_err = None")
             else:
                 self._write(2, "pass")
+            self._write(2, 'endpoint = kwargs.get("otel_collector")')
             self._write(
-                2, 'endpoint = kwargs.get("telemetry_collector_endpoint")'
-            )
-            self._write(
-                2, 'transport = kwargs.get("telemetry_collector_transport")'
+                2, 'transport = kwargs.get("otel_collector_transport")'
             )
             self._write(2, "self._telemetry = Telemetry(endpoint, transport)")
 

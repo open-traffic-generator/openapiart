@@ -54,8 +54,8 @@ def api(
     loglevel=logging.INFO,
     ext=None,
     version_check=False,
-    telemetry_collector_endpoint=None,
-    telemetry_collector_transport="http",
+    otel_collector=None,
+    otel_collector_transport="http",
 ):
     """Create an instance of an Api class
 
@@ -94,7 +94,7 @@ def api(
     if version_check is False:
         log.warning("Version check is disabled")
 
-    if telemetry_collector_endpoint is not None:
+    if otel_collector is not None:
         if sys.version_info[0] == 3 and sys.version_info[1] >= 7:
             log.info("Telemetry feature enabled")
         else:

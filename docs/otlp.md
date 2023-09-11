@@ -1,7 +1,7 @@
 # OTLP Support in snappi
 
 
-<img title="design" alt="design" src="otlp.PNG">
+<img title="design" alt="design" src="OTLP.drawio.svg">
 
 
 ## Components
@@ -21,7 +21,7 @@
   # snippet with the new otlp paramters exposed in snappi
   import snappi
 
-  snappi.api(location="https://localhost:8443", verify=False, enable_telemetry=True, telemetry_collector_endpoint="https://localhost:4318")
+  snappi.api(location="https://localhost:8443", verify=False, otel_collector="https://localhost:4318")
   ```
 
 * The Sceond one is snappi labeled as `2` - within which the thrid component lies which is the telemetry infrastructure
@@ -32,7 +32,7 @@
   ```python
   import snappi
 
-  api = snappi.api(location="https://localhost:8443", verify=False, enable_telemetry=True, telemetry_collector_endpoint="https://localhost:4318")
+  api = snappi.api(location="https://localhost:8443", verify=False, otel_collector="https://localhost:4318")
   tracer = api.tracer()
   with tracer.start_as_current_span("custom_span_name", kind=SpanKind.CLIENT)
     # some operations or code.....
