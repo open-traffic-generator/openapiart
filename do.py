@@ -515,6 +515,26 @@ def build(sdk="all", env_setup=None):
     run([py() + " setup.py install"])
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
+
+    # Copying files to artiofacts folder
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    artifacts_dir = os.path.join(base_dir, "artifacts")
+    shutil.move(
+        os.path.join(artifacts_dir, "requirements.txt"),
+        os.path.join(artifacts_dir, "sanity"),
+    )
+    go_path = os.path.join(artifacts_dir, "openapiart_go")
+    shutil.copytree(
+        os.path.join(base_dir, "pkg", "httpapi"),
+        os.path.join(go_path, "httpapi"),
+        dirs_exist_ok=True,
+    )
+    shutil.copytree(
+        os.path.join(base_dir, "pkg", "sanity"),
+        os.path.join(go_path, "sanity"),
+        dirs_exist_ok=True,
+    )
+
     if sdk == "python" or sdk == "all":
         print("\nSTEP 4: Perform Python lint\n")
         lint()

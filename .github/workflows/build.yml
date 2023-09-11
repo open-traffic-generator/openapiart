@@ -68,6 +68,13 @@ jobs:
       - name: Trigger dev workflow
         run: |
           python do.py build
+      - name: Archive generated artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: gen_packages
+          path: |
+            artifacts
 
   dev_workflow_docker:
     runs-on: ubuntu-latest
@@ -116,19 +123,6 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate python True
-      - name: Commit generated python code
-        run: |
-          git config user.name "Github Actions Bot"
-          git config user.email "actions@github.com"
-          git pull
-          git add --force artifacts/\*
-          if git status --porcelain | grep .
-            then
-              git commit -m "Update auto generated python code"
-              git push
-            else
-              echo "No change in auto generated python code"
-          fi
       - name: Archive generated artifacts
         if: always()
         uses: actions/upload-artifact@v2
@@ -176,19 +170,19 @@ jobs:
       - name: Run go lint
         run: |
           python do.py go_lint
-      - name: Commit generated go code
-        run: |
-          git config user.name "Github Actions Bot"
-          git config user.email "actions@github.com"
-          git pull
-          git add --force artifacts/openapiart/\*
-          if git status --porcelain | grep .
-            then
-              git commit -m "Update auto generated go code"
-              git push
-            else
-              echo "No change in auto generated go code"
-          fi
+      # - name: Commit generated go code
+      #   run: |
+      #     git config user.name "Github Actions Bot"
+      #     git config user.email "actions@github.com"
+      #     git pull
+      #     git add --force artifacts/openapiart/\*
+      #     if git status --porcelain | grep .
+      #       then
+      #         git commit -m "Update auto generated go code"
+      #         git push
+      #       else
+      #         echo "No change in auto generated go code"
+      #     fi
       - name: Archive generated artifacts
         if: always()
         uses: actions/upload-artifact@v2
