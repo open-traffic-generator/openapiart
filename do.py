@@ -535,6 +535,10 @@ def build(sdk="all", env_setup=None):
         dirs_exist_ok=True,
     )
 
+    files = ["openapiart.go", "go.mod", "go.sum"]
+    for file in files:
+        shutil.copy(os.path.join(base_dir, "pkg", file), go_path)
+
     if sdk == "python" or sdk == "all":
         print("\nSTEP 4: Perform Python lint\n")
         lint()
