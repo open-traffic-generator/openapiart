@@ -68,6 +68,11 @@ jobs:
       - name: Trigger dev workflow
         run: |
           python do.py build
+      - name: show artifacts
+        run: |
+          ls artifacts
+          ls artifacts/sanity
+          ls artifacts/openapiart_go
       - name: Commit packages
         run: |
           git config user.name "Github Actions Bot"
