@@ -163,7 +163,7 @@ def test_set(api):
     try:
         new_config_1.serialize()
     except Exception as e:
-        if "required_object is a mandatory property of" not in str(e):
+        if "required_object is a required property of" not in str(e):
             pytest.fail("required_object validation failed")
 
     # Negative Test 2 - Not setting the correct value to property a

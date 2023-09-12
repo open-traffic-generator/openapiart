@@ -276,8 +276,7 @@ class OpenApiBase(object):
             encoding. The json and yaml encodings will return a str object and
             the dict encoding will return a python dict object.
         """
-        # TODO: restore behavior
-        # self._clear_globals()
+        self._clear_globals()
         if encoding == OpenApiBase.JSON:
             data = json.dumps(self._encode(), indent=2, sort_keys=True)
         elif encoding == OpenApiBase.YAML:
@@ -286,8 +285,7 @@ class OpenApiBase(object):
             data = self._encode()
         else:
             raise NotImplementedError("Encoding %s not supported" % encoding)
-        # TODO: restore behavior
-        # self._validate_coded()
+        self._validate_coded()
         return data
 
     def _encode(self):
@@ -310,13 +308,11 @@ class OpenApiBase(object):
         - obj(OpenApiObject): This object with all the
             serialized_object deserialized within.
         """
-        # TODO: restore behavior
-        # self._clear_globals()
+        self._clear_globals()
         if isinstance(serialized_object, (str, unicode)):
             serialized_object = yaml.safe_load(serialized_object)
         self._decode(serialized_object)
-        # TODO: restore behavior
-        # self._validate_coded()
+        self._validate_coded()
         return self
 
     def _decode(self, dict_object):
@@ -336,6 +332,8 @@ class OpenApiValidator(object):
     __slots__ = ()
 
     _validation_errors = []
+
+    _parent_context = [""]
 
     def __init__(self):
         pass
@@ -510,6 +508,14 @@ class OpenApiValidator(object):
             "uint32": "integer",
             "double": "float",
         }
+
+        class_name = err_msg.split(" ")[-1]
+        property_name = (
+            err_msg.split(" ")[-4]
+            if err_msg.startswith("Invalid")
+            else err_msg.split(" ")[1]
+        )
+
         type_format = type_
         if type_ in type_map:
             type_ = type_map[type_]
@@ -536,26 +542,38 @@ class OpenApiValidator(object):
             verdict = v_obj(value, min, max, type_format)
             if verdict is True:
                 return
-            min_max = ""
+            min_msg = ""
+            max_msg = ""
             if min is not None:
-                min_max = ", expected min {}".format(min)
+                min_msg = "{} <= ".format(min)
             if max is not None:
-                min_max = min_max + ", expected max {}".format(max)
-            err_msg = "{} \n got {} of type {} {}".format(
-                err_msg, value, type(value), min_max
-            )
+                max_msg = " <= {}".format(max)
+            if min_msg != "" or max_msg != "":
+                err_msg = "{}value of property {} in {}{}".format(
+                    min_msg, property_name, self._parent_context[0], max_msg
+                )
+            else:
+                err_msg = "{} \n got {} of type {}".format(
+                    err_msg, value, type(value)
+                )
         elif type_ == "string":
             verdict = v_obj(value, min_length, max_length)
             if verdict is True:
                 return
-            msg = ""
+            min_msg = ""
+            max_msg = ""
             if min_length is not None:
-                msg = ", expected min {}".format(min_length)
+                min_msg = "{} <= ".format(min_length)
             if max_length is not None:
-                msg = msg + ", expected max {}".format(max_length)
-            err_msg = "{} \n got {} of type {} {}".format(
-                err_msg, value, type(value), msg
-            )
+                max_msg = " <= {}".format(max_length)
+            if min_msg != "" or max_msg != "":
+                err_msg = "{}length of property {} in {}{}".format(
+                    min_msg, property_name, self._parent_context[0], max_msg
+                )
+            else:
+                err_msg = "{} \n got {} of type {}".format(
+                    err_msg, value, type(value)
+                )
         else:
             verdict = v_obj(value)
         if verdict is False:
@@ -629,6 +647,7 @@ class OpenApiValidator(object):
             self.__validate_latter__["constraint"].clear()
 
     def _clear_globals(self):
+        self._parent_context[0] = ""
         keys = list(self.__constraints__.keys())
         for k in keys:
             if k == "global":
@@ -742,18 +761,23 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         ):
             self._parent._set_property("choice", self._choice)
 
-    def _encode(self):
+    def _encode(self, ignore_parent_name=False):
         """Helper method for serialization"""
         output = {}
         self._raise_status_warnings(self, None)
         self._validate_required()
+        if not ignore_parent_name:
+            self._parent_context[0] = (
+                self._parent_context[0] + "." + self.__class__.__name__
+            ).strip(".")
         for key, value in self._properties.items():
             self._validate_types(key, value)
             # TODO: restore behavior
             # self._validate_unique_and_name(key, value, True)
             # self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
-                output[key] = value._encode()
+                self._parent_context[0] += "." + key
+                output[key] = value._encode(ignore_parent_name=True)
                 if isinstance(value, OpenApiObject):
                     self._raise_status_warnings(key, value)
             elif value is not None:
@@ -770,27 +794,39 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     value = [str(v) for v in value]
                 output[key] = value
                 self._raise_status_warnings(key, value)
+        self._parent_context[0] = ".".join(
+            self._parent_context[0].split(".")[:-1]
+        )
         return output
 
-    def _decode(self, obj):
+    def _decode(self, obj, ignore_parent_name=False):
         dtypes = [list, str, int, float, bool]
         self._raise_status_warnings(self, None)
+        if not ignore_parent_name:
+            self._parent_context[0] = (
+                self._parent_context[0] + "." + self.__class__.__name__
+            ).strip(".")
         for property_name, property_value in obj.items():
             if property_name in self._TYPES:
                 ignore_warnings = False
                 if isinstance(property_value, dict):
+                    self._parent_context[0] += "." + property_name
                     child = self._get_child_class(property_name)
                     if (
                         "choice" in child[1]._TYPES
                         and "_parent" in child[1].__slots__
                     ):
                         property_value = child[1](self, property_name)._decode(
-                            property_value
+                            property_value, ignore_parent_name=True
                         )
                     elif "_parent" in child[1].__slots__:
-                        property_value = child[1](self)._decode(property_value)
+                        property_value = child[1](self)._decode(
+                            property_value, ignore_parent_name=True
+                        )
                     else:
-                        property_value = child[1]()._decode(property_value)
+                        property_value = child[1]()._decode(
+                            property_value, ignore_parent_name=True
+                        )
                 elif (
                     isinstance(property_value, list)
                     and property_name in self._TYPES
@@ -798,8 +834,15 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 ):
                     child = self._get_child_class(property_name, True)
                     openapi_list = child[0]()
-                    for item in property_value:
-                        item = child[1]()._decode(item)
+                    self._parent_context[0] += "." + property_name
+                    current_context = self._parent_context.copy()
+                    for idx, item in enumerate(property_value):
+                        self._parent_context[0] = current_context[
+                            0
+                        ] + "[%s]" % str(idx)
+                        item = child[1]()._decode(
+                            item, ignore_parent_name=True
+                        )
                         openapi_list._items.append(item)
                     property_value = openapi_list
                     ignore_warnings = True
@@ -824,10 +867,6 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 ):
                     property_value = [int(v) for v in property_value]
                 self._properties[property_name] = property_value
-                # TODO: restore behavior
-                # OpenApiStatus.warn(
-                #     "{}.{}".format(type(self).__name__, property_name), self
-                # )
                 if not ignore_warnings:
                     self._raise_status_warnings(property_name, property_value)
             self._validate_types(property_name, property_value)
@@ -835,6 +874,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             # self._validate_unique_and_name(property_name, property_value, True)
             # self._validate_constraint(property_name, property_value, True)
         self._validate_required()
+        self._parent_context[0] = ".".join(
+            self._parent_context[0].split(".")[:-1]
+        )
         return self
 
     def _get_child_class(self, property_name, is_property_list=False):
@@ -876,12 +918,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             return
         for name in self._REQUIRED:
             if self._properties.get(name) is None:
-                msg = (
-                    "{} is a mandatory property of {}"
-                    " and should not be set to None".format(
-                        name,
-                        self.__class__,
-                    )
+                msg = "{} is a required property of {}".format(
+                    name,
+                    self.__class__.__name__,
                 )
                 raise ValueError(msg)
 
@@ -907,12 +946,12 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                     property_name,
                     details["enum"],
                     property_value,
-                    self.__class__,
+                    self._parent_context[0],
                 )
             )
         if details["type"] in common_data_types and "format" not in details:
             msg = "property {} shall be of type {} at {}".format(
-                property_name, details["type"], self.__class__
+                property_name, details["type"], self._parent_context[0]
             )
 
             itemtype = (
@@ -943,12 +982,18 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                         property_name,
                         class_name,
                         type(property_value),
-                        self.__class__,
+                        self._parent_context[0],
                     )
                 )
         if "format" in details:
-            msg = "Invalid {} format, expected {} at {}".format(
-                property_value, details["format"], self.__class__
+            msg = "Invalid {} {} {} for property {} in class {}".format(
+                details["format"],
+                "address"
+                if details["format"] in ["ipv4", "ipv6", "mac"]
+                else "value",
+                property_value,
+                property_name,
+                self._parent_context[0],
             )
             _type = (
                 details["type"]
@@ -1011,7 +1056,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 print("[WARNING]: %s" % self._STATUS[enum_key])
 
 
-class OpenApiIter(OpenApiBase):
+class OpenApiIter(OpenApiBase, OpenApiValidator):
     """Container class for OpenApiObject
 
     Inheriting classes contain 0..n instances of an OpenAPI components/schemas
@@ -1102,16 +1147,27 @@ class OpenApiIter(OpenApiBase):
         self._items[index] = item
         return self
 
-    def _encode(self):
-        return [item._encode() for item in self._items]
+    def _encode(self, ignore_parent_name=False):
+        result = []
+        current_context = self._parent_context.copy()
+        if current_context[0] == "":
+            current_context[0] = self.__class__.__name__
+        for idx, item in enumerate(self._items):
+            self._parent_context[0] = current_context[0] + "[%s]" % str(idx)
+            result.append(item._encode(ignore_parent_name=True))
+        return result
 
     def _decode(self, encoded_list):
         item_class_name = self.__class__.__name__.replace("Iter", "")
         module = importlib.import_module(self.__module__)
         object_class = getattr(module, item_class_name)
         self.clear()
-        for item in encoded_list:
-            self._add(object_class()._decode(item))
+        current_context = self._parent_context.copy()
+        if current_context[0] == "":
+            current_context[0] = self.__class__.__name__
+        for idx, item in enumerate(encoded_list):
+            self._parent_context[0] = current_context[0] + "[%s]" % str(idx)
+            self._add(object_class()._decode(item, ignore_parent_name=True))
 
     def __copy__(self):
         raise NotImplementedError(
