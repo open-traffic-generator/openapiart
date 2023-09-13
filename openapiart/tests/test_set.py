@@ -200,5 +200,5 @@ def test_set(api):
     try:
         new_config_2.serialize()
     except Exception as e:
-        if "property a shall be of type" not in str(e):
+        if "property a should be of type" not in str(e):
             pytest.fail("a validation failed")

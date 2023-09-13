@@ -524,7 +524,8 @@ class OpenApiValidator(object):
         v_obj = getattr(self, "validate_{}".format(type_), None)
         if v_obj is None:
             msg = "{} is not a valid or unsupported format".format(type_)
-            raise TypeError(msg)
+            self._validation_errors.append(msg)
+            return
         if type_ == "list":
             verdict = v_obj(value, itemtype, min, max, min_length, max_length)
             if all(verdict) is True:
@@ -553,7 +554,7 @@ class OpenApiValidator(object):
                     min_msg, property_name, self._parent_context[0], max_msg
                 )
             else:
-                err_msg = "{} \n got {} of type {}".format(
+                err_msg = "{}, got {} of type {}".format(
                     err_msg, value, type(value)
                 )
         elif type_ == "string":
@@ -570,14 +571,18 @@ class OpenApiValidator(object):
                 err_msg = "{}length of property {} in {}{}".format(
                     min_msg, property_name, self._parent_context[0], max_msg
                 )
-            else:
-                err_msg = "{} \n got {} of type {}".format(
+            elif not err_msg.startswith("Invalid"):
+                err_msg = "{}, got {} of type {}".format(
                     err_msg, value, type(value)
                 )
         else:
             verdict = v_obj(value)
+            if verdict is False and not err_msg.startswith("Invalid"):
+                err_msg = "{}, got {} of type {}".format(
+                    err_msg, value, type(value)
+                )
         if verdict is False:
-            raise TypeError(err_msg)
+            self._validation_errors.append(err_msg)
 
     def _validate_unique_and_name(self, name, value, latter=False):
         if self._TYPES[name].get("unique") is None or value is None:
@@ -938,10 +943,10 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             return
         if "enum" in details and property_value not in details["enum"]:
             msg = (
-                "property {} shall be one of these"
+                "property {} should be one of the following"
                 " {} enum, but got {} at {}"
             )
-            raise TypeError(
+            self._validation_errors.append(
                 msg.format(
                     property_name,
                     details["enum"],
@@ -950,7 +955,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 )
             )
         if details["type"] in common_data_types and "format" not in details:
-            msg = "property {} shall be of type {} at {}".format(
+            msg = "property {} should be of type {} at {}".format(
                 property_name, details["type"], self._parent_context[0]
             )
 
@@ -976,8 +981,8 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             module = importlib.import_module(self.__module__)
             object_class = getattr(module, class_name)
             if not isinstance(property_value, object_class):
-                msg = "property {} shall be of type {}," " but got {} at {}"
-                raise TypeError(
+                msg = "property {} should be of type {}," " but got {} at {}"
+                self._validation_errors.append(
                     msg.format(
                         property_name,
                         class_name,
@@ -1015,8 +1020,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         self._validate_required()
         for key, value in self._properties.items():
             self._validate_types(key, value)
-        # TODO: restore behavior
-        # self._validate_coded()
+        self._validate_coded()
 
     def get(self, name, with_default=False):
         """
@@ -1049,7 +1053,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
                 return
 
-            enum_key = "%s.%s" % (property_name, property_value)
+            enum_key = ""
+            if isinstance(property_value, str):
+                enum_key = "%s.%s" % (property_name, property_value)
             if property_name in self._STATUS:
                 print("[WARNING]: %s" % self._STATUS[property_name])
             elif enum_key in self._STATUS:
