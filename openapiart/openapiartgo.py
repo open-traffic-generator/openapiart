@@ -2455,10 +2455,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
             // {name} is required
             if obj.obj.{name}{enum} == {value} {{
-                vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
+                vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} is required field on interface %s", vObj.getParentContext()))
             }} """.format(
                 name=field.name,
-                interface=new.interface,
                 value=0 if field.isEnum and field.isArray is False else value,
                 enum=".Number()"
                 if field.isEnum and field.isArray is False
@@ -2498,12 +2497,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 + """ {{
                     vObj.validationErrors = append(
                         vObj.validationErrors,
-                        fmt.Sprintf("{min} <= {interface}.{name} <= {max} but Got {form}", {pointer}{value}))
+                        fmt.Sprintf("{min} <= %s.{name} <= {max} but Got {form}", vObj.getParentContext(), {pointer}{value}))
                     }}
                 """
             ).format(
                 name=field.name,
-                interface=new.interface,
                 max="max({})".format(field.type.lstrip("[]"))
                 if field.max is None
                 else field.max,
@@ -2538,13 +2536,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     vObj.validationErrors = append(
                         vObj.validationErrors,
                         fmt.Sprintf(
-                            "{min_length} <= length of {interface}.{name} <= {max_length} but Got %d",
-                            len({pointer}{value})))
+                            "{min_length} <= length of %s.{name} <= {max_length} but Got %d",
+                            vObj.getParentContext(), len({pointer}{value})))
                 }}
                 """
                 ).format(
                     name=field.name,
-                    interface=new.interface,
                     max_length="any"
                     if field.max_length is None
                     else field.max_length,
@@ -2575,11 +2572,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 inner_body = """
                     err := obj.validate{format}(obj.{name}())
                     if err != nil {{
-                        vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
+                        vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s on %s.{name}", err.Error(), vObj.getParentContext()))
                     }}
                 """.format(
                     name=field.name,
-                    interface=new.interface,
                     format=field.format.capitalize()
                     if field.isArray is False
                     else field.format.capitalize() + "Slice",
@@ -2608,16 +2604,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body = """
                 // {name} is required
                 if obj.obj.{name} == nil {{
-                    vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
+                    vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} is required field on interface %s", vObj.getParentContext()))
                 }}
             """.format(
-                name=field.name, interface=new.interface
+                name=field.name
             )
 
-        inner_body = (
-            "obj.{external_name}().validateObj(vObj, set_default)".format(
-                external_name=self._get_external_struct_name(field.name)
-            )
+        inner_body = """
+            vObj.addToParentContext("{external_name}")
+            obj.{external_name}().validateObj(vObj, set_default)
+            """.format(
+            external_name=self._get_external_struct_name(field.name)
         )
         if field.isArray:
             inner_body = """
@@ -2627,7 +2624,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         obj.{name}().appendHolderSlice(&{field_internal_struct}{{obj: item}})
                     }}
                  }}
-                for _, item := range obj.{name}().Items() {{
+                for idx, item := range obj.{name}().Items() {{
+                    vObj.addToParentContext(fmt.Sprintf("{name}[%d]", idx))
                     item.validateObj(vObj, set_default)
                 }}
             """.format(
@@ -2698,19 +2696,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 statements.append(block)
             p()
 
+        statements.append("vObj.removeCurrentContext()")
+
         body = "\n".join(statements)
+
         if status_str != "":
             body = "\n%s\n%s" % (status_str, body)
 
         self._write(
             """func (obj *{struct}) validateObj(vObj *validation, set_default bool) {{
+
+                if len(vObj.parentContext) == 0 {{
+                    vObj.addToParentContext("{interface}")
+                }}
+
                 if set_default {{
                     obj.setDefault()
                 }}
                 {body}
             }}
             """.format(
-                struct=new.struct, body=body
+                struct=new.struct, body=body, interface=new.interface
             )
         )
 

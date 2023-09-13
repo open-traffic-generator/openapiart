@@ -259,6 +259,7 @@ type validation struct {
 	validationErrors []string
 	warnings         []string
 	constraints      map[string]map[string]Constraints
+	parentContext    []string
 }
 
 type Validation interface {
@@ -267,6 +268,9 @@ type Validation interface {
 	under_review(message string)
 	Warnings() []string
 	addWarnings(message string)
+	getParentContext() string
+	addToParentContext(parentName string)
+	removeCurrentContext()
 }
 
 func (obj *validation) validationResult() error {
@@ -424,6 +428,18 @@ func (obj *validation) validateIpv6Slice(ip []string) error {
 
 func (obj *validation) validateHexSlice(hex []string) error {
 	return obj.validateSlice(hex, "hex")
+}
+
+func (obj *validation) getParentContext() string {
+	return strings.Join(obj.parentContext, ".")
+}
+
+func (obj *validation) addToParentContext(parentName string) {
+	obj.parentContext = append(obj.parentContext, parentName)
+}
+
+func (obj *validation) removeCurrentContext() {
+	obj.parentContext = obj.parentContext[:len(obj.parentContext)-1]
 }
 
 // TODO: restore behavior
