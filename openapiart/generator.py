@@ -373,7 +373,7 @@ class Generator:
         self._stub = None
         self._channel = None
         self._cert = None
-        self._host_name = None
+        self._cert_domain = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
         self._location = (
@@ -393,12 +393,12 @@ class Generator:
             self._logger.addHandler(stdout_handler)
         self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
-    def _use_secure_connection(self, cert_path, host_name=None):
+    def _use_secure_connection(self, cert_path, cert_domain=None):
         \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
         if cert_path is None:
             raise Exception("path to certificate cannot be None")
         self._cert = cert_path
-        self._host_name = host_name
+        self._cert_domain = cert_domain
 
     def _get_stub(self):
         if self._stub is None:
@@ -409,8 +409,8 @@ class Generator:
             else:
                 crt = open(self._cert, "rb").read()
                 creds = grpc.ssl_channel_credentials(crt)
-                if self._host_name is not None:
-                    CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', self._host_name))
+                if self._cert_domain is not None:
+                    CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', self._cert_domain))
                 self._channel = grpc.secure_channel(
                     self._location, credentials=creds, options=CHANNEL_OPTIONS
                 )
