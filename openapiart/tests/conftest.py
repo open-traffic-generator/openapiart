@@ -7,7 +7,7 @@ import time
 import yaml
 from .utils import common as utl
 from .server import OpenApiServer
-from .grpcserver import grpc_server, GRPC_PORT
+from .grpcserver import grpc_server, GRPC_PORT, SECURE_GRPC_PORT
 from .server import app
 
 
@@ -31,6 +31,7 @@ pytest.pb2_grpc_module = importlib.import_module(
     pytest.module_name + "_pb2_grpc"
 )
 pytest.grpc_server = grpc_server()
+pytest.secured_grpc_server = grpc_server(secure=True)
 
 
 @pytest.fixture(scope="session")
@@ -64,6 +65,21 @@ def grpc_api():
     return pytest.module.api(
         location="localhost:{}".format(GRPC_PORT),
         transport=pytest.module.Transport.GRPC,
+        logger=None,
+        loglevel=logging.DEBUG,
+    )
+
+
+@pytest.fixture(scope="session")
+def secure_grpc_api():
+    """Return an instance of the top level gRPC Api class from the generated package"""
+    cert_location = os.path.join(
+        os.path.dirname(__file__), "./credentials/root.crt"
+    )
+    return pytest.module.api(
+        location="localhost:{}".format(SECURE_GRPC_PORT),
+        transport=pytest.module.Transport.GRPC,
+        verify=cert_location,
         logger=None,
         loglevel=logging.DEBUG,
     )

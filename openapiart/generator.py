@@ -379,6 +379,7 @@ class Generator:
             if "location" in kwargs and kwargs["location"] is not None
             else "localhost:50051"
         )
+        self.verify = kwargs["verify"] if "verify" in kwargs else False
         self._transport = kwargs["transport"] if "transport" in kwargs else None
         self._logger = kwargs["logger"] if "logger" in kwargs else None
         self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
@@ -395,7 +396,15 @@ class Generator:
         if self._stub is None:
             CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
                                ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
-            self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            if self.verify is False:
+                self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            else:
+                crt = open(self.verify, "rb").read()
+                creds = grpc.ssl_channel_credentials(crt)
+                # CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', 'www.keysight.com'))
+                self._channel = grpc.secure_channel(
+                    self._location, credentials=creds, options=CHANNEL_OPTIONS
+                )
             self._stub = pb2_grpc.OpenapiStub(self._channel)
         return self._stub
 
@@ -435,6 +444,7 @@ class Generator:
     @keep_alive_timeout.setter
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
+
 
     def close(self):
         if self._channel is not None:

@@ -37,7 +37,7 @@ class Transport:
 def api(
     location=None,
     transport=None,
-    verify=True,
+    verify=False,
     logger=None,
     loglevel=logging.INFO,
     ext=None,
@@ -177,7 +177,7 @@ class HttpTransport(object):
             method=method,
             url=url,
             data=data,
-            verify=False,
+            verify=self.verify,
             allow_redirects=True,
             # TODO: add a timeout here
             headers=headers,
