@@ -372,6 +372,8 @@ class Generator:
         super(GrpcApi, self).__init__(**kwargs)
         self._stub = None
         self._channel = None
+        self._cert = None
+        self._host_name = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
         self._location = (
@@ -379,7 +381,6 @@ class Generator:
             if "location" in kwargs and kwargs["location"] is not None
             else "localhost:50051"
         )
-        self.verify = kwargs["verify"] if "verify" in kwargs else False
         self._transport = kwargs["transport"] if "transport" in kwargs else None
         self._logger = kwargs["logger"] if "logger" in kwargs else None
         self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
@@ -392,16 +393,24 @@ class Generator:
             self._logger.addHandler(stdout_handler)
         self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
+    def use_secure_connection(self, cert_path, host_name=None):
+        \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
+        if cert_path is None:
+            raise Exception("path to certificate cannot be None")
+        self._cert = cert_path
+        self._host_name = host_name
+
     def _get_stub(self):
         if self._stub is None:
             CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
                                ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
-            if self.verify is False:
+            if self._cert is None:
                 self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
             else:
-                crt = open(self.verify, "rb").read()
+                crt = open(self._cert, "rb").read()
                 creds = grpc.ssl_channel_credentials(crt)
-                # CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', 'www.keysight.com'))
+                if self._host_name is not None:
+                    CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', self._host_name))
                 self._channel = grpc.secure_channel(
                     self._location, credentials=creds, options=CHANNEL_OPTIONS
                 )

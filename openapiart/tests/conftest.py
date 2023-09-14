@@ -76,13 +76,14 @@ def secure_grpc_api():
     cert_location = os.path.join(
         os.path.dirname(__file__), "./credentials/root.crt"
     )
-    return pytest.module.api(
+    api = pytest.module.api(
         location="localhost:{}".format(SECURE_GRPC_PORT),
         transport=pytest.module.Transport.GRPC,
-        verify=cert_location,
         logger=None,
         loglevel=logging.DEBUG,
     )
+    api.use_secure_connection(cert_location)
+    return api
 
 
 @pytest.fixture(scope="session")
