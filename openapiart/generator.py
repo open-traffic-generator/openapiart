@@ -393,7 +393,7 @@ class Generator:
             self._logger.addHandler(stdout_handler)
         self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
-    def use_secure_connection(self, cert_path, host_name=None):
+    def _use_secure_connection(self, cert_path, host_name=None):
         \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
         if cert_path is None:
             raise Exception("path to certificate cannot be None")

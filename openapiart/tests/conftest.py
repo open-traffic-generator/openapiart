@@ -82,7 +82,7 @@ def secure_grpc_api():
         logger=None,
         loglevel=logging.DEBUG,
     )
-    api.use_secure_connection(cert_location)
+    api._use_secure_connection(cert_location)
     return api
 
 
