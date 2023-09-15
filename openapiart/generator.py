@@ -372,6 +372,8 @@ class Generator:
         super(GrpcApi, self).__init__(**kwargs)
         self._stub = None
         self._channel = None
+        self._cert = None
+        self._cert_domain = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
         self._location = (
@@ -391,11 +393,27 @@ class Generator:
             self._logger.addHandler(stdout_handler)
         self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
 
+    def _use_secure_connection(self, cert_path, cert_domain=None):
+        \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
+        if cert_path is None:
+            raise Exception("path to certificate cannot be None")
+        self._cert = cert_path
+        self._cert_domain = cert_domain
+
     def _get_stub(self):
         if self._stub is None:
             CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
                                ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
-            self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            if self._cert is None:
+                self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+            else:
+                crt = open(self._cert, "rb").read()
+                creds = grpc.ssl_channel_credentials(crt)
+                if self._cert_domain is not None:
+                    CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', self._cert_domain))
+                self._channel = grpc.secure_channel(
+                    self._location, credentials=creds, options=CHANNEL_OPTIONS
+                )
             self._stub = pb2_grpc.OpenapiStub(self._channel)
         return self._stub
 
@@ -435,6 +453,7 @@ class Generator:
     @keep_alive_timeout.setter
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
+
 
     def close(self):
         if self._channel is not None:
