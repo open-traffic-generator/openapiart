@@ -516,26 +516,28 @@ def build(sdk="all", env_setup=None):
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
 
-    # Copying files to artiofacts folder
+    # Copying files to artifacts folder
     base_dir = os.path.abspath(os.path.dirname(__file__))
     artifacts_dir = os.path.join(base_dir, "artifacts")
+    if not os.path.exists(os.path.join(artifacts_dir, "goapi")):
+        os.makedirs(os.path.join(artifacts_dir, "goapi"))
     shutil.move(
         os.path.join(artifacts_dir, "requirements.txt"),
-        os.path.join(artifacts_dir, "sanity"),
+        os.path.join(artifacts_dir, "pyapi"),
     )
-    go_path = os.path.join(artifacts_dir, "openapiart_go")
+    go_path = os.path.join(artifacts_dir, "goapi")
     shutil.copytree(
         os.path.join(base_dir, "pkg", "httpapi"),
         os.path.join(go_path, "httpapi"),
         dirs_exist_ok=True,
     )
     shutil.copytree(
-        os.path.join(base_dir, "pkg", "sanity"),
-        os.path.join(go_path, "sanity"),
+        os.path.join(base_dir, "pkg", "openapi"),
+        os.path.join(go_path, "openapi"),
         dirs_exist_ok=True,
     )
 
-    files = ["openapiart.go", "go.mod", "go.sum"]
+    files = ["goapi.go", "go.mod", "go.sum"]
     for file in files:
         shutil.copy(os.path.join(base_dir, "pkg", file), go_path)
 

@@ -1,14 +1,14 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigGenerated(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetIeee8021Qbb(true).SetSpace1(1).SetFullDuplex100Mb(1).SetResponse("status_200").SetA("abc").SetB(100.11).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetListOfStringValues([]string{"a", "b", "c"}).SetListOfIntegerValues([]int32{1, 2, 3}).SetInteger64(10000000000000000).SetStrLen("abc").SetName("abc1")
 	v1 := config.RequiredObject()

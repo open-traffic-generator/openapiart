@@ -1,9 +1,9 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +14,7 @@ func TestStatusApi(t *testing.T) {
 	}
 
 	// create grpc API
-	grpcApi := openapiart.NewApi()
+	grpcApi := goapi.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 
 	config := grpcApi.NewUpdateConfig()
@@ -29,16 +29,16 @@ func TestStatusApi(t *testing.T) {
 }
 
 func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
 	// setting all the primitive values which has x-status set
 	config.SetA("test")
 	config.SetSpace1(32)
-	enums := []openapiart.PrefixConfigDValuesEnum{
-		openapiart.PrefixConfigDValues.A,
-		openapiart.PrefixConfigDValues.B,
-		openapiart.PrefixConfigDValues.C,
+	enums := []goapi.PrefixConfigDValuesEnum{
+		goapi.PrefixConfigDValues.A,
+		goapi.PrefixConfigDValues.B,
+		goapi.PrefixConfigDValues.C,
 	}
 	config.SetDValues(enums)
 	config.SetStrLen("1234")
@@ -60,7 +60,7 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInStructAttrs(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
 	// setting a non primitive property with x-status
@@ -77,7 +77,7 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInChoiceAttrs(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
 	j := config.J().Add()
@@ -92,10 +92,10 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInXEnumAttrs(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_404)
 
 	// validating the warnings
 	err := config.Validate()
@@ -106,7 +106,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	assert.Equal(t, len(warns), 1)
 	assert.Equal(t, warns[0], "STATUS_404 enum in property Response is deprecated, new code will be coming soon")
 
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_500)
 
 	// validating the warnings
 	err = config.Validate()
@@ -119,13 +119,13 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInIterattrs(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
 	list := config.G()
-	list.Append(openapiart.NewGObject().SetGC(5.67))
-	list.Append(openapiart.NewGObject().SetGC(7.67))
-	list.Append(openapiart.NewGObject().SetGC(8.67))
+	list.Append(goapi.NewGObject().SetGC(5.67))
+	list.Append(goapi.NewGObject().SetGC(7.67))
+	list.Append(goapi.NewGObject().SetGC(8.67))
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {
@@ -140,7 +140,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 }
 
 func TestStatusMsgInSchemaObjects(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewUpdateConfig()
 
 	err := config.Validate()
@@ -152,9 +152,9 @@ func TestStatusMsgInSchemaObjects(t *testing.T) {
 	assert.Equal(t, warns[0], "UpdateConfig is under review, the whole schema is being reviewed")
 
 	list := config.G()
-	list.Append(openapiart.NewGObject().SetGC(5.67))
-	list.Append(openapiart.NewGObject().SetGC(7.67))
-	list.Append(openapiart.NewGObject().SetGC(8.67))
+	list.Append(goapi.NewGObject().SetGC(5.67))
+	list.Append(goapi.NewGObject().SetGC(7.67))
+	list.Append(goapi.NewGObject().SetGC(8.67))
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {

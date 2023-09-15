@@ -1,4 +1,4 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"net"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
+	sanity "github.com/open-traffic-generator/goapi/pkg/openapi"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -64,7 +64,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = fmt.Errorf("SetConfig has detected configuration errors")
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
 		resp = nil
-		errObj := openapiart.NewError()
+		errObj := goapi.NewError()
 		errObj.Msg().Code = 500
 		tmp := errObj.SetKind("internal")
 		fmt.Println(tmp)
@@ -82,7 +82,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = nil
 	case sanity.PrefixConfig_Response_status_404.Enum().Number():
 		s.Config = req.PrefixConfig
-		errObj := openapiart.NewError()
+		errObj := goapi.NewError()
 		errObj.Msg().Code = 404
 		errObj.Msg().Errors = []string{"returning err1", "returning err2"}
 		jsonStr, e := errObj.ToJson()
@@ -103,7 +103,7 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
 	resp := &sanity.GetVersionResponse{
-		Version: openapiart.NewApi().GetLocalVersion().Msg(),
+		Version: goapi.NewApi().GetLocalVersion().Msg(),
 	}
 	return resp, nil
 }
@@ -114,7 +114,7 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 		if req.UpdateConfig.G[0].GetName() == "ErStr" {
 			return nil, fmt.Errorf("unit test error")
 		} else if req.UpdateConfig.G[0].GetName() == "Erkind" {
-			errObj := openapiart.NewError()
+			errObj := goapi.NewError()
 			errObj.Msg().Code = 404
 			tmp := errObj.SetKind("validation")
 			fmt.Println(tmp)

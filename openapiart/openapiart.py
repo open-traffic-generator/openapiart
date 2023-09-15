@@ -42,13 +42,13 @@ class OpenApiArt(object):
         )
         self._go_sdk_package_dir = None
         self._protobuf_package_name = (
-            protobuf_name if protobuf_name is not None else "sanity"
+            protobuf_name if protobuf_name is not None else "openapi"
         )
         self._extension_prefix = (
-            extension_prefix if extension_prefix is not None else "sanity"
+            extension_prefix if extension_prefix is not None else "openapi"
         )
         self._proto_service = (
-            proto_service if proto_service is not None else "Openapi"
+            proto_service if proto_service is not None else "openapi"
         )
 
         print(
@@ -137,17 +137,17 @@ class OpenApiArt(object):
         -------
         ```
         art = Openapiart(api_files=["<list of open_api_file_path>"], artifact_dir="./")
-        art.GeneratePythonSdk(package_name="sanity")
+        art.GeneratePythonSdk(package_name="pyapi")
         ```
 
         Output
         ------
         ```
-        ./sanity
+        ./pyapi
                 |_ __init__.py
-                |_ sanity.py
-                |_ sanity_pb.py
-                |_ sanity_grpc_pb.py
+                |_ pyapi.py
+                |_ openapi_pb.py
+                |_ openapi_grpc_pb.py
         ```
         """
         self._python_module_name = package_name

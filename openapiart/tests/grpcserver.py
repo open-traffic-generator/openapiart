@@ -12,11 +12,11 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
 )
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts", "sanity")
+    os.path.join(os.path.dirname(__file__), "..", "..", "artifacts", "pyapi")
 )
-pb2_grpc = importlib.import_module("sanity_pb2_grpc")
-pb2 = importlib.import_module("sanity_pb2")
-op = importlib.import_module("sanity")
+pb2_grpc = importlib.import_module("openapi_pb2_grpc")
+pb2 = importlib.import_module("openapi_pb2")
+op = importlib.import_module("pyapi")
 
 GRPC_PORT = 40052
 SECURE_GRPC_PORT = 40055

@@ -1,16 +1,16 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
+	sanity "github.com/open-traffic-generator/goapi/pkg/openapi"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestToAndFromProtoMsg(t *testing.T) {
 	fObj_proto := &sanity.FObject{}
-	fObj := openapiart.NewFObject()
+	fObj := goapi.NewFObject()
 
 	obj, err := fObj.FromProto(fObj_proto)
 	assert.Nil(t, err)

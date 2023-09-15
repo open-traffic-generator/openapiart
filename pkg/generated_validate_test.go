@@ -1,9 +1,9 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -16,7 +16,7 @@ func TestConfigGeneratedValidate(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := api.NewPrefixConfig()
 
 	v1 := config.RequiredObject()

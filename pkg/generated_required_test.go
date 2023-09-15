@@ -1,16 +1,16 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
 func TestPrefixConfigRequired(t *testing.T) {
-	object := openapiart.NewPrefixConfig()
+	object := goapi.NewPrefixConfig()
 	opts := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		AllowPartial:    true,
@@ -28,7 +28,7 @@ func TestPrefixConfigRequired(t *testing.T) {
 }
 
 //	func TestEObjectRequired(t *testing.T) {
-//		object := openapiart.NewEObject()
+//		object := goapi.NewEObject()
 //		opts := protojson.MarshalOptions{
 //			UseProtoNames:   true,
 //			AllowPartial:    true,
@@ -44,7 +44,7 @@ func TestPrefixConfigRequired(t *testing.T) {
 //		assert.Contains(t, err2.Error(), "EA", "EB")
 //	}
 func TestMandateRequired(t *testing.T) {
-	object := openapiart.NewMandate()
+	object := goapi.NewMandate()
 	opts := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		AllowPartial:    true,
@@ -61,7 +61,7 @@ func TestMandateRequired(t *testing.T) {
 	assert.Contains(t, err2.Error(), "RequiredParam")
 }
 func TestMObjectRequired(t *testing.T) {
-	object := openapiart.NewMObject()
+	object := goapi.NewMObject()
 	opts := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		AllowPartial:    true,
@@ -78,7 +78,7 @@ func TestMObjectRequired(t *testing.T) {
 	assert.Contains(t, err2.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 }
 func TestPortMetricRequired(t *testing.T) {
-	object := openapiart.NewPortMetric()
+	object := goapi.NewPortMetric()
 	opts := protojson.MarshalOptions{
 		UseProtoNames:   true,
 		AllowPartial:    true,

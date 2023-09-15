@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestGetAllItems(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceAbcItemList()
+	r := goapi.NewServiceAbcItemList()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	items := r.Items().Items()
@@ -35,7 +35,7 @@ func TestGetSingleItem(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceAbcItem()
+	r := goapi.NewServiceAbcItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "1", r.SomeId())
@@ -46,7 +46,7 @@ func TestGetSingleItem(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, wr.Code) // missing support for 404
 
 	jsonResponse, _ = io.ReadAll(wr.Body)
-	errNew := openapiart.NewError()
+	errNew := goapi.NewError()
 	errFromJson := errNew.FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
 	assert.Equal(t, "not found: id '3'", errNew.Errors()[0])
@@ -60,7 +60,7 @@ func TestGetSingleItemLevel2(t *testing.T) {
 	assert.Equal(t, http.StatusOK, wr.Code)
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
-	r := openapiart.NewServiceAbcItem()
+	r := goapi.NewServiceAbcItem()
 	err := r.FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "aa", r.PathId())

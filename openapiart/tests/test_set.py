@@ -5,7 +5,7 @@ import pytest
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "..", "..", "artifacts")
 )
-import sanity
+import pyapi as sanity
 
 
 def test_set(api):
