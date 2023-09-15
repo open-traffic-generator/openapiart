@@ -71,8 +71,8 @@ jobs:
       - name: show artifacts
         run: |
           ls artifacts
-          ls artifacts/sanity
-          ls artifacts/openapiart_go
+          ls artifacts/pyapi
+          ls artifacts/goapi
       - name: Commit packages
         run: |
           git config user.name "Github Actions Bot"
@@ -229,7 +229,7 @@ jobs:
       - name: Check Genrated files
         uses: andstor/file-existence-action@v2
         with:
-          files: "artifacts/openapi.json, artifacts/openapi.yaml, artifacts/sanity.proto"
+          files: "artifacts/openapi.json, artifacts/openapi.yaml, artifacts/openapi.proto"
           fail: true
 
   publish_python_package:
