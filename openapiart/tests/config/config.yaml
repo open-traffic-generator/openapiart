@@ -314,13 +314,6 @@ components:
           items:
             $ref: "#/components/schemas/LocalUniqueObj"
           x-field-uid: 53
-        unique_obj_list:
-          description: |-
-            property to check local unique feature for x-unique
-          type: array
-          items:
-            $ref: "#/components/schemas/LocalUniqueObj"
-          x-field-uid: 54
 
     WObject:
       required: [w_name]
@@ -721,3 +714,36 @@ components:
         last_name:
           type: string
           x-field-uid: 2
+        intermediate_list:
+          description: |-
+            property to check intermnediate iterator for local x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalList"
+          x-field-uid: 3
+
+    LocalList:
+      type: object
+      properties:
+        name:
+          type: string
+          x-unique: local
+          x-field-uid: 1
+        value:
+          type: integer
+          x-field-uid: 2
+        leaf_list:
+          description: |-
+            property to check leaf iterator for local x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalObj"
+          x-field-uid: 3
+
+    LocalObj:
+      type: object
+      properties:
+        name:
+          type: string
+          x-unique: local
+          x-field-uid: 1

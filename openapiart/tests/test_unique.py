@@ -77,6 +77,39 @@ def test_unique(config):
         config.deserialize(s_obj)
     assert execinfo.value.args[0] in "first_name with str1 already exists"
 
+    u1 = config.local_unique_obj_list[0]
+    u2 = config.local_unique_obj_list[1]
+    u1.first_name = "f1"
+    u2.first_name = "f1"
+    y1 = u1.intermediate_list.add(name="n1")
+    y1.leaf_list.add(name="n11")
+    y1.leaf_list.add(name="n11")
+    u2.intermediate_list.add(name="n2")
+    u2.intermediate_list.add(name="n2")
+
+    with pytest.raises(Exception) as execinfo:
+        config.serialize()
+    assert "name with n11 already exists" in execinfo.value.args[0]
+    assert "name with n2 already exists" in execinfo.value.args[0]
+    assert "first_name with f1 already exists" in execinfo.value.args[0]
+
+    u1.first_name = "f11"
+    config.local_unique_obj_list[0].intermediate_list[0].leaf_list[
+        0
+    ].name = "n12"
+    config.local_unique_obj_list[1].intermediate_list[0].name = "n1"
+    s_obj = config.serialize(encoding="dict")
+    s_obj["local_unique_obj_list"][0]["first_name"] = "f1"
+    s_obj["local_unique_obj_list"][0]["intermediate_list"][0]["leaf_list"][0][
+        "name"
+    ] = "n11"
+    s_obj["local_unique_obj_list"][1]["intermediate_list"][0]["name"] = "n2"
+    with pytest.raises(Exception) as execinfo:
+        config.deserialize(s_obj)
+    assert "name with n11 already exists" in execinfo.value.args[0]
+    assert "name with n2 already exists" in execinfo.value.args[0]
+    assert "first_name with f1 already exists" in execinfo.value.args[0]
+
     # **********************************************
 
     # config.z_object.name = "local_unique"
