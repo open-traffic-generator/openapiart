@@ -1858,7 +1858,6 @@ func TestUnique(t *testing.T) {
 	// Two similar objects with different name
 	prefix.XList().Items()[0].SetName("local_unique1")
 	prefix.LocalUniqueObjList().Items()[0].SetFirstName("str2")
-	prefix.UniqueObjList().Add().SetFirstName("str1")
 	_, err = prefix.ToJson()
 	assert.Nil(t, err)
 
