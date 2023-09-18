@@ -13,6 +13,7 @@ import semantic_version
 import types
 import platform
 from google.protobuf import json_format
+from inspect import stack
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
 
@@ -658,6 +659,11 @@ class OpenApiValidator(object):
                 continue
             del self.__constraints__[k]
 
+        keys = list(self.__validate_latter__.keys())
+        for k in keys:
+            if k not in ["unique", "constraint"]:
+                del self.__validate_latter__[k]
+
 
 class OpenApiObject(OpenApiBase, OpenApiValidator):
     """Base class for any /components/schemas object
@@ -1032,7 +1038,9 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
                 return
 
-            enum_key = "%s.%s" % (property_name, property_value)
+            enum_key = ""
+            if not isinstance(property_value, OpenApiObject):
+                enum_key = "%s.%s" % (property_name, property_value)
             if property_name in self._STATUS:
                 print("[WARNING]: %s" % self._STATUS[property_name])
             elif enum_key in self._STATUS:
@@ -1139,6 +1147,8 @@ class OpenApiIter(OpenApiBase, OpenApiValidator):
             self._validate_coded(
                 check_local_unique=True, class_name=class_name
             )
+            if stack()[1][3] == "__str__":
+                self._clear_vars()
             return items
 
     def _decode(self, encoded_list):
