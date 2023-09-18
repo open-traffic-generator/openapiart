@@ -1720,9 +1720,10 @@ class Generator:
                 pt = {}
                 if "type" in yproperty:
                     pt.update({"type": self._get_data_types(yproperty)})
-                    pt.update(
-                        {"enum": yproperty["enum"]}
-                    ) if "enum" in yproperty else None
+                    if "enum" in yproperty:
+                        pt.update({"enum": yproperty["enum"]})
+                    elif "items" in yproperty and "enum" in yproperty["items"]:
+                        pt.update({"enum": yproperty["items"]["enum"]})
                     pt.update(
                         {"format": "'%s'" % yproperty["format"]}
                     ) if "format" in yproperty else None
