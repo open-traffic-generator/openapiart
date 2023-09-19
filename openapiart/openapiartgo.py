@@ -2635,9 +2635,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range obj.{name}().Items() {{
                     item.validateObj(vObj, set_default)
                 }}
-                _, ok := obj.constraints["local"]
+                _, ok := vObj.constraints["{field_internal_struct}"]
                 if ok {{
-                    delete(obj.constraints, "local")
+                    delete(vObj.constraints, "{field_internal_struct}")
                 }}""".format(
                 name=field.name,
                 field_internal_struct=field.struct,

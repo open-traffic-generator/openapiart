@@ -1848,16 +1848,24 @@ func TestUnique(t *testing.T) {
 	// Two similar objects with same Name.
 	prefix.XList().Add().SetName("local_unique")
 	prefix.XList().Add().SetName("local_unique")
-	prefix.LocalUniqueObjList().Add().SetFirstName("str1").SetLastName("str2")
-	prefix.LocalUniqueObjList().Add().SetFirstName("str1").SetLastName("str2")
+	prefix.LocalUniqueObjList().Add().SetFirstName("f1").SetLastName("str2")
+	prefix.LocalUniqueObjList().Add().SetFirstName("f1").SetLastName("str2")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Add().SetName("int1")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Add().SetName("int1")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Items()[0].LeafList().Add().SetName("n1")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Items()[0].LeafList().Add().SetName("n1")
 	_, err = prefix.ToJson()
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "str1 already exists")
+	assert.Contains(t, err.Error(), "f1 already exists")
 	assert.Contains(t, err.Error(), "local_unique already exists")
+	assert.Contains(t, err.Error(), "n1 already exists")
+	assert.Contains(t, err.Error(), "int1 already exists")
 
 	// Two similar objects with different name
 	prefix.XList().Items()[0].SetName("local_unique1")
-	prefix.LocalUniqueObjList().Items()[0].SetFirstName("str2")
+	prefix.LocalUniqueObjList().Items()[0].SetFirstName("f2")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Items()[1].SetName("int2")
+	prefix.LocalUniqueObjList().Items()[0].IntermediateList().Items()[0].LeafList().Items()[1].SetName("n2")
 	_, err = prefix.ToJson()
 	assert.Nil(t, err)
 
