@@ -42,7 +42,7 @@ type Telemetry interface {
 	CloseSpan(span trace.Span)
 }
 
-var tracer = otel.Tracer("gosnappi-tracer")
+var tracer trace.Tracer
 
 // Internal fucntion to check wheather telemetry is enabled or not.
 // Used by rest of the functions to become no-ops.
@@ -184,6 +184,7 @@ func (t *telemetry) Start() (Telemetry, error) {
 
 		otel.SetTracerProvider(traceProvider)
 		t.traceProvider = traceProvider
+		tracer = otel.Tracer("gosnappi-tracer")
 
 		return t, nil
 	}
