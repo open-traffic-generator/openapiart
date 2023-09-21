@@ -2455,15 +2455,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         ):
             body = """
             // {name} is required
-            if obj.obj.{name}{enum} == {value} {{
+            if obj.obj.{name} == {value} {{
                 vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
             }} """.format(
                 name=field.name,
                 interface=new.interface,
-                value=0 if field.isEnum and field.isArray is False else value,
-                enum=".Number()"
+                value="nil"
                 if field.isEnum and field.isArray is False
-                else "",
+                else value,
             )
             # TODO: restore behavior
             # unique = self._validate_unique(new, field)

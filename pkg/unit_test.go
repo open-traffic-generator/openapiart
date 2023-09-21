@@ -675,6 +675,16 @@ func TestRequiredField(t *testing.T) {
 	assert.Contains(t, err.Error(), "RequiredParam is required field")
 }
 
+func TestRequiredEnumField(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	rc := config.RequiredChoiceObject()
+	err := rc.Validate()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
+	err = rc.Validate()
+	assert.Nil(t, err)
+}
+
 func TestOptionalDefault(t *testing.T) {
 	gObject := openapiart.NewGObject()
 	gJson := `{
