@@ -680,6 +680,7 @@ func TestRequiredEnumField(t *testing.T) {
 	rc := config.RequiredChoiceObject()
 	err := rc.Validate()
 	assert.NotNil(t, err)
+	rc.IntermediateObj()
 	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
 	err = rc.Validate()
 	assert.Nil(t, err)
