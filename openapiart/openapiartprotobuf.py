@@ -351,7 +351,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             self._write("{} = {};".format("unspecified", 0), indent=3)
         for key, value in enums.items():
             field_uid = value["x-field-uid"]
-            self._write("{} = {};".format(key.lower(), field_uid), indent=3)
+            self._write("{} = {};".format(key, field_uid), indent=3)
         self._write("}", indent=2)
         self._write("}", indent=1)
 
