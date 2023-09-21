@@ -48,7 +48,7 @@ class OpenApiArt(object):
             extension_prefix if extension_prefix is not None else "openapi"
         )
         self._proto_service = (
-            proto_service if proto_service is not None else "openapi"
+            proto_service if proto_service is not None else "Openapi"
         )
 
         print(
