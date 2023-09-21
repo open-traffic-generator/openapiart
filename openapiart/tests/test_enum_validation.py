@@ -61,7 +61,7 @@ def test_error_for_enums(api):
     config.response = "status_123"
 
     # wrong enum value for simple enum should fail
-    expected_exception = "property response shall be one of these ['status_200', 'status_400', 'status_404', 'status_500'] enum, but got status_123 at <class 'sanity.sanity.PrefixConfig'>"
+    expected_exception = "property response shall be one of these ['status_200', 'status_400', 'status_404', 'status_500'] enum, but got status_123 at <class 'pyapi.pyapi.PrefixConfig'>"
     with pytest.raises(Exception) as execinfo:
         config.serialize()
     assert execinfo.value.args[0] == expected_exception
@@ -69,7 +69,7 @@ def test_error_for_enums(api):
     # wrong enum for list of enums should fail
     config.response = "status_400"
     config.d_values = ["a", "error"]
-    expected_exception = "property d_values shall be one of these ['a', 'b', 'c'] enum, but got ['a', 'error'] at <class 'sanity.sanity.PrefixConfig'>"
+    expected_exception = "property d_values shall be one of these ['a', 'b', 'c'] enum, but got ['a', 'error'] at <class 'pyapi.pyapi.PrefixConfig'>"
     with pytest.raises(Exception) as execinfo:
         config.serialize()
     assert execinfo.value.args[0] == expected_exception
