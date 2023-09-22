@@ -294,13 +294,19 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     outer_max=max,
                 )
 
+                if item_type.startswith("object_"):
+                    prefix_len = len("object_")
+                    item_type = item_type[prefix_len:]
+
                 if item_type == "integer":
                     item_type = type_limits._get_integer_format(
                         type_format, min, max
                     )
                 return "repeated " + item_type
         elif "$ref" in openapi_object:
-            return openapi_object["$ref"].split("/")[-1].replace(".", "")
+            return "object_" + openapi_object["$ref"].split("/")[-1].replace(
+                ".", ""
+            )
 
     def _camelcase(self, value):
         camel_case = ""
@@ -400,8 +406,13 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     default = "{}.{}".format(
                         property_type.split(" ")[-1], default.lower()
                     )
-            if property_type.startswith("repeated"):
+            if property_type.startswith(
+                "repeated"
+            ) or property_type.startswith("object_"):
                 optional = ""
+                if property_type.startswith("object_"):
+                    prefix_len = len("object_")
+                    property_type = property_type[prefix_len:]
             else:
                 optional = "optional "
             desc = self._get_description(property_object)
