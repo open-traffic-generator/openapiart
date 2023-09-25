@@ -942,18 +942,28 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
         ):
             return
         if "enum" in details and property_value not in details["enum"]:
-            msg = (
-                "property {} should be one of the following"
-                " {} enum, but got {} at {}"
-            )
-            self._validation_errors.append(
-                msg.format(
-                    property_name,
-                    details["enum"],
-                    property_value,
-                    self._parent_context[0],
+            raise_error = False
+            if isinstance(property_value, list):
+                for value in property_value:
+                    if value not in details["enum"]:
+                        raise_error = True
+                        break
+            elif property_value not in details["enum"]:
+                raise_error = True
+
+            if raise_error is True:
+                msg = (
+                    "property {} shall be one of these"
+                    " {} enum, but got {} at {}"
                 )
-            )
+                raise TypeError(
+                    msg.format(
+                        property_name,
+                        details["enum"],
+                        property_value,
+                        self._parent_context[0],
+                    )
+                )
         if details["type"] in common_data_types and "format" not in details:
             msg = "property {} should be of type {} at {}".format(
                 property_name, details["type"], self._parent_context[0]
