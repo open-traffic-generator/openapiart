@@ -307,6 +307,9 @@ components:
           minimum: 64
           maximum: 9000
           x-field-uid: 52
+        choice_test:
+          $ref: "#/components/schemas/ChoiceTestObj"
+          x-field-uid: 53
 
     WObject:
       required: [w_name]
@@ -694,3 +697,22 @@ components:
         name:
           type: string
           x-field-uid: 1
+
+    ChoiceTestObj:
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            e_obj:
+              x-field-uid: 1
+            f_obj:
+              x-field-uid: 2
+            no_obj:
+              x-field-uid: 3
+        e_obj:
+          $ref: "#/components/schemas/EObject"
+          x-field-uid: 2
+        f_obj:
+          $ref: "#/components/schemas/FObject"
+          x-field-uid: 3

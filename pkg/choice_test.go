@@ -1,10 +1,12 @@
 package openapiart_test
 
 import (
+	"fmt"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
@@ -94,4 +96,140 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 	// validate the whole object
 	err = choiceObj.Validate()
 	assert.Nil(t, err)
+}
+
+func TestChoiceMarshall(t *testing.T) {
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	config.SetA("asd").RequiredObject()
+
+	choiceObj := config.ChoiceTest()
+	choiceObj.EObj().SetEA(1.23).SetEB(2.34)
+	s, err := config.ToJson()
+	fmt.Println(s)
+	assert.Nil(t, err)
+	exp_json := `{
+		"required_object": {},
+		"response": "status_200",
+		"a": "asd",
+		"h": true,
+		"choice_test": {
+		  "choice": "e_obj",
+		  "e_obj": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		  }
+		}
+	  }`
+	require.JSONEq(t, exp_json, s)
+
+	choiceObj.FObj().SetFA("s1").SetFB(34.5678)
+	s, err = config.ToJson()
+	fmt.Println(s)
+	assert.Nil(t, err)
+	exp_json = `{
+		"required_object": {},
+		"response": "status_200",
+		"a": "asd",
+		"h": true,
+		"choice_test": {
+		  "choice": "f_obj",
+		  "f_obj": {
+			"choice": "f_b",
+			"f_b": 34.5678
+		  }
+		}
+	  }`
+	require.JSONEq(t, exp_json, s)
+
+	choiceObj.SetChoice(openapiart.ChoiceTestObjChoice.NO_OBJ)
+	s, err = config.ToJson()
+	fmt.Println(s)
+	assert.Nil(t, err)
+	exp_json = `{
+		"required_object": {},
+		"response": "status_200",
+		"a": "asd",
+		"h": true,
+		"choice_test": {
+		  "choice": "no_obj"
+		}
+	  }`
+	require.JSONEq(t, exp_json, s)
+}
+
+func TestChoiceUnMarshall(t *testing.T) {
+	exp_json := `{
+		"a": "asd",
+		"required_object": {},
+		"choice_test": {
+			"choice": "e_obj",
+			"e_obj": {
+				"e_a": 1.23,
+				"e_b": 22.3456
+			}
+		}
+	}`
+
+	api := openapiart.NewApi()
+	config := api.NewPrefixConfig()
+	err := config.FromJson(exp_json)
+	assert.Nil(t, err)
+	cObj := config.ChoiceTest()
+	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
+	assert.Equal(t, cObj.EObj().EA(), float32(1.23))
+	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
+
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"choice_test": {
+			"choice": "f_obj",
+			"f_obj": {
+				"f_a": "s1",
+				"f_b": 22.3456
+			}
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	cObj = config.ChoiceTest()
+	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.F_OBJ)
+
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"choice_test": {
+			"choice": "no_obj"
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	cObj = config.ChoiceTest()
+	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.NO_OBJ)
+
+	// json without choice
+	json := `{
+		"a": "asd",
+		"required_object": {},
+		"choice_test": {
+			"e_obj": {
+				"e_a": 1.23,
+				"e_b": 22.3456
+			}
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(json)
+	assert.Nil(t, err)
+	cObj = config.ChoiceTest()
+	fmt.Println(config)
+	assert.Equal(t, cObj.EObj().EA(), float32(1.23))
+	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
+
 }
