@@ -109,18 +109,18 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json := `{
-		"required_object": {},
-		"response": "status_200",
-		"a": "asd",
-		"h": true,
-		"choice_test": {
-		  "choice": "e_obj",
-		  "e_obj": {
-			"e_a": 1.23,
-			"e_b": 2.34
-		  }
-		}
-	  }`
+			"required_object": {},
+			"response": "status_200",
+			"a": "asd",
+			"h": true,
+			"choice_test": {
+			  "choice": "e_obj",
+			  "e_obj": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			  }
+			}
+		  }`
 	require.JSONEq(t, exp_json, s)
 
 	choiceObj.FObj().SetFA("s1").SetFB(34.5678)
@@ -128,18 +128,18 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
-		"required_object": {},
-		"response": "status_200",
-		"a": "asd",
-		"h": true,
-		"choice_test": {
-		  "choice": "f_obj",
-		  "f_obj": {
-			"choice": "f_b",
-			"f_b": 34.5678
-		  }
-		}
-	  }`
+			"required_object": {},
+			"response": "status_200",
+			"a": "asd",
+			"h": true,
+			"choice_test": {
+			  "choice": "f_obj",
+			  "f_obj": {
+				"choice": "f_b",
+				"f_b": 34.5678
+			  }
+			}
+		  }`
 	require.JSONEq(t, exp_json, s)
 
 	choiceObj.SetChoice(openapiart.ChoiceTestObjChoice.NO_OBJ)
@@ -147,29 +147,29 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
-		"required_object": {},
-		"response": "status_200",
-		"a": "asd",
-		"h": true,
-		"choice_test": {
-		  "choice": "no_obj"
-		}
-	  }`
+			"required_object": {},
+			"response": "status_200",
+			"a": "asd",
+			"h": true,
+			"choice_test": {
+			  "choice": "no_obj"
+			}
+		  }`
 	require.JSONEq(t, exp_json, s)
 }
 
 func TestChoiceUnMarshall(t *testing.T) {
 	exp_json := `{
-		"a": "asd",
-		"required_object": {},
-		"choice_test": {
-			"choice": "e_obj",
-			"e_obj": {
-				"e_a": 1.23,
-				"e_b": 22.3456
+			"a": "asd",
+			"required_object": {},
+			"choice_test": {
+				"choice": "e_obj",
+				"e_obj": {
+					"e_a": 1.23,
+					"e_b": 22.3456
+				}
 			}
-		}
-	}`
+		}`
 
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
@@ -181,16 +181,16 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
 
 	exp_json = `{
-		"a": "asd",
-		"required_object": {},
-		"choice_test": {
-			"choice": "f_obj",
-			"f_obj": {
-				"f_a": "s1",
-				"f_b": 22.3456
+			"a": "asd",
+			"required_object": {},
+			"choice_test": {
+				"choice": "f_obj",
+				"f_obj": {
+					"f_a": "s1",
+					"f_b": 22.3456
+				}
 			}
-		}
-	}`
+		}`
 
 	config = api.NewPrefixConfig()
 	err = config.FromJson(exp_json)
@@ -199,12 +199,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.F_OBJ)
 
 	exp_json = `{
-		"a": "asd",
-		"required_object": {},
-		"choice_test": {
-			"choice": "no_obj"
-		}
-	}`
+			"a": "asd",
+			"required_object": {},
+			"choice_test": {
+				"choice": "no_obj"
+			}
+		}`
 
 	config = api.NewPrefixConfig()
 	err = config.FromJson(exp_json)
@@ -231,5 +231,6 @@ func TestChoiceUnMarshall(t *testing.T) {
 	fmt.Println(config)
 	assert.Equal(t, cObj.EObj().EA(), float32(1.23))
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
+	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
 
 }
