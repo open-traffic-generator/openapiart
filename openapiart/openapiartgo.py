@@ -2907,6 +2907,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         # write default case if object has choice property
         choice_code = ""
+        # TODO: we need to propagate error from setdefault along the whole heirarchy
         if len(enum_map) > 0:
             choice_code = (
                 "var choices_set int = 0\nvar choice %sChoiceEnum"
@@ -2940,15 +2941,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     enum_check=enum_check_code if field_type == "enum" else "",
                 )
 
-            choice_code += """
-            if choices_set > 1 {{
-                obj.validationErrors = append(obj.validationErrors, "more than one choices are set in Interface {intf}")
-            }}""".format(
-                intf=new.interface
-            )
+            # TODO: we need to throw error if more that one choice properties are set
+            # choice_code += """
+            # if choices_set > 1 {{
+            #     obj.validationErrors = append(obj.validationErrors, "more than one choices are set in Interface {intf}")
+            # }}""".format(
+            #     intf=new.interface
+            # )
 
             if choice_body is not None:
-                choice_code += """ else if choices_set == 0 {{
+                choice_code += """if choices_set == 0 {{
                     {body}
                 }}""".format(
                     body=choice_body.replace("<choice_fields>", "")
@@ -2962,7 +2964,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 #     + body
                 # )
 
-            choice_code += """ else if choices_set == 1 && choice != "" {{
+            choice_code += """{el}if choices_set == 1 && choice != "" {{
                 if obj.obj.Choice{num} != {val} {{
                     if obj.Choice() != choice {{
                         obj.validationErrors = append(obj.validationErrors, "choice not matching with property in {intf}")
@@ -2979,6 +2981,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 num=".Number()" if is_choice_required else "",
                 val="0" if is_choice_required else "nil",
                 addr="" if is_choice_required else "&",
+                el=" else " if choice_body is not None else "",
             )
 
             body = choice_code + "\n" + body

@@ -233,4 +233,85 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
 
+	//json without choice in hierarchy with non-primitive type
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"required_choice_object": {
+			"intermediate_obj": {
+				"leaf": {
+					"name": "name1"
+				}
+			}
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	r := config.RequiredChoiceObject()
+	fmt.Println(r)
+	assert.Equal(t, r.Choice(), openapiart.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+	ir := r.IntermediateObj()
+	assert.Equal(t, ir.Choice(), openapiart.RequiredChoiceIntermediateChoice.LEAF)
+	assert.Equal(t, ir.Leaf().Name(), "name1")
+
+	// json without choice in hierarchy with primitive type
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"required_choice_object": {
+			"intermediate_obj": {
+				"f_a": "name1"
+			}
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	fmt.Println(config)
+	r = config.RequiredChoiceObject()
+	assert.Equal(t, r.Choice(), openapiart.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+	ir = r.IntermediateObj()
+	assert.Equal(t, ir.Choice(), openapiart.RequiredChoiceIntermediateChoice.F_A)
+	assert.Equal(t, ir.FA(), "name1")
+
+	// json without choice for checksum pattern with enum choice properties
+	config = api.NewPrefixConfig()
+	config.SetA("asd").RequiredObject()
+	config.HeaderChecksum().SetCustom(123)
+	fmt.Println(config)
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"header_checksum": {
+			"custom": 12345,
+			"generated": "unspecified"
+		}
+	}`
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	fmt.Println(config)
+	hc := config.HeaderChecksum()
+	assert.Equal(t, hc.Choice(), openapiart.PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
+	assert.Equal(t, hc.Custom(), uint32(12345))
+
+	// json without choice for checksum pattern with enum choice properties
+	exp_json = `{
+		"a": "asd",
+		"required_object": {},
+		"header_checksum": {
+			"generated": "bad"
+		}
+	}`
+	config = api.NewPrefixConfig()
+	err = config.FromJson(exp_json)
+	assert.Nil(t, err)
+	fmt.Println(config)
+	hc = config.HeaderChecksum()
+	assert.Equal(t, hc.Choice(), openapiart.PatternPrefixConfigHeaderChecksumChoice.GENERATED)
+	assert.Equal(t, hc.Generated(), openapiart.PatternPrefixConfigHeaderChecksumGenerated.BAD)
+
 }

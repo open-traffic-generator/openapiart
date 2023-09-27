@@ -686,7 +686,6 @@ components:
               x-field-uid: 2
         f_a:
           type: string
-          default: "some string"
           x-field-uid: 2
         leaf:
           $ref: "#/components/schemas/RequiredChoiceIntermeLeaf"
