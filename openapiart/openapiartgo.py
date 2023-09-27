@@ -2752,9 +2752,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
             #     continue
             if field.name in enum_map:
-                enum_map[field.name] = (
-                    "pointer" if field.isPointer else field.type
-                )
+                type = ""
+                if field.isEnum:
+                    type = "enum"
+                elif field.isPointer:
+                    type = "pointer"
+                else:
+                    type = field.type
+                enum_map[field.name] = type
+
             if (
                 field.default is None
                 or field.isOptional is False
@@ -2920,17 +2926,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 elif field_type == "":
                     # signifies choice with no property
                     continue
+
+                enum_check_code = " && obj.obj.%s.Number() != 0 " % enum
                 choice_code += """
-                if obj.obj.{prop} != {val} {{
+                if obj.obj.{prop} != {val}{enum_check}{{
                     choices_set += 1
                     choice = {choice_val}
                 }}
                 """.format(
-                    prop=enum, val=value, choice_val=choice_enum_map[enum]
+                    prop=enum,
+                    val=value,
+                    choice_val=choice_enum_map[enum],
+                    enum_check=enum_check_code if field_type == "enum" else "",
                 )
+
             choice_code += """
             if choices_set > 1 {{
-                // obj.validationErrors = append(obj.validationErrors, "more than one choices are set in Interface {intf}")
+                obj.validationErrors = append(obj.validationErrors, "more than one choices are set in Interface {intf}")
             }}""".format(
                 intf=new.interface
             )
