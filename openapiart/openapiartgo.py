@@ -2910,9 +2910,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # TODO: we need to propagate error from setdefault along the whole heirarchy
         if len(enum_map) > 0:
             choice_code = (
-                "var choices_set int = 0\nvar choice %sChoiceEnum"
+                "var choices_set int = 0\nvar choice %sChoiceEnum\n"
                 % new.interface
             )
+            if new.struct == "layer1FlowControl":
+                print(
+                    "enum_map ======",
+                    enum_map,
+                    choice_enum_map,
+                    is_choice_required,
+                )
             for enum in enum_map:
                 field_type = enum_map[enum]
                 value = "nil"
