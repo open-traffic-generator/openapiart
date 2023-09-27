@@ -233,6 +233,23 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
 
+	// json without choice
+	json = `{
+		"a": "asd",
+		"required_object": {},
+		"choice_test": {
+			"ieee_802_1qbb": "hello!"
+		}
+	}`
+
+	config = api.NewPrefixConfig()
+	err = config.FromJson(json)
+	assert.Nil(t, err)
+	cObj = config.ChoiceTest()
+	fmt.Println(config)
+	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.IEEE_802_1QBB)
+	assert.Equal(t, cObj.Ieee8021Qbb(), "hello!")
+
 	//json without choice in hierarchy with non-primitive type
 	exp_json = `{
 		"a": "asd",

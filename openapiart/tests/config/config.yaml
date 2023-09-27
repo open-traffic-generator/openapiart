@@ -709,9 +709,19 @@ components:
               x-field-uid: 2
             no_obj:
               x-field-uid: 3
+            ieee_802_1qbb:
+              x-field-uid: 4
+            ieee_802_3x:
+              x-field-uid: 5
         e_obj:
           $ref: "#/components/schemas/EObject"
           x-field-uid: 2
         f_obj:
           $ref: "#/components/schemas/FObject"
           x-field-uid: 3
+        ieee_802_1qbb:
+          type: string
+          x-field-uid: 4
+        ieee_802_3x:
+          type: string
+          x-field-uid: 5

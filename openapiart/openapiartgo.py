@@ -2748,22 +2748,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         choice_body = None
         enum_fields = []
-        if new.struct == "layer1FlowControl":
-            print("len ====== ", len(interface_fields))
         for field in interface_fields:
             # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
             #     continue
-            if new.struct == "layer1FlowControl":
-                print(
-                    "info === ",
-                    field.name,
-                    field.type,
-                    field.isPointer,
-                    field.struct,
-                    field.isEnum,
-                    field.isArray,
-                )
-            if field.name in enum_map:
+            ext_name = self._get_external_struct_name(field.name)
+            if field.name in enum_map or ext_name in enum_map:
+                if field.name != ext_name and ext_name in enum_map:
+                    del enum_map[ext_name]
+                    enum_map[field.name] = ""
+                    choice_enum_map[field.name] = choice_enum_map[ext_name]
+                    del choice_enum_map[ext_name]
                 type = ""
                 if field.isEnum:
                     type = "enum"
@@ -2925,13 +2919,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "var choices_set int = 0\nvar choice %sChoiceEnum\n"
                 % new.interface
             )
-            if new.struct == "layer1FlowControl":
-                print(
-                    "enum_map ======",
-                    enum_map,
-                    choice_enum_map,
-                    is_choice_required,
-                )
             for enum in enum_map:
                 field_type = enum_map[enum]
                 value = "nil"
