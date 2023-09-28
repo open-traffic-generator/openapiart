@@ -117,5 +117,21 @@ def test_choice_with_invalid_enum_and_none_value(api):
     assert execinfo.value.args[0] == choice_error
 
 
+def test_choice_unmarhsalling(api):
+    data = {}
+    data["a"] = "asd"
+    data["b"] = 12
+    data["c"] = 13
+    data["required_object"] = {"e_a": 1.23, "e_b": 23}
+    data["choice_test"] = {"f_obj": {"f_b": 22.34}}
+
+    config = api.prefix_config()
+    config.deserialize(data)
+
+    assert config.choice_test.choice == "f_obj"
+    assert config.choice_test.f_obj.choice == "f_b"
+    assert config.choice_test.f_obj.f_b == 22.34
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
