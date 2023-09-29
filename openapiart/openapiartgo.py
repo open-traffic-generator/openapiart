@@ -683,6 +683,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                globalConstraints = make(map[string]map[string][]string)
                 api.versionMeta = &versionMeta{{checkVersion: false}}
                 return &api
             }}
@@ -1305,7 +1306,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     {nil_items}
                     obj.validationErrors = nil
                     obj.warnings = nil
-                    obj.constraints = make(map[string]map[string]Constraints)
+                    obj.constraints = make(map[string]map[string]string)
                 }}
             """.format(
                     nil_items="\n".join(internal_items_nil), struct=new.struct
@@ -2079,8 +2080,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if x_status_info is not None:
                         field.x_enum_status[idx + 1] = x_status_info
 
-            # TODO: restore behavior
-            # self._parse_x_constraints(field, property_schema)
+            self._parse_x_constraints(field, property_schema)
             self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
@@ -2390,7 +2390,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _validate_unique(self, new, field, optional_field=False):
         body = ""
         if field.x_unique is not None:
-            body = """if !vObj.isUnique("{struct}", obj.{name}(), "{type}", obj) {{
+            body = """if !vObj.isUnique("{struct}", obj.{name}(), "{type}", "{name}") {{
                 vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
                 struct=new.struct, name=field.name, type=field.x_unique
@@ -2474,8 +2474,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body += "else " + unique if unique != "" else unique
         if field.isOptional is True:
             body += self._validate_unique(new, field, optional_field=True)
-        # TODO: restore behavior
-        # body += self._validate_x_constraint(field)
+        body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
