@@ -456,7 +456,16 @@ func (obj *validation) isUnique(objectName, value string, scope string, property
 		globalConstraints[objectName] = make(map[string][]string)
 		globalConstraints[objectName][propertyName] = []string{value}
 	} else {
-		globalConstraints[objectName][propertyName] = append(globalConstraints[objectName][propertyName], value)
+		valuePresent := false
+		for _, v := range globalConstraints[objectName][propertyName] {
+			if v == value {
+				valuePresent = true
+				break
+			}
+		}
+		if !valuePresent {
+			globalConstraints[objectName][propertyName] = append(globalConstraints[objectName][propertyName], value)
+		}
 	}
 
 	return unique
