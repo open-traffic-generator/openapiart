@@ -4,7 +4,7 @@ import pytest
 module = importlib.import_module("sanity")
 
 
-@pytest.mark.skip(reason="shall be restored")
+# @pytest.mark.skip(reason="shall be restored")
 def test_x_constraints(default_config):
     default_config.name = "pc1"
     default_config.w_list.wobject(w_name="wObj1")
@@ -13,7 +13,7 @@ def test_x_constraints(default_config):
     # set the non existing name to y_object
     default_config.y_object.y_name = "wObj3"
     try:
-        default_config.validate()
+        default_config.serialize()
         pytest.fail("validation passed when setting y_name with wObj3")
     except Exception as err:
         if "wObj3 is not a valid type of" not in str(err):
@@ -22,7 +22,7 @@ def test_x_constraints(default_config):
     # set the name with invalid object name
     default_config.y_object.y_name = "pc1"
     try:
-        default_config.validate()
+        default_config.serialize()
         pytest.fail("validation passed when setting y_name with pc1")
     except Exception as err:
         if "pc1 is not a valid type of" not in str(err):
@@ -30,7 +30,7 @@ def test_x_constraints(default_config):
 
     # validate with valid data
     default_config.y_object.y_name = "wObj1"
-    default_config.validate()
+    default_config.serialize()
 
     # serialize with non existing name
     default_config.y_object.y_name = "wObj3"

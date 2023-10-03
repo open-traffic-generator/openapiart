@@ -28,6 +28,7 @@ if sys.version_info[0] == 3:
 
 
 openapi_warnings = []
+global_constraints = {}
 
 
 class Transport:
@@ -577,20 +578,22 @@ class OpenApiValidator(object):
             self.__validate_latter__[key].append(
                 (self._validate_unique_and_name, name, value)
             )
+
+            if unique_type == "global":
+                if class_name not in global_constraints:
+                    global_constraints[class_name] = {name: [value]}
+                elif name not in global_constraints[class_name]:
+                    global_constraints[class_name][name] = [value]
+                elif value not in global_constraints[class_name][name]:
+                    global_constraints[class_name][name].append(value)
             return
-
-        # class_name = type(self).__name__
-
-        # if class_name not in self.__constraints__:
-        #     self.__constraints__[class_name] = dict()
 
         values = None
         if unique_type == "global":
             values = self.__constraints__["global"]
         elif class_name in self.__constraints__:
             values = self.__constraints__[class_name]
-        # else:
-        #     values = self.__constraints__["class_name"]
+
         if value in values:
             self._validation_errors.append(
                 "{} with {} already exists".format(name, value)
@@ -598,7 +601,6 @@ class OpenApiValidator(object):
             return
         if isinstance(values, list):
             values.append(value)
-        # self.__constraints__[class_name].update({value: self})
 
     def _validate_constraint(self, name, value, latter=False):
         cons = self._TYPES[name].get("constraint")
@@ -612,9 +614,9 @@ class OpenApiValidator(object):
         found = False
         for c in cons:
             klass, prop = c.split(".")
-            names = self.__constraints__.get(klass, {})
-            props = [obj._properties.get(prop) for obj in names.values()]
-            if value in props:
+            names = global_constraints.get(klass, {})
+            values = names.get(prop, [])
+            if value in values:
                 found = True
                 break
         if found is not True:
@@ -779,7 +781,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._validate_types(key, value)
             self._validate_unique_and_name(key, value, True)
             # TODO: restore behavior
-            # self._validate_constraint(key, value, True)
+            self._validate_constraint(key, value, True)
             if isinstance(value, (OpenApiObject, OpenApiIter)):
                 output[key] = value._encode()
                 if isinstance(value, OpenApiObject):
@@ -868,7 +870,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
             self._validate_types(property_name, property_value)
             self._validate_unique_and_name(property_name, property_value, True)
             # TODO: restore behavior
-            # self._validate_constraint(property_name, property_value, True)
+            self._validate_constraint(property_name, property_value, True)
         self._validate_required()
         return self
 

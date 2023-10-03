@@ -1786,14 +1786,14 @@ class Generator:
                 if len(pt) > 0:
                     types.append((name, pt))
                 # TODO: restore behavior
-                # if "x-constraint" in yproperty:
-                #     cons_lst = []
-                #     for cons in yproperty["x-constraint"]:
-                #         ref, prop = cons.split("/properties/")
-                #         klass = self._get_classname_from_ref(ref)
-                #         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
-                #     if cons_lst != []:
-                #         pt.update({"constraint": cons_lst})
+                if "x-constraint" in yproperty:
+                    cons_lst = []
+                    for cons in yproperty["x-constraint"]:
+                        ref, prop = cons.split("/properties/")
+                        klass = self._get_classname_from_ref(ref)
+                        cons_lst.append("%s.%s" % (klass, prop.strip("/")))
+                    if cons_lst != []:
+                        pt.update({"constraint": cons_lst})
                 if "x-unique" in yproperty:
                     pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
