@@ -598,6 +598,14 @@ components:
           x-constraint:
             - /components/schemas/ZObject/properties/name
             - /components/schemas/WObject/properties/w_name
+        names:
+          type: array
+          items:
+            type: string
+          x-field-uid: 3
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
     Metrics.Request:
       type: object
       properties:

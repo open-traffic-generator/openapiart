@@ -2371,21 +2371,46 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = ""
         if field.x_constraints == []:
             return body
-        body = """
-        xCons := []string{{
-            {data}
-        }}
-        if !vObj.validateConstraint(xCons, obj.{name}()) {{
-            vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
-        }}
-        """.format(
-            data='"'
-            + '", "'.join([".".join(c) for c in field.x_constraints])
-            + '",',
-            name=field.name,
-            cons="|".join([".".join(c) for c in field.x_constraints]),
-        )
-        if field.isOptional is True:
+
+        if field.isArray is True:
+            body = """
+            xCons := []string{{
+                {data}
+            }}
+            for _, value := range obj.{name}() {{
+                if !vObj.validateConstraint(xCons, value) {{
+                    vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", value))
+                }}
+            }}
+            """.format(
+                data='"'
+                + '", "'.join([".".join(c) for c in field.x_constraints])
+                + '",',
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
+        else:
+            body = """
+            xCons := []string{{
+                {data}
+            }}
+            if !vObj.validateConstraint(xCons, obj.{name}()) {{
+                vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
+            }}
+            """.format(
+                data='"'
+                + '", "'.join([".".join(c) for c in field.x_constraints])
+                + '",',
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
+        if field.isArray is True:
+            body = """if len(obj.{name}()) > 0 {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
+        elif field.isOptional is True:
             body = """if obj.Has{name}() {{
                 {body}
             }}""".format(

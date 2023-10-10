@@ -79,3 +79,25 @@ def test_x_constraints(default_config):
     except Exception as err:
         if "random is not a valid type of" not in str(err):
             pytest.fail("Exception is not valid at deserialize with random")
+
+    up_cfg.names = ["random", "wObj1", "zObj"]
+    try:
+        data = up_cfg.serialize("dict")
+        pytest.fail("validation passed at serialize with random")
+    except Exception as err:
+        if "random is not a valid type of" not in str(err):
+            pytest.fail("Exception not valid at serialize wObj3")
+
+    up_cfg.names = ["wObj2", "wObj1", "zObj"]
+    up_cfg.name = "zObj"
+    data = up_cfg.serialize("dict")
+
+    # deserialize with invalid name
+    data["names"] = ["str1", "str2", "zObj"]
+    try:
+        up_cfg.deserialize(data)
+        pytest.fail("deserialize passed with random name")
+    except Exception as err:
+        print(str(err))
+        if "['str1', 'str2'] is not a valid type of" not in str(err):
+            pytest.fail("Exception is not valid at deserialize with random")

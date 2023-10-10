@@ -1947,4 +1947,11 @@ func TestXConstraint(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "random is not a valid zObject.Name|wObject.WName type")
 
+	cfg.SetName("zObj")
+	cfg.SetNames([]string{"wObj1", "str1", "str2"})
+	_, err = cfg.ToJson()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "str1 is not a valid zObject.Name|wObject.WName type")
+	assert.Contains(t, err.Error(), "str2 is not a valid zObject.Name|wObject.WName type")
+
 }
