@@ -592,6 +592,12 @@ components:
           items:
             $ref: "#/components/schemas/GObject"
           x-field-uid: 1
+        name:
+          type: string
+          x-field-uid: 2
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
     Metrics.Request:
       type: object
       properties:

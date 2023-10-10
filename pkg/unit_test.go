@@ -1929,4 +1929,22 @@ func TestXConstraint(t *testing.T) {
 	// Deserialize with valid name
 	err2 := prefix1.FromJson(data)
 	assert.Nil(t, err2)
+
+	// object from other Hierarchy should also raise error
+	cfg := openapiart.NewUpdateConfig()
+	cfg.SetName("random")
+	_, err = cfg.ToJson()
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "random is not a valid zObject.Name|wObject.WName type")
+
+	cfg.SetName("zObj")
+	data, err = cfg.ToJson()
+	assert.Nil(t, err)
+
+	re = regexp.MustCompile(`name.+zObj`)
+	data = re.ReplaceAllString(data, `name": "random`)
+	err = cfg.FromJson(data)
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "random is not a valid zObject.Name|wObject.WName type")
+
 }

@@ -57,3 +57,25 @@ def test_x_constraints(default_config):
     except Exception as err:
         if "pc1 is not a valid type of" not in str(err):
             pytest.fail("Exception is not valid at deserialize with pc1")
+
+    # config serialize from other hierarchy should also throw error
+    up_cfg = module.Api().update_config()
+    up_cfg.name = "abcd"
+    try:
+        data = up_cfg.serialize("dict")
+        pytest.fail("validation passed at serialize with abcd")
+    except Exception as err:
+        if "abcd is not a valid type of" not in str(err):
+            pytest.fail("Exception not valid at serialize wObj3")
+
+    up_cfg.name = "zObj"
+    data = up_cfg.serialize("dict")
+
+    # deserialize with invalid name
+    data["name"] = "random"
+    try:
+        up_cfg.deserialize(data)
+        pytest.fail("deserialize passed with random name")
+    except Exception as err:
+        if "random is not a valid type of" not in str(err):
+            pytest.fail("Exception is not valid at deserialize with random")

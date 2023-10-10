@@ -2385,6 +2385,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             name=field.name,
             cons="|".join([".".join(c) for c in field.x_constraints]),
         )
+        if field.isOptional is True:
+            body = """if obj.Has{name}() {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
         return body
 
     def _validate_unique(self, new, field, optional_field=False):

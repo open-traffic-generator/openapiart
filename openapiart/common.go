@@ -451,9 +451,10 @@ func (obj *validation) isUnique(objectName, value string, scope string, property
 	}
 
 	// code for maintaining map for x-constraints
-	_, ok = globalConstraints[objectName]
-	if !ok {
+	if _, ok := globalConstraints[objectName]; !ok {
 		globalConstraints[objectName] = make(map[string][]string)
+		globalConstraints[objectName][propertyName] = []string{value}
+	} else if _, ok := globalConstraints[objectName][propertyName]; !ok {
 		globalConstraints[objectName][propertyName] = []string{value}
 	} else {
 		valuePresent := false
