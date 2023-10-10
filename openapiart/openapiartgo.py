@@ -2405,7 +2405,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 cons="|".join([".".join(c) for c in field.x_constraints]),
             )
         if field.isArray is True:
-            body = """if len(obj.{name}()) > 0 {{
+            body = """
+            if len(obj.{name}()) > 0 {{
                 {body}
             }}""".format(
                 name=field.name, body=body
