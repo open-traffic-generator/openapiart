@@ -271,12 +271,12 @@ def testgo():
 
 def go_lint():
     try:
-        # output = run(["go version"], capture_output=True)
-        # if "go1.17" in output or "go1.18" in output:
-        #     print("Using older linter version for go version older than 1.19")
-        #     version = "1.46.2"
-        # else:
-        version = "1.51.1"
+        output = run(["go version"], capture_output=True)
+        if "go1.17" in output or "go1.18" in output:
+            print("Using older linter version for go version older than 1.19")
+            version = "1.46.2"
+        else:
+            version = "1.51.1"
 
         pkg = "go install"
         if on_linux() or on_macos():
