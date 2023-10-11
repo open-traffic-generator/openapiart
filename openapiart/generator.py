@@ -1972,10 +1972,7 @@ class Generator:
 
     def _get_classname_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
-        if "." in final_piece:
-            return final_piece.split(".")[-1]
-        else:
-            return final_piece
+        return final_piece.replace(".", "")
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")
