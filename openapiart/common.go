@@ -478,6 +478,7 @@ func (obj *validation) validateConstraint(objectName []string, value string) boo
 		return false
 	}
 	found := false
+	objNotConfigured := 0
 	for _, object := range objectName {
 		obj_ := strings.Split(object, ".")
 		prop, ok := globalConstraints[obj_[0]]
@@ -486,6 +487,7 @@ func (obj *validation) validateConstraint(objectName []string, value string) boo
 		}
 		values, ok := prop[obj_[1]]
 		if !ok {
+			objNotConfigured += 1
 			continue
 		}
 		for _, v := range values {
@@ -508,7 +510,11 @@ func (obj *validation) validateConstraint(objectName []string, value string) boo
 			break
 		}
 	}
-	return found
+	if len(objectName) == objNotConfigured {
+		return true
+	} else {
+		return found
+	}
 }
 
 func checkClientServerVersionCompatibility(clientVer string, serverVer string, componentName string) error {
