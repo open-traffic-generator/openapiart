@@ -11,6 +11,8 @@ func TestMultipleIter(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
 	config.SetA("test")
+	config.SetB(1.234)
+	config.SetC(32)
 	config.RequiredObject().SetEA(3.45).SetEB(6.78)
 	enums := []openapiart.PrefixConfigDValuesEnum{
 		openapiart.PrefixConfigDValues.A,
