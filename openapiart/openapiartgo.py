@@ -2410,13 +2410,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 name=field.name, body=body
             )
         elif field.isOptional is True:
-            body = """if obj.Has{name}() {{
+            body = """
+            if obj.Has{name}() {{
                 {body}
             }}""".format(
                 name=field.name, body=body
             )
         else:
-            body = """if obj.{name}() != nil {{
+            body = """
+            if obj.{name}() != nil {{
                 {body}
             }}""".format(
                 name=field.name, body=body
