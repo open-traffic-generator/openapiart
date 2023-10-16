@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	goapi "github.com/open-traffic-generator/goapi/pkg"
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -677,7 +676,7 @@ func TestRequiredField(t *testing.T) {
 }
 
 func TestRequiredEnumField(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	rc := config.RequiredChoiceObject()
 	err := rc.Validate()
 	assert.NotNil(t, err)
