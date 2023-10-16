@@ -2418,7 +2418,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         else:
             body = """
-            if obj.{name}() != nil {{
+            if obj.obj.{name} != nil {{
                 {body}
             }}""".format(
                 name=field.name, body=body
@@ -2434,7 +2434,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 struct=new.struct, name=field.name, type=field.x_unique
             )
             if optional_field:
-                body = """if obj.Has{name}() {{
+                body = """
+                if obj.Has{name}() {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
+            else:
+                body = """
+                if obj.obj.{name} != nil {{
                     {body}
                 }}""".format(
                     name=field.name, body=body
