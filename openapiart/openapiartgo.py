@@ -2081,7 +2081,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             # TODO: restore behavior
             # self._parse_x_constraints(field, property_schema)
-            # self._parse_x_unique(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2385,14 +2385,28 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
         return body
 
-    def _validate_unique(self, new, field):
+    def _validate_unique(self, new, field, optional_field=False):
         body = ""
         if field.x_unique is not None:
-            body = """if !vObj.isUnique("{struct}", obj.{name}(), obj) {{
+            body = """if !vObj.isUnique("{struct}", obj.{name}(), "{type}", obj) {{
                 vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
-                struct=new.struct, name=field.name
+                struct=new.struct, name=field.name, type=field.x_unique
             )
+            if optional_field:
+                body = """
+                if obj.Has{name}() {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
+            else:
+                body = """
+                if obj.obj.{name} != nil {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
         return body
 
     def _validate_types(self, new, field):
@@ -2464,12 +2478,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else value,
             )
-            # TODO: restore behavior
-            # unique = self._validate_unique(new, field)
-            # body += "else " + unique if unique != "" else unique
+            unique = self._validate_unique(new, field)
+            body += "else " + unique if unique != "" else unique
+        if field.isOptional is True:
+            body += self._validate_unique(new, field, optional_field=True)
         # TODO: restore behavior
-        # if field.isOptional is True:
-        #     body += self._validate_unique(new, field)
         # body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
@@ -2630,7 +2643,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range obj.{name}().Items() {{
                     item.validateObj(vObj, set_default)
                 }}
-            """.format(
+                _, ok := vObj.constraints["{field_internal_struct}"]
+                if ok {{
+                    delete(vObj.constraints, "{field_internal_struct}")
+                }}""".format(
                 name=field.name,
                 field_internal_struct=field.struct,
             )

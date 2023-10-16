@@ -5,6 +5,7 @@ components:
       properties:
         name:
           type: string
+          x-unique: global
           x-field-uid: 1
     ListObject:
       type: object
@@ -42,14 +43,14 @@ components:
         Error response generated while serving API request.
       type: object
       required:
-      - code
-      - errors
+        - code
+        - errors
       properties:
         code:
-           description: |-
-             Numeric status code based on underlying transport being used.
-           type: integer
-           x-field-uid: 1
+          description: |-
+            Numeric status code based on underlying transport being used.
+          type: integer
+          x-field-uid: 1
         kind:
           description: |-
             Kind of error message.
@@ -63,9 +64,9 @@ components:
               x-field-uid: 3
           x-field-uid: 2
           enum:
-          - transport
-          - validation
-          - internal
+            - transport
+            - validation
+            - internal
         errors:
           description: |-
             List of error messages generated while serving API request.
@@ -95,4 +96,4 @@ components:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              $ref: "#/components/schemas/Error"

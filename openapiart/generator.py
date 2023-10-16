@@ -304,7 +304,6 @@ class Generator:
             rpc.good_response_type = response_type
             rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
-            # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
                 "x-status"
             ].get("status") in ["deprecated", "under_review"]:
@@ -1795,8 +1794,8 @@ class Generator:
                 #         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
                 #     if cons_lst != []:
                 #         pt.update({"constraint": cons_lst})
-                # if "x-unique" in yproperty:
-                #     pt.update({"unique": '"%s"' % yproperty["x-unique"]})
+                if "x-unique" in yproperty:
+                    pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
 
     def _get_required_and_defaults(self, yobject):
