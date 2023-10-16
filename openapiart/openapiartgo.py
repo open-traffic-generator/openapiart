@@ -2415,6 +2415,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}""".format(
                 name=field.name, body=body
             )
+        else:
+            body = """if obj.{name}() != nil {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
         return body
 
     def _validate_unique(self, new, field, optional_field=False):
