@@ -16,8 +16,7 @@ func TestConfigGeneratedValidate(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	v1 := config.RequiredObject()
 	_ = v1.Validate()

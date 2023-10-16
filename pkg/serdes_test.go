@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NewFullyPopulatedPrefixConfig(api openapiart.OpenapiartApi) openapiart.PrefixConfig {
-	config := api.NewPrefixConfig()
+func NewFullyPopulatedPrefixConfig(api openapiart.Api) openapiart.PrefixConfig {
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
@@ -63,7 +63,7 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 
 	yaml1, err := c1.ToYaml()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
+	c2 := openapiart.NewPrefixConfig()
 	yaml_err := c2.FromYaml(yaml1)
 	assert.Nil(t, yaml_err)
 	yaml2, err := c2.ToYaml()
@@ -77,7 +77,7 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 
 	json1, err := c1.ToJson()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
+	c2 := openapiart.NewPrefixConfig()
 	json_err := c2.FromJson(json1)
 	assert.Nil(t, json_err)
 	json2, err := c2.ToJson()
@@ -103,7 +103,7 @@ func TestPartialSerDes(t *testing.T) {
 	data2, _ := json.Marshal(jsonMap["g"].([]interface{})[0].(map[string]interface{}))
 
 	// create a new config that consists of just the e object and the g object
-	c2 := api.NewPrefixConfig()
+	c2 := openapiart.NewPrefixConfig()
 	json_err := c2.E().FromJson(string(data1))
 	assert.Nil(t, json_err)
 	json_err1 := c2.G().Add().FromJson(string(data2))
@@ -121,7 +121,7 @@ func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	c1 := NewFullyPopulatedPrefixConfig(api)
 	pbString, err := c1.ToPbText()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
+	c2 := openapiart.NewPrefixConfig()
 	pbtext_err := c2.FromPbText(pbString)
 	assert.Nil(t, pbtext_err)
 	c1json, err := c1.ToJson()
@@ -132,8 +132,7 @@ func TestPrefixConfigPbTextSerDes(t *testing.T) {
 }
 
 func TestArrayOfStringsSetGet(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	values := config.ListOfStringValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfStringValues([]string{"one", "two", "three"}).ListOfStringValues()
@@ -141,8 +140,7 @@ func TestArrayOfStringsSetGet(t *testing.T) {
 }
 
 func TestArrayOfEnumsSetGet(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	values := config.DValues()
 	assert.Equal(t, 0, len(values))
 	enums := []openapiart.PrefixConfigDValuesEnum{
@@ -155,8 +153,7 @@ func TestArrayOfEnumsSetGet(t *testing.T) {
 }
 
 func TestArrayOfIntegersSetGet(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	values := config.ListOfIntegerValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
@@ -165,8 +162,7 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 
 func TestValidJsonDecode(t *testing.T) {
 	// Valid FromJson
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.Nil(t, err)
@@ -174,8 +170,7 @@ func TestValidJsonDecode(t *testing.T) {
 
 func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
@@ -184,8 +179,7 @@ func TestBadKeyJsonDecode(t *testing.T) {
 
 func TestBadEnumJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
@@ -194,8 +188,7 @@ func TestBadEnumJsonDecode(t *testing.T) {
 
 func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
@@ -204,8 +197,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 
 func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
@@ -214,8 +206,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 
 func TestWithoutValueJsonDecode(t *testing.T) {
 	// Valid without value
-	api := openapiart.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.FromJson(input_str)
 	assert.NotNil(t, err)
@@ -223,8 +214,7 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 }
 
 func TestValidYamlDecode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -243,8 +233,7 @@ response: status_200
 
 func TestBadKeyYamlDecode(t *testing.T) {
 	// Valid Wrong key
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	var data = `a: Easy
 bz: 12.2
 c: 2
@@ -259,8 +248,7 @@ required_object:
 }
 
 func TestBadEnumYamlDecode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -277,8 +265,7 @@ response: status_800
 
 func TestBadDatatypeYamlDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	var data = `a: Easy
 b: abc
 c: 2
@@ -294,8 +281,7 @@ required_object:
 
 func TestBadDatastructureYamlDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	var data = `a: [Make It Easy]
 b: 9.9
 c: 2
@@ -312,7 +298,7 @@ required_object:
 func TestSetMsg(t *testing.T) {
 	api := openapiart.NewApi()
 	config := NewFullyPopulatedPrefixConfig(api)
-	copy := openapiart.NewApi().NewPrefixConfig()
+	copy := openapiart.NewPrefixConfig()
 	copy.SetMsg(config.Msg())
 	configYaml, err := config.ToYaml()
 	assert.Nil(t, err)
@@ -322,12 +308,11 @@ func TestSetMsg(t *testing.T) {
 }
 
 func TestNestedSetMsg(t *testing.T) {
-	api := openapiart.NewApi()
-	eObject := openapiart.NewApi().NewPrefixConfig().K().EObject()
+	eObject := openapiart.NewPrefixConfig().K().EObject()
 	eObject.SetEA(23423.22)
 	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.K().EObject().SetMsg(eObject.Msg())
 	yaml1, err := config.K().EObject().ToYaml()
 	assert.Nil(t, err)
@@ -337,8 +322,7 @@ func TestNestedSetMsg(t *testing.T) {
 }
 
 func TestAuto(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(

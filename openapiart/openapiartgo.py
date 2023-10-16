@@ -618,6 +618,58 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
+            // function related to error handling
+            func FromError(err error) (Error, bool) {{
+                if rErr, ok := err.(Error); ok {{
+                    return rErr, true
+                }}
+
+                rErr := NewError()
+                if err := rErr.FromJson(err.Error()); err == nil {{
+                    return rErr, true
+                }}
+
+                return fromGrpcError(err)
+            }}
+
+            func setResponseErr(obj Error, code int32, message string) {{
+                errors := []string{{}}
+                errors = append(errors, message)
+                obj.Msg().Code = &code
+                obj.Msg().Errors = errors
+            }}
+
+            // parses and return errors for grpc response
+            func fromGrpcError(err error) (Error, bool) {{
+                st, ok := status.FromError(err)
+                if ok {{
+                    rErr := NewError()
+                    if err := rErr.FromJson(st.Message()); err == nil {{
+                        var code = int32(st.Code())
+                        rErr.Msg().Code = &code
+                        return rErr, true
+                    }}
+
+                    setResponseErr(rErr, int32(st.Code()), st.Message())
+                    return rErr, true
+                }}
+
+                return nil, false
+            }}
+
+            // parses and return errors for http responses
+            func fromHttpError(statusCode int, body []byte) Error {{
+                rErr := NewError()
+                bStr := string(body)
+                if err := rErr.FromJson(bStr); err == nil {{
+                    return rErr
+                }}
+
+                setResponseErr(rErr, int32(statusCode), bStr)
+
+                return rErr
+            }}
+
             type versionMeta struct {{
                 checkVersion  bool
                 localVersion  Version
@@ -625,7 +677,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 checkError    error
             }}
             type {internal_struct_name} struct {{
-                api
+                apiSt
                 grpcClient {pb_pkg_name}.{proto_service}Client
                 httpClient httpClient
                 versionMeta *versionMeta
@@ -681,7 +733,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             //  NewApi returns a new instance of the top level interface hierarchy
-            func NewApi() {interface} {{
+            func NewApi() Api {{
                 api := {internal_struct_name}{{}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
                 return &api
@@ -744,15 +796,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             """.format(
                 internal_struct_name=self._api.internal_struct_name,
-                interface=self._api.external_interface_name,
                 pb_pkg_name=self._protobuf_package_name,
                 proto_service=self._proto_service,
             )
         )
         methods = []
-        for new in self._api.external_new_methods:
-            methods.append(new.method_description)
-            methods.append(new.method)
+        # remove new methopds from interface
+        # for new in self._api.external_new_methods:
+        #     methods.append(new.method_description)
+        #     methods.append(new.method)
         for rpc in self._api.external_rpc_methods:
             methods.append(rpc.description)
             methods.append(rpc.method)
@@ -763,12 +815,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write(
             """
             {description}
-            type {external_interface_name} interface {{
-                Api
+            type Api interface {{
+                api
                 {method_signatures}
             }}
             """.format(
-                external_interface_name=self._api.external_interface_name,
                 method_signatures=method_signatures,
                 description="// {} {}".format(
                     self._api.external_interface_name,
@@ -778,17 +829,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 ),
             )
         )
-        for new in self._api.external_new_methods:
-            self._write(
-                """func (api *{internal_struct_name}) {method} {{
-                    return New{interface}()
-                }}
-                """.format(
-                    internal_struct_name=self._api.internal_struct_name,
-                    method=new.method,
-                    interface=new.interface,
-                )
-            )
+        # remove new methods from api
+        # for new in self._api.external_new_methods:
+        #     self._write(
+        #         """func (api *{internal_struct_name}) {method} {{
+        #             return New{interface}()
+        #         }}
+        #         """.format(
+        #             internal_struct_name=self._api.internal_struct_name,
+        #             method=new.method,
+        #             interface=new.interface,
+        #         )
+        #     )
         if self._generate_version_api:
             self._write(
                 self._get_version_api_interface_method_impl(
@@ -850,7 +902,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     defer cancelFunc()
                     resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
-                        if er, ok := api.fromGrpcError(err); ok {{
+                        if er, ok := fromGrpcError(err); ok {{
                             return nil, er
                         }}
                         return nil, err
@@ -879,7 +931,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += "return nil, api.fromHttpError(resp.StatusCode, bodyBytes)"
+                    error_handling += (
+                        "return nil, fromHttpError(resp.StatusCode, bodyBytes)"
+                    )
 
             if http.request_return_type == "[]byte":
                 success_handling = """return bodyBytes, nil"""
@@ -887,7 +941,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 success_handling = """bodyString := string(bodyBytes)
                 return &bodyString, nil"""
             else:
-                success_handling = """obj := api.{success_method}().{struct}()
+                success_handling = """obj := {success_method}().{struct}()
                     if err := obj.FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}

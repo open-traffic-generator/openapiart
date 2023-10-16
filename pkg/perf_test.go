@@ -11,8 +11,7 @@ import (
 
 func TestPerf(t *testing.T) {
 	start := time.Now()
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetCase(openapiart.NewLayer1Ieee802X().SetFlowControl(true))
 	config.SetSpace1(10)
@@ -72,19 +71,19 @@ func TestPerf(t *testing.T) {
 	assert.Nil(t, p_err)
 
 	jDStart := time.Now()
-	jsonconf := api.NewPrefixConfig()
+	jsonconf := openapiart.NewPrefixConfig()
 	jdErr := jsonconf.FromJson(json)
 	assert.Nil(t, jdErr)
 	jDEnd := time.Now()
 
 	yDStart := time.Now()
-	yamlconf := api.NewPrefixConfig()
+	yamlconf := openapiart.NewPrefixConfig()
 	ydErr := yamlconf.FromYaml(yaml)
 	assert.Nil(t, ydErr)
 	yDEnd := time.Now()
 
 	pDStart := time.Now()
-	pbConf := api.NewPrefixConfig()
+	pbConf := openapiart.NewPrefixConfig()
 	pdErr := pbConf.FromPbText(pbText)
 	assert.Nil(t, pdErr)
 	pDEnd := time.Now()

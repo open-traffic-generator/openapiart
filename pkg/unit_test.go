@@ -26,8 +26,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 }
 
 func TestJsonSerialization(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
@@ -102,8 +101,7 @@ func TestSimpleTypes(t *testing.T) {
 	var c int32 = 1
 	h := true
 	i := []byte("sample string")
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdfg").SetB(12.2).SetC(1).SetH(true).SetI([]byte("sample string"))
 	assert.Equal(t, a, config.A())
 	assert.Equal(t, b, config.B())
@@ -117,8 +115,7 @@ var gbValues = []int32{11, 22}
 var gcValues = []float32{11.11, 22.22}
 
 func TestIterAdd(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
 	config.G().Add().SetGA("2222").SetGB(22).SetGC(22.22)
 
@@ -131,8 +128,7 @@ func TestIterAdd(t *testing.T) {
 }
 
 func TestIterAppend(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
 	g := config.G().Append(openapiart.NewGObject().SetGA("2222").SetGB(22).SetGC(22.22))
 
@@ -151,8 +147,7 @@ func TestIterSet(t *testing.T) {
 			assert.Equal(t, errValue, fmt.Sprintf("%v", err))
 		}
 	}()
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	name := "new name set on slice"
 	config.G().Add().SetName("original name set on add")
 	config.G().Add()
@@ -186,8 +181,7 @@ func TestListWrapFromJson(t *testing.T) {
 		],
 		"h":  true
 	  }`
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	assert.Nil(t, config.FromJson(listWrap))
 	assert.Equal(t, len(config.G().Items()), 1)
 }
@@ -197,8 +191,7 @@ func TestEObject(t *testing.T) {
 	eb := 1.2
 	mparam1 := "Mparam1"
 	maparam2 := "Mparam2"
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	assert.Equal(t, ea, config.E().EA())
 	assert.Equal(t, eb, config.E().EB())
@@ -211,8 +204,7 @@ func TestGObject(t *testing.T) {
 	gb := []int32{1, 2}
 	gc := []float32{11.1, 22.2}
 	ge := []float64{1.0, 2.0}
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	g1 := config.G().Add()
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := config.G().Add()
@@ -231,8 +223,7 @@ func TestGObject(t *testing.T) {
 	log.Print(g1json, g1yaml)
 }
 func TestGObjectAppendMultiple(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	items := []openapiart.GObject{
 		openapiart.NewGObject().SetGA("g_1"),
 		openapiart.NewGObject().SetGA("g_2"),
@@ -249,8 +240,7 @@ func TestGObjectAppend(t *testing.T) {
 	gb := []int32{1, 2}
 	gc := []float32{11.1, 22.2}
 	ge := []float64{1.0, 2.0}
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	g1 := openapiart.NewGObject()
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := openapiart.NewGObject()
@@ -268,8 +258,7 @@ func TestGObjectAppend(t *testing.T) {
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
 	var float_ float32 = 100.11
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	l := config.L()
 	l.SetStringParam("test")
 	l.SetInteger(80)
@@ -296,8 +285,7 @@ func TestLObject(t *testing.T) {
 //	Confirm the underlying protobuf EObject has been created by setting the
 //	properties of the returned RequiredObject
 func TestRequiredObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	r := config.RequiredObject()
 	r.SetEA(22.2)
 	r.SetEB(66.1)
@@ -310,8 +298,7 @@ func TestRequiredObject(t *testing.T) {
 //	Confirm the underlying protobuf EObject has been created by setting the
 //	properties of the returned OptionalObject
 func TestOptionalObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	r := config.OptionalObject()
 	r.SetEA(22.2)
 	r.SetEB(66.1)
@@ -323,8 +310,7 @@ func TestResponseEnum(t *testing.T) {
 	// for _, fld := range flds {
 	// 	assert.NotEqual(t, fld.Name, "UNSPECIFIED")
 	// }
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
 	assert.Equal(t, config.Response(), openapiart.PrefixConfigResponse.STATUS_400)
 	fmt.Println("response: ", config.Response())
@@ -353,8 +339,7 @@ func TestChoice(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	assert.False(t, config.HasE())
 	assert.False(t, config.HasF())
 	assert.False(t, config.HasChecksumPattern())
@@ -369,16 +354,14 @@ var BadMac = []string{
 }
 
 func TestGoodMacValidation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValue(GoodMac[0])
 	err := mac.Validate()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValidation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	for _, mac := range BadMac {
 		macObj := config.MacPattern().Mac().SetValue(mac)
 		err := macObj.Validate()
@@ -389,16 +372,14 @@ func TestBadMacValidation(t *testing.T) {
 }
 
 func TestGoodMacValues(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(GoodMac)
 	err := mac.Validate()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValues(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(BadMac)
 	err := mac.Validate()
 	fmt.Println(err.Error())
@@ -408,8 +389,7 @@ func TestBadMacValues(t *testing.T) {
 }
 
 func TestBadMacIncrement(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().Increment().SetStart(GoodMac[0])
 	mac.SetStep(BadMac[0])
 	mac.SetCount(10)
@@ -421,8 +401,7 @@ func TestBadMacIncrement(t *testing.T) {
 }
 
 func TestBadMacDecrement(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().Decrement().SetStart(BadMac[0])
 	mac.SetStep(GoodMac[0])
 	mac.SetCount(10)
@@ -437,16 +416,14 @@ var GoodIpv4 = []string{"1.1.1.1", "255.255.255.255"}
 var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"}
 
 func TestGoodIpv4Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValue(GoodIpv4[0])
 	err := ipv4.Validate()
 	assert.Nil(t, err)
 }
 
 func TestBadIpv4Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	for _, ip := range BadIpv4 {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
 		err := ipv4.Validate()
@@ -457,8 +434,7 @@ func TestBadIpv4Validation(t *testing.T) {
 }
 
 func TestBadIpv4Values(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
 	err := ipv4.Validate()
 	if assert.Error(t, err) {
@@ -467,8 +443,7 @@ func TestBadIpv4Values(t *testing.T) {
 }
 
 func TestBadIpv4Increment(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().Increment().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
@@ -479,8 +454,7 @@ func TestBadIpv4Increment(t *testing.T) {
 }
 
 func TestBadIpv4Decrement(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().Decrement().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
@@ -494,16 +468,14 @@ var GoodIpv6 = []string{"::", "1::", ": :", "abcd::1234", "aa:00bd:a:b:c:d:f:abc
 var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"}
 
 func TestGoodIpv6Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValue(GoodIpv6[0])
 	err := ipv6.Validate()
 	assert.Nil(t, err)
 }
 
 func TestBadIpv6Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	for _, ip := range BadIpv6 {
 		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
 		err := ipv6.Validate()
@@ -514,8 +486,7 @@ func TestBadIpv6Validation(t *testing.T) {
 }
 
 func TestBadIpv6Values(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValues(BadIpv6)
 	err := ipv6.Validate()
 	if assert.Error(t, err) {
@@ -524,8 +495,7 @@ func TestBadIpv6Values(t *testing.T) {
 }
 
 func TestBadIpv6Increment(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().Increment().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
@@ -536,8 +506,7 @@ func TestBadIpv6Increment(t *testing.T) {
 }
 
 func TestBadIpv6Decrement(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().Decrement().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
@@ -548,8 +517,7 @@ func TestBadIpv6Decrement(t *testing.T) {
 }
 
 func TestDefaultSimpleTypes(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetA("asdf")
 	config.SetB(65)
@@ -572,8 +540,7 @@ func TestDefaultSimpleTypes(t *testing.T) {
 }
 
 func TestDefaultEObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.E().SetEA(1).SetEB(2)
 	actual_result, err := config.E().ToJson()
 	assert.Nil(t, err)
@@ -586,8 +553,7 @@ func TestDefaultEObject(t *testing.T) {
 }
 
 func TestDefaultFObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.F()
 	actual_result, err := config.F().ToJson()
 	assert.Nil(t, err)
@@ -600,8 +566,7 @@ func TestDefaultFObject(t *testing.T) {
 }
 
 func TestRequiredValidation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.RequiredObject().SetEA(10.2).SetEB(20)
 	config.SetA("abc")
 	config.SetB(10.32)
@@ -621,8 +586,7 @@ func TestRequiredValidation(t *testing.T) {
 }
 
 func TestHexPattern(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	l := config.L()
 	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
 	err := l.Validate()
@@ -645,8 +609,7 @@ func TestHexPattern(t *testing.T) {
 }
 
 func TestChoice1(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	json := `{
 		"choice": "f_b",
 		"f_b": 30.0
@@ -930,8 +893,7 @@ func TestChoice2(t *testing.T) {
 		  }
 		}
 	  }`
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.K().FObject().SetFA("asf")
@@ -1001,8 +963,7 @@ func TestGetter(t *testing.T) {
 }
 
 func TestStringLength(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
@@ -1015,8 +976,7 @@ func TestStringLength(t *testing.T) {
 }
 
 func TestListClear(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	list := config.G()
 	list.Append(openapiart.NewGObject().SetGA("a1"))
 	list.Append(openapiart.NewGObject().SetGA("a2"))
@@ -1052,8 +1012,7 @@ func TestConfigHas200Result(t *testing.T) {
 }
 
 func TestFromJsonErrors(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	json := `{
 		"abc": "test"
 	}`
@@ -1076,8 +1035,7 @@ func TestFromJsonErrors(t *testing.T) {
 }
 
 func TestStringLengthError(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetName("config")
 	config.SetSpace1(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
@@ -1095,8 +1053,7 @@ func TestStringLengthError(t *testing.T) {
 }
 
 func TestIncorrectChoiceEnum(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
@@ -1130,8 +1087,7 @@ func TestMObjectValidation(t *testing.T) {
 }
 
 func TestMobjectValidationError(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.RequiredObject().SetEA(10.2).SetEB(20)
 	config.SetA("abc")
 	config.SetB(10.32)
@@ -1158,8 +1114,7 @@ func TestMobjectValidationError(t *testing.T) {
 }
 
 func TestLObjectError(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	l := config.L()
 	l.SetStringParam("test")
 	l.SetInteger(180)
@@ -1181,8 +1136,7 @@ func TestLObjectError(t *testing.T) {
 }
 
 func TestIeee802x(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetCase(openapiart.NewLayer1Ieee802X())
 	config.Case()
 	l1 := openapiart.NewLayer1Ieee802X()
@@ -1219,8 +1173,7 @@ func TestLevelFour(t *testing.T) {
 }
 
 func TestIterAppendJObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.J().Add()
 	j := config.J().Append(openapiart.NewJObject())
 
@@ -1228,8 +1181,7 @@ func TestIterAppendJObject(t *testing.T) {
 }
 
 func TestIterSetJObject(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.J().Add().JA().SetEA(100)
 	config.J().Add()
 	j := config.J().Set(1, openapiart.NewJObject().SetChoice("j_b"))
@@ -1284,8 +1236,7 @@ func TestIterSetPortMetrics(t *testing.T) {
 }
 
 func TestFromYamlErrors(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	incorrect_format := `{
 		"a":"asdf",
 		"b" : 65,
@@ -1326,8 +1277,7 @@ func TestFromYamlErrors(t *testing.T) {
 }
 
 func TestFromPbTextErrors(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	incorrect_format := `{
 		"a":"asdf",
 		"b" : 65,
@@ -1360,7 +1310,7 @@ func TestUpdateConfig(t *testing.T) {
 		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
 		_, set_err := api.SetConfig(config1)
 		assert.Nil(t, set_err)
-		config2 := api.NewUpdateConfig()
+		config2 := openapiart.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 		config2PbText, err := config2.ToPbText()
 		assert.Nil(t, err)
@@ -1382,8 +1332,7 @@ func TestUpdateConfig(t *testing.T) {
 }
 
 func TestNewSetConfigResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewSetConfigResponse()
+	new_resp := openapiart.NewSetConfigResponse()
 	new_resp.SetResponseBytes([]byte{0, 1})
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
@@ -1400,8 +1349,7 @@ func TestNewSetConfigResponse(t *testing.T) {
 }
 
 func TestNewUpdateConfigResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewUpdateConfigurationResponse()
+	new_resp := openapiart.NewUpdateConfigurationResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasPrefixConfig()
@@ -1417,8 +1365,7 @@ func TestNewUpdateConfigResponse(t *testing.T) {
 }
 
 func TestNewGetConfigResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewGetConfigResponse()
+	new_resp := openapiart.NewGetConfigResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasPrefixConfig()
@@ -1434,8 +1381,7 @@ func TestNewGetConfigResponse(t *testing.T) {
 }
 
 func TestNewGetMetricsResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewGetMetricsResponse()
+	new_resp := openapiart.NewGetMetricsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasMetrics()
@@ -1451,8 +1397,7 @@ func TestNewGetMetricsResponse(t *testing.T) {
 }
 
 func TestNewGetWarningsResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewGetWarningsResponse()
+	new_resp := openapiart.NewGetWarningsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasWarningDetails()
@@ -1468,8 +1413,7 @@ func TestNewGetWarningsResponse(t *testing.T) {
 }
 
 func TestNewClearWarningsResponse(t *testing.T) {
-	api := openapiart.NewApi()
-	new_resp := api.NewClearWarningsResponse()
+	new_resp := openapiart.NewClearWarningsResponse()
 	new_resp.SetMsg(new_resp.Msg())
 	new_resp.Msg()
 	new_resp.HasResponseString()
@@ -1562,7 +1506,7 @@ func TestItemsMethod(t *testing.T) {
 	config1 := NewFullyPopulatedPrefixConfig(api)
 	config1.G().Add().SetGA("this is GA string")
 	assert.Equal(t, config1.G(), config1.G())
-	config2 := api.NewPrefixConfig()
+	config2 := openapiart.NewPrefixConfig()
 	config1Json, err := config1.ToJson()
 	assert.Nil(t, err)
 	json_err := config2.FromJson(config1Json)

@@ -8,8 +8,7 @@ import (
 )
 
 func TestConfigGenerated(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetIeee8021Qbb(true).SetSpace1(1).SetFullDuplex100Mb(1).SetResponse("status_200").SetA("abc").SetB(100.11).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetListOfStringValues([]string{"a", "b", "c"}).SetListOfIntegerValues([]int32{1, 2, 3}).SetInteger64(10000000000000000).SetStrLen("abc").SetName("abc1")
 	v1 := config.RequiredObject()
 	v1.SetEA(100.11).SetEB(1.7976931348623157e+308).SetName("abc2").SetMParam1("abc").SetMParam2("abc")

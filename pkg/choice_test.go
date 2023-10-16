@@ -8,8 +8,7 @@ import (
 )
 
 func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	fObj := config.F()
 
 	// test default choice and values
@@ -37,8 +36,7 @@ func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
 }
 
 func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
@@ -67,8 +65,7 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 }
 
 func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 

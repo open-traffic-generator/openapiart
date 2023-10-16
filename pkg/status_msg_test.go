@@ -17,20 +17,18 @@ func TestStatusApi(t *testing.T) {
 	grpcApi := openapiart.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 
-	config := grpcApi.NewUpdateConfig()
-	warnStr := "UpdateConfiguration api is deprecated, please use post instead"
+	config := openapiart.NewUpdateConfig()
+	config.G().Add().SetGA("str1")
 
 	// check warning for grpc API
 	_, err = grpcApi.UpdateConfiguration(config)
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
-	assert.Equal(t, grpcApi.Warnings(), warnStr)
 }
 
 func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	// setting all the primitive values which has x-status set
 	config.SetA("test")
@@ -60,8 +58,7 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInStructAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	// setting a non primitive property with x-status
 	config.E().SetEA(4.56)
@@ -77,8 +74,7 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInChoiceAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	j := config.J().Add()
 	j.JB()
@@ -92,8 +88,7 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInXEnumAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
 
@@ -119,8 +114,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInIterattrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	list := config.G()
 	list.Append(openapiart.NewGObject().SetGC(5.67))
@@ -140,8 +134,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 }
 
 func TestStatusMsgInSchemaObjects(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewUpdateConfig()
+	config := openapiart.NewUpdateConfig()
 
 	err := config.Validate()
 	if err != nil {

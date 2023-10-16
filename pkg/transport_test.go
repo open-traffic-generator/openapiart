@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var apis []openapiart.OpenapiartApi
+var apis []openapiart.Api
 
 func init() {
 	err := StartMockGrpcServer()
@@ -111,7 +111,7 @@ func TestUpdateConfigSuccess(t *testing.T) {
 		if err != nil {
 			log.Printf("error: %s", err.Error())
 		}
-		config2 := api.NewUpdateConfig()
+		config2 := openapiart.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
@@ -159,7 +159,7 @@ func TestGetWarnings(t *testing.T) {
 
 func TestClearWarnings(t *testing.T) {
 	for _, api := range apis {
-		api.NewClearWarningsResponse()
+		openapiart.NewClearWarningsResponse()
 		res, err := api.ClearWarnings()
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -311,7 +311,7 @@ func TestGrpcErrorStructSetConfig(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(13))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "returning err1")
@@ -327,7 +327,7 @@ func TestHttpErrorStructSetConfig(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(500))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "internal err 1")
@@ -344,7 +344,7 @@ func TestGrpcErrorStringSetConfig(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(2))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "SetConfig has detected configuration errors")
@@ -359,7 +359,7 @@ func TestHttpErrorStringSetConfig(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(500))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "client error !!!!")
@@ -374,7 +374,7 @@ func TestGrpcErrorkindSetConfig(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(3))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "internal err 1")
@@ -388,14 +388,14 @@ func TestGrpcErrorStringUpdate(t *testing.T) {
 	if err != nil {
 		log.Printf("error: %s", err.Error())
 	}
-	config2 := api.NewUpdateConfig()
+	config2 := openapiart.NewUpdateConfig()
 	config2.G().Add().SetName("ErStr").SetGA("ga string").SetGB(232)
 	config3, err := api.UpdateConfiguration(config2)
 	assert.Nil(t, config3)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(2))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "unit test error")
@@ -409,14 +409,14 @@ func TestGrpcErrorStructUpdate(t *testing.T) {
 	if err != nil {
 		log.Printf("error: %s", err.Error())
 	}
-	config2 := api.NewUpdateConfig()
+	config2 := openapiart.NewUpdateConfig()
 	config2.G().Add().SetName("Erkind").SetGA("ga string").SetGB(232)
 	config3, err := api.UpdateConfiguration(config2)
 	assert.Nil(t, config3)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := api.FromError(err)
+	errSt, _ := openapiart.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(6))
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.VALIDATION)
 	assert.Equal(t, errSt.Errors()[0], "invalid1")

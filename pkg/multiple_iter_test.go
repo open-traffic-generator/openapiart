@@ -8,8 +8,7 @@ import (
 )
 
 func TestMultipleIter(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("test")
 	config.SetB(1.234)
 	config.SetC(32)
