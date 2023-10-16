@@ -30,7 +30,7 @@ message Error {
 
   // Numeric status code based on underlying transport being used.
   // required = true
-  int32 code = 1;
+  optional int32 code = 1;
 
   message Kind {
     enum Enum {
@@ -55,7 +55,7 @@ message PrefixConfig {
   EObject required_object = 1;
 
   // An optional object that MUST be generated as such.
-  optional EObject optional_object = 2;
+  EObject optional_object = 2;
 
   // Description missing in models
   optional bool ieee_802_1qbb = 3;
@@ -85,17 +85,17 @@ message PrefixConfig {
   // 
   // Small single line description
   // required = true
-  string a = 7;
+  optional string a = 7;
 
   // Longer multi-line description
   // Second line is here
   // Third line
   // required = true
-  float b = 8;
+  optional float b = 8;
 
   // Description missing in models
   // required = true
-  int32 c = 9;
+  optional int32 c = 9;
 
   message DValues {
     enum Enum {
@@ -113,10 +113,10 @@ message PrefixConfig {
   // Deprecated: Information TBD
   // 
   // A child object
-  optional EObject e = 11;
+  EObject e = 11;
 
   // An object with only choice(s)
-  optional FObject f = 12;
+  FObject f = 12;
 
   // A list of objects with choice and properties
   repeated GObject g = 13;
@@ -132,10 +132,10 @@ message PrefixConfig {
   repeated JObject j = 16;
 
   // A nested object with only one property which is a choice object
-  optional KObject k = 17;
+  KObject k = 17;
 
   // Description missing in models
-  optional LObject l = 18;
+  LObject l = 18;
 
   // A list of string values
   repeated string list_of_string_values = 19;
@@ -144,31 +144,31 @@ message PrefixConfig {
   repeated int32 list_of_integer_values = 20;
 
   // Description missing in models
-  optional LevelOne level = 21;
+  LevelOne level = 21;
 
   // Description missing in models
-  optional Mandate mandatory = 22;
+  Mandate mandatory = 22;
 
   // Description missing in models
-  optional Ipv4Pattern ipv4_pattern = 23;
+  Ipv4Pattern ipv4_pattern = 23;
 
   // Description missing in models
-  optional Ipv6Pattern ipv6_pattern = 24;
+  Ipv6Pattern ipv6_pattern = 24;
 
   // Description missing in models
-  optional MacPattern mac_pattern = 25;
+  MacPattern mac_pattern = 25;
 
   // Description missing in models
-  optional IntegerPattern integer_pattern = 26;
+  IntegerPattern integer_pattern = 26;
 
   // Description missing in models
-  optional ChecksumPattern checksum_pattern = 27;
+  ChecksumPattern checksum_pattern = 27;
 
   // Description missing in models
-  optional Layer1Ieee802x case = 28;
+  Layer1Ieee802x case = 28;
 
   // Description missing in models
-  optional MObject m_object = 29;
+  MObject m_object = 29;
 
   // int64 type
   optional int64 integer64 = 30;
@@ -177,7 +177,7 @@ message PrefixConfig {
   repeated int64 integer64_list = 31;
 
   // Description missing in models
-  optional PatternPrefixConfigHeaderChecksum header_checksum = 32;
+  PatternPrefixConfigHeaderChecksum header_checksum = 32;
 
   // Under Review: Information TBD
   // 
@@ -190,7 +190,7 @@ message PrefixConfig {
   repeated string hex_slice = 34;
 
   // Description missing in models
-  optional PatternPrefixConfigAutoFieldTest auto_field_test = 35;
+  PatternPrefixConfigAutoFieldTest auto_field_test = 35;
 
   // Description missing in models
   optional string name = 36;
@@ -202,16 +202,16 @@ message PrefixConfig {
   repeated ZObject x_list = 38;
 
   // Description missing in models
-  optional ZObject z_object = 39;
+  ZObject z_object = 39;
 
   // Description missing in models
-  optional YObject y_object = 40;
+  YObject y_object = 40;
 
   // A list of objects with choice with and without properties
   repeated ChoiceObject choice_object = 41;
 
   // Description missing in models
-  optional RequiredChoiceParent required_choice_object = 42;
+  RequiredChoiceParent required_choice_object = 42;
 
   // A list of objects with choice and properties
   repeated GObject g1 = 43;
@@ -249,7 +249,7 @@ message WObject {
 
   // Description missing in models
   // required = true
-  string w_name = 1;
+  optional string w_name = 1;
 }
 
 // Description missing in models
@@ -257,7 +257,7 @@ message ZObject {
 
   // Description missing in models
   // required = true
-  string name = 1;
+  optional string name = 1;
 }
 
 // Description missing in models
@@ -338,11 +338,11 @@ message EObject {
 
   // Description missing in models
   // required = true
-  float e_a = 1;
+  optional float e_a = 1;
 
   // Description missing in models
   // required = true
-  double e_b = 2;
+  optional double e_b = 2;
 
   // Description missing in models
   optional string name = 3;
@@ -393,10 +393,10 @@ message JObject {
   optional Choice.Enum choice = 1;
 
   // Description missing in models
-  optional EObject j_a = 2;
+  EObject j_a = 2;
 
   // Description missing in models
-  optional FObject j_b = 3;
+  FObject j_b = 3;
 }
 
 // Description missing in models
@@ -415,20 +415,20 @@ message ChoiceObject {
   optional Choice.Enum choice = 1;
 
   // Description missing in models
-  optional EObject e_obj = 2;
+  EObject e_obj = 2;
 
   // Description missing in models
-  optional FObject f_obj = 3;
+  FObject f_obj = 3;
 }
 
 // Description missing in models
 message KObject {
 
   // Description missing in models
-  optional EObject e_object = 1;
+  EObject e_object = 1;
 
   // Description missing in models
-  optional FObject f_object = 2;
+  FObject f_object = 2;
 }
 
 // Format validation object
@@ -464,35 +464,35 @@ message MObject {
 
   // Description missing in models
   // required = true
-  string string_param = 1;
+  optional string string_param = 1;
 
   // Description missing in models
   // required = true
-  int32 integer = 2;
+  optional int32 integer = 2;
 
   // Description missing in models
   // required = true
-  float float = 3;
+  optional float float = 3;
 
   // Description missing in models
   // required = true
-  double double = 4;
+  optional double double = 4;
 
   // Description missing in models
   // required = true
-  string mac = 5;
+  optional string mac = 5;
 
   // Description missing in models
   // required = true
-  string ipv4 = 6;
+  optional string ipv4 = 6;
 
   // Description missing in models
   // required = true
-  string ipv6 = 7;
+  optional string ipv6 = 7;
 
   // Description missing in models
   // required = true
-  string hex = 8;
+  optional string hex = 8;
 }
 
 // Object to Test required Parameter
@@ -500,7 +500,7 @@ message Mandate {
 
   // Description missing in models
   // required = true
-  string required_param = 1;
+  optional string required_param = 1;
 }
 
 // Under Review: the whole schema is being reviewed
@@ -559,15 +559,15 @@ message PortMetric {
 
   // Description missing in models
   // required = true
-  string name = 1;
+  optional string name = 1;
 
   // Description missing in models
   // required = true
-  double tx_frames = 2;
+  optional double tx_frames = 2;
 
   // Description missing in models
   // required = true
-  double rx_frames = 3;
+  optional double rx_frames = 3;
 }
 
 // Description missing in models
@@ -575,15 +575,15 @@ message FlowMetric {
 
   // Description missing in models
   // required = true
-  string name = 1;
+  optional string name = 1;
 
   // Description missing in models
   // required = true
-  double tx_frames = 2;
+  optional double tx_frames = 2;
 
   // Description missing in models
   // required = true
-  double rx_frames = 3;
+  optional double rx_frames = 3;
 }
 
 // Description missing in models
@@ -598,10 +598,10 @@ message RequiredChoiceParent {
   }
   // Description missing in models
   // required = true
-  Choice.Enum choice = 1;
+  optional Choice.Enum choice = 1;
 
   // Description missing in models
-  optional RequiredChoiceIntermediate intermediate_obj = 2;
+  RequiredChoiceIntermediate intermediate_obj = 2;
 }
 
 // Description missing in models
@@ -616,14 +616,14 @@ message RequiredChoiceIntermediate {
   }
   // Description missing in models
   // required = true
-  Choice.Enum choice = 1;
+  optional Choice.Enum choice = 1;
 
   // Description missing in models
   // default = some string
   optional string f_a = 2;
 
   // Description missing in models
-  optional RequiredChoiceIntermeLeaf leaf = 3;
+  RequiredChoiceIntermeLeaf leaf = 3;
 }
 
 // Description missing in models
@@ -637,17 +637,17 @@ message RequiredChoiceIntermeLeaf {
 message LevelOne {
 
   // Level one
-  optional LevelTwo l1_p1 = 1;
+  LevelTwo l1_p1 = 1;
 
   // Level one to four
-  optional LevelFour l1_p2 = 2;
+  LevelFour l1_p2 = 2;
 }
 
 // Test Level 2
 message LevelTwo {
 
   // Level Two
-  optional LevelThree l2_p1 = 1;
+  LevelThree l2_p1 = 1;
 }
 
 // Test Level3
@@ -661,42 +661,42 @@ message LevelThree {
 message LevelFour {
 
   // loop over level 1
-  optional LevelOne l4_p1 = 1;
+  LevelOne l4_p1 = 1;
 }
 
 // Test ipv4 pattern
 message Ipv4Pattern {
 
   // Description missing in models
-  optional PatternIpv4PatternIpv4 ipv4 = 1;
+  PatternIpv4PatternIpv4 ipv4 = 1;
 }
 
 // Test ipv6 pattern
 message Ipv6Pattern {
 
   // Description missing in models
-  optional PatternIpv6PatternIpv6 ipv6 = 1;
+  PatternIpv6PatternIpv6 ipv6 = 1;
 }
 
 // Test mac pattern
 message MacPattern {
 
   // Description missing in models
-  optional PatternMacPatternMac mac = 1;
+  PatternMacPatternMac mac = 1;
 }
 
 // Test integer pattern
 message IntegerPattern {
 
   // Description missing in models
-  optional PatternIntegerPatternInteger integer = 1;
+  PatternIntegerPatternInteger integer = 1;
 }
 
 // Test checksum pattern
 message ChecksumPattern {
 
   // Description missing in models
-  optional PatternChecksumPatternChecksum checksum = 1;
+  PatternChecksumPatternChecksum checksum = 1;
 }
 
 // Description missing in models
@@ -813,10 +813,10 @@ message PatternPrefixConfigAutoFieldTest {
   optional uint32 auto = 4;
 
   // Description missing in models
-  optional PatternPrefixConfigAutoFieldTestCounter increment = 6;
+  PatternPrefixConfigAutoFieldTestCounter increment = 6;
 
   // Description missing in models
-  optional PatternPrefixConfigAutoFieldTestCounter decrement = 7;
+  PatternPrefixConfigAutoFieldTestCounter decrement = 7;
 }
 
 // ipv4 counter pattern
@@ -860,10 +860,10 @@ message PatternIpv4PatternIpv4 {
   repeated string values = 3;
 
   // Description missing in models
-  optional PatternIpv4PatternIpv4Counter increment = 5;
+  PatternIpv4PatternIpv4Counter increment = 5;
 
   // Description missing in models
-  optional PatternIpv4PatternIpv4Counter decrement = 6;
+  PatternIpv4PatternIpv4Counter decrement = 6;
 }
 
 // ipv6 counter pattern
@@ -907,10 +907,10 @@ message PatternIpv6PatternIpv6 {
   repeated string values = 3;
 
   // Description missing in models
-  optional PatternIpv6PatternIpv6Counter increment = 5;
+  PatternIpv6PatternIpv6Counter increment = 5;
 
   // Description missing in models
-  optional PatternIpv6PatternIpv6Counter decrement = 6;
+  PatternIpv6PatternIpv6Counter decrement = 6;
 }
 
 // mac counter pattern
@@ -961,10 +961,10 @@ message PatternMacPatternMac {
   optional string auto = 4;
 
   // Description missing in models
-  optional PatternMacPatternMacCounter increment = 6;
+  PatternMacPatternMacCounter increment = 6;
 
   // Description missing in models
-  optional PatternMacPatternMacCounter decrement = 7;
+  PatternMacPatternMacCounter decrement = 7;
 }
 
 // integer counter pattern
@@ -1008,10 +1008,10 @@ message PatternIntegerPatternInteger {
   repeated uint32 values = 3;
 
   // Description missing in models
-  optional PatternIntegerPatternIntegerCounter increment = 5;
+  PatternIntegerPatternIntegerCounter increment = 5;
 
   // Description missing in models
-  optional PatternIntegerPatternIntegerCounter decrement = 6;
+  PatternIntegerPatternIntegerCounter decrement = 6;
 }
 
 // TBD

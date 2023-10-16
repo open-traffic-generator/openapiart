@@ -82,7 +82,7 @@ func (ctrl *metricsController) responseGetMetricsError(w http.ResponseWriter, er
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
@@ -131,7 +131,7 @@ func (ctrl *metricsController) responseGetWarningsError(w http.ResponseWriter, e
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
@@ -180,7 +180,7 @@ func (ctrl *metricsController) responseClearWarningsError(w http.ResponseWriter,
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())

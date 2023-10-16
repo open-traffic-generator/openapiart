@@ -82,7 +82,7 @@ func (ctrl *bundlerController) responseSetConfigError(w http.ResponseWriter, err
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
@@ -152,7 +152,7 @@ func (ctrl *bundlerController) responseUpdateConfigurationError(w http.ResponseW
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
@@ -201,7 +201,7 @@ func (ctrl *bundlerController) responseGetConfigError(w http.ResponseWriter, err
 		result = openapi.NewError()
 		err := result.FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = statusCode
+			result.Msg().Code = &statusCode
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())

@@ -1804,7 +1804,8 @@ func (obj *prefixConfig) SetResponse(value PrefixConfigResponseEnum) PrefixConfi
 // A returns a string
 func (obj *prefixConfig) A() string {
 
-	return obj.obj.A
+	return *obj.obj.A
+
 }
 
 // Under Review: Information TBD
@@ -1813,7 +1814,7 @@ func (obj *prefixConfig) A() string {
 // SetA sets the string value in the PrefixConfig object
 func (obj *prefixConfig) SetA(value string) PrefixConfig {
 
-	obj.obj.A = value
+	obj.obj.A = &value
 	return obj
 }
 
@@ -1823,7 +1824,8 @@ func (obj *prefixConfig) SetA(value string) PrefixConfig {
 // B returns a float32
 func (obj *prefixConfig) B() float32 {
 
-	return obj.obj.B
+	return *obj.obj.B
+
 }
 
 // Longer multi-line description
@@ -1832,7 +1834,7 @@ func (obj *prefixConfig) B() float32 {
 // SetB sets the float32 value in the PrefixConfig object
 func (obj *prefixConfig) SetB(value float32) PrefixConfig {
 
-	obj.obj.B = value
+	obj.obj.B = &value
 	return obj
 }
 
@@ -1840,14 +1842,15 @@ func (obj *prefixConfig) SetB(value float32) PrefixConfig {
 // C returns a int32
 func (obj *prefixConfig) C() int32 {
 
-	return obj.obj.C
+	return *obj.obj.C
+
 }
 
 // description is TBD
 // SetC sets the int32 value in the PrefixConfig object
 func (obj *prefixConfig) SetC(value int32) PrefixConfig {
 
-	obj.obj.C = value
+	obj.obj.C = &value
 	return obj
 }
 
@@ -3269,13 +3272,23 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// A is required
-	if obj.obj.A == "" {
+	if obj.obj.A == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "A is required field on interface PrefixConfig")
 	}
 
 	// A is under_review
-	if obj.obj.A != "" {
+	if obj.obj.A != nil {
 		obj.addWarnings("A property in schema PrefixConfig is under review, Information TBD")
+	}
+
+	// B is required
+	if obj.obj.B == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "B is required field on interface PrefixConfig")
+	}
+
+	// C is required
+	if obj.obj.C == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "C is required field on interface PrefixConfig")
 	}
 
 	// DValues is deprecated
@@ -8378,14 +8391,15 @@ type EObject interface {
 // EA returns a float32
 func (obj *eObject) EA() float32 {
 
-	return obj.obj.EA
+	return *obj.obj.EA
+
 }
 
 // description is TBD
 // SetEA sets the float32 value in the EObject object
 func (obj *eObject) SetEA(value float32) EObject {
 
-	obj.obj.EA = value
+	obj.obj.EA = &value
 	return obj
 }
 
@@ -8393,14 +8407,15 @@ func (obj *eObject) SetEA(value float32) EObject {
 // EB returns a float64
 func (obj *eObject) EB() float64 {
 
-	return obj.obj.EB
+	return *obj.obj.EB
+
 }
 
 // description is TBD
 // SetEB sets the float64 value in the EObject object
 func (obj *eObject) SetEB(value float64) EObject {
 
-	obj.obj.EB = value
+	obj.obj.EB = &value
 	return obj
 }
 
@@ -8475,6 +8490,15 @@ func (obj *eObject) validateObj(vObj *validation, set_default bool) {
 		obj.setDefault()
 	}
 
+	// EA is required
+	if obj.obj.EA == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "EA is required field on interface EObject")
+	}
+
+	// EB is required
+	if obj.obj.EB == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "EB is required field on interface EObject")
+	}
 }
 
 func (obj *eObject) setDefault() {
@@ -11142,14 +11166,15 @@ type Mandate interface {
 // RequiredParam returns a string
 func (obj *mandate) RequiredParam() string {
 
-	return obj.obj.RequiredParam
+	return *obj.obj.RequiredParam
+
 }
 
 // description is TBD
 // SetRequiredParam sets the string value in the Mandate object
 func (obj *mandate) SetRequiredParam(value string) Mandate {
 
-	obj.obj.RequiredParam = value
+	obj.obj.RequiredParam = &value
 	return obj
 }
 
@@ -11159,7 +11184,7 @@ func (obj *mandate) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// RequiredParam is required
-	if obj.obj.RequiredParam == "" {
+	if obj.obj.RequiredParam == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "RequiredParam is required field on interface Mandate")
 	}
 }
@@ -13102,14 +13127,15 @@ type MObject interface {
 // StringParam returns a string
 func (obj *mObject) StringParam() string {
 
-	return obj.obj.StringParam
+	return *obj.obj.StringParam
+
 }
 
 // description is TBD
 // SetStringParam sets the string value in the MObject object
 func (obj *mObject) SetStringParam(value string) MObject {
 
-	obj.obj.StringParam = value
+	obj.obj.StringParam = &value
 	return obj
 }
 
@@ -13117,14 +13143,15 @@ func (obj *mObject) SetStringParam(value string) MObject {
 // Integer returns a int32
 func (obj *mObject) Integer() int32 {
 
-	return obj.obj.Integer
+	return *obj.obj.Integer
+
 }
 
 // description is TBD
 // SetInteger sets the int32 value in the MObject object
 func (obj *mObject) SetInteger(value int32) MObject {
 
-	obj.obj.Integer = value
+	obj.obj.Integer = &value
 	return obj
 }
 
@@ -13132,14 +13159,15 @@ func (obj *mObject) SetInteger(value int32) MObject {
 // Float returns a float32
 func (obj *mObject) Float() float32 {
 
-	return obj.obj.Float
+	return *obj.obj.Float
+
 }
 
 // description is TBD
 // SetFloat sets the float32 value in the MObject object
 func (obj *mObject) SetFloat(value float32) MObject {
 
-	obj.obj.Float = value
+	obj.obj.Float = &value
 	return obj
 }
 
@@ -13147,14 +13175,15 @@ func (obj *mObject) SetFloat(value float32) MObject {
 // Double returns a float64
 func (obj *mObject) Double() float64 {
 
-	return obj.obj.Double
+	return *obj.obj.Double
+
 }
 
 // description is TBD
 // SetDouble sets the float64 value in the MObject object
 func (obj *mObject) SetDouble(value float64) MObject {
 
-	obj.obj.Double = value
+	obj.obj.Double = &value
 	return obj
 }
 
@@ -13162,14 +13191,15 @@ func (obj *mObject) SetDouble(value float64) MObject {
 // Mac returns a string
 func (obj *mObject) Mac() string {
 
-	return obj.obj.Mac
+	return *obj.obj.Mac
+
 }
 
 // description is TBD
 // SetMac sets the string value in the MObject object
 func (obj *mObject) SetMac(value string) MObject {
 
-	obj.obj.Mac = value
+	obj.obj.Mac = &value
 	return obj
 }
 
@@ -13177,14 +13207,15 @@ func (obj *mObject) SetMac(value string) MObject {
 // Ipv4 returns a string
 func (obj *mObject) Ipv4() string {
 
-	return obj.obj.Ipv4
+	return *obj.obj.Ipv4
+
 }
 
 // description is TBD
 // SetIpv4 sets the string value in the MObject object
 func (obj *mObject) SetIpv4(value string) MObject {
 
-	obj.obj.Ipv4 = value
+	obj.obj.Ipv4 = &value
 	return obj
 }
 
@@ -13192,14 +13223,15 @@ func (obj *mObject) SetIpv4(value string) MObject {
 // Ipv6 returns a string
 func (obj *mObject) Ipv6() string {
 
-	return obj.obj.Ipv6
+	return *obj.obj.Ipv6
+
 }
 
 // description is TBD
 // SetIpv6 sets the string value in the MObject object
 func (obj *mObject) SetIpv6(value string) MObject {
 
-	obj.obj.Ipv6 = value
+	obj.obj.Ipv6 = &value
 	return obj
 }
 
@@ -13207,14 +13239,15 @@ func (obj *mObject) SetIpv6(value string) MObject {
 // Hex returns a string
 func (obj *mObject) Hex() string {
 
-	return obj.obj.Hex
+	return *obj.obj.Hex
+
 }
 
 // description is TBD
 // SetHex sets the string value in the MObject object
 func (obj *mObject) SetHex(value string) MObject {
 
-	obj.obj.Hex = value
+	obj.obj.Hex = &value
 	return obj
 }
 
@@ -13224,25 +13257,39 @@ func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// StringParam is required
-	if obj.obj.StringParam == "" {
+	if obj.obj.StringParam == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "StringParam is required field on interface MObject")
 	}
 
-	if obj.obj.Integer != 0 {
+	// Integer is required
+	if obj.obj.Integer == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Integer is required field on interface MObject")
+	}
+	if obj.obj.Integer != nil {
 
-		if obj.obj.Integer < -10 || obj.obj.Integer > 90 {
+		if *obj.obj.Integer < -10 || *obj.obj.Integer > 90 {
 			vObj.validationErrors = append(
 				vObj.validationErrors,
-				fmt.Sprintf("-10 <= MObject.Integer <= 90 but Got %d", obj.obj.Integer))
+				fmt.Sprintf("-10 <= MObject.Integer <= 90 but Got %d", *obj.obj.Integer))
 		}
 
 	}
 
+	// Float is required
+	if obj.obj.Float == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Float is required field on interface MObject")
+	}
+
+	// Double is required
+	if obj.obj.Double == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Double is required field on interface MObject")
+	}
+
 	// Mac is required
-	if obj.obj.Mac == "" {
+	if obj.obj.Mac == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Mac is required field on interface MObject")
 	}
-	if obj.obj.Mac != "" {
+	if obj.obj.Mac != nil {
 
 		err := obj.validateMac(obj.Mac())
 		if err != nil {
@@ -13252,10 +13299,10 @@ func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Ipv4 is required
-	if obj.obj.Ipv4 == "" {
+	if obj.obj.Ipv4 == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Ipv4 is required field on interface MObject")
 	}
-	if obj.obj.Ipv4 != "" {
+	if obj.obj.Ipv4 != nil {
 
 		err := obj.validateIpv4(obj.Ipv4())
 		if err != nil {
@@ -13265,10 +13312,10 @@ func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Ipv6 is required
-	if obj.obj.Ipv6 == "" {
+	if obj.obj.Ipv6 == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Ipv6 is required field on interface MObject")
 	}
-	if obj.obj.Ipv6 != "" {
+	if obj.obj.Ipv6 != nil {
 
 		err := obj.validateIpv6(obj.Ipv6())
 		if err != nil {
@@ -13278,10 +13325,10 @@ func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Hex is required
-	if obj.obj.Hex == "" {
+	if obj.obj.Hex == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Hex is required field on interface MObject")
 	}
-	if obj.obj.Hex != "" {
+	if obj.obj.Hex != nil {
 
 		err := obj.validateHex(obj.Hex())
 		if err != nil {
@@ -14412,14 +14459,15 @@ type WObject interface {
 // WName returns a string
 func (obj *wObject) WName() string {
 
-	return obj.obj.WName
+	return *obj.obj.WName
+
 }
 
 // description is TBD
 // SetWName sets the string value in the WObject object
 func (obj *wObject) SetWName(value string) WObject {
 
-	obj.obj.WName = value
+	obj.obj.WName = &value
 	return obj
 }
 
@@ -14429,7 +14477,7 @@ func (obj *wObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// WName is required
-	if obj.obj.WName == "" {
+	if obj.obj.WName == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "WName is required field on interface WObject")
 	}
 }
@@ -14668,14 +14716,15 @@ type ZObject interface {
 // Name returns a string
 func (obj *zObject) Name() string {
 
-	return obj.obj.Name
+	return *obj.obj.Name
+
 }
 
 // description is TBD
 // SetName sets the string value in the ZObject object
 func (obj *zObject) SetName(value string) ZObject {
 
-	obj.obj.Name = value
+	obj.obj.Name = &value
 	return obj
 }
 
@@ -14685,7 +14734,7 @@ func (obj *zObject) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Name is required
-	if obj.obj.Name == "" {
+	if obj.obj.Name == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Name is required field on interface ZObject")
 	}
 }
@@ -15619,7 +15668,8 @@ func (obj *requiredChoiceParent) SetChoice(value RequiredChoiceParentChoiceEnum)
 			"%s is not a valid choice on RequiredChoiceParentChoiceEnum", string(value)))
 		return obj
 	}
-	obj.obj.Choice = openapi.RequiredChoiceParent_Choice_Enum(intValue)
+	enumValue := openapi.RequiredChoiceParent_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
 	obj.obj.IntermediateObj = nil
 	obj.intermediateObjHolder = nil
 
@@ -15664,7 +15714,7 @@ func (obj *requiredChoiceParent) validateObj(vObj *validation, set_default bool)
 	}
 
 	// Choice is required
-	if obj.obj.Choice.Number() == 0 {
+	if obj.obj.Choice == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface RequiredChoiceParent")
 	}
 
@@ -15929,14 +15979,15 @@ func (obj *_error) Error() string {
 // Code returns a int32
 func (obj *_error) Code() int32 {
 
-	return obj.obj.Code
+	return *obj.obj.Code
+
 }
 
 // Numeric status code based on underlying transport being used.
 // SetCode sets the int32 value in the Error object
 func (obj *_error) SetCode(value int32) Error {
 
-	obj.obj.Code = value
+	obj.obj.Code = &value
 	return obj
 }
 
@@ -16002,9 +16053,9 @@ func (obj *_error) validateObj(vObj *validation, set_default bool) {
 		obj.setDefault()
 	}
 
-	// Errors is required
-	if obj.obj.Errors == nil {
-		vObj.validationErrors = append(vObj.validationErrors, "Errors is required field on interface Error")
+	// Code is required
+	if obj.obj.Code == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Code is required field on interface Error")
 	}
 }
 
@@ -21550,7 +21601,8 @@ func (obj *requiredChoiceIntermediate) SetChoice(value RequiredChoiceIntermediat
 			"%s is not a valid choice on RequiredChoiceIntermediateChoiceEnum", string(value)))
 		return obj
 	}
-	obj.obj.Choice = openapi.RequiredChoiceIntermediate_Choice_Enum(intValue)
+	enumValue := openapi.RequiredChoiceIntermediate_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
 	obj.obj.Leaf = nil
 	obj.leafHolder = nil
 	obj.obj.FA = nil
@@ -21627,7 +21679,7 @@ func (obj *requiredChoiceIntermediate) validateObj(vObj *validation, set_default
 	}
 
 	// Choice is required
-	if obj.obj.Choice.Number() == 0 {
+	if obj.obj.Choice == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface RequiredChoiceIntermediate")
 	}
 
@@ -21883,14 +21935,15 @@ type PortMetric interface {
 // Name returns a string
 func (obj *portMetric) Name() string {
 
-	return obj.obj.Name
+	return *obj.obj.Name
+
 }
 
 // description is TBD
 // SetName sets the string value in the PortMetric object
 func (obj *portMetric) SetName(value string) PortMetric {
 
-	obj.obj.Name = value
+	obj.obj.Name = &value
 	return obj
 }
 
@@ -21898,14 +21951,15 @@ func (obj *portMetric) SetName(value string) PortMetric {
 // TxFrames returns a float64
 func (obj *portMetric) TxFrames() float64 {
 
-	return obj.obj.TxFrames
+	return *obj.obj.TxFrames
+
 }
 
 // description is TBD
 // SetTxFrames sets the float64 value in the PortMetric object
 func (obj *portMetric) SetTxFrames(value float64) PortMetric {
 
-	obj.obj.TxFrames = value
+	obj.obj.TxFrames = &value
 	return obj
 }
 
@@ -21913,14 +21967,15 @@ func (obj *portMetric) SetTxFrames(value float64) PortMetric {
 // RxFrames returns a float64
 func (obj *portMetric) RxFrames() float64 {
 
-	return obj.obj.RxFrames
+	return *obj.obj.RxFrames
+
 }
 
 // description is TBD
 // SetRxFrames sets the float64 value in the PortMetric object
 func (obj *portMetric) SetRxFrames(value float64) PortMetric {
 
-	obj.obj.RxFrames = value
+	obj.obj.RxFrames = &value
 	return obj
 }
 
@@ -21930,8 +21985,18 @@ func (obj *portMetric) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Name is required
-	if obj.obj.Name == "" {
+	if obj.obj.Name == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Name is required field on interface PortMetric")
+	}
+
+	// TxFrames is required
+	if obj.obj.TxFrames == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "TxFrames is required field on interface PortMetric")
+	}
+
+	// RxFrames is required
+	if obj.obj.RxFrames == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "RxFrames is required field on interface PortMetric")
 	}
 }
 
@@ -22177,14 +22242,15 @@ type FlowMetric interface {
 // Name returns a string
 func (obj *flowMetric) Name() string {
 
-	return obj.obj.Name
+	return *obj.obj.Name
+
 }
 
 // description is TBD
 // SetName sets the string value in the FlowMetric object
 func (obj *flowMetric) SetName(value string) FlowMetric {
 
-	obj.obj.Name = value
+	obj.obj.Name = &value
 	return obj
 }
 
@@ -22192,14 +22258,15 @@ func (obj *flowMetric) SetName(value string) FlowMetric {
 // TxFrames returns a float64
 func (obj *flowMetric) TxFrames() float64 {
 
-	return obj.obj.TxFrames
+	return *obj.obj.TxFrames
+
 }
 
 // description is TBD
 // SetTxFrames sets the float64 value in the FlowMetric object
 func (obj *flowMetric) SetTxFrames(value float64) FlowMetric {
 
-	obj.obj.TxFrames = value
+	obj.obj.TxFrames = &value
 	return obj
 }
 
@@ -22207,14 +22274,15 @@ func (obj *flowMetric) SetTxFrames(value float64) FlowMetric {
 // RxFrames returns a float64
 func (obj *flowMetric) RxFrames() float64 {
 
-	return obj.obj.RxFrames
+	return *obj.obj.RxFrames
+
 }
 
 // description is TBD
 // SetRxFrames sets the float64 value in the FlowMetric object
 func (obj *flowMetric) SetRxFrames(value float64) FlowMetric {
 
-	obj.obj.RxFrames = value
+	obj.obj.RxFrames = &value
 	return obj
 }
 
@@ -22224,8 +22292,18 @@ func (obj *flowMetric) validateObj(vObj *validation, set_default bool) {
 	}
 
 	// Name is required
-	if obj.obj.Name == "" {
+	if obj.obj.Name == nil {
 		vObj.validationErrors = append(vObj.validationErrors, "Name is required field on interface FlowMetric")
+	}
+
+	// TxFrames is required
+	if obj.obj.TxFrames == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "TxFrames is required field on interface FlowMetric")
+	}
+
+	// RxFrames is required
+	if obj.obj.RxFrames == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "RxFrames is required field on interface FlowMetric")
 	}
 }
 
