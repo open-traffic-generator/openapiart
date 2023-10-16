@@ -304,7 +304,6 @@ class Generator:
             rpc.good_response_type = response_type
             rpc.proto_field_name = proto_name
             rpc.http_method = path["method"]
-            # TODO: restore behavior
             if "x-status" in path["operation"] and path["operation"][
                 "x-status"
             ].get("status") in ["deprecated", "under_review"]:
@@ -1787,16 +1786,16 @@ class Generator:
                 if len(pt) > 0:
                     types.append((name, pt))
                 # TODO: restore behavior
-                # if "x-constraint" in yproperty:
-                #     cons_lst = []
-                #     for cons in yproperty["x-constraint"]:
-                #         ref, prop = cons.split("/properties/")
-                #         klass = self._get_classname_from_ref(ref)
-                #         cons_lst.append("%s.%s" % (klass, prop.strip("/")))
-                #     if cons_lst != []:
-                #         pt.update({"constraint": cons_lst})
-                # if "x-unique" in yproperty:
-                #     pt.update({"unique": '"%s"' % yproperty["x-unique"]})
+                if "x-constraint" in yproperty:
+                    cons_lst = []
+                    for cons in yproperty["x-constraint"]:
+                        ref, prop = cons.split("/properties/")
+                        klass = self._get_classname_from_ref(ref)
+                        cons_lst.append("%s.%s" % (klass, prop.strip("/")))
+                    if cons_lst != []:
+                        pt.update({"constraint": cons_lst})
+                if "x-unique" in yproperty:
+                    pt.update({"unique": '"%s"' % yproperty["x-unique"]})
         return types
 
     def _get_required_and_defaults(self, yobject):
@@ -1973,10 +1972,7 @@ class Generator:
 
     def _get_classname_from_ref(self, ref):
         final_piece = ref.split("/")[-1]
-        if "." in final_piece:
-            return final_piece.split(".")[-1]
-        else:
-            return final_piece
+        return final_piece.replace(".", "")
 
     def _write(self, indent=0, line=""):
         self._fid.write("    " * indent + line + "\n")

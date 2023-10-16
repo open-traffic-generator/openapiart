@@ -683,6 +683,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() {interface} {{
                 api := {internal_struct_name}{{}}
+                globalConstraints = make(map[string]map[string][]string)
                 api.versionMeta = &versionMeta{{checkVersion: false}}
                 return &api
             }}
@@ -1305,7 +1306,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     {nil_items}
                     obj.validationErrors = nil
                     obj.warnings = nil
-                    obj.constraints = make(map[string]map[string]Constraints)
+                    obj.constraints = make(map[string]map[string]string)
                 }}
             """.format(
                     nil_items="\n".join(internal_items_nil), struct=new.struct
@@ -2079,9 +2080,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if x_status_info is not None:
                         field.x_enum_status[idx + 1] = x_status_info
 
-            # TODO: restore behavior
-            # self._parse_x_constraints(field, property_schema)
-            # self._parse_x_unique(field, property_schema)
+            self._parse_x_constraints(field, property_schema)
+            self._parse_x_unique(field, property_schema)
             if (
                 len(choice_enums) == 1
                 and property_name in choice_enums[0].value
@@ -2369,30 +2369,84 @@ class OpenApiArtGo(OpenApiArtPlugin):
         body = ""
         if field.x_constraints == []:
             return body
-        body = """
-        xCons := []string{{
-            {data}
-        }}
-        if !vObj.validateConstraint(xCons, obj.{name}()) {{
-            vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
-        }}
-        """.format(
-            data='"'
-            + '", "'.join([".".join(c) for c in field.x_constraints])
-            + '",',
-            name=field.name,
-            cons="|".join([".".join(c) for c in field.x_constraints]),
-        )
+
+        if field.isArray is True:
+            body = """
+            xCons := []string{{
+                {data}
+            }}
+            for _, value := range obj.{name}() {{
+                if !vObj.validateConstraint(xCons, value) {{
+                    vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", value))
+                }}
+            }}
+            """.format(
+                data='"'
+                + '", "'.join([".".join(c) for c in field.x_constraints])
+                + '",',
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
+        else:
+            body = """
+            xCons := []string{{
+                {data}
+            }}
+            if !vObj.validateConstraint(xCons, obj.{name}()) {{
+                vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s is not a valid {cons} type", obj.{name}()))
+            }}
+            """.format(
+                data='"'
+                + '", "'.join([".".join(c) for c in field.x_constraints])
+                + '",',
+                name=field.name,
+                cons="|".join([".".join(c) for c in field.x_constraints]),
+            )
+        if field.isArray is True:
+            body = """
+            if len(obj.{name}()) > 0 {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
+        elif field.isOptional is True:
+            body = """
+            if obj.Has{name}() {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
+        else:
+            body = """
+            if obj.obj.{name} != nil {{
+                {body}
+            }}""".format(
+                name=field.name, body=body
+            )
         return body
 
-    def _validate_unique(self, new, field):
+    def _validate_unique(self, new, field, optional_field=False):
         body = ""
         if field.x_unique is not None:
-            body = """if !vObj.isUnique("{struct}", obj.{name}(), obj) {{
+            body = """if !vObj.isUnique("{struct}", obj.{name}(), "{type}", "{name}") {{
                 vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("{name} with %s already exists", obj.{name}()))
             }}""".format(
-                struct=new.struct, name=field.name
+                struct=new.struct, name=field.name, type=field.x_unique
             )
+            if optional_field:
+                body = """
+                if obj.Has{name}() {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
+            else:
+                body = """
+                if obj.obj.{name} != nil {{
+                    {body}
+                }}""".format(
+                    name=field.name, body=body
+                )
         return body
 
     def _validate_types(self, new, field):
@@ -2464,13 +2518,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if field.isEnum and field.isArray is False
                 else value,
             )
-            # TODO: restore behavior
-            # unique = self._validate_unique(new, field)
-            # body += "else " + unique if unique != "" else unique
-        # TODO: restore behavior
-        # if field.isOptional is True:
-        #     body += self._validate_unique(new, field)
-        # body += self._validate_x_constraint(field)
+            unique = self._validate_unique(new, field)
+            body += "else " + unique if unique != "" else unique
+        if field.isOptional is True:
+            body += self._validate_unique(new, field, optional_field=True)
+        body += self._validate_x_constraint(field)
         inner_body = ""
         if field.hasminmax and ("int" in field.type or "float" in field.type):
             line = []
@@ -2630,7 +2682,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 for _, item := range obj.{name}().Items() {{
                     item.validateObj(vObj, set_default)
                 }}
-            """.format(
+                _, ok := vObj.constraints["{field_internal_struct}"]
+                if ok {{
+                    delete(vObj.constraints, "{field_internal_struct}")
+                }}""".format(
                 name=field.name,
                 field_internal_struct=field.struct,
             )

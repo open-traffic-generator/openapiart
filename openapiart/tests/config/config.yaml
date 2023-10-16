@@ -307,12 +307,20 @@ components:
           minimum: 64
           maximum: 9000
           x-field-uid: 52
+        local_unique_obj_list:
+          description: |-
+            property to check local unique feature for x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalUniqueObj"
+          x-field-uid: 53
 
     WObject:
       required: [w_name]
       properties:
         w_name:
           type: string
+          x-unique: global
           x-field-uid: 1
 
     ZObject:
@@ -320,6 +328,7 @@ components:
       properties:
         name:
           type: string
+          x-unique: global
           x-field-uid: 1
 
     YObject:
@@ -583,6 +592,20 @@ components:
           items:
             $ref: "#/components/schemas/GObject"
           x-field-uid: 1
+        name:
+          type: string
+          x-field-uid: 2
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
+        names:
+          type: array
+          items:
+            type: string
+          x-field-uid: 3
+          x-constraint:
+            - /components/schemas/ZObject/properties/name
+            - /components/schemas/WObject/properties/w_name
     Metrics.Request:
       type: object
       properties:
@@ -693,4 +716,48 @@ components:
       properties:
         name:
           type: string
+          x-field-uid: 1
+
+    LocalUniqueObj:
+      type: object
+      properties:
+        first_name:
+          type: string
+          x-unique: local
+          x-field-uid: 1
+        last_name:
+          type: string
+          x-field-uid: 2
+        intermediate_list:
+          description: |-
+            property to check intermnediate iterator for local x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalList"
+          x-field-uid: 3
+
+    LocalList:
+      type: object
+      properties:
+        name:
+          type: string
+          x-unique: local
+          x-field-uid: 1
+        value:
+          type: integer
+          x-field-uid: 2
+        leaf_list:
+          description: |-
+            property to check leaf iterator for local x-unique
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalObj"
+          x-field-uid: 3
+
+    LocalObj:
+      type: object
+      properties:
+        name:
+          type: string
+          x-unique: local
           x-field-uid: 1
