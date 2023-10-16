@@ -101,7 +101,7 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 func TestChoiceMarshall(t *testing.T) {
 	api := openapiart.NewApi()
 	config := api.NewPrefixConfig()
-	config.SetA("asd").RequiredObject()
+	config.SetA("asd").SetB(1).SetC(22).RequiredObject().SetEA(1.23).SetEB(2.34)
 
 	choiceObj := config.ChoiceTest()
 	choiceObj.EObj().SetEA(1.23).SetEB(2.34)
@@ -109,9 +109,14 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json := `{
-			"required_object": {},
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"response": "status_200",
 			"a": "asd",
+			"b": 1,
+			"c": 22,
 			"h": true,
 			"choice_test": {
 			  "choice": "e_obj",
@@ -128,9 +133,14 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
-			"required_object": {},
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"response": "status_200",
 			"a": "asd",
+			"b": 1,
+			"c": 22,
 			"h": true,
 			"choice_test": {
 			  "choice": "f_obj",
@@ -147,9 +157,14 @@ func TestChoiceMarshall(t *testing.T) {
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
-			"required_object": {},
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"response": "status_200",
 			"a": "asd",
+			"b": 1,
+			"c": 22,
 			"h": true,
 			"choice_test": {
 			  "choice": "no_obj"
@@ -161,7 +176,12 @@ func TestChoiceMarshall(t *testing.T) {
 func TestChoiceUnMarshall(t *testing.T) {
 	exp_json := `{
 			"a": "asd",
-			"required_object": {},
+			"b": 1,
+			"c": 22,
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"choice_test": {
 				"choice": "e_obj",
 				"e_obj": {
@@ -182,7 +202,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 
 	exp_json = `{
 			"a": "asd",
-			"required_object": {},
+			"b": 1,
+			"c": 22,
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"choice_test": {
 				"choice": "f_obj",
 				"f_obj": {
@@ -200,7 +225,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 
 	exp_json = `{
 			"a": "asd",
-			"required_object": {},
+			"b": 1,
+			"c": 22,
+			"required_object": {
+				"e_a": 1.23,
+				"e_b": 2.34
+			},
 			"choice_test": {
 				"choice": "no_obj"
 			}
@@ -215,7 +245,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	// json without choice
 	json := `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"choice_test": {
 			"e_obj": {
 				"e_a": 1.23,
@@ -236,7 +271,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	// json without choice
 	json = `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"choice_test": {
 			"ieee_802_1qbb": "hello!"
 		}
@@ -253,7 +293,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	//json without choice in hierarchy with non-primitive type
 	exp_json = `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"required_choice_object": {
 			"intermediate_obj": {
 				"leaf": {
@@ -276,7 +321,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	// json without choice in hierarchy with primitive type
 	exp_json = `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"required_choice_object": {
 			"intermediate_obj": {
 				"f_a": "name1"
@@ -301,7 +351,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	fmt.Println(config)
 	exp_json = `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"header_checksum": {
 			"custom": 12345,
 			"generated": "unspecified"
@@ -318,7 +373,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 	// json without choice for checksum pattern with enum choice properties
 	exp_json = `{
 		"a": "asd",
-		"required_object": {},
+		"b": 1,
+		"c": 22,
+		"required_object": {
+			"e_a": 1.23,
+			"e_b": 2.34
+		},
 		"header_checksum": {
 			"generated": "bad"
 		}

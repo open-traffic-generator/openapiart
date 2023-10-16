@@ -2719,12 +2719,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
         interface_fields = new.interface_fields
         hasChoiceConfig = []
         choice_enums = []
-        is_choice_required = False
         enum_map = {}
         choice_enum_map = {}
         for index, field in enumerate(interface_fields):
             if field.name == "Choice":
-                is_choice_required = not field.isOptional
                 for enum in field.enums:
                     enum_str = self._get_external_struct_name(enum)
                     enum_map[enum_str] = ""
@@ -2971,22 +2969,19 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 # )
 
             choice_code += """{el}if choices_set == 1 && choice != "" {{
-                if obj.obj.Choice{num} != {val} {{
+                if obj.obj.Choice != nil {{
                     if obj.Choice() != choice {{
                         obj.validationErrors = append(obj.validationErrors, "choice not matching with property in {intf}")
                     }}
                 }} else {{
                     intVal := {pb_pkg_name}.{intf}_Choice_Enum_value[string(choice)]
                     enumValue := {pb_pkg_name}.{intf}_Choice_Enum(intVal)
-                    obj.obj.Choice = {addr}enumValue
+                    obj.obj.Choice = &enumValue
                 }}
             }}
             """.format(
                 intf=new.interface,
                 pb_pkg_name=self._protobuf_package_name,
-                num=".Number()" if is_choice_required else "",
-                val="0" if is_choice_required else "nil",
-                addr="" if is_choice_required else "&",
                 el=" else " if choice_body is not None else "",
             )
 
