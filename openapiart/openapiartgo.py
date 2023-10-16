@@ -225,18 +225,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
         self._write("go 1.16")
         self._write()
-        self._write(
-            """require (
-                go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.37.0
-                go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0
-                go.opentelemetry.io/otel v1.14.0
-                go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.14.0
-                go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.14.0
-                go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.14.0
-                go.opentelemetry.io/otel/sdk v1.14.0
-                go.opentelemetry.io/otel/trace v1.14.0
-            )"""
-        )
+        # self._write(
+        #     """require (
+        #         go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.44.0
+        #         go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
+        #         go.opentelemetry.io/otel v1.16.0
+        #         go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.16.0
+        #         go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.16.0
+        #         go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.16.0
+        #         go.opentelemetry.io/otel/sdk v1.16.0
+        #         go.opentelemetry.io/otel/trace v1.16.0
+        #     )"""
+        # )
         self._close_fp()
 
     def _write_go_file(self):
