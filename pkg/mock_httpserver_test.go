@@ -86,7 +86,8 @@ func (h *bundlerHandler) SetConfig(rbody goapi.PrefixConfig, r *http.Request) (g
 		return nil, fmt.Errorf("client error !!!!")
 	case goapi.PrefixConfigResponse.STATUS_500:
 		err := goapi.NewError()
-		err.Msg().Code = 500
+		var code int32 = 500
+		err.Msg().Code = &code
 		e := err.SetKind("internal")
 		fmt.Println(e)
 		err.Msg().Errors = []string{"internal err 1", "internal err 2", "internal err 3"}

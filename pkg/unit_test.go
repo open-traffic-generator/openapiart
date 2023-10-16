@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	goapi "github.com/open-traffic-generator/goapi/pkg"
+	openapiart "github.com/open-traffic-generator/openapiart/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -675,6 +676,17 @@ func TestRequiredField(t *testing.T) {
 	assert.Contains(t, err.Error(), "RequiredParam is required field")
 }
 
+func TestRequiredEnumField(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	rc := config.RequiredChoiceObject()
+	err := rc.Validate()
+	assert.NotNil(t, err)
+	rc.IntermediateObj()
+	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
+	err = rc.Validate()
+	assert.Nil(t, err)
+}
+
 func TestOptionalDefault(t *testing.T) {
 	gObject := goapi.NewGObject()
 	gJson := `{
@@ -1102,13 +1114,13 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 	}
 }
 
-// func TestEObjectValidation(t *testing.T) {
-// 	eObject := goapi.NewEObject()
-// 	err := eObject.Validate()
-// 	if assert.Error(t, err) {
-// 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject\nvalidation errors")
-// 	}
-// }
+func TestEObjectValidation(t *testing.T) {
+	eObject := goapi.NewEObject()
+	err := eObject.Validate()
+	if assert.Error(t, err) {
+		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject")
+	}
+}
 
 func TestMObjectValidation(t *testing.T) {
 	mObject := goapi.NewMObject()
@@ -1476,7 +1488,8 @@ func TestNewClearWarningsResponse(t *testing.T) {
 
 func TestNewError(t *testing.T) {
 	new_err := goapi.NewError()
-	new_err.Msg().Code = 500
+	var code int32 = 500
+	new_err.Msg().Code = &code
 	new_err.Msg().Errors = []string{"err1"}
 	respJson, err := new_err.ToJson()
 	assert.Nil(t, err)
@@ -1638,10 +1651,14 @@ func TestFromJsonEmpty(t *testing.T) {
 
 func TestChoiceDefaults(t *testing.T) {
 	jObject := goapi.NewJObject()
+	jObject.JA().SetEA(3.45).SetEB(6.78)
 	json := `
 	{
 		"choice": "j_a",
-		"j_a": {}
+		"j_a": {
+			"e_a": 3.45,
+			"e_b": 6.78
+		}
 	}`
 	j, err0 := jObject.ToJson()
 	assert.Nil(t, err0)
@@ -1711,13 +1728,14 @@ func TestSetterWrapperHolder(t *testing.T) {
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson)
 	fmt.Println(metricsrespJson)
-	metricsResp.Metrics().Ports().Add().SetName("abc").SetRxFrames(100)
+	metricsResp.Metrics().Ports().Add().SetName("abc").SetRxFrames(100).SetTxFrames(100)
 	json := `{
 		"metrics":  {
 		  "choice": "ports",
 		  "ports":  [
 			{
 			  "name":  "abc",
+			  "tx_frames": 100,
 			  "rx_frames":  100
 			}
 		  ]
