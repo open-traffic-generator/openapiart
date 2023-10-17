@@ -31,7 +31,7 @@ func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
 	fObj.SetChoice(openapiart.FObjectChoice.F_C)
 	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
 
-	err := fObj.Validate()
+	_, err := fObj.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -42,7 +42,7 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshaller().ToYaml()
 	assert.Nil(t, err)
 
 	// rest of operation should not be impacted
@@ -71,7 +71,7 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshaller().ToYaml()
 	assert.Nil(t, err)
 
 	fObj := choiceObj.FObj()
@@ -89,6 +89,6 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 	assert.False(t, fObj.HasFB())
 
 	// validate the whole object
-	err = choiceObj.Validate()
+	_, err = choiceObj.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }

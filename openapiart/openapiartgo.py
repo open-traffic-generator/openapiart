@@ -523,7 +523,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         request_return_type=rpc.request_return_type,
                     )
                     rpc.validate = """
-                        if err := {struct}.Validate(); err != nil {{
+                        if err := {struct}.validate(); err != nil {{
                             return nil, err
                         }}
                     """.format(
@@ -1343,7 +1343,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return obj.validationResult()
             }}
 
-            func (obj *{struct}) Validate() error {{
+            func (obj *{struct}) validate() error {{
                 // emptyVars()
                 obj.validateObj(&obj.validation, false)
                 return obj.validationResult()
@@ -1358,7 +1358,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
 
             func (obj *{struct}) Clone() ({interface}, error) {{
-                vErr := obj.Validate()
+                vErr := obj.validate()
                 if vErr != nil {{
                     return nil, vErr
                 }}
@@ -1411,8 +1411,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "setMsg(*{pb_pkg_name}.{interface}) {interface}",
             "// provides marshal interface for serdes operation",
             "Marshaller() marshal{interface}"
-            "// Validate validates {interface}",
-            "Validate() error",
+            "// validate validates {interface}",
+            "validate() error",
             "// A stringer function",
             "String() string",
             "// Clones the object",

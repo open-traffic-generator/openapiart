@@ -356,7 +356,7 @@ var BadMac = []string{
 func TestGoodMacValidation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValue(GoodMac[0])
-	err := mac.Validate()
+	_, err := mac.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -364,7 +364,7 @@ func TestBadMacValidation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	for _, mac := range BadMac {
 		macObj := config.MacPattern().Mac().SetValue(mac)
-		err := macObj.Validate()
+		_, err := macObj.Marshaller().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Mac")
 		}
@@ -374,14 +374,14 @@ func TestBadMacValidation(t *testing.T) {
 func TestGoodMacValues(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(GoodMac)
-	err := mac.Validate()
+	_, err := mac.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValues(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(BadMac)
-	err := mac.Validate()
+	_, err := mac.Marshaller().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -393,7 +393,7 @@ func TestBadMacIncrement(t *testing.T) {
 	mac := config.MacPattern().Mac().Increment().SetStart(GoodMac[0])
 	mac.SetStep(BadMac[0])
 	mac.SetCount(10)
-	err := mac.Validate()
+	_, err := mac.Marshaller().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -405,7 +405,7 @@ func TestBadMacDecrement(t *testing.T) {
 	mac := config.MacPattern().Mac().Decrement().SetStart(BadMac[0])
 	mac.SetStep(GoodMac[0])
 	mac.SetCount(10)
-	err := mac.Validate()
+	_, err := mac.Marshaller().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -418,7 +418,7 @@ var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.
 func TestGoodIpv4Validation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValue(GoodIpv4[0])
-	err := ipv4.Validate()
+	_, err := ipv4.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -426,7 +426,7 @@ func TestBadIpv4Validation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	for _, ip := range BadIpv4 {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
-		err := ipv4.Validate()
+		_, err := ipv4.Marshaller().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Ipv4")
 		}
@@ -436,7 +436,7 @@ func TestBadIpv4Validation(t *testing.T) {
 func TestBadIpv4Values(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid ipv4 addresses")
 	}
@@ -447,7 +447,7 @@ func TestBadIpv4Increment(t *testing.T) {
 	ipv4 := config.Ipv4Pattern().Ipv4().Increment().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid Ipv4")
 	}
@@ -458,7 +458,7 @@ func TestBadIpv4Decrement(t *testing.T) {
 	ipv4 := config.Ipv4Pattern().Ipv4().Decrement().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid Ipv4")
 	}
@@ -470,7 +470,7 @@ var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", 
 func TestGoodIpv6Validation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValue(GoodIpv6[0])
-	err := ipv6.Validate()
+	_, err := ipv6.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -478,7 +478,7 @@ func TestBadIpv6Validation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	for _, ip := range BadIpv6 {
 		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
-		err := ipv6.Validate()
+		_, err := ipv6.Marshaller().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 		}
@@ -488,7 +488,7 @@ func TestBadIpv6Validation(t *testing.T) {
 func TestBadIpv6Values(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValues(BadIpv6)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6 address")
 	}
@@ -499,7 +499,7 @@ func TestBadIpv6Increment(t *testing.T) {
 	ipv6 := config.Ipv6Pattern().Ipv6().Increment().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 	}
@@ -510,7 +510,7 @@ func TestBadIpv6Decrement(t *testing.T) {
 	ipv6 := config.Ipv6Pattern().Ipv6().Decrement().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 	}
@@ -581,7 +581,7 @@ func TestRequiredValidation(t *testing.T) {
 		SetIpv6("2001::1").
 		SetIpv4("1.1.1.1")
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
-	err := config.Validate()
+	_, err := config.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -589,22 +589,22 @@ func TestHexPattern(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	l := config.L()
 	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err := l.Validate()
+	_, err := l.Marshaller().ToYaml()
 	assert.Nil(t, err)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err1 := l.Validate()
+	_, err1 := l.Marshaller().ToYaml()
 	assert.Nil(t, err1)
 	l.SetHex("")
-	err2 := l.Validate()
+	_, err2 := l.Marshaller().ToYaml()
 	assert.NotNil(t, err2)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b0000000x0")
-	err3 := l.Validate()
+	_, err3 := l.Marshaller().ToYaml()
 	assert.NotNil(t, err3)
 	l.SetHex("0x00")
-	err4 := l.Validate()
+	_, err4 := l.Marshaller().ToYaml()
 	assert.Nil(t, err4)
 	l.SetHex("0XAF12")
-	err5 := l.Validate()
+	_, err5 := l.Marshaller().ToYaml()
 	assert.Nil(t, err5)
 }
 
@@ -633,7 +633,7 @@ func TestChoice1(t *testing.T) {
 
 func TestRequiredField(t *testing.T) {
 	mandate := openapiart.NewMandate()
-	err := mandate.Validate()
+	_, err := mandate.Marshaller().ToYaml()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "RequiredParam is required field")
 }
@@ -641,11 +641,11 @@ func TestRequiredField(t *testing.T) {
 func TestRequiredEnumField(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	rc := config.RequiredChoiceObject()
-	err := rc.Validate()
+	_, err := rc.Marshaller().ToYaml()
 	assert.NotNil(t, err)
 	rc.IntermediateObj()
 	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
-	err = rc.Validate()
+	_, err = rc.Marshaller().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -801,7 +801,8 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 	config.SetRequiredObject(openapiart.NewEObject().SetEA(10.1).SetEB(30.234))
 	config.SetInteger64(200645)
-	assert.Nil(t, config.Validate())
+	_, err := config.Marshaller().ToYaml()
+	assert.Nil(t, err)
 	new_json := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -813,7 +814,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 		},
 		"h": false
 	}`
-	err := config.Marshaller().FromJson(new_json)
+	err = config.Marshaller().FromJson(new_json)
 	assert.Nil(t, err)
 	configJson, err := config.Marshaller().ToJson()
 	assert.Nil(t, err)
@@ -1046,7 +1047,7 @@ func TestStringLengthError(t *testing.T) {
 	config.StrLen()
 	config.Space1()
 	config.Name()
-	err := config.Validate()
+	_, err := config.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "3 <= length of prefixconfig.strlen <= 6 but got 8")
 	}
@@ -1064,7 +1065,7 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 	config.Ieee8021Qbb()
 	config.FullDuplex100Mb()
 	config.Response()
-	err := config.Validate()
+	_, err := config.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "status_600 is not a valid choice")
 	}
@@ -1072,7 +1073,7 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 
 func TestEObjectValidation(t *testing.T) {
 	eObject := openapiart.NewEObject()
-	err := eObject.Validate()
+	_, err := eObject.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject")
 	}
@@ -1080,7 +1081,7 @@ func TestEObjectValidation(t *testing.T) {
 
 func TestMObjectValidation(t *testing.T) {
 	mObject := openapiart.NewMObject()
-	err := mObject.Validate()
+	_, err := mObject.Marshaller().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "required field on interface mobject")
 	}
@@ -1102,7 +1103,7 @@ func TestMobjectValidationError(t *testing.T) {
 		SetIpv6("2001::1::1").
 		SetIpv4("1.1.1.1.2")
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
-	err := config.Validate()
+	_, err := config.Marshaller().ToYaml()
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()),
@@ -1124,7 +1125,7 @@ func TestLObjectError(t *testing.T) {
 	l.SetIpv4("1.1.1.1.1.1")
 	l.SetIpv6("2000::1:::4")
 	l.SetHex("0x12KJN")
-	err := config.Validate()
+	_, err := config.Marshaller().ToYaml()
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()),
@@ -1510,7 +1511,8 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.Name()
 	new_port_metric.RxFrames()
 	new_port_metric.TxFrames()
-	assert.Nil(t, new_port_metric.Validate())
+	_, err = new_port_metric.Marshaller().ToYaml()
+	assert.Nil(t, err)
 }
 
 func TestItemsMethod(t *testing.T) {
