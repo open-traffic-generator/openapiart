@@ -131,7 +131,7 @@ func TestGetMetrics(t *testing.T) {
 		assert.Nil(t, m_err)
 		assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
 		for _, row := range metrics.Ports().Items() {
-			log.Println(row.ToYaml())
+			log.Println(row.Marshaller().ToYaml())
 		}
 		metReqflow := openapiart.NewMetricsRequest()
 		metReqflow.SetChoice(openapiart.MetricsRequestChoice.FLOW)
@@ -143,7 +143,7 @@ func TestGetMetrics(t *testing.T) {
 		assert.Nil(t, m_err1)
 		assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
 		for _, row := range metResp.Flows().Items() {
-			log.Println(row.ToYaml())
+			log.Println(row.Marshaller().ToYaml())
 		}
 	}
 }
@@ -153,7 +153,7 @@ func TestGetWarnings(t *testing.T) {
 		resp, err := api.GetWarnings()
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
-		log.Println(resp.ToYaml())
+		log.Println(resp.Marshaller().ToYaml())
 	}
 }
 
