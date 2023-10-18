@@ -1188,7 +1188,9 @@ func TestIterSetJObject(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	config.J().Add().JA().SetEA(100)
 	config.J().Add()
-	j := config.J().Set(1, openapiart.NewJObject().SetChoice("j_b"))
+	jObj := openapiart.NewJObject()
+	jObj.JB()
+	j := config.J().Set(1, jObj)
 
 	assert.Contains(t, j.Items()[1].Choice(), "j_b")
 	assert.Len(t, config.J().Items(), 2)
@@ -1620,7 +1622,7 @@ func TestChoiceDefaults(t *testing.T) {
 	j, err0 := jObject.Marshaller().ToJson()
 	assert.Nil(t, err0)
 	require.JSONEq(t, json, j)
-	jObject.SetChoice(openapiart.JObjectChoice.J_B)
+	jObject.JB()
 	json1 := `
 	{
 		"choice": "j_b",

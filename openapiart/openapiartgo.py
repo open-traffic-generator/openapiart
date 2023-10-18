@@ -114,6 +114,9 @@ class FluentField(object):
         self.x_constraints = []
         self.x_unique = None
         self.iter_name = None
+        self.choice_with_no_prop = (
+            []
+        )  # maintain a list of choices with no properties for adding getter methods
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -1429,12 +1432,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             interfaces.append(field.getter_method)
             if field.setter_method is not None:
-                interfaces.append(
-                    "// {}".format(
-                        self._escaped_str(field.setter_method_description)
+                description = field.setter_method_description
+                method = field.setter_method
+                if field.name == "Choice":
+                    description = field.setter_method_description.replace(
+                        "SetChoice", "setChoice"
                     )
+                    method = field.setter_method.replace(
+                        "SetChoice", "setChoice"
+                    )
+                interfaces.append(
+                    "// {}".format(self._escaped_str(description))
                 )
-                interfaces.append(field.setter_method)
+
+                interfaces.append(method)
             if field.has_method is not None:
                 interfaces.append(
                     "// {}".format(
@@ -1442,6 +1453,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 interfaces.append(field.has_method)
+            for prop in field.choice_with_no_prop:
+                interfaces.append(
+                    "// getter for {fieldName} to set choice.\n{fieldName}()".format(
+                        fieldName=self._get_external_field_name(prop)
+                    )
+                )
         if new.interface == "Error":
             interfaces.append(
                 "// implement Error function for implementingnative Error Interface. \n Error() string"
@@ -1511,7 +1528,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
                 )
                 if field.setChoiceValue is not None:
-                    block = "obj.SetChoice({interface}Choice.{enum})".format(
+                    block = "obj.setChoice({interface}Choice.{enum})".format(
                         interface=new.interface, enum=field.setChoiceValue
                     )
                 body = """if len(obj.obj.{name}) == 0 {{
@@ -1543,7 +1560,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         )
                     else:
                         block = """
-                            obj.SetChoice({interface}Choice.{enum})
+                            obj.setChoice({interface}Choice.{enum})
                         """.format(
                             interface=new.interface,
                             enum=field.setChoiceValue,
@@ -1565,7 +1582,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
             if field.setChoiceValue is not None:
                 set_choice_or_new = (
-                    """obj.SetChoice({interface}Choice.{enum})""".format(
+                    """obj.setChoice({interface}Choice.{enum})""".format(
                         interface=new.interface,
                         enum=field.setChoiceValue,
                     )
@@ -1643,13 +1660,27 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         fieldname=field.name,
                     )
                 )
+            for prop in field.choice_with_no_prop:
+                self._write(
+                    """
+                    // getter for {fieldname} to set choice
+                    func (obj *{struct}) {fieldname}() {{
+                    obj.setChoice({interface}Choice.{enum})
+                }}
+                """.format(
+                        struct=new.struct,
+                        interface=new.interface,
+                        fieldname=self._get_external_field_name(prop),
+                        enum=prop.upper(),
+                    )
+                )
             return
         elif field.isPointer:
             set_enum_choice = None
             if field.setChoiceValue is not None:
                 set_enum_choice = """
                     if obj.obj.{fieldname} == nil {{
-                        obj.SetChoice({interface}Choice.{enum})
+                        obj.setChoice({interface}Choice.{enum})
                     }}
                 """.format(
                     fieldname=field.name,
@@ -1679,7 +1710,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if field.setChoiceValue is not None:
                 set_enum_choice = """
                     if obj.obj.{fieldname} == nil {{
-                        obj.SetChoice({interface}Choice.{enum})
+                        obj.setChoice({interface}Choice.{enum})
                     }}
                 """.format(
                     fieldname=field.name,
@@ -1869,7 +1900,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     )
 
             self._write(
-                """func (obj* {struct}) Set{fieldname}(value {interface}{fieldname}Enum) {interface} {{
+                """func (obj* {struct}) {set_str}{fieldname}(value {interface}{fieldname}Enum) {interface} {{
                 intValue, ok := {pb_pkg_name}.{interface}_{fieldname}_Enum_value[string(value)]
                 if !ok {{
                     obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -1889,6 +1920,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     enum_set="\n".join(enum_body)
                     if field.name == "Choice"
                     else "",
+                    set_str="set" if field.name == "Choice" else "Set",
                 )
             )
             return
@@ -1911,7 +1943,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
         set_choice = ""
         if field.setChoiceValue is not None:
-            set_choice = """obj.SetChoice({interface}Choice.{enum})""".format(
+            set_choice = """obj.setChoice({interface}Choice.{enum})""".format(
                 interface=new.interface,
                 enum=field.setChoiceValue,
             )
@@ -2116,6 +2148,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         choice_enums = self._get_parser("$..choice..enum").find(
             fluent_new.schema_object["properties"]
         )
+        prop_names = [
+            key for key in fluent_new.schema_object["properties"].keys()
+        ]
         for property_name, property_schema in fluent_new.schema_object[
             "properties"
         ].items():
@@ -2198,6 +2233,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
                 if "unspecified" in field.enums:
                     field.enums.remove("unspecified")
+                if property_name == "choice":
+                    prop_names.remove("choice")
+                    diff = set(field.enums).difference(set(prop_names))
+                    if len(diff) > 0:
+                        field.choice_with_no_prop = list(diff)
+
             if field.hasminmax:
                 field.min = (
                     None
@@ -2968,6 +3009,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 + body
             )
 
+        body = body.replace("SetChoice", "setChoice")
         self._write(
             """func (obj *{struct}) setDefault() {{
                 {body}
