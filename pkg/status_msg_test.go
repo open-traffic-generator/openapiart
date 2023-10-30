@@ -43,7 +43,7 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 	config.SetHexSlice([]string{"str1", "str2"})
 
 	// validating the warnings
-	_, err := config.Marshaller().ToYaml()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -64,7 +64,7 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 	config.E().SetEA(4.56)
 
 	// validating the warnings
-	_, err := config.Marshaller().ToYaml()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -78,7 +78,7 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 
 	j := config.J().Add()
 	j.JB()
-	_, err := j.Marshaller().ToYaml()
+	_, err := j.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -93,7 +93,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
 
 	// validating the warnings
-	_, err := config.Marshaller().ToYaml()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -104,7 +104,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 
 	// validating the warnings
-	_, err = config.Marshaller().ToYaml()
+	_, err = config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -123,7 +123,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {
-		_, err := item.Marshaller().ToYaml()
+		_, err := item.Marshal().ToYaml()
 		if err != nil {
 			t.Logf("error: %s", err.Error())
 		}
@@ -136,7 +136,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 func TestStatusMsgInSchemaObjects(t *testing.T) {
 	config := openapiart.NewUpdateConfig()
 
-	_, err := config.Marshaller().ToYaml()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -151,7 +151,7 @@ func TestStatusMsgInSchemaObjects(t *testing.T) {
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {
-		_, err := item.Marshaller().ToYaml()
+		_, err := item.Marshal().ToYaml()
 		if err != nil {
 			t.Logf("error: %s", err.Error())
 		}

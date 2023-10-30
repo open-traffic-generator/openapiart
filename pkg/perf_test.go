@@ -53,13 +53,13 @@ func TestPerf(t *testing.T) {
 	fmt.Printf("Time elapsed for manual configuration %d ms\n", (end.Nanosecond()-start.Nanosecond())/1000)
 
 	jStart := time.Now()
-	json, j_err := config.Marshaller().ToJson()
+	json, j_err := config.Marshal().ToJson()
 	jEnd := time.Now()
 	yStart := time.Now()
-	yaml, y_err := config.Marshaller().ToYaml()
+	yaml, y_err := config.Marshal().ToYaml()
 	yEnd := time.Now()
 	pStart := time.Now()
-	pbText, p_err := config.Marshaller().ToPbText()
+	pbText, p_err := config.Marshal().ToPbText()
 	pEnd := time.Now()
 
 	fmt.Printf("Time elapsed to serialize to Json %d ms \n", (jEnd.Nanosecond()-jStart.Nanosecond())/1000)
@@ -72,19 +72,19 @@ func TestPerf(t *testing.T) {
 
 	jDStart := time.Now()
 	jsonconf := openapiart.NewPrefixConfig()
-	jdErr := jsonconf.Marshaller().FromJson(json)
+	jdErr := jsonconf.Unmarshal().FromJson(json)
 	assert.Nil(t, jdErr)
 	jDEnd := time.Now()
 
 	yDStart := time.Now()
 	yamlconf := openapiart.NewPrefixConfig()
-	ydErr := yamlconf.Marshaller().FromYaml(yaml)
+	ydErr := yamlconf.Unmarshal().FromYaml(yaml)
 	assert.Nil(t, ydErr)
 	yDEnd := time.Now()
 
 	pDStart := time.Now()
 	pbConf := openapiart.NewPrefixConfig()
-	pdErr := pbConf.Marshaller().FromPbText(pbText)
+	pdErr := pbConf.Unmarshal().FromPbText(pbText)
 	assert.Nil(t, pdErr)
 	pDEnd := time.Now()
 

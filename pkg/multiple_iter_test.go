@@ -28,7 +28,7 @@ func TestMultipleIter(t *testing.T) {
 	assert.Equal(t, len(config.G2().Items()), 1)
 	t.Log(config)
 	// validating the warnings
-	_, err := config.Marshaller().ToYaml()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Fatalf("error: %s", err.Error())
 	}

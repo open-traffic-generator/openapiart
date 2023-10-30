@@ -70,7 +70,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		tmp := errObj.SetKind("internal")
 		fmt.Println(tmp)
 		_ = errObj.SetErrors([]string{"internal err 1"})
-		jsonStr, e := errObj.Marshaller().ToJson()
+		jsonStr, e := errObj.Marshal().ToJson()
 		if e != nil {
 			return resp, e
 		}
@@ -87,7 +87,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		var code int32 = 404
 		_ = errObj.SetCode(code)
 		_ = errObj.SetErrors([]string{"returning err1", "returning err2"})
-		jsonStr, e := errObj.Marshaller().ToJson()
+		jsonStr, e := errObj.Marshal().ToJson()
 		if e != nil {
 			return resp, e
 		}
@@ -104,7 +104,7 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
-	ver, _ := openapiart.NewApi().GetLocalVersion().Marshaller().ToProto()
+	ver, _ := openapiart.NewApi().GetLocalVersion().Marshal().ToProto()
 	resp := &sanity.GetVersionResponse{
 		Version: ver,
 	}
@@ -123,7 +123,7 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 			tmp := errObj.SetKind("validation")
 			fmt.Println(tmp)
 			_ = errObj.SetErrors([]string{"invalid1", "invalid2"})
-			jsonStr, e := errObj.Marshaller().ToJson()
+			jsonStr, e := errObj.Marshal().ToJson()
 			if e != nil {
 				return nil, e
 			}

@@ -61,12 +61,12 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	yaml1, err := c1.Marshaller().ToYaml()
+	yaml1, err := c1.Marshal().ToYaml()
 	assert.Nil(t, err)
 	c2 := openapiart.NewPrefixConfig()
-	yaml_err := c2.Marshaller().FromYaml(yaml1)
+	yaml_err := c2.Unmarshal().FromYaml(yaml1)
 	assert.Nil(t, yaml_err)
-	yaml2, err := c2.Marshaller().ToYaml()
+	yaml2, err := c2.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }
@@ -75,12 +75,12 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	json1, err := c1.Marshaller().ToJson()
+	json1, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
 	c2 := openapiart.NewPrefixConfig()
-	json_err := c2.Marshaller().FromJson(json1)
+	json_err := c2.Unmarshal().FromJson(json1)
 	assert.Nil(t, json_err)
-	json2, err := c2.Marshaller().ToJson()
+	json2, err := c2.Marshal().ToJson()
 	assert.Nil(t, err)
 	assert.Equal(t, json1, json2)
 }
@@ -91,7 +91,7 @@ func TestPartialSerDes(t *testing.T) {
 
 	// convert the configuration to a map[string]interface{}
 	var jsonMap map[string]interface{}
-	c1json, err := c1.Marshaller().ToJson()
+	c1json, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
 	unmarsh_err := json.Unmarshal([]byte(c1json), &jsonMap)
 	assert.Nil(t, unmarsh_err)
@@ -104,14 +104,14 @@ func TestPartialSerDes(t *testing.T) {
 
 	// create a new config that consists of just the e object and the g object
 	c2 := openapiart.NewPrefixConfig()
-	json_err := c2.E().Marshaller().FromJson(string(data1))
+	json_err := c2.E().Unmarshal().FromJson(string(data1))
 	assert.Nil(t, json_err)
-	json_err1 := c2.G().Add().Marshaller().FromJson(string(data2))
+	json_err1 := c2.G().Add().Unmarshal().FromJson(string(data2))
 	assert.Nil(t, json_err1)
-	yaml1, err := c2.E().Marshaller().ToYaml()
+	yaml1, err := c2.E().Marshal().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(yaml1)
-	yaml2, err := c2.G().Add().Marshaller().ToYaml()
+	yaml2, err := c2.G().Add().Marshal().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(yaml2)
 }
@@ -119,14 +119,14 @@ func TestPartialSerDes(t *testing.T) {
 func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	api := openapiart.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
-	pbString, err := c1.Marshaller().ToPbText()
+	pbString, err := c1.Marshal().ToPbText()
 	assert.Nil(t, err)
 	c2 := openapiart.NewPrefixConfig()
-	pbtext_err := c2.Marshaller().FromPbText(pbString)
+	pbtext_err := c2.Unmarshal().FromPbText(pbString)
 	assert.Nil(t, pbtext_err)
-	c1json, err := c1.Marshaller().ToJson()
+	c1json, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
-	c2json, err := c2.Marshaller().ToJson()
+	c2json, err := c2.Marshal().ToJson()
 	assert.Nil(t, err)
 	assert.Equal(t, c1json, c2json)
 }
@@ -161,10 +161,10 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 }
 
 func TestValidJsonDecode(t *testing.T) {
-	// Valid Marshaller().FromJson
+	// Valid Unmarshal().FromJson
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.Nil(t, err)
 }
 
@@ -172,7 +172,7 @@ func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:14): unknown field "bz"`)
 }
@@ -181,7 +181,7 @@ func TestBadEnumJsonDecode(t *testing.T) {
 	// Valid Wrong key
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:47): invalid value for enum type: "status_800"`)
 }
@@ -190,7 +190,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:20): invalid value for float type: "abc"`)
 }
@@ -199,7 +199,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
@@ -208,7 +208,7 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 	// Valid without value
 	c1 := openapiart.NewPrefixConfig()
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.Marshaller().FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:32): invalid value for int32 type: ""`)
 }
@@ -224,9 +224,9 @@ required_object:
   e_b: 2
 response: status_200
 `
-	err := config.Marshaller().FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.Nil(t, err)
-	configYaml, err := config.Marshaller().ToYaml()
+	configYaml, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, data, configYaml)
 }
@@ -242,7 +242,7 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.Marshaller().FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:13): unknown field "bz"`)
 }
@@ -258,7 +258,7 @@ required_object:
   e_b: 2
 response: status_800
 `
-	err := config.Marshaller().FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:84): invalid value for enum type: "status_800"`)
 }
@@ -274,7 +274,7 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.Marshaller().FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:17): invalid value for float type: "abc"`)
 }
@@ -290,7 +290,7 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.Marshaller().FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
@@ -299,13 +299,13 @@ func TestSetMsg(t *testing.T) {
 	api := openapiart.NewApi()
 	config := NewFullyPopulatedPrefixConfig(api)
 	copy := openapiart.NewPrefixConfig()
-	p, err := config.Marshaller().ToProto()
+	p, err := config.Marshal().ToProto()
 	assert.Nil(t, err)
-	_, err = copy.Marshaller().FromProto(p)
+	_, err = copy.Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	configYaml, err := config.Marshaller().ToYaml()
+	configYaml, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
-	copyYaml, err := copy.Marshaller().ToYaml()
+	copyYaml, err := copy.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, configYaml, copyYaml)
 }
@@ -316,12 +316,12 @@ func TestNestedSetMsg(t *testing.T) {
 	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
 	config := openapiart.NewPrefixConfig()
-	p, _ := eObject.Marshaller().ToProto()
-	_, err := config.K().EObject().Marshaller().FromProto(p)
+	p, _ := eObject.Marshal().ToProto()
+	_, err := config.K().EObject().Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	yaml1, err := config.K().EObject().Marshaller().ToYaml()
+	yaml1, err := config.K().EObject().Marshal().ToYaml()
 	assert.Nil(t, err)
-	yaml2, err := eObject.Marshaller().ToYaml()
+	yaml2, err := eObject.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }

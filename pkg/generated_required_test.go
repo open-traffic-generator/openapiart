@@ -17,12 +17,12 @@ func TestPrefixConfigRequired(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	p, _ := object.Marshaller().ToProto()
+	p, _ := object.Marshal().ToProto()
 	data, _ := opts.Marshal(p)
-	err := object.Marshaller().FromJson(string(data))
-	err1 := object.Marshaller().FromYaml(string(data))
+	err := object.Unmarshal().FromJson(string(data))
+	err1 := object.Unmarshal().FromYaml(string(data))
 	protoMarshal, _ := proto.Marshal(p)
-	err2 := object.Marshaller().FromPbText(string(protoMarshal))
+	err2 := object.Unmarshal().FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "RequiredObject", "A", "B", "C")
 	assert.Contains(t, err1.Error(), "RequiredObject", "A", "B", "C")
 	assert.Contains(t, err2.Error(), "RequiredObject", "A", "B", "C")
@@ -52,12 +52,12 @@ func TestMandateRequired(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	p, _ := object.Marshaller().ToProto()
+	p, _ := object.Marshal().ToProto()
 	data, _ := opts.Marshal(p)
-	err := object.Marshaller().FromJson(string(data))
-	err1 := object.Marshaller().FromYaml(string(data))
+	err := object.Unmarshal().FromJson(string(data))
+	err1 := object.Unmarshal().FromYaml(string(data))
 	protoMarshal, _ := proto.Marshal(p)
-	err2 := object.Marshaller().FromPbText(string(protoMarshal))
+	err2 := object.Unmarshal().FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "RequiredParam")
 	assert.Contains(t, err1.Error(), "RequiredParam")
 	assert.Contains(t, err2.Error(), "RequiredParam")
@@ -70,12 +70,12 @@ func TestMObjectRequired(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	p, _ := object.Marshaller().ToProto()
+	p, _ := object.Marshal().ToProto()
 	data, _ := opts.Marshal(p)
-	err := object.Marshaller().FromJson(string(data))
-	err1 := object.Marshaller().FromYaml(string(data))
+	err := object.Unmarshal().FromJson(string(data))
+	err1 := object.Unmarshal().FromYaml(string(data))
 	protoMarshal, _ := proto.Marshal(p)
-	err2 := object.Marshaller().FromPbText(string(protoMarshal))
+	err2 := object.Unmarshal().FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 	assert.Contains(t, err1.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
 	assert.Contains(t, err2.Error(), "StringParam", "Integer", "Float", "Double", "Mac", "Ipv4", "Ipv6", "Hex")
@@ -88,12 +88,12 @@ func TestPortMetricRequired(t *testing.T) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	p, _ := object.Marshaller().ToProto()
+	p, _ := object.Marshal().ToProto()
 	data, _ := opts.Marshal(p)
-	err := object.Marshaller().FromJson(string(data))
-	err1 := object.Marshaller().FromYaml(string(data))
+	err := object.Unmarshal().FromJson(string(data))
+	err1 := object.Unmarshal().FromYaml(string(data))
 	protoMarshal, _ := proto.Marshal(p)
-	err2 := object.Marshaller().FromPbText(string(protoMarshal))
+	err2 := object.Unmarshal().FromPbText(string(protoMarshal))
 	assert.Contains(t, err.Error(), "Name", "TxFrames", "RxFrames")
 	assert.Contains(t, err1.Error(), "Name", "TxFrames", "RxFrames")
 	assert.Contains(t, err2.Error(), "Name", "TxFrames", "RxFrames")

@@ -91,7 +91,7 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 		e := err.SetKind("internal")
 		fmt.Println(e)
 		_ = err.SetErrors([]string{"internal err 1", "internal err 2", "internal err 3"})
-		jsonStr, _ := err.Marshaller().ToJson()
+		jsonStr, _ := err.Marshal().ToJson()
 		return nil, fmt.Errorf(jsonStr)
 	}
 	return response, nil
@@ -99,8 +99,8 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 
 func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) (openapiart.UpdateConfigurationResponse, error) {
 	response := openapiart.NewUpdateConfigurationResponse()
-	data, _ := httpServer.Config.Marshaller().ToJson()
-	err := response.PrefixConfig().Marshaller().FromJson(data)
+	data, _ := httpServer.Config.Marshal().ToJson()
+	err := response.PrefixConfig().Unmarshal().FromJson(data)
 	if err != nil {
 		log.Print(err.Error())
 	}
@@ -136,7 +136,7 @@ func (h *metricsHandler) GetController() interfaces.MetricsController {
 }
 
 func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) (openapiart.GetMetricsResponse, error) {
-	ch, _ := req.Marshaller().ToProto()
+	ch, _ := req.Marshal().ToProto()
 	choice := ch.GetChoice().String()
 	switch choice {
 	case "port":

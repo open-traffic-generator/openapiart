@@ -164,7 +164,7 @@ class GoServerControllerGenerator(object):
                     body, readError := io.ReadAll(r.Body)
                     if body != nil {{
                         item = {new_modelname}()
-                        err := item.Marshaller().FromJson(string(body))
+                        err := item.Unmarshal().FromJson(string(body))
                         if err != nil {{
                             ctrl.{rsp_400_error}(w, "validation", err)
                             return
@@ -225,7 +225,7 @@ class GoServerControllerGenerator(object):
             # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
             if self._need_warning_check(route, response):
                 rsp_section = """
-                        proto, err := result.{struct}().Marshaller().ToProto()
+                        proto, err := result.{struct}().Marshal().ToProto()
                         if err != nil {{
                             ctrl.{rsp_400_error}(w, "validation", err)
                         }}
@@ -251,7 +251,7 @@ class GoServerControllerGenerator(object):
                     struct_name=struct_name,
                     marshal_func=""
                     if struct_name in ["ResponseString", "ResponseBytes"]
-                    else ".Marshaller()",
+                    else ".Marshal()",
                 )
 
             w.write_line(
@@ -284,7 +284,7 @@ class GoServerControllerGenerator(object):
                     result = rErr
                 }} else {{
                     result = {models_prefix}NewError()
-                    err := result.Marshaller().FromJson(rsp_err.Error())
+                    err := result.Unmarshal().FromJson(rsp_err.Error())
                     if err != nil {{
                         _ = result.SetCode(statusCode)
                         err = result.SetKind(errorKind)
@@ -308,7 +308,7 @@ class GoServerControllerGenerator(object):
                     statusCode = 500
                 }}
                 {set_errors}
-                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshaller()); err != nil {{
+                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshal()); err != nil {{
                     log.Print(err.Error())
                 }}
             }}
