@@ -307,6 +307,12 @@ components:
           minimum: 64
           maximum: 9000
           x-field-uid: 52
+        signed_integer_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/SignedIntegerPattern"
+          x-field-uid: 53
+        signed_checksum_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/SignedChecksumPattern"
+          x-field-uid: 54
 
     WObject:
       required: [w_name]

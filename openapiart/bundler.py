@@ -683,6 +683,22 @@ class Bundler(object):
                     str(xpattern_path.full_path)
                 )
             )
+        if "signed" in xpattern:
+            if (
+                xpattern["format"] != "integer"
+                and xpattern["format"] != "checksum"
+            ):
+                self._errors.append(
+                    "signed property can only be used if the format is set to integer or checksum in property {}".format(
+                        str(xpattern_path.full_path)
+                    )
+                )
+            if not isinstance(xpattern["signed"], bool):
+                self._errors.append(
+                    "invalid value {} in {}, signed property can either be true or false".format(
+                        str(xpattern["signed"]), str(xpattern_path.full_path)
+                    )
+                )
         valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
         if xpattern["format"] not in valid_formats:
             self._errors.append(
@@ -764,6 +780,8 @@ class Bundler(object):
         auto_field = AutoFieldUid()
         length = int(xpattern.get("length", 8))
         fmt = "uint32" if length <= 32 else "uint64"
+        if xpattern.get("signed", False):
+            fmt = fmt[1:]
         schema = {
             "description": description,
             "type": "object",
@@ -797,6 +815,8 @@ class Bundler(object):
                 },
             },
         }
+        if xpattern.get("signed", False):
+            schema["properties"]["custom"]["minimum"] = -(2**length)
         self._content["components"]["schemas"][schema_name] = schema
 
     def _generate_value_schema(
@@ -1038,6 +1058,8 @@ class Bundler(object):
             finalised_format = "uint32"
             if "length" in xpattern and xpattern["length"] > 32:
                 finalised_format = "uint64"
+            if xpattern.get("signed", False):
+                finalised_format = finalised_format[1:]
         elif fmt is not None:
             finalised_format = fmt
 
@@ -1047,9 +1069,18 @@ class Bundler(object):
             else:
                 schema["format"] = finalised_format
         if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
+            min_val = (
+                -(2 ** int(xpattern["length"]))
+                if xpattern.get("signed", False)
+                else None
+            )
             if property_name == "values":
+                if min_val is not None:
+                    schema["items"]["minimum"] = min_val
                 schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
             else:
+                if min_val is not None:
+                    schema["minimum"] = min_val
                 schema["maximum"] = 2 ** int(xpattern["length"]) - 1
 
     def _resolve_recursive_x_include(self, include_value):
