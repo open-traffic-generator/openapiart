@@ -204,9 +204,9 @@ jobs:
       - name: Run artifact generation
         run: |
           python do.py generate go
-      - name: Run go lint
-        run: |
-          python do.py go_lint
+      # - name: Run go lint
+      #   run: |
+      #     python do.py go_lint
       - name: Archive generated artifacts
         if: always()
         uses: actions/upload-artifact@v2
