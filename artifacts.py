@@ -22,45 +22,30 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
     open_api = openapiart_class(
         api_files=[
             os.path.join(
-                os.path.dirname(__file__), "./openapiart/tests/api/info.yaml"
-            ),
-            os.path.join(
-                os.path.dirname(__file__),
-                "./openapiart/tests/common/common.yaml",
-            ),
-            os.path.join(
-                os.path.dirname(__file__), "./openapiart/tests/api/api.yaml"
-            ),
-            # os.path.join(os.path.dirname(__file__), "./openapiart/goserver/api/api.yaml"),
-            os.path.join(
-                os.path.dirname(__file__),
-                "./openapiart/goserver/api/service_a.api.yaml",
-            ),
-            os.path.join(
-                os.path.dirname(__file__),
-                "./openapiart/goserver/api/service_b.api.yaml",
+                os.path.dirname(__file__), "./pine_flag/pine_flag2.yaml"
             ),
         ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
-        extension_prefix="sanity",
+        extension_prefix="gopine",
+        protobuf_name="otg",
         proto_service="Openapi",
         generate_version_api=True,
     )
     if sdk == "proto" or sdk is None or sdk == "all":
-        open_api.GenerateProtoDef(package_name="sanity")
+        open_api.GenerateProtoDef(package_name="gopine")
 
     if sdk == "python" or sdk is None or sdk == "all":
-        open_api.GeneratePythonSdk(package_name="sanity")
+        open_api.GeneratePythonSdk(package_name="gopine")
 
     if sdk == "go" or sdk is None or sdk == "all":
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
-            package_name="openapiart",
+            package_name="gopine",
             sdk_version="0.0.1",
         )
         open_api.GenerateGoServer(
             module_path="github.com/open-traffic-generator/openapiart/pkg",
-            models_prefix="openapiart",
+            models_prefix="gopine",
             models_path="github.com/open-traffic-generator/openapiart/pkg",
         )
         open_api.GoTidy(

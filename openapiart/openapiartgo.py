@@ -114,6 +114,7 @@ class FluentField(object):
         self.x_constraints = []
         self.x_unique = None
         self.iter_name = None
+        self.meta_data = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -296,6 +297,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
             self._write(fp.read().strip().strip("\n"))
         self._write()
 
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "schema.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "schema.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "enum.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "enum.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._fp = go_pkg_fp
         self._filename = go_pkg_filename
 
@@ -312,7 +331,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             name = "_" + name
         return name
 
-    def _get_external_field_name(self, openapi_name):
+    def _get_external_field_name(self, openapi_name, is_attr_name=False):
         """convert openapi fieldname to protobuf fieldname
 
         - reference: https://developers.google.com/protocol-buffers/docs/reference/go-generated#fields
@@ -348,10 +367,34 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 external += name[i]
         if external in ["String"]:
             external += "_"
+
+        if is_attr_name:
+            result = ""
+            count = 0
+            for i in range(len(external)):
+                if external[i].isupper():
+                    count += 1
+                if external[i].islower() or external.isdigit():
+                    if count > 2:
+                        count -= 1
+                        result = (
+                            result[: i - count] + result[i - count : i].lower()
+                        )
+
+                    count = 0
+                result += external[i]
+            if count > 2:
+                count -= 1
+                seg = result[i + 1 - count : i + 1]
+                result = result.replace(seg, seg.lower())
+            return result
+
         return external
 
-    def _get_external_struct_name(self, openapi_name):
-        return self._get_external_field_name(openapi_name).replace("_", "")
+    def _get_external_struct_name(self, openapi_name, is_attr_name=False):
+        return self._get_external_field_name(
+            openapi_name, is_attr_name
+        ).replace("_", "")
 
     def _resolve_response(self, parser_result):
         """returns the inner response type if any"""
@@ -500,7 +543,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.Msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
-                        interface=new.interface,
+                        interface=self._get_external_struct_name(
+                            new.interface, True
+                        ),
                         struct=new.struct,
                     )
                     rpc.description = "// {} {}".format(
@@ -809,13 +854,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return nil, nil"""
             else:
                 return_value = """ret := New{struct}()
-                    if resp.Get{struct}() != nil {{
-                        return ret.SetMsg(resp.Get{struct}()), nil
+                    if resp.Get{meth}() != nil {{
+                        return ret.SetMsg(resp.Get{meth}()), nil
                     }}
 
                     return ret, nil""".format(
+                    meth=self._get_external_struct_name(
+                        rpc.request_return_type, True
+                    ),
                     struct=self._get_external_struct_name(
-                        rpc.request_return_type
+                        rpc.request_return_type,
                     ),
                 )
 
@@ -1288,6 +1336,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 return newObj, nil
             }}
+
+            func (obj *{struct}) ToRpfXml() (*{schema_type}, error) {{
+                ret :=  &{schema_type}{{}}
+                err := obj.populateXml(ret)
+                return ret, err
+            }}
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1296,6 +1350,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if len(internal_items) == 0
                 else "\n".join(internal_items),
                 nil_call="obj.setNil()" if len(internal_items_nil) > 0 else "",
+                schema_type=self._get_schema_type(new),
             )
         )
         if len(internal_items_nil) > 0:
@@ -1338,6 +1393,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "validateToAndFrom() error",
             "validateObj(vObj *validation, set_default bool)",
             "setDefault()",
+            "ToRpfXml() (*{schema_type}, error)",
+            "populateXml(*{schema_type}) error",
         ]
         for field in new.interface_fields:
             interfaces.append(
@@ -1378,6 +1435,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 SetMsg(*{pb_pkg_name}.{interface}) {interface}
                 {interface_signatures}
                 {nil_call}
+                
             }}
         """.format(
                 interface=new.interface,
@@ -1385,6 +1443,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 interface_signatures=interface_signatures.format(
                     interface=new.interface,
                     pb_pkg_name=self._protobuf_package_name,
+                    schema_type=self._get_schema_type(new),
                 ),
                 description=""
                 if new.description is None
@@ -1409,6 +1468,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """
             )
 
+        self._write_populate_xml(new)
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_has(new, field)
@@ -1418,6 +1478,209 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # self._write_value_of(new)
         self._write_validate_method(new)
         self._write_default_method(new)
+
+    def _get_schema_type(self, new):
+        if new.interface.startswith("Request"):
+            return "ObjectRequest"
+        else:
+            return "Argument"
+
+    def _get_rpf_type(self, metadata):
+        if metadata is not None:
+            return "Ixia.IxOS.RPC.PCPU.RPF." + metadata.replace(".", "+")
+        else:
+            return ""
+
+    def _get_xml_value(self, field, list_val=False):
+        value = ""
+        metadata = field.meta_data
+        field_str = "obj.%s()" % self._get_external_field_name(
+            field.name, True
+        )
+
+        if field.isEnum:
+            value = (
+                "Value: strconv.FormatInt(int64(obj.obj.%s.Number()-1), 10),"
+                % field.name
+            )
+        if list_val:
+            field_str = "item"
+            metadata = field.type.replace("[]", "")
+
+        if metadata is None:
+            return value
+
+        if "int" in metadata:
+            if "int64" == metadata:
+                value = "Value: strconv.FormatInt(%s, 10)," % field_str
+            else:
+                value = "Value: strconv.FormatInt(int64(%s), 10)," % field_str
+        elif "string" == metadata or "octets" == metadata:
+            value = "Value: %s," % field_str
+        elif "bool" == metadata:
+            value = "Value: value,"
+        elif "float64" == metadata:
+            value = """
+            Value: fmt.Sprintf("%v", {field}),
+            """.format(
+                field=field_str
+            )
+        return value
+
+    def _get_bool_value(self, field):
+        b_value = """var value string
+            if obj.{field}() {{
+                value = "1"
+            }} else {{
+                value = "0"
+            }}
+            """.format(
+            field=self._get_external_field_name(field.name, True),
+        )
+        return b_value
+
+    def _write_populate_xml(self, new):
+        schema = self._get_schema_type(new)
+        body = ""
+        if schema == "ObjectRequest":
+            body = """
+                xObj.Type = "Ixia.IxOS.RPC.PCPU.RPF.Server"
+                xObj.Method = "{m_name}"
+                args := []Argument{{}}
+                """.format(
+                m_name=new.interface.replace("Request", "")
+            )
+            for field in new.interface_fields:
+                value = ""
+
+                if field.struct is None:
+                    value = self._get_xml_value(field)
+
+                member = """
+                obj.{fieldname}().populateXml(&arg)
+                """.format(
+                    fieldname=self._get_external_field_name(field.name)
+                )
+
+                body += """
+                if obj.Has{fieldname}() {{
+                    {bool_value}
+                    arg := Argument{{
+                        Direction: ArgumentDirectionIn,
+                        Name: "{fieldname}",
+                        Type: "{ftype}",
+                        {set_value}
+                    }}
+                    {member}
+                    args = append(args, arg)
+                }}
+                """.format(
+                    bool_value=self._get_bool_value(field)
+                    if field.meta_data == "bool"
+                    else "",
+                    fieldname=self._get_external_field_name(field.name),
+                    ftype=field.meta_data
+                    if field.struct is None
+                    else self._get_rpf_type(field.meta_data),
+                    set_value=value,
+                    member=member if field.struct else "",
+                )
+
+            # write the out args for request
+            for method in self._api.external_new_methods:
+                if (
+                    method.interface
+                    == new.interface.replace("Request", "") + "Response"
+                ):
+                    ref = method.schema_object["properties"][
+                        "status_code_200"
+                    ]["$ref"]
+                    if ref != "#/components/schemas/Warning":
+                        schema_object = self._get_schema_object_from_ref(ref)
+                        for key, value in schema_object["properties"].items():
+                            fieldname = self._get_external_field_name(key)
+                            rpf_type = self._get_rpf_type(value["x-meta-data"])
+                            body += """
+                            arg{fieldname} := Argument {{
+                                Direction: ArgumentDirectionOut,
+                                Name: "{fieldname}",
+                                Type: "{ftype}",
+                            }}
+                            args = append(args, arg{fieldname})
+                            """.format(
+                                fieldname=fieldname,
+                                ftype=rpf_type,
+                            )
+
+            body += "xObj.Argument = args"
+        elif schema == "Argument":
+            for field in new.interface_fields:
+                if field.isArray:
+
+                    member = """
+                    tmpArg := &Argument{}
+                    item.populateXml(tmpArg)
+                    it.Member = tmpArg.Member
+                    """
+
+                    body += """
+                    if len(obj.{fieldname}(){items}) != 0 {{
+                        for _, item := range obj.{fieldname}(){items} {{
+                            it := Item{{
+                                Type: "{ftype}",
+                                {set_value}
+                            }}
+                            {member}
+                            xObj.Item = append(xObj.Item, it)
+                        }}
+                    }}
+                    """.format(
+                        fieldname=self._get_external_field_name(field.name),
+                        ftype=self._get_rpf_type(field.meta_data)
+                        if field.struct
+                        else field.meta_data,
+                        items=".Items()" if field.struct is not None else "",
+                        member=member if field.struct else "",
+                        set_value=self._get_xml_value(field, True),
+                    )
+                elif field.struct is not None:
+                    pass
+                else:
+                    body += """
+                    if obj.Has{fieldname}() {{
+                        {b_val}
+                        member := Member {{
+                            Name: "{memname}",
+                            Type: "{ftype}",
+                            {set_value}
+                        }}
+                        xObj.Member = append(xObj.Member, member)
+                    }}
+                    """.format(
+                        fieldname=self._get_external_field_name(field.name),
+                        memname=self._get_external_field_name(
+                            field.name
+                        ).lower(),
+                        ftype=self._get_rpf_type(field.meta_data)
+                        if field.meta_data and "." in field.meta_data
+                        else field.meta_data,
+                        set_value=self._get_xml_value(field),
+                        b_val=self._get_bool_value(field)
+                        if field.meta_data == "bool"
+                        else "",
+                    )
+
+        self._write(
+            """func (obj *{struct}) populateXml(xObj *{schema_type}) error {{
+                    {body}
+                    return nil
+            }}
+            """.format(
+                struct=new.struct,
+                schema_type=schema,
+                body=body if not new.interface == "Error" else "",
+            )
+        )
 
     def _escaped_str(self, val):
         val = val.replace("{", "{{")
@@ -1484,7 +1747,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # if the type is an object
             set_choice_or_new = (
                 "obj.obj.{name} = New{pb_struct}().Msg()".format(
-                    name=field.name,
+                    name=self._get_external_struct_name(field.name, True),
                     pb_struct=field.external_struct,
                 )
             )
@@ -1502,7 +1765,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     obj.{internal_name} = &{struct}{{obj: obj.obj.{name}}}
                 }}
                 return obj.{internal_name}""".format(
-                name=field.name,
+                name=self._get_external_struct_name(field.name, True),
                 struct=field.struct,
                 set_choice_or_new=set_choice_or_new,
                 internal_name=self._get_holder_name(field),
@@ -1824,7 +2087,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 set_nil="obj.{}".format(self._get_holder_name(field))
                 if set_nil is True
                 else "",
-                name=field.name,
+                name=self._get_external_struct_name(field.name, True),
             )
         elif field.isPointer:
             body = """obj.obj.{fieldname} = &value""".format(
@@ -1998,7 +2261,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return obj.obj.String_ != ""
                 }}
                 """.format(
-                    fieldname=self._get_external_struct_name(field.name),
+                    fieldname=self._get_external_struct_name(field.name, True),
                     struct=new.struct,
                     description=field.description,
                     fieldtype=field.type,
@@ -2016,7 +2279,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     struct=new.struct,
                     description=field.description,
                     fieldtype=field.type,
-                    internal_field_name=field.name,
+                    internal_field_name=self._get_external_struct_name(
+                        field.name, True
+                    ),
                 )
             )
 
@@ -2046,6 +2311,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         ].items():
             field = FluentField()
             field.schema = property_schema
+            field.meta_data = property_schema.get("x-meta-data", None)
             field.description = self._get_description(property_schema)
             field.name = self._get_external_field_name(property_name)
             field.type = self._get_struct_field_type(property_schema, field)
@@ -2611,12 +2877,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     vObj.validationErrors = append(vObj.validationErrors, "{name} is required field on interface {interface}")
                 }}
             """.format(
-                name=field.name, interface=new.interface
+                name=field.name,
+                interface=new.interface,
             )
 
         inner_body = (
             "obj.{external_name}().validateObj(vObj, set_default)".format(
-                external_name=self._get_external_struct_name(field.name)
+                external_name=field.name
             )
         )
         if field.isArray:
@@ -2655,7 +2922,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             body=inner_body,
             condition="len(obj.obj.{name}) != 0".format(name=field.name)
             if field.isArray is True
-            else "obj.obj.{name} != nil".format(name=field.name),
+            else "obj.obj.{name} != nil".format(
+                name=self._get_external_struct_name(field.name, True)
+            ),
             msg=status_str,
         )
         return body
