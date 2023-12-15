@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	gopine "github.com/open-traffic-generator/openapiart/pkg"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRpfToXML(t *testing.T) {
@@ -16,7 +17,8 @@ func TestRpfToXML(t *testing.T) {
 	ret_xml, _ := config.ToRpfXml()
 	bytes, err := xml.MarshalIndent(ret_xml, "", "\t")
 	fmt.Println(string(bytes))
-	fmt.Printf("\n\n%+v %+v\n\n", ret_xml, err)
+	assert.Nil(t, err)
+	fmt.Printf("\n\n")
 
 	cfg := gopine.NewRequestGetTimedActionTimestamp()
 	cfg.PortId().SetId(0)
@@ -24,7 +26,8 @@ func TestRpfToXML(t *testing.T) {
 	ret_xml, _ = cfg.ToRpfXml()
 	bytes, err = xml.MarshalIndent(ret_xml, "", "\t")
 	fmt.Println(string(bytes))
-	// fmt.Printf("\n\n%+v %+v\n\n", ret_xml, err)
+	assert.Nil(t, err)
+	fmt.Printf("\n\n")
 
 	cfg2 := gopine.NewRequestScheduleTimedActions()
 	cfg2.PortId().SetId(1)
@@ -33,5 +36,6 @@ func TestRpfToXML(t *testing.T) {
 	ret_xml, _ = cfg2.ToRpfXml()
 	bytes, err = xml.MarshalIndent(ret_xml, "", "\t")
 	fmt.Println(string(bytes))
-	// fmt.Printf("\n\n%+v %+v\n\n", ret_xml, err)
+	assert.Nil(t, err)
+	fmt.Printf("\n\n")
 }

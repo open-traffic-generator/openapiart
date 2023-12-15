@@ -5389,7 +5389,10 @@ func (obj *requestInitRequest) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.PFType+VersionType",
 		}
 
-		obj.RequestedVersion().populateXml(&arg)
+		err := obj.RequestedVersion().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -5720,7 +5723,10 @@ func (obj *requestStartDebugSession) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.DebugTopology+DebugPortInfoList",
 		}
 
-		obj.PortListInfo().populateXml(&arg)
+		err := obj.PortListInfo().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -6087,7 +6093,10 @@ func (obj *requestStopDebugSession) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.DebugTopology+DebugPortIdList",
 		}
 
-		obj.PortIdList().populateXml(&arg)
+		err := obj.PortIdList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -6719,7 +6728,10 @@ func (obj *requestSetUserInfo) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+UserInfo",
 		}
 
-		obj.User().populateXml(&arg)
+		err := obj.User().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -7634,7 +7646,10 @@ func (obj *requestSubscribeEvent) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortIdList",
 		}
 
-		obj.PortIdList().populateXml(&arg)
+		err := obj.PortIdList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -7647,7 +7662,10 @@ func (obj *requestSubscribeEvent) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+EventSubscribeList",
 		}
 
-		obj.Events().populateXml(&arg)
+		err := obj.Events().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8003,7 +8021,10 @@ func (obj *requestUnsubscribeEvent) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortIdList",
 		}
 
-		obj.PortIdList().populateXml(&arg)
+		err := obj.PortIdList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8016,7 +8037,10 @@ func (obj *requestUnsubscribeEvent) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+EventSubscribeList",
 		}
 
-		obj.Events().populateXml(&arg)
+		err := obj.Events().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8372,7 +8396,10 @@ func (obj *requestConfigurePort) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8385,7 +8412,10 @@ func (obj *requestConfigurePort) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Port+PortConfigurationType",
 		}
 
-		obj.Configuration().populateXml(&arg)
+		err := obj.Configuration().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8741,7 +8771,10 @@ func (obj *requestConfigurePortBasic) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -8754,7 +8787,10 @@ func (obj *requestConfigurePortBasic) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Port+PortConfigurationStreamsType",
 		}
 
-		obj.Configuration().populateXml(&arg)
+		err := obj.Configuration().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -9106,7 +9142,10 @@ func (obj *requestPrepareForStartTx) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -9469,7 +9508,10 @@ func (obj *requestConfigureCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -9482,7 +9524,10 @@ func (obj *requestConfigureCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+ConfigurationList",
 		}
 
-		obj.CaptureConfigurationList().populateXml(&arg)
+		err := obj.CaptureConfigurationList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -9838,7 +9883,10 @@ func (obj *requestStartCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -9851,7 +9899,10 @@ func (obj *requestStartCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+eDirection",
 		}
 
-		obj.Direction().populateXml(&arg)
+		err := obj.Direction().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10207,7 +10258,10 @@ func (obj *requestStopCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10220,7 +10274,10 @@ func (obj *requestStopCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+eDirection",
 		}
 
-		obj.Direction().populateXml(&arg)
+		err := obj.Direction().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10576,7 +10633,10 @@ func (obj *requestGetCapturePacketCount) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10589,7 +10649,10 @@ func (obj *requestGetCapturePacketCount) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+eDirection",
 		}
 
-		obj.Direction().populateXml(&arg)
+		err := obj.Direction().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10952,7 +11015,10 @@ func (obj *requestGetCaptureStatus) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -10965,7 +11031,10 @@ func (obj *requestGetCaptureStatus) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+eDirection",
 		}
 
-		obj.Direction().populateXml(&arg)
+		err := obj.Direction().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -11328,7 +11397,10 @@ func (obj *requestRetrieveCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -11341,7 +11413,10 @@ func (obj *requestRetrieveCapture) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Capture+RetrieveOptionsType",
 		}
 
-		obj.CaptureRetrieveOptions().populateXml(&arg)
+		err := obj.CaptureRetrieveOptions().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -11694,7 +11769,10 @@ func (obj *requestStartLatency) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -12007,7 +12085,10 @@ func (obj *requestStopLatency) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -12326,7 +12407,10 @@ func (obj *requestClearLatency) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -12695,7 +12779,10 @@ func (obj *requestClearLatencyForSelectedPGIDs) populateXml(xObj *ObjectRequest)
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -12708,7 +12795,10 @@ func (obj *requestClearLatencyForSelectedPGIDs) populateXml(xObj *ObjectRequest)
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.PacketGroup+PGIDRangeList",
 		}
 
-		obj.PgidRanges().populateXml(&arg)
+		err := obj.PgidRanges().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -13094,7 +13184,10 @@ func (obj *requestClearTimestamp) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -13417,7 +13510,10 @@ func (obj *requestSetRxLatency) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -13430,7 +13526,10 @@ func (obj *requestSetRxLatency) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Port+ReceiveConfigurationType",
 		}
 
-		obj.RxLatencyConfig().populateXml(&arg)
+		err := obj.RxLatencyConfig().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -13786,7 +13885,10 @@ func (obj *requestSetTxRxSyncInterval) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -13799,7 +13901,10 @@ func (obj *requestSetTxRxSyncInterval) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Port+TxRxSyncIntervalConfigurationType",
 		}
 
-		obj.TxRxSyncIntervalConfig().populateXml(&arg)
+		err := obj.TxRxSyncIntervalConfig().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -14155,7 +14260,10 @@ func (obj *requestConfigurePCPUFilters) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -14168,7 +14276,10 @@ func (obj *requestConfigurePCPUFilters) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Port+PCPUFiltersConfigurationType",
 		}
 
-		obj.PcpuFiltersConfig().populateXml(&arg)
+		err := obj.PcpuFiltersConfig().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -14814,7 +14925,10 @@ func (obj *requestArmPulse) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -14827,7 +14941,10 @@ func (obj *requestArmPulse) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+PulseActionList",
 		}
 
-		obj.PulseActions().populateXml(&arg)
+		err := obj.PulseActions().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -15183,7 +15300,10 @@ func (obj *requestUnlockPulse) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+ePulseGenerator",
 		}
 
-		obj.Generate().populateXml(&arg)
+		err := obj.Generate().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -15196,7 +15316,10 @@ func (obj *requestUnlockPulse) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.PFType+UTCTime",
 		}
 
-		obj.At().populateXml(&arg)
+		err := obj.At().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -15542,7 +15665,10 @@ func (obj *requestGetTimedActionTimestamp) populateXml(xObj *ObjectRequest) erro
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -15872,7 +15998,10 @@ func (obj *requestScheduleTimedActions) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -15885,7 +16014,10 @@ func (obj *requestScheduleTimedActions) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+TimedActionList",
 		}
 
-		obj.ActionList().populateXml(&arg)
+		err := obj.ActionList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -16245,7 +16377,10 @@ func (obj *requestStartTx) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -16558,7 +16693,10 @@ func (obj *requestStopTx) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -16881,7 +17019,10 @@ func (obj *requestConfigureStreams) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -16894,7 +17035,10 @@ func (obj *requestConfigureStreams) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+TrafficConfigurationType",
 		}
 
-		obj.StreamConfiguration().populateXml(&arg)
+		err := obj.StreamConfiguration().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17256,7 +17400,10 @@ func (obj *requestConfigureUpdateStreams) populateXml(xObj *ObjectRequest) error
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17269,7 +17416,10 @@ func (obj *requestConfigureUpdateStreams) populateXml(xObj *ObjectRequest) error
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamUpdateConfigurationList",
 		}
 
-		obj.StreamsConfiguration().populateXml(&arg)
+		err := obj.StreamsConfiguration().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17718,7 +17868,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17731,7 +17884,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+BackgroundDataConfigurationType",
 		}
 
-		obj.BackgroundData().populateXml(&arg)
+		err := obj.BackgroundData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17744,7 +17900,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+ValueListConfigurationType",
 		}
 
-		obj.ValueList().populateXml(&arg)
+		err := obj.ValueList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17757,7 +17916,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+RangeListConfigurationType",
 		}
 
-		obj.RangeList().populateXml(&arg)
+		err := obj.RangeList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17770,7 +17932,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+KillBitListConfigurationType",
 		}
 
-		obj.KillBitList().populateXml(&arg)
+		err := obj.KillBitList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -17783,7 +17948,10 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamTableUdfDataTypeList",
 		}
 
-		obj.TableUdf().populateXml(&arg)
+		err := obj.TableUdf().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18347,7 +18515,10 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18360,7 +18531,10 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+BackgroundDataConfigurationType",
 		}
 
-		obj.BackgroundData().populateXml(&arg)
+		err := obj.BackgroundData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18373,7 +18547,10 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamTableUdfDataTypeList",
 		}
 
-		obj.TableUdfData().populateXml(&arg)
+		err := obj.TableUdfData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18386,7 +18563,10 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+KillBitListSettingList",
 		}
 
-		obj.KillBitUdfData().populateXml(&arg)
+		err := obj.KillBitUdfData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18399,7 +18579,10 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamValueListSettingList",
 		}
 
-		obj.ValueListUdfData().populateXml(&arg)
+		err := obj.ValueListUdfData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -18884,7 +19067,10 @@ func (obj *requestRefreshValueList) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19204,7 +19390,10 @@ func (obj *requestTxMacSecArmTriggerTimer) populateXml(xObj *ObjectRequest) erro
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19537,7 +19726,10 @@ func (obj *requestConfigureMacSecPortControl) populateXml(xObj *ObjectRequest) e
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19550,7 +19742,10 @@ func (obj *requestConfigureMacSecPortControl) populateXml(xObj *ObjectRequest) e
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+TxMacSecGlobalPortConfigType",
 		}
 
-		obj.TxMacSecPortControl().populateXml(&arg)
+		err := obj.TxMacSecPortControl().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19563,7 +19758,10 @@ func (obj *requestConfigureMacSecPortControl) populateXml(xObj *ObjectRequest) e
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxMacSecGlobalPortConfigType",
 		}
 
-		obj.RxMacSecPortControl().populateXml(&arg)
+		err := obj.RxMacSecPortControl().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19958,7 +20156,10 @@ func (obj *requestConfigureMacSecScControl) populateXml(xObj *ObjectRequest) err
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -19989,7 +20190,10 @@ func (obj *requestConfigureMacSecScControl) populateXml(xObj *ObjectRequest) err
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+MacSecConfigurationType",
 		}
 
-		obj.MacSecData().populateXml(&arg)
+		err := obj.MacSecData().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -20373,7 +20577,10 @@ func (obj *requestUpdateMacSecStreams) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -20404,7 +20611,10 @@ func (obj *requestUpdateMacSecStreams) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+MacSecStreamControlTypeList",
 		}
 
-		obj.MacSec().populateXml(&arg)
+		err := obj.MacSec().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -20792,7 +21002,10 @@ func (obj *requestConfigureMacSecSaKeys) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -20805,7 +21018,10 @@ func (obj *requestConfigureMacSecSaKeys) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+TxSaKeyConfigurationTypeList",
 		}
 
-		obj.TxSaAndKeyList().populateXml(&arg)
+		err := obj.TxSaAndKeyList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -20818,7 +21034,10 @@ func (obj *requestConfigureMacSecSaKeys) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxSaKeyConfigurationTypeList",
 		}
 
-		obj.RxSaAndKeyList().populateXml(&arg)
+		err := obj.RxSaAndKeyList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -21213,7 +21432,10 @@ func (obj *requestToggleMacSecSaKeys) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -21244,7 +21466,10 @@ func (obj *requestToggleMacSecSaKeys) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+MacSecSaList",
 		}
 
-		obj.ScList().populateXml(&arg)
+		err := obj.ScList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -21628,7 +21853,10 @@ func (obj *requestResetMacSecScs) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -21659,7 +21887,10 @@ func (obj *requestResetMacSecScs) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+MacSecSaList",
 		}
 
-		obj.ScList().populateXml(&arg)
+		err := obj.ScList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22043,7 +22274,10 @@ func (obj *requestSetMacSecSaKeyState) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22074,7 +22308,10 @@ func (obj *requestSetMacSecSaKeyState) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+SaKeyStateConfigurationList",
 		}
 
-		obj.SaKeyStates().populateXml(&arg)
+		err := obj.SaKeyStates().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22474,7 +22711,10 @@ func (obj *requestGetMacSecSaKeyStatus) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22505,7 +22745,10 @@ func (obj *requestGetMacSecSaKeyStatus) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+MacSecSaList",
 		}
 
-		obj.TxSaList().populateXml(&arg)
+		err := obj.TxSaList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22536,7 +22779,10 @@ func (obj *requestGetMacSecSaKeyStatus) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+MacSecSaList",
 		}
 
-		obj.RxSaList().populateXml(&arg)
+		err := obj.RxSaList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22983,7 +23229,10 @@ func (obj *requestConfigureMacSecUDS) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -22996,7 +23245,10 @@ func (obj *requestConfigureMacSecUDS) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxMacSecUDSConfigList",
 		}
 
-		obj.MacsecUdsConfigList().populateXml(&arg)
+		err := obj.MacsecUdsConfigList().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -23342,7 +23594,10 @@ func (obj *requestGetStatCatalog) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -23662,7 +23917,10 @@ func (obj *requestClearStats) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -23975,7 +24233,10 @@ func (obj *requestClearPerStreamTxStats) populateXml(xObj *ObjectRequest) error 
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -24294,7 +24555,10 @@ func (obj *requestVMAcquire) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+SlotId",
 		}
 
-		obj.SlotId().populateXml(&arg)
+		err := obj.SlotId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -24641,7 +24905,10 @@ func (obj *requestVMAddPort) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.Server+VMPortInfo",
 		}
 
-		obj.VmPortInfo().populateXml(&arg)
+		err := obj.VmPortInfo().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -24954,7 +25221,10 @@ func (obj *requestVMRemovePort) populateXml(xObj *ObjectRequest) error {
 			Type:      "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 		}
 
-		obj.PortId().populateXml(&arg)
+		err := obj.PortId().populateXml(&arg)
+		if err != nil {
+			return err
+		}
 
 		args = append(args, arg)
 	}
@@ -44243,7 +44513,10 @@ func (obj *debugTopologyDebugPortInfoList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -45219,7 +45492,10 @@ func (obj *idTypePortIdList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -45591,7 +45867,10 @@ func (obj *serverEventSubscribeList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -47326,7 +47605,10 @@ func (obj *captureConfigurationList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -48470,7 +48752,10 @@ func (obj *packetGroupPGIDRangeList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -50183,7 +50468,10 @@ func (obj *serverPulseActionList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -51135,7 +51423,10 @@ func (obj *serverTimedActionList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -51853,7 +52144,10 @@ func (obj *streamStreamUpdateConfigurationList) populateXml(xObj *Argument) erro
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -53409,7 +53703,10 @@ func (obj *streamStreamTableUdfDataTypeList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -53781,7 +54078,10 @@ func (obj *streamKillBitListSettingList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -54153,7 +54453,10 @@ func (obj *streamStreamValueListSettingList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -55832,7 +56135,10 @@ func (obj *macSecMacSecStreamControlTypeList) populateXml(xObj *Argument) error 
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -56204,7 +56510,10 @@ func (obj *macSecTxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -56576,7 +56885,10 @@ func (obj *macSecRxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -56948,7 +57260,10 @@ func (obj *serverMacSecSaList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -57320,7 +57635,10 @@ func (obj *macSecSaKeyStateConfigurationList) populateXml(xObj *Argument) error 
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -57692,7 +58010,10 @@ func (obj *macSecRxMacSecUDSConfigList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -69855,7 +70176,10 @@ func (obj *portRxModeSet) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -73053,7 +73377,10 @@ func (obj *rateMonitoringRateMonitoringList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -74091,7 +74418,10 @@ func (obj *streamStreamConfigurationList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -74802,7 +75132,10 @@ func (obj *streamBackgroundDataSettingList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -75174,7 +75507,10 @@ func (obj *streamStreamRangeListSettingList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -77394,7 +77730,10 @@ func (obj *macSecTxScConfigurationList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -77766,7 +78105,10 @@ func (obj *macSecRxScConfigurationList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -81239,7 +81581,10 @@ func (obj *debugTopologyDebugPortInfoWithUniqueIdList) populateXml(xObj *Argumen
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -82319,7 +82664,10 @@ func (obj *capturePacketCountList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -82691,7 +83039,10 @@ func (obj *captureStatusList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -83683,7 +84034,10 @@ func (obj *macSecTxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -84055,7 +84409,10 @@ func (obj *macSecRxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -88155,7 +88512,10 @@ func (obj *capturePatternList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -88527,7 +88887,10 @@ func (obj *captureExpressionList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -90114,7 +90477,10 @@ func (obj *packetGroupSplitPacketGroupList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -92965,7 +93331,10 @@ func (obj *tableUdfColumnMVDataList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -93337,7 +93706,10 @@ func (obj *udfKillBitList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -93709,7 +94081,10 @@ func (obj *udfValueList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -98574,7 +98949,10 @@ func (obj *statCatalogStHtgCatalogStatList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -99286,7 +99664,10 @@ func (obj *portTxLaneList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -107715,7 +108096,10 @@ func (obj *captureExpressionContent) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -119639,7 +120023,10 @@ func (obj *streamBackgroundOverlayList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -120629,7 +121016,10 @@ func (obj *streamProtocolHeaderInfoList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -121001,7 +121391,10 @@ func (obj *udfUdfList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -121373,7 +121766,10 @@ func (obj *tableUdfColumnSettingList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -124973,7 +125369,10 @@ func (obj *streamQuadGaussianDataList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -125345,7 +125744,10 @@ func (obj *streamWeightedPairDataList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)
@@ -131124,7 +131526,10 @@ func (obj *streamPseudoHeaderFieldList) populateXml(xObj *Argument) error {
 			}
 
 			tmpArg := &Argument{}
-			item.populateXml(tmpArg)
+			err := item.populateXml(tmpArg)
+			if err != nil {
+				return err
+			}
 			it.Member = tmpArg.Member
 
 			xObj.Item = append(xObj.Item, it)

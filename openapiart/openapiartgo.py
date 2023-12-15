@@ -1557,7 +1557,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     value = self._get_xml_value(field)
 
                 member = """
-                obj.{fieldname}().populateXml(&arg)
+                err := obj.{fieldname}().populateXml(&arg)
+                if err != nil {{
+                    return err
+                }}
                 """.format(
                     fieldname=self._get_external_field_name(field.name)
                 )
@@ -1619,7 +1622,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
                     member = """
                     tmpArg := &Argument{}
-                    item.populateXml(tmpArg)
+                    err := item.populateXml(tmpArg)
+                    if err != nil {
+                        return err
+                    }
                     it.Member = tmpArg.Member
                     """
 
