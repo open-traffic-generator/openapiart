@@ -1154,6 +1154,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 internal_items_nil.append(
                     "obj.{} = nil".format(self._get_holder_name(field))
                 )
+        from_xml = """
+        func (obj *{struct}) FromRpfXml(rBytes []byte) error {{
+            res := ObjectResponse{{}}
+            if err := xml.Unmarshal(rBytes, &res); err != nil {{
+                return err
+            }}
+            if err := obj.populateFromXml(&res); err != nil{{
+                return err
+            }}
+            return nil
+        }}
+        """.format(
+            struct=new.struct
+        )
+
         self._write(
             """
             // ***** {interface} *****
@@ -1342,6 +1357,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 err := obj.populateXml(ret)
                 return ret, err
             }}
+
+            {from_xml}
+
         """.format(
                 struct=new.struct,
                 pb_pkg_name=self._protobuf_package_name,
@@ -1351,6 +1369,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 else "\n".join(internal_items),
                 nil_call="obj.setNil()" if len(internal_items_nil) > 0 else "",
                 schema_type=self._get_schema_type(new),
+                from_xml=from_xml
+                if new.interface.startswith("Response")
+                else "",
             )
         )
         if len(internal_items_nil) > 0:
@@ -1395,7 +1416,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "setDefault()",
             "ToRpfXml() (*{schema_type}, error)",
             "populateXml(*{schema_type}) error",
+            "populateFromXml(*{res_schema_type}) error",
         ]
+
+        if new.interface.startswith("Response"):
+            interfaces.append("FromRpfXml([]byte) error")
+
         for field in new.interface_fields:
             interfaces.append(
                 "// {}".format(
@@ -1435,7 +1461,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 SetMsg(*{pb_pkg_name}.{interface}) {interface}
                 {interface_signatures}
                 {nil_call}
-                
             }}
         """.format(
                 interface=new.interface,
@@ -1444,6 +1469,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     interface=new.interface,
                     pb_pkg_name=self._protobuf_package_name,
                     schema_type=self._get_schema_type(new),
+                    res_schema_type=self._get_res_schema_type(new),
                 ),
                 description=""
                 if new.description is None
@@ -1469,6 +1495,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             )
 
         self._write_populate_xml(new)
+        self._write_populate_from_xml(new)
         for field in new.interface_fields:
             self._write_field_getter(new, field)
             self._write_field_has(new, field)
@@ -1484,6 +1511,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return "ObjectRequest"
         else:
             return "Argument"
+
+    def _get_res_schema_type(self, new):
+        if new.interface.startswith("Response"):
+            return "ObjectResponse"
+        else:
+            return "RetVal"
 
     def _get_rpf_type(self, metadata):
         if metadata is not None:
@@ -1537,6 +1570,54 @@ class OpenApiArtGo(OpenApiArtPlugin):
             """.format(
             field=self._get_external_field_name(field.name, True),
         )
+        return b_value
+
+    def _get_value_from_xml(self, field, idx):
+        meta_data = field.meta_data
+        value = ""
+        if meta_data == "int64":
+            value = """
+            v, err := strconv.ParseInt(retVal, 10, 64)
+            if err != nil {{
+                return fmt.Errorf("could not parse string to int64: %v", err)
+            }}
+            obj.Set{fieldname}(v)
+            """.format(
+                fieldname=field.name
+            )
+        elif "int" in meta_data:
+            value = """
+            v, err := strconv.ParseInt(retVal, 10, 32)
+            if err != nil {{
+                return fmt.Errorf("could not parse string to int64: %v", err)
+            }}
+            obj.Set{fieldname}(v)
+            """.format(
+                fieldname=field.name
+            )
+        elif "string" == meta_data or "octets" == meta_data:
+            value = """
+            obj.Set{fieldname}(retVal)
+            """.format(
+                fieldname=field.name
+            )
+        elif "bool" == meta_data:
+            value = """
+            obj.Set{fieldname}(value)
+            """.format(
+                fieldname=field.name
+            )
+
+        return value
+
+    def _get_value_from_bool_str(self):
+        b_value = """var value bool
+            if retVal == "1" {{
+                value = true
+            }} else {{
+                value = false
+            }}
+            """
         return b_value
 
     def _write_populate_xml(self, new):
@@ -1612,7 +1693,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             args = append(args, arg{fieldname})
                             """.format(
                                 fieldname=fieldname,
-                                ftype=rpf_type,
+                                ftype=rpf_type
+                                if "." in value["x-meta-data"]
+                                else value["x-meta-data"],
                             )
 
             body += "xObj.Argument = args"
@@ -1678,6 +1761,49 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
         self._write(
             """func (obj *{struct}) populateXml(xObj *{schema_type}) error {{
+                    {body}
+                    return nil
+            }}
+            """.format(
+                struct=new.struct,
+                schema_type=schema,
+                body=body if not new.interface == "Error" else "",
+            )
+        )
+
+    def _write_populate_from_xml(self, new):
+        schema = self._get_res_schema_type(new)
+        body = ""
+        fields = len(new.interface_fields)
+        if schema == "ObjectResponse":
+            body += """
+            if len(xObj.RetVal) != {number} {{
+                return fmt.Errorf("insufficient value in {interface}")
+            }}
+            """.format(
+                number=str(fields), interface=new.interface
+            )
+
+            for idx, field in enumerate(new.interface_fields):
+                if field.isArray or field.struct is not None:
+                    pass
+                else:
+                    body += """
+                    if xObj.RetVal[{id}].Value != "" {{
+                        retVal := xObj.RetVal[{id}].Value
+                        {b_val}
+                        {set_value}
+                    }}
+                    """.format(
+                        id=str(idx),
+                        b_val=self._get_value_from_bool_str()
+                        if field.meta_data == "bool"
+                        else "",
+                        set_value=self._get_value_from_xml(field, idx),
+                    )
+
+        self._write(
+            """func (obj *{struct}) populateFromXml(xObj *{schema_type}) error {{
                     {body}
                     return nil
             }}

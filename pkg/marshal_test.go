@@ -38,4 +38,8 @@ func TestRpfToXML(t *testing.T) {
 	fmt.Println(string(bytes))
 	assert.Nil(t, err)
 	fmt.Printf("\n\n")
+
+	res := gopine.RetVal{}
+	fmt.Printf("%+v", res)
+	fmt.Println(res.Value == "")
 }

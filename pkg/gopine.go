@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net"
@@ -5066,6 +5067,7 @@ type RequestSetTcpPort interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// TcpPort returns int32, set in RequestSetTcpPort.
 	TcpPort() int32
 	// SetTcpPort assigns int32 provided by user to RequestSetTcpPort
@@ -5092,6 +5094,11 @@ func (obj *requestSetTcpPort) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSetTcpPort) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -5364,6 +5371,7 @@ type RequestInitRequest interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// RequestedVersion returns PFTypeVersionType, set in RequestInitRequest.
 	// PFTypeVersionType is model the version used to identify the API. The release number components (Major.Minor release number) identifies the maturity of the API. A client compiled with release (A.B) can use a server providing release (C.D) iff A equals C and B less than or equal to D. In other words, an "old client" can use a "new server". The revision number components (Branch.Build revision number) identifies the particular revision of the API conforming to the API release number.
 	RequestedVersion() PFTypeVersionType
@@ -5397,6 +5405,11 @@ func (obj *requestInitRequest) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestInitRequest) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -5680,6 +5693,7 @@ type RequestStartDebugSession interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// UserName returns string, set in RequestStartDebugSession.
 	UserName() string
 	// SetUserName assigns string provided by user to RequestStartDebugSession
@@ -5745,6 +5759,11 @@ func (obj *requestStartDebugSession) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argInterceptorInfo)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStartDebugSession) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -6050,6 +6069,7 @@ type RequestStopDebugSession interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// UserName returns string, set in RequestStopDebugSession.
 	UserName() string
 	// SetUserName assigns string provided by user to RequestStopDebugSession
@@ -6108,6 +6128,11 @@ func (obj *requestStopDebugSession) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argInterceptorInfo)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStopDebugSession) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -6405,6 +6430,7 @@ type RequestFeatureRequest interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// Subtree returns string, set in RequestFeatureRequest.
 	Subtree() string
 	// SetSubtree assigns string provided by user to RequestFeatureRequest
@@ -6431,6 +6457,11 @@ func (obj *requestFeatureRequest) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestFeatureRequest) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -6703,6 +6734,7 @@ type RequestSetUserInfo interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// User returns ServerUserInfo, set in RequestSetUserInfo.
 	// ServerUserInfo is owner, the current owner, empty if not owned description, provided at the time ownership
 	User() ServerUserInfo
@@ -6736,6 +6768,11 @@ func (obj *requestSetUserInfo) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSetUserInfo) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -7011,6 +7048,7 @@ type RequestTakeOwnership interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// Force returns bool, set in RequestTakeOwnership.
 	Force() bool
 	// SetForce assigns bool provided by user to RequestTakeOwnership
@@ -7043,6 +7081,11 @@ func (obj *requestTakeOwnership) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestTakeOwnership) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -7307,6 +7350,7 @@ type RequestClearOwnership interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// Force returns bool, set in RequestClearOwnership.
 	Force() bool
 	// SetForce assigns bool provided by user to RequestClearOwnership
@@ -7339,6 +7383,11 @@ func (obj *requestClearOwnership) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearOwnership) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -7613,6 +7662,7 @@ type RequestSubscribeEvent interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortIdList returns IdTypePortIdList, set in RequestSubscribeEvent.
 	// IdTypePortIdList is tBD
 	PortIdList() IdTypePortIdList
@@ -7670,6 +7720,11 @@ func (obj *requestSubscribeEvent) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSubscribeEvent) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -7988,6 +8043,7 @@ type RequestUnsubscribeEvent interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortIdList returns IdTypePortIdList, set in RequestUnsubscribeEvent.
 	// IdTypePortIdList is tBD
 	PortIdList() IdTypePortIdList
@@ -8045,6 +8101,11 @@ func (obj *requestUnsubscribeEvent) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestUnsubscribeEvent) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -8363,6 +8424,7 @@ type RequestConfigurePort interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigurePort.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -8420,6 +8482,11 @@ func (obj *requestConfigurePort) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigurePort) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -8738,6 +8805,7 @@ type RequestConfigurePortBasic interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigurePortBasic.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -8795,6 +8863,11 @@ func (obj *requestConfigurePortBasic) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigurePortBasic) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -9111,6 +9184,7 @@ type RequestPrepareForStartTx interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestPrepareForStartTx.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -9168,6 +9242,11 @@ func (obj *requestPrepareForStartTx) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestPrepareForStartTx) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -9475,6 +9554,7 @@ type RequestConfigureCapture interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureCapture.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -9532,6 +9612,11 @@ func (obj *requestConfigureCapture) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureCapture) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -9850,6 +9935,7 @@ type RequestStartCapture interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStartCapture.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -9907,6 +9993,11 @@ func (obj *requestStartCapture) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStartCapture) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -10225,6 +10316,7 @@ type RequestStopCapture interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStopCapture.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -10282,6 +10374,11 @@ func (obj *requestStopCapture) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStopCapture) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -10600,6 +10697,7 @@ type RequestGetCapturePacketCount interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestGetCapturePacketCount.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -10664,6 +10762,11 @@ func (obj *requestGetCapturePacketCount) populateXml(xObj *ObjectRequest) error 
 	}
 	args = append(args, argPacketCountList)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestGetCapturePacketCount) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -10982,6 +11085,7 @@ type RequestGetCaptureStatus interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestGetCaptureStatus.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -11046,6 +11150,11 @@ func (obj *requestGetCaptureStatus) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argStatusList)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestGetCaptureStatus) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -11364,6 +11473,7 @@ type RequestRetrieveCapture interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestRetrieveCapture.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -11428,6 +11538,11 @@ func (obj *requestRetrieveCapture) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argRecord)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestRetrieveCapture) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -11744,6 +11859,7 @@ type RequestStartLatency interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStartLatency.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -11777,6 +11893,11 @@ func (obj *requestStartLatency) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStartLatency) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -12060,6 +12181,7 @@ type RequestStopLatency interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStopLatency.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -12093,6 +12215,11 @@ func (obj *requestStopLatency) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStopLatency) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -12376,6 +12503,7 @@ type RequestClearLatency interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestClearLatency.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -12433,6 +12561,11 @@ func (obj *requestClearLatency) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearLatency) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -12740,6 +12873,7 @@ type RequestClearLatencyForSelectedPGIDs interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestClearLatencyForSelectedPGIDs.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -12821,6 +12955,11 @@ func (obj *requestClearLatencyForSelectedPGIDs) populateXml(xObj *ObjectRequest)
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearLatencyForSelectedPGIDs) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -13159,6 +13298,7 @@ type RequestClearTimestamp interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestClearTimestamp.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -13192,6 +13332,11 @@ func (obj *requestClearTimestamp) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearTimestamp) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -13477,6 +13622,7 @@ type RequestSetRxLatency interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestSetRxLatency.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -13534,6 +13680,11 @@ func (obj *requestSetRxLatency) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSetRxLatency) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -13852,6 +14003,7 @@ type RequestSetTxRxSyncInterval interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestSetTxRxSyncInterval.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -13909,6 +14061,11 @@ func (obj *requestSetTxRxSyncInterval) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSetTxRxSyncInterval) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -14227,6 +14384,7 @@ type RequestConfigurePCPUFilters interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigurePCPUFilters.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -14284,6 +14442,11 @@ func (obj *requestConfigurePCPUFilters) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigurePCPUFilters) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -14592,6 +14755,7 @@ type RequestsetNTPMasterOnNTPClient interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// NtpServer returns string, set in RequestsetNTPMasterOnNTPClient.
 	NtpServer() string
 	// SetNtpServer assigns string provided by user to RequestsetNTPMasterOnNTPClient
@@ -14618,6 +14782,11 @@ func (obj *requestsetNTPMasterOnNTPClient) populateXml(xObj *ObjectRequest) erro
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestsetNTPMasterOnNTPClient) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -14892,6 +15061,7 @@ type RequestArmPulse interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestArmPulse.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -14949,6 +15119,11 @@ func (obj *requestArmPulse) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestArmPulse) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -15267,6 +15442,7 @@ type RequestUnlockPulse interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// Generate returns ServerePulseGenerator, set in RequestUnlockPulse.
 	// ServerePulseGenerator is description is TBD
 	Generate() ServerePulseGenerator
@@ -15324,6 +15500,11 @@ func (obj *requestUnlockPulse) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestUnlockPulse) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -15640,6 +15821,7 @@ type RequestGetTimedActionTimestamp interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestGetTimedActionTimestamp.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -15676,10 +15858,15 @@ func (obj *requestGetTimedActionTimestamp) populateXml(xObj *ObjectRequest) erro
 	argValue := Argument{
 		Direction: ArgumentDirectionOut,
 		Name:      "Value",
-		Type:      "Ixia.IxOS.RPC.PCPU.RPF.int64",
+		Type:      "int64",
 	}
 	args = append(args, argValue)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestGetTimedActionTimestamp) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -15965,6 +16152,7 @@ type RequestScheduleTimedActions interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestScheduleTimedActions.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -16025,17 +16213,22 @@ func (obj *requestScheduleTimedActions) populateXml(xObj *ObjectRequest) error {
 	argError := Argument{
 		Direction: ArgumentDirectionOut,
 		Name:      "Error",
-		Type:      "Ixia.IxOS.RPC.PCPU.RPF.bool",
+		Type:      "bool",
 	}
 	args = append(args, argError)
 
 	argErrorMessage := Argument{
 		Direction: ArgumentDirectionOut,
 		Name:      "ErrorMessage",
-		Type:      "Ixia.IxOS.RPC.PCPU.RPF.string",
+		Type:      "string",
 	}
 	args = append(args, argErrorMessage)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestScheduleTimedActions) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -16352,6 +16545,7 @@ type RequestStartTx interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStartTx.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -16385,6 +16579,11 @@ func (obj *requestStartTx) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStartTx) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -16668,6 +16867,7 @@ type RequestStopTx interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestStopTx.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -16701,6 +16901,11 @@ func (obj *requestStopTx) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestStopTx) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -16986,6 +17191,7 @@ type RequestConfigureStreams interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureStreams.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -17043,6 +17249,11 @@ func (obj *requestConfigureStreams) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureStreams) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -17361,6 +17572,7 @@ type RequestConfigureUpdateStreams interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureUpdateStreams.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -17445,10 +17657,15 @@ func (obj *requestConfigureUpdateStreams) populateXml(xObj *ObjectRequest) error
 	argTimestamp := Argument{
 		Direction: ArgumentDirectionOut,
 		Name:      "Timestamp",
-		Type:      "Ixia.IxOS.RPC.PCPU.RPF.int64",
+		Type:      "int64",
 	}
 	args = append(args, argTimestamp)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureUpdateStreams) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -17797,6 +18014,7 @@ type RequestConfigureStreamsDataBegin interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureStreamsDataBegin.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -17974,6 +18192,11 @@ func (obj *requestConfigureStreamsDataBegin) populateXml(xObj *ObjectRequest) er
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureStreamsDataBegin) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -18452,6 +18675,7 @@ type RequestConfigureStreamsDataWrite interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureStreamsDataWrite.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -18605,6 +18829,11 @@ func (obj *requestConfigureStreamsDataWrite) populateXml(xObj *ObjectRequest) er
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureStreamsDataWrite) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -19042,6 +19271,7 @@ type RequestRefreshValueList interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestRefreshValueList.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -19082,6 +19312,11 @@ func (obj *requestRefreshValueList) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argValueListUdfData)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestRefreshValueList) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -19365,6 +19600,7 @@ type RequestTxMacSecArmTriggerTimer interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestTxMacSecArmTriggerTimer.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -19398,6 +19634,11 @@ func (obj *requestTxMacSecArmTriggerTimer) populateXml(xObj *ObjectRequest) erro
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestTxMacSecArmTriggerTimer) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -19685,6 +19926,7 @@ type RequestConfigureMacSecPortControl interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureMacSecPortControl.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -19766,6 +20008,11 @@ func (obj *requestConfigureMacSecPortControl) populateXml(xObj *ObjectRequest) e
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureMacSecPortControl) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -20117,6 +20364,7 @@ type RequestConfigureMacSecScControl interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureMacSecScControl.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -20198,6 +20446,11 @@ func (obj *requestConfigureMacSecScControl) populateXml(xObj *ObjectRequest) err
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureMacSecScControl) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -20538,6 +20791,7 @@ type RequestUpdateMacSecStreams interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestUpdateMacSecStreams.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -20619,6 +20873,11 @@ func (obj *requestUpdateMacSecStreams) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestUpdateMacSecStreams) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -20961,6 +21220,7 @@ type RequestConfigureMacSecSaKeys interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureMacSecSaKeys.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -21042,6 +21302,11 @@ func (obj *requestConfigureMacSecSaKeys) populateXml(xObj *ObjectRequest) error 
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureMacSecSaKeys) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -21393,6 +21658,7 @@ type RequestToggleMacSecSaKeys interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestToggleMacSecSaKeys.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -21474,6 +21740,11 @@ func (obj *requestToggleMacSecSaKeys) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestToggleMacSecSaKeys) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -21814,6 +22085,7 @@ type RequestResetMacSecScs interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestResetMacSecScs.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -21895,6 +22167,11 @@ func (obj *requestResetMacSecScs) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestResetMacSecScs) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -22235,6 +22512,7 @@ type RequestSetMacSecSaKeyState interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestSetMacSecSaKeyState.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -22316,6 +22594,11 @@ func (obj *requestSetMacSecSaKeyState) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestSetMacSecSaKeyState) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -22658,6 +22941,7 @@ type RequestGetMacSecSaKeyStatus interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestGetMacSecSaKeyStatus.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -22801,6 +23085,11 @@ func (obj *requestGetMacSecSaKeyStatus) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argRxMacSecSaKeyStatusList)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestGetMacSecSaKeyStatus) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -23196,6 +23485,7 @@ type RequestConfigureMacSecUDS interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestConfigureMacSecUDS.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -23253,6 +23543,11 @@ func (obj *requestConfigureMacSecUDS) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestConfigureMacSecUDS) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -23569,6 +23864,7 @@ type RequestGetStatCatalog interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestGetStatCatalog.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -23609,6 +23905,11 @@ func (obj *requestGetStatCatalog) populateXml(xObj *ObjectRequest) error {
 	}
 	args = append(args, argCatalogItem)
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestGetStatCatalog) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -23892,6 +24193,7 @@ type RequestClearStats interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestClearStats.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -23925,6 +24227,11 @@ func (obj *requestClearStats) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearStats) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -24208,6 +24515,7 @@ type RequestClearPerStreamTxStats interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestClearPerStreamTxStats.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -24241,6 +24549,11 @@ func (obj *requestClearPerStreamTxStats) populateXml(xObj *ObjectRequest) error 
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestClearPerStreamTxStats) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -24524,6 +24837,7 @@ type RequestVMAcquire interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// SlotId returns IdTypeSlotId, set in RequestVMAcquire.
 	// IdTypeSlotId is tBD
 	SlotId() IdTypeSlotId
@@ -24575,6 +24889,11 @@ func (obj *requestVMAcquire) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestVMAcquire) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -24880,6 +25199,7 @@ type RequestVMAddPort interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// VmPortInfo returns ServerVMPortInfo, set in RequestVMAddPort.
 	// ServerVMPortInfo is id, a unique identifier for the port. name, the name of the test interface. macAddress, the mac address of the test interface. macAddress, the mac address of the test interface. ipAddress, the ip address of the test interface. mtu, the mtu of the test interface. isPromiscuous, whether or not the test nic should be placed in promiscuous mode.
 	VmPortInfo() ServerVMPortInfo
@@ -24913,6 +25233,11 @@ func (obj *requestVMAddPort) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestVMAddPort) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -25196,6 +25521,7 @@ type RequestVMRemovePort interface {
 	setDefault()
 	ToRpfXml() (*ObjectRequest, error)
 	populateXml(*ObjectRequest) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in RequestVMRemovePort.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -25229,6 +25555,11 @@ func (obj *requestVMRemovePort) populateXml(xObj *ObjectRequest) error {
 		args = append(args, arg)
 	}
 	xObj.Argument = args
+	return nil
+}
+
+func (obj *requestVMRemovePort) populateFromXml(xObj *RetVal) error {
+
 	return nil
 }
 
@@ -25512,6 +25843,7 @@ type SetTcpPortResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetTcpPortResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -25524,6 +25856,11 @@ type SetTcpPortResponse interface {
 }
 
 func (obj *setTcpPortResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setTcpPortResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -25808,6 +26145,7 @@ type InitRequestResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseInitRequest returns ResponseInitRequest, set in InitRequestResponse.
 	// ResponseInitRequest is description is TBD
 	ResponseInitRequest() ResponseInitRequest
@@ -25820,6 +26158,11 @@ type InitRequestResponse interface {
 }
 
 func (obj *initRequestResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *initRequestResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -26104,6 +26447,7 @@ type RestartResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in RestartResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -26116,6 +26460,11 @@ type RestartResponse interface {
 }
 
 func (obj *restartResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *restartResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -26400,6 +26749,7 @@ type StartDebugSessionResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseStartDebugSession returns ResponseStartDebugSession, set in StartDebugSessionResponse.
 	// ResponseStartDebugSession is description is TBD
 	ResponseStartDebugSession() ResponseStartDebugSession
@@ -26412,6 +26762,11 @@ type StartDebugSessionResponse interface {
 }
 
 func (obj *startDebugSessionResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *startDebugSessionResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -26696,6 +27051,7 @@ type StopDebugSessionResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseStopDebugSession returns ResponseStopDebugSession, set in StopDebugSessionResponse.
 	// ResponseStopDebugSession is description is TBD
 	ResponseStopDebugSession() ResponseStopDebugSession
@@ -26708,6 +27064,11 @@ type StopDebugSessionResponse interface {
 }
 
 func (obj *stopDebugSessionResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *stopDebugSessionResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -26992,6 +27353,7 @@ type FeatureRequestResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseFeatureRequest returns ResponseFeatureRequest, set in FeatureRequestResponse.
 	// ResponseFeatureRequest is description is TBD
 	ResponseFeatureRequest() ResponseFeatureRequest
@@ -27004,6 +27366,11 @@ type FeatureRequestResponse interface {
 }
 
 func (obj *featureRequestResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *featureRequestResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -27288,6 +27655,7 @@ type SetUserInfoResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetUserInfoResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -27300,6 +27668,11 @@ type SetUserInfoResponse interface {
 }
 
 func (obj *setUserInfoResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setUserInfoResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -27584,6 +27957,7 @@ type GetOwnerResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetOwner returns ResponseGetOwner, set in GetOwnerResponse.
 	// ResponseGetOwner is description is TBD
 	ResponseGetOwner() ResponseGetOwner
@@ -27596,6 +27970,11 @@ type GetOwnerResponse interface {
 }
 
 func (obj *getOwnerResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getOwnerResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -27880,6 +28259,7 @@ type TakeOwnershipResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in TakeOwnershipResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -27892,6 +28272,11 @@ type TakeOwnershipResponse interface {
 }
 
 func (obj *takeOwnershipResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *takeOwnershipResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -28176,6 +28561,7 @@ type ClearOwnershipResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearOwnershipResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -28188,6 +28574,11 @@ type ClearOwnershipResponse interface {
 }
 
 func (obj *clearOwnershipResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearOwnershipResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -28472,6 +28863,7 @@ type SubscribeEventResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SubscribeEventResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -28484,6 +28876,11 @@ type SubscribeEventResponse interface {
 }
 
 func (obj *subscribeEventResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *subscribeEventResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -28768,6 +29165,7 @@ type UnsubscribeEventResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in UnsubscribeEventResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -28780,6 +29178,11 @@ type UnsubscribeEventResponse interface {
 }
 
 func (obj *unsubscribeEventResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *unsubscribeEventResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -29064,6 +29467,7 @@ type ConfigurePortResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigurePortResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -29076,6 +29480,11 @@ type ConfigurePortResponse interface {
 }
 
 func (obj *configurePortResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configurePortResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -29360,6 +29769,7 @@ type ConfigurePortBasicResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigurePortBasicResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -29372,6 +29782,11 @@ type ConfigurePortBasicResponse interface {
 }
 
 func (obj *configurePortBasicResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configurePortBasicResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -29656,6 +30071,7 @@ type PrepareForStartTxResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in PrepareForStartTxResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -29668,6 +30084,11 @@ type PrepareForStartTxResponse interface {
 }
 
 func (obj *prepareForStartTxResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *prepareForStartTxResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -29952,6 +30373,7 @@ type ConfigureCaptureResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureCaptureResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -29964,6 +30386,11 @@ type ConfigureCaptureResponse interface {
 }
 
 func (obj *configureCaptureResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureCaptureResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -30248,6 +30675,7 @@ type StartCaptureResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StartCaptureResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -30260,6 +30688,11 @@ type StartCaptureResponse interface {
 }
 
 func (obj *startCaptureResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *startCaptureResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -30544,6 +30977,7 @@ type StopCaptureResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StopCaptureResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -30556,6 +30990,11 @@ type StopCaptureResponse interface {
 }
 
 func (obj *stopCaptureResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *stopCaptureResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -30840,6 +31279,7 @@ type GetCapturePacketCountResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetCapturePacketCount returns ResponseGetCapturePacketCount, set in GetCapturePacketCountResponse.
 	// ResponseGetCapturePacketCount is description is TBD
 	ResponseGetCapturePacketCount() ResponseGetCapturePacketCount
@@ -30852,6 +31292,11 @@ type GetCapturePacketCountResponse interface {
 }
 
 func (obj *getCapturePacketCountResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getCapturePacketCountResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -31136,6 +31581,7 @@ type GetCaptureStatusResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetCaptureStatus returns ResponseGetCaptureStatus, set in GetCaptureStatusResponse.
 	// ResponseGetCaptureStatus is description is TBD
 	ResponseGetCaptureStatus() ResponseGetCaptureStatus
@@ -31148,6 +31594,11 @@ type GetCaptureStatusResponse interface {
 }
 
 func (obj *getCaptureStatusResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getCaptureStatusResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -31432,6 +31883,7 @@ type RetrieveCaptureResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseRetrieveCapture returns ResponseRetrieveCapture, set in RetrieveCaptureResponse.
 	// ResponseRetrieveCapture is description is TBD
 	ResponseRetrieveCapture() ResponseRetrieveCapture
@@ -31444,6 +31896,11 @@ type RetrieveCaptureResponse interface {
 }
 
 func (obj *retrieveCaptureResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *retrieveCaptureResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -31728,6 +32185,7 @@ type StartLatencyResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StartLatencyResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -31740,6 +32198,11 @@ type StartLatencyResponse interface {
 }
 
 func (obj *startLatencyResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *startLatencyResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -32024,6 +32487,7 @@ type StopLatencyResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StopLatencyResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -32036,6 +32500,11 @@ type StopLatencyResponse interface {
 }
 
 func (obj *stopLatencyResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *stopLatencyResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -32320,6 +32789,7 @@ type ClearLatencyResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearLatencyResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -32332,6 +32802,11 @@ type ClearLatencyResponse interface {
 }
 
 func (obj *clearLatencyResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearLatencyResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -32616,6 +33091,7 @@ type ClearLatencyForSelectedPgiDsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearLatencyForSelectedPgiDsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -32628,6 +33104,11 @@ type ClearLatencyForSelectedPgiDsResponse interface {
 }
 
 func (obj *clearLatencyForSelectedPgiDsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearLatencyForSelectedPgiDsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -32912,6 +33393,7 @@ type ClearTimestampResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearTimestampResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -32924,6 +33406,11 @@ type ClearTimestampResponse interface {
 }
 
 func (obj *clearTimestampResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearTimestampResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -33208,6 +33695,7 @@ type SetRxLatencyResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetRxLatencyResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -33220,6 +33708,11 @@ type SetRxLatencyResponse interface {
 }
 
 func (obj *setRxLatencyResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setRxLatencyResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -33504,6 +33997,7 @@ type SetTxRxSyncIntervalResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetTxRxSyncIntervalResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -33516,6 +34010,11 @@ type SetTxRxSyncIntervalResponse interface {
 }
 
 func (obj *setTxRxSyncIntervalResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setTxRxSyncIntervalResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -33800,6 +34299,7 @@ type ConfigurePcpuFiltersResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigurePcpuFiltersResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -33812,6 +34312,11 @@ type ConfigurePcpuFiltersResponse interface {
 }
 
 func (obj *configurePcpuFiltersResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configurePcpuFiltersResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -34096,6 +34601,7 @@ type GetCurrentServerTimeResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetCurrentServerTime returns ResponseGetCurrentServerTime, set in GetCurrentServerTimeResponse.
 	// ResponseGetCurrentServerTime is description is TBD
 	ResponseGetCurrentServerTime() ResponseGetCurrentServerTime
@@ -34108,6 +34614,11 @@ type GetCurrentServerTimeResponse interface {
 }
 
 func (obj *getCurrentServerTimeResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getCurrentServerTimeResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -34392,6 +34903,7 @@ type GetNtpStateResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetNTPState returns ResponseGetNTPState, set in GetNtpStateResponse.
 	// ResponseGetNTPState is description is TBD
 	ResponseGetNTPState() ResponseGetNTPState
@@ -34404,6 +34916,11 @@ type GetNtpStateResponse interface {
 }
 
 func (obj *getNtpStateResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getNtpStateResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -34688,6 +35205,7 @@ type SetNtpMasterOnNtpClientResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetNtpMasterOnNtpClientResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -34700,6 +35218,11 @@ type SetNtpMasterOnNtpClientResponse interface {
 }
 
 func (obj *setNtpMasterOnNtpClientResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setNtpMasterOnNtpClientResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -34984,6 +35507,7 @@ type SetNtpMasterAsSelfResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetNtpMasterAsSelfResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -34996,6 +35520,11 @@ type SetNtpMasterAsSelfResponse interface {
 }
 
 func (obj *setNtpMasterAsSelfResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setNtpMasterAsSelfResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -35280,6 +35809,7 @@ type LockPulseResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in LockPulseResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -35292,6 +35822,11 @@ type LockPulseResponse interface {
 }
 
 func (obj *lockPulseResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *lockPulseResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -35576,6 +36111,7 @@ type ArmPulseResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ArmPulseResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -35588,6 +36124,11 @@ type ArmPulseResponse interface {
 }
 
 func (obj *armPulseResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *armPulseResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -35872,6 +36413,7 @@ type UnlockPulseResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in UnlockPulseResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -35884,6 +36426,11 @@ type UnlockPulseResponse interface {
 }
 
 func (obj *unlockPulseResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *unlockPulseResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -36168,6 +36715,7 @@ type GetTimedActionTimestampResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetTimedActionTimestamp returns ResponseGetTimedActionTimestamp, set in GetTimedActionTimestampResponse.
 	// ResponseGetTimedActionTimestamp is description is TBD
 	ResponseGetTimedActionTimestamp() ResponseGetTimedActionTimestamp
@@ -36180,6 +36728,11 @@ type GetTimedActionTimestampResponse interface {
 }
 
 func (obj *getTimedActionTimestampResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getTimedActionTimestampResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -36464,6 +37017,7 @@ type ScheduleTimedActionsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseScheduleTimedActions returns ResponseScheduleTimedActions, set in ScheduleTimedActionsResponse.
 	// ResponseScheduleTimedActions is description is TBD
 	ResponseScheduleTimedActions() ResponseScheduleTimedActions
@@ -36476,6 +37030,11 @@ type ScheduleTimedActionsResponse interface {
 }
 
 func (obj *scheduleTimedActionsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *scheduleTimedActionsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -36760,6 +37319,7 @@ type StartTxResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StartTxResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -36772,6 +37332,11 @@ type StartTxResponse interface {
 }
 
 func (obj *startTxResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *startTxResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -37056,6 +37621,7 @@ type StopTxResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in StopTxResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -37068,6 +37634,11 @@ type StopTxResponse interface {
 }
 
 func (obj *stopTxResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *stopTxResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -37352,6 +37923,7 @@ type ConfigureStreamsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureStreamsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -37364,6 +37936,11 @@ type ConfigureStreamsResponse interface {
 }
 
 func (obj *configureStreamsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureStreamsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -37648,6 +38225,7 @@ type ConfigureUpdateStreamsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseConfigureUpdateStreams returns ResponseConfigureUpdateStreams, set in ConfigureUpdateStreamsResponse.
 	// ResponseConfigureUpdateStreams is description is TBD
 	ResponseConfigureUpdateStreams() ResponseConfigureUpdateStreams
@@ -37660,6 +38238,11 @@ type ConfigureUpdateStreamsResponse interface {
 }
 
 func (obj *configureUpdateStreamsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureUpdateStreamsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -37944,6 +38527,7 @@ type ConfigureStreamsDataBeginResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureStreamsDataBeginResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -37956,6 +38540,11 @@ type ConfigureStreamsDataBeginResponse interface {
 }
 
 func (obj *configureStreamsDataBeginResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureStreamsDataBeginResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -38240,6 +38829,7 @@ type ConfigureStreamsDataWriteResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureStreamsDataWriteResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -38252,6 +38842,11 @@ type ConfigureStreamsDataWriteResponse interface {
 }
 
 func (obj *configureStreamsDataWriteResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureStreamsDataWriteResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -38536,6 +39131,7 @@ type RefreshValueListResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseRefreshValueList returns ResponseRefreshValueList, set in RefreshValueListResponse.
 	// ResponseRefreshValueList is description is TBD
 	ResponseRefreshValueList() ResponseRefreshValueList
@@ -38548,6 +39144,11 @@ type RefreshValueListResponse interface {
 }
 
 func (obj *refreshValueListResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *refreshValueListResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -38832,6 +39433,7 @@ type TxMacSecArmTriggerTimerResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in TxMacSecArmTriggerTimerResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -38844,6 +39446,11 @@ type TxMacSecArmTriggerTimerResponse interface {
 }
 
 func (obj *txMacSecArmTriggerTimerResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *txMacSecArmTriggerTimerResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -39128,6 +39735,7 @@ type ConfigureMacSecPortControlResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureMacSecPortControlResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -39140,6 +39748,11 @@ type ConfigureMacSecPortControlResponse interface {
 }
 
 func (obj *configureMacSecPortControlResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureMacSecPortControlResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -39424,6 +40037,7 @@ type ConfigureMacSecScControlResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureMacSecScControlResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -39436,6 +40050,11 @@ type ConfigureMacSecScControlResponse interface {
 }
 
 func (obj *configureMacSecScControlResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureMacSecScControlResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -39720,6 +40339,7 @@ type UpdateMacSecStreamsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in UpdateMacSecStreamsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -39732,6 +40352,11 @@ type UpdateMacSecStreamsResponse interface {
 }
 
 func (obj *updateMacSecStreamsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *updateMacSecStreamsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -40016,6 +40641,7 @@ type ConfigureMacSecSaKeysResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureMacSecSaKeysResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -40028,6 +40654,11 @@ type ConfigureMacSecSaKeysResponse interface {
 }
 
 func (obj *configureMacSecSaKeysResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureMacSecSaKeysResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -40312,6 +40943,7 @@ type ToggleMacSecSaKeysResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ToggleMacSecSaKeysResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -40324,6 +40956,11 @@ type ToggleMacSecSaKeysResponse interface {
 }
 
 func (obj *toggleMacSecSaKeysResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *toggleMacSecSaKeysResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -40608,6 +41245,7 @@ type ResetMacSecScsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ResetMacSecScsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -40620,6 +41258,11 @@ type ResetMacSecScsResponse interface {
 }
 
 func (obj *resetMacSecScsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *resetMacSecScsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -40904,6 +41547,7 @@ type SetMacSecSaKeyStateResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in SetMacSecSaKeyStateResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -40916,6 +41560,11 @@ type SetMacSecSaKeyStateResponse interface {
 }
 
 func (obj *setMacSecSaKeyStateResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *setMacSecSaKeyStateResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -41200,6 +41849,7 @@ type GetMacSecSaKeyStatusResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetMacSecSaKeyStatus returns ResponseGetMacSecSaKeyStatus, set in GetMacSecSaKeyStatusResponse.
 	// ResponseGetMacSecSaKeyStatus is description is TBD
 	ResponseGetMacSecSaKeyStatus() ResponseGetMacSecSaKeyStatus
@@ -41212,6 +41862,11 @@ type GetMacSecSaKeyStatusResponse interface {
 }
 
 func (obj *getMacSecSaKeyStatusResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getMacSecSaKeyStatusResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -41496,6 +42151,7 @@ type ConfigureMacSecUdsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ConfigureMacSecUdsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -41508,6 +42164,11 @@ type ConfigureMacSecUdsResponse interface {
 }
 
 func (obj *configureMacSecUdsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *configureMacSecUdsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -41792,6 +42453,7 @@ type GetStatCatalogResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ResponseGetStatCatalog returns ResponseGetStatCatalog, set in GetStatCatalogResponse.
 	// ResponseGetStatCatalog is description is TBD
 	ResponseGetStatCatalog() ResponseGetStatCatalog
@@ -41804,6 +42466,11 @@ type GetStatCatalogResponse interface {
 }
 
 func (obj *getStatCatalogResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getStatCatalogResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -42088,6 +42755,7 @@ type ClearStatsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearStatsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -42100,6 +42768,11 @@ type ClearStatsResponse interface {
 }
 
 func (obj *clearStatsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearStatsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -42384,6 +43057,7 @@ type ClearPerStreamTxStatsResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in ClearPerStreamTxStatsResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -42396,6 +43070,11 @@ type ClearPerStreamTxStatsResponse interface {
 }
 
 func (obj *clearPerStreamTxStatsResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *clearPerStreamTxStatsResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -42680,6 +43359,7 @@ type VmAcquireResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in VmAcquireResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -42692,6 +43372,11 @@ type VmAcquireResponse interface {
 }
 
 func (obj *vmAcquireResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *vmAcquireResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -42976,6 +43661,7 @@ type VmAddPortResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in VmAddPortResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -42988,6 +43674,11 @@ type VmAddPortResponse interface {
 }
 
 func (obj *vmAddPortResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *vmAddPortResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -43272,6 +43963,7 @@ type VmRemovePortResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in VmRemovePortResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -43284,6 +43976,11 @@ type VmRemovePortResponse interface {
 }
 
 func (obj *vmRemovePortResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *vmRemovePortResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -43568,6 +44265,7 @@ type VmReleaseResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warning returns Warning, set in VmReleaseResponse.
 	// Warning is a list of warnings that have occurred while executing the request.
 	Warning() Warning
@@ -43580,6 +44278,11 @@ type VmReleaseResponse interface {
 }
 
 func (obj *vmReleaseResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *vmReleaseResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -43864,6 +44567,7 @@ type GetVersionResponse interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Version returns Version, set in GetVersionResponse.
 	// Version is version details
 	Version() Version
@@ -43876,6 +44580,11 @@ type GetVersionResponse interface {
 }
 
 func (obj *getVersionResponse) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *getVersionResponse) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -44162,6 +44871,7 @@ type PFTypeVersionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Release returns PFTypeReleaseType, set in PFTypeVersionType.
 	// PFTypeReleaseType is tBD
 	Release() PFTypeReleaseType
@@ -44182,6 +44892,11 @@ type PFTypeVersionType interface {
 }
 
 func (obj *pFTypeVersionType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *pFTypeVersionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -44499,6 +45214,7 @@ type DebugTopologyDebugPortInfoList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DebugPortInfoList returns DebugTopologyDebugPortInfoListDebugTopologyDebugPortInfoIterIter, set in DebugTopologyDebugPortInfoList
 	DebugPortInfoList() DebugTopologyDebugPortInfoListDebugTopologyDebugPortInfoIter
 	setNil()
@@ -44522,6 +45238,11 @@ func (obj *debugTopologyDebugPortInfoList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortInfoList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -44866,6 +45587,7 @@ type DebugTopologyDebugPortIdList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DebugPortIdList returns []int32, set in DebugTopologyDebugPortIdList.
 	DebugPortIdList() []int32
 	// SetDebugPortIdList assigns []int32 provided by user to DebugTopologyDebugPortIdList
@@ -44884,6 +45606,11 @@ func (obj *debugTopologyDebugPortIdList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortIdList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -45148,6 +45875,7 @@ type ServerUserInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Owner returns string, set in ServerUserInfo.
 	Owner() string
 	// SetOwner assigns string provided by user to ServerUserInfo
@@ -45183,6 +45911,11 @@ func (obj *serverUserInfo) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverUserInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -45478,6 +46211,7 @@ type IdTypePortIdList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PortIdList returns IdTypePortIdListIdTypePortIdIterIter, set in IdTypePortIdList
 	PortIdList() IdTypePortIdListIdTypePortIdIter
 	setNil()
@@ -45501,6 +46235,11 @@ func (obj *idTypePortIdList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *idTypePortIdList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -45853,6 +46592,7 @@ type ServerEventSubscribeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EventSubscribeList returns ServerEventSubscribeListServereEventIterIter, set in ServerEventSubscribeList
 	EventSubscribeList() ServerEventSubscribeListServereEventIter
 	setNil()
@@ -45876,6 +46616,11 @@ func (obj *serverEventSubscribeList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *serverEventSubscribeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -46220,6 +46965,7 @@ type IdTypePortId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypePortId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypePortId
@@ -46239,6 +46985,11 @@ func (obj *idTypePortId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypePortId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -46526,6 +47277,7 @@ type PortPortConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// BasicConfiguration returns PortBasicConfigurationType, set in PortPortConfigurationType.
 	// PortBasicConfigurationType is tBD
 	BasicConfiguration() PortBasicConfigurationType
@@ -46594,6 +47346,11 @@ type PortPortConfigurationType interface {
 }
 
 func (obj *portPortConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *portPortConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -47109,6 +47866,7 @@ type PortPortConfigurationStreamsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TransmitMode returns PortPortConfigurationStreamsTypeTransmitModeEnum, set in PortPortConfigurationStreamsType
 	TransmitMode() PortPortConfigurationStreamsTypeTransmitModeEnum
 	// SetTransmitMode assigns PortPortConfigurationStreamsTypeTransmitModeEnum provided by user to PortPortConfigurationStreamsType
@@ -47191,6 +47949,11 @@ func (obj *portPortConfigurationStreamsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portPortConfigurationStreamsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -47591,6 +48354,7 @@ type CaptureConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ConfigurationList returns CaptureConfigurationListCaptureConfigurationTypeIterIter, set in CaptureConfigurationList
 	ConfigurationList() CaptureConfigurationListCaptureConfigurationTypeIter
 	setNil()
@@ -47614,6 +48378,11 @@ func (obj *captureConfigurationList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *captureConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -47958,6 +48727,7 @@ type CaptureeDirection interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EDirection returns CaptureeDirectionEDirectionEnum, set in CaptureeDirection
 	EDirection() CaptureeDirectionEDirectionEnum
 	// SetEDirection assigns CaptureeDirectionEDirectionEnum provided by user to CaptureeDirection
@@ -47977,6 +48747,11 @@ func (obj *captureeDirection) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureeDirection) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -48256,6 +49031,7 @@ type CaptureRetrieveOptionsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StartIndex returns int32, set in CaptureRetrieveOptionsType.
 	StartIndex() int32
 	// SetStartIndex assigns int32 provided by user to CaptureRetrieveOptionsType
@@ -48339,6 +49115,11 @@ func (obj *captureRetrieveOptionsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureRetrieveOptionsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -48738,6 +49519,7 @@ type PacketGroupPGIDRangeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PgidRangeList returns PacketGroupPGIDRangeListPacketGroupPGIDRangeIterIter, set in PacketGroupPGIDRangeList
 	PgidRangeList() PacketGroupPGIDRangeListPacketGroupPGIDRangeIter
 	setNil()
@@ -48761,6 +49543,11 @@ func (obj *packetGroupPGIDRangeList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *packetGroupPGIDRangeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -49123,6 +49910,7 @@ type PortReceiveConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxMode returns PortRxModeSet, set in PortReceiveConfigurationType.
 	// PortRxModeSet is tBD
 	RxMode() PortRxModeSet
@@ -49219,6 +50007,11 @@ func (obj *portReceiveConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portReceiveConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -49712,6 +50505,7 @@ type PortTxRxSyncIntervalConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableTxRxSync returns bool, set in PortTxRxSyncIntervalConfigurationType.
 	EnableTxRxSync() bool
 	// SetEnableTxRxSync assigns bool provided by user to PortTxRxSyncIntervalConfigurationType
@@ -49746,6 +50540,11 @@ func (obj *portTxRxSyncIntervalConfigurationType) populateXml(xObj *Argument) er
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portTxRxSyncIntervalConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -50044,6 +50843,7 @@ type PortPCPUFiltersConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PcpuFilterBlock returns PortPCPUFiltersConfigurationTypePcpuFilterBlockEnum, set in PortPCPUFiltersConfigurationType
 	PcpuFilterBlock() PortPCPUFiltersConfigurationTypePcpuFilterBlockEnum
 	// SetPcpuFilterBlock assigns PortPCPUFiltersConfigurationTypePcpuFilterBlockEnum provided by user to PortPCPUFiltersConfigurationType
@@ -50095,6 +50895,11 @@ func (obj *portPCPUFiltersConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portPCPUFiltersConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -50454,6 +51259,7 @@ type ServerPulseActionList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PulseActionList returns ServerPulseActionListServerePulseActionIterIter, set in ServerPulseActionList
 	PulseActionList() ServerPulseActionListServerePulseActionIter
 	setNil()
@@ -50477,6 +51283,11 @@ func (obj *serverPulseActionList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *serverPulseActionList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -50821,6 +51632,7 @@ type ServerePulseGenerator interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EPulseGenerator returns ServerePulseGeneratorEPulseGeneratorEnum, set in ServerePulseGenerator
 	EPulseGenerator() ServerePulseGeneratorEPulseGeneratorEnum
 	// SetEPulseGenerator assigns ServerePulseGeneratorEPulseGeneratorEnum provided by user to ServerePulseGenerator
@@ -50840,6 +51652,11 @@ func (obj *serverePulseGenerator) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverePulseGenerator) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -51117,6 +51934,7 @@ type PFTypeUTCTime interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Time returns int64, set in PFTypeUTCTime.
 	Time() int64
 	// SetTime assigns int64 provided by user to PFTypeUTCTime
@@ -51136,6 +51954,11 @@ func (obj *pFTypeUTCTime) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeUTCTime) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -51409,6 +52232,7 @@ type ServerTimedActionList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TimedActionList returns ServerTimedActionListServerTimedActionIterIter, set in ServerTimedActionList
 	TimedActionList() ServerTimedActionListServerTimedActionIter
 	setNil()
@@ -51432,6 +52256,11 @@ func (obj *serverTimedActionList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *serverTimedActionList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -51784,6 +52613,7 @@ type StreamTrafficConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// GapControlMode returns StreamTrafficConfigurationTypeGapControlModeEnum, set in StreamTrafficConfigurationType
 	GapControlMode() StreamTrafficConfigurationTypeGapControlModeEnum
 	// SetGapControlMode assigns StreamTrafficConfigurationTypeGapControlModeEnum provided by user to StreamTrafficConfigurationType
@@ -51812,6 +52642,11 @@ func (obj *streamTrafficConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamTrafficConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -52130,6 +52965,7 @@ type StreamStreamUpdateConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamUpdateConfigurationList returns StreamStreamUpdateConfigurationListStreamStreamUpdateConfigurationTypeIterIter, set in StreamStreamUpdateConfigurationList
 	StreamUpdateConfigurationList() StreamStreamUpdateConfigurationListStreamStreamUpdateConfigurationTypeIter
 	setNil()
@@ -52153,6 +52989,11 @@ func (obj *streamStreamUpdateConfigurationList) populateXml(xObj *Argument) erro
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamStreamUpdateConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -52505,6 +53346,7 @@ type StreamBackgroundDataConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Setting returns StreamBackgroundDataSettingList, set in StreamBackgroundDataConfigurationType.
 	// StreamBackgroundDataSettingList is tBD
 	Setting() StreamBackgroundDataSettingList
@@ -52517,6 +53359,11 @@ type StreamBackgroundDataConfigurationType interface {
 }
 
 func (obj *streamBackgroundDataConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamBackgroundDataConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -52801,6 +53648,7 @@ type StreamValueListConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Setting returns StreamStreamValueListSettingList, set in StreamValueListConfigurationType.
 	// StreamStreamValueListSettingList is tBD
 	Setting() StreamStreamValueListSettingList
@@ -52813,6 +53661,11 @@ type StreamValueListConfigurationType interface {
 }
 
 func (obj *streamValueListConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamValueListConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -53097,6 +53950,7 @@ type StreamRangeListConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Setting returns StreamStreamRangeListSettingList, set in StreamRangeListConfigurationType.
 	// StreamStreamRangeListSettingList is tBD
 	Setting() StreamStreamRangeListSettingList
@@ -53109,6 +53963,11 @@ type StreamRangeListConfigurationType interface {
 }
 
 func (obj *streamRangeListConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamRangeListConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -53393,6 +54252,7 @@ type StreamKillBitListConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Setting returns StreamKillBitListSettingList, set in StreamKillBitListConfigurationType.
 	// StreamKillBitListSettingList is tBD
 	Setting() StreamKillBitListSettingList
@@ -53405,6 +54265,11 @@ type StreamKillBitListConfigurationType interface {
 }
 
 func (obj *streamKillBitListConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamKillBitListConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -53689,6 +54554,7 @@ type StreamStreamTableUdfDataTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamTableUdfDataTypeList returns StreamStreamTableUdfDataTypeListStreamStreamTableUdfDataTypeIterIter, set in StreamStreamTableUdfDataTypeList
 	StreamTableUdfDataTypeList() StreamStreamTableUdfDataTypeListStreamStreamTableUdfDataTypeIter
 	setNil()
@@ -53712,6 +54578,11 @@ func (obj *streamStreamTableUdfDataTypeList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamStreamTableUdfDataTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -54064,6 +54935,7 @@ type StreamKillBitListSettingList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// KillBitListSettingList returns StreamKillBitListSettingListStreamKillBitListSettingTypeIterIter, set in StreamKillBitListSettingList
 	KillBitListSettingList() StreamKillBitListSettingListStreamKillBitListSettingTypeIter
 	setNil()
@@ -54087,6 +54959,11 @@ func (obj *streamKillBitListSettingList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamKillBitListSettingList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -54439,6 +55316,7 @@ type StreamStreamValueListSettingList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamValueListSettingList returns StreamStreamValueListSettingListStreamStreamValueListSettingTypeIterIter, set in StreamStreamValueListSettingList
 	StreamValueListSettingList() StreamStreamValueListSettingListStreamStreamValueListSettingTypeIter
 	setNil()
@@ -54462,6 +55340,11 @@ func (obj *streamStreamValueListSettingList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamStreamValueListSettingList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -54806,6 +55689,7 @@ type MacSecTxMacSecGlobalPortConfigType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableGlobalConfig returns bool, set in MacSecTxMacSecGlobalPortConfigType.
 	EnableGlobalConfig() bool
 	// SetEnableGlobalConfig assigns bool provided by user to MacSecTxMacSecGlobalPortConfigType
@@ -54847,6 +55731,11 @@ func (obj *macSecTxMacSecGlobalPortConfigType) populateXml(xObj *Argument) error
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecTxMacSecGlobalPortConfigType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -55146,6 +56035,7 @@ type MacSecRxMacSecGlobalPortConfigType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableGlobalConfig returns bool, set in MacSecRxMacSecGlobalPortConfigType.
 	EnableGlobalConfig() bool
 	// SetEnableGlobalConfig assigns bool provided by user to MacSecRxMacSecGlobalPortConfigType
@@ -55288,6 +56178,11 @@ func (obj *macSecRxMacSecGlobalPortConfigType) populateXml(xObj *Argument) error
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMacSecGlobalPortConfigType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -55784,6 +56679,7 @@ type MacSecMacSecConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxScConfig returns MacSecTxScConfigurationList, set in MacSecMacSecConfigurationType.
 	// MacSecTxScConfigurationList is tBD
 	TxScConfig() MacSecTxScConfigurationList
@@ -55804,6 +56700,11 @@ type MacSecMacSecConfigurationType interface {
 }
 
 func (obj *macSecMacSecConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *macSecMacSecConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -56121,6 +57022,7 @@ type MacSecMacSecStreamControlTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MacSecStreamControlTypeList returns MacSecMacSecStreamControlTypeListMacSecMacSecStreamControlTypeIterIter, set in MacSecMacSecStreamControlTypeList
 	MacSecStreamControlTypeList() MacSecMacSecStreamControlTypeListMacSecMacSecStreamControlTypeIter
 	setNil()
@@ -56144,6 +57046,11 @@ func (obj *macSecMacSecStreamControlTypeList) populateXml(xObj *Argument) error 
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecMacSecStreamControlTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -56496,6 +57403,7 @@ type MacSecTxSaKeyConfigurationTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxSaKeyConfigurationTypeList returns MacSecTxSaKeyConfigurationTypeListMacSecTxSaKeyConfigurationTypeIterIter, set in MacSecTxSaKeyConfigurationTypeList
 	TxSaKeyConfigurationTypeList() MacSecTxSaKeyConfigurationTypeListMacSecTxSaKeyConfigurationTypeIter
 	setNil()
@@ -56519,6 +57427,11 @@ func (obj *macSecTxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecTxSaKeyConfigurationTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -56871,6 +57784,7 @@ type MacSecRxSaKeyConfigurationTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxSaKeyConfigurationTypeList returns MacSecRxSaKeyConfigurationTypeListMacSecRxSaKeyConfigurationTypeIterIter, set in MacSecRxSaKeyConfigurationTypeList
 	RxSaKeyConfigurationTypeList() MacSecRxSaKeyConfigurationTypeListMacSecRxSaKeyConfigurationTypeIter
 	setNil()
@@ -56894,6 +57808,11 @@ func (obj *macSecRxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecRxSaKeyConfigurationTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -57246,6 +58165,7 @@ type ServerMacSecSaList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MacSecSaList returns ServerMacSecSaListIdTypeSecureChannelIdIterIter, set in ServerMacSecSaList
 	MacSecSaList() ServerMacSecSaListIdTypeSecureChannelIdIter
 	setNil()
@@ -57269,6 +58189,11 @@ func (obj *serverMacSecSaList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *serverMacSecSaList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -57621,6 +58546,7 @@ type MacSecSaKeyStateConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SaKeyStateConfigurationList returns MacSecSaKeyStateConfigurationListMacSecSaKeyStateConfigurationTypeIterIter, set in MacSecSaKeyStateConfigurationList
 	SaKeyStateConfigurationList() MacSecSaKeyStateConfigurationListMacSecSaKeyStateConfigurationTypeIter
 	setNil()
@@ -57644,6 +58570,11 @@ func (obj *macSecSaKeyStateConfigurationList) populateXml(xObj *Argument) error 
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecSaKeyStateConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -57996,6 +58927,7 @@ type MacSecRxMacSecUDSConfigList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxMacSecUdsConfigList returns MacSecRxMacSecUDSConfigListMacSecRxMacSecUDSConfigTypeIterIter, set in MacSecRxMacSecUDSConfigList
 	RxMacSecUdsConfigList() MacSecRxMacSecUDSConfigListMacSecRxMacSecUDSConfigTypeIter
 	setNil()
@@ -58019,6 +58951,11 @@ func (obj *macSecRxMacSecUDSConfigList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMacSecUDSConfigList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -58363,6 +59300,7 @@ type IdTypeSlotId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeSlotId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeSlotId
@@ -58382,6 +59320,11 @@ func (obj *idTypeSlotId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeSlotId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -58655,6 +59598,7 @@ type ServerVMPortInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns IdTypePortId, set in ServerVMPortInfo.
 	// IdTypePortId is tBD
 	Id() IdTypePortId
@@ -58753,6 +59697,11 @@ func (obj *serverVMPortInfo) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverVMPortInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -59139,6 +60088,7 @@ type Warning interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Warnings returns []string, set in Warning.
 	Warnings() []string
 	// SetWarnings assigns []string provided by user to Warning
@@ -59157,6 +60107,11 @@ func (obj *warning) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *warning) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -59421,6 +60376,7 @@ type Error interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Code returns int32, set in Error.
 	Code() int32
 	// SetCode assigns int32 provided by user to Error
@@ -59448,6 +60404,11 @@ func (obj *_error) Error() string {
 }
 
 func (obj *_error) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *_error) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -59731,6 +60692,17 @@ func (obj *responseInitRequest) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseInitRequest) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseInitRequest) setNil() {
 	obj.providedVersionHolder = nil
 	obj.validationErrors = nil
@@ -59774,6 +60746,8 @@ type ResponseInitRequest interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// ProvidedVersion returns PFTypeVersionType, set in ResponseInitRequest.
 	// PFTypeVersionType is model the version used to identify the API. The release number components (Major.Minor release number) identifies the maturity of the API. A client compiled with release (A.B) can use a server providing release (C.D) iff A equals C and B less than or equal to D. In other words, an "old client" can use a "new server". The revision number components (Branch.Build revision number) identifies the particular revision of the API conforming to the API release number.
 	ProvidedVersion() PFTypeVersionType
@@ -59786,6 +60760,15 @@ type ResponseInitRequest interface {
 }
 
 func (obj *responseInitRequest) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseInitRequest) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseInitRequest")
+	}
 
 	return nil
 }
@@ -60028,6 +61011,17 @@ func (obj *responseStartDebugSession) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseStartDebugSession) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseStartDebugSession) setNil() {
 	obj.portListInfoWithUniqueIdHolder = nil
 	obj.interceptorInfoHolder = nil
@@ -60072,6 +61066,8 @@ type ResponseStartDebugSession interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// PortListInfoWithUniqueId returns DebugTopologyDebugPortInfoWithUniqueIdList, set in ResponseStartDebugSession.
 	// DebugTopologyDebugPortInfoWithUniqueIdList is tBD
 	PortListInfoWithUniqueId() DebugTopologyDebugPortInfoWithUniqueIdList
@@ -60092,6 +61088,15 @@ type ResponseStartDebugSession interface {
 }
 
 func (obj *responseStartDebugSession) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseStartDebugSession) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 2 {
+		return fmt.Errorf("insufficient value in ResponseStartDebugSession")
+	}
 
 	return nil
 }
@@ -60366,6 +61371,17 @@ func (obj *responseStopDebugSession) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseStopDebugSession) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseStopDebugSession) setNil() {
 	obj.interceptorInfoHolder = nil
 	obj.validationErrors = nil
@@ -60409,6 +61425,8 @@ type ResponseStopDebugSession interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// InterceptorInfo returns DebugTopologyInterceptorInfo, set in ResponseStopDebugSession.
 	// DebugTopologyInterceptorInfo is tBD
 	InterceptorInfo() DebugTopologyInterceptorInfo
@@ -60421,6 +61439,15 @@ type ResponseStopDebugSession interface {
 }
 
 func (obj *responseStopDebugSession) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseStopDebugSession) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseStopDebugSession")
+	}
 
 	return nil
 }
@@ -60661,6 +61688,17 @@ func (obj *responseFeatureRequest) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseFeatureRequest) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ResponseFeatureRequest is description is TBD
 type ResponseFeatureRequest interface {
 	Validation
@@ -60697,6 +61735,8 @@ type ResponseFeatureRequest interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Features returns string, set in ResponseFeatureRequest.
 	Features() string
 	// SetFeatures assigns string provided by user to ResponseFeatureRequest
@@ -60715,6 +61755,22 @@ func (obj *responseFeatureRequest) populateXml(xObj *Argument) error {
 			Value: obj.Features(),
 		}
 		xObj.Member = append(xObj.Member, member)
+	}
+
+	return nil
+}
+
+func (obj *responseFeatureRequest) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseFeatureRequest")
+	}
+
+	if xObj.RetVal[0].Value != "" {
+		retVal := xObj.RetVal[0].Value
+
+		obj.SetFeatures(retVal)
+
 	}
 
 	return nil
@@ -60946,6 +62002,17 @@ func (obj *responseGetOwner) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetOwner) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetOwner) setNil() {
 	obj.infoHolder = nil
 	obj.validationErrors = nil
@@ -60989,6 +62056,8 @@ type ResponseGetOwner interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Info returns ServerOwnershipInfo, set in ResponseGetOwner.
 	// ServerOwnershipInfo is owner, the current owner, empty if not owned description, provided at the time ownership was taken duration, number of milliseconds this port has been owned by current owner.
 	Info() ServerOwnershipInfo
@@ -61001,6 +62070,15 @@ type ResponseGetOwner interface {
 }
 
 func (obj *responseGetOwner) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetOwner) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetOwner")
+	}
 
 	return nil
 }
@@ -61242,6 +62320,17 @@ func (obj *responseGetCapturePacketCount) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetCapturePacketCount) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetCapturePacketCount) setNil() {
 	obj.packetCountListHolder = nil
 	obj.validationErrors = nil
@@ -61285,6 +62374,8 @@ type ResponseGetCapturePacketCount interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// PacketCountList returns CapturePacketCountList, set in ResponseGetCapturePacketCount.
 	// CapturePacketCountList is tBD
 	PacketCountList() CapturePacketCountList
@@ -61297,6 +62388,15 @@ type ResponseGetCapturePacketCount interface {
 }
 
 func (obj *responseGetCapturePacketCount) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetCapturePacketCount) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetCapturePacketCount")
+	}
 
 	return nil
 }
@@ -61538,6 +62638,17 @@ func (obj *responseGetCaptureStatus) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetCaptureStatus) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetCaptureStatus) setNil() {
 	obj.statusListHolder = nil
 	obj.validationErrors = nil
@@ -61581,6 +62692,8 @@ type ResponseGetCaptureStatus interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// StatusList returns CaptureStatusList, set in ResponseGetCaptureStatus.
 	// CaptureStatusList is tBD
 	StatusList() CaptureStatusList
@@ -61593,6 +62706,15 @@ type ResponseGetCaptureStatus interface {
 }
 
 func (obj *responseGetCaptureStatus) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetCaptureStatus) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetCaptureStatus")
+	}
 
 	return nil
 }
@@ -61834,6 +62956,17 @@ func (obj *responseRetrieveCapture) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseRetrieveCapture) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseRetrieveCapture) setNil() {
 	obj.recordHolder = nil
 	obj.validationErrors = nil
@@ -61877,6 +63010,8 @@ type ResponseRetrieveCapture interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Record returns CaptureRecordType, set in ResponseRetrieveCapture.
 	// CaptureRecordType is tBD
 	Record() CaptureRecordType
@@ -61889,6 +63024,15 @@ type ResponseRetrieveCapture interface {
 }
 
 func (obj *responseRetrieveCapture) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseRetrieveCapture) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseRetrieveCapture")
+	}
 
 	return nil
 }
@@ -62130,6 +63274,17 @@ func (obj *responseGetCurrentServerTime) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetCurrentServerTime) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetCurrentServerTime) setNil() {
 	obj.timeHolder = nil
 	obj.validationErrors = nil
@@ -62173,6 +63328,8 @@ type ResponseGetCurrentServerTime interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Time returns PFTypeUTCTime, set in ResponseGetCurrentServerTime.
 	// PFTypeUTCTime is model time using Posix Time (http://en.wikipedia.org/wiki/Unix_time) as the apparent number of seconds since 1970-01-01 00:00:00 +0000 (UTC). Note that this is unable to describe time during a leap second event. A value of zero, or a negative value, indicates an illegal time.
 	Time() PFTypeUTCTime
@@ -62185,6 +63342,15 @@ type ResponseGetCurrentServerTime interface {
 }
 
 func (obj *responseGetCurrentServerTime) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetCurrentServerTime) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetCurrentServerTime")
+	}
 
 	return nil
 }
@@ -62426,6 +63592,17 @@ func (obj *responseGetNTPState) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetNTPState) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetNTPState) setNil() {
 	obj.stateHolder = nil
 	obj.validationErrors = nil
@@ -62469,6 +63646,8 @@ type ResponseGetNTPState interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// State returns ServereNTPState, set in ResponseGetNTPState.
 	// ServereNTPState is description is TBD
 	State() ServereNTPState
@@ -62481,6 +63660,15 @@ type ResponseGetNTPState interface {
 }
 
 func (obj *responseGetNTPState) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetNTPState) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetNTPState")
+	}
 
 	return nil
 }
@@ -62721,6 +63909,17 @@ func (obj *responseGetTimedActionTimestamp) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetTimedActionTimestamp) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ResponseGetTimedActionTimestamp is description is TBD
 type ResponseGetTimedActionTimestamp interface {
 	Validation
@@ -62757,6 +63956,8 @@ type ResponseGetTimedActionTimestamp interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Value returns int64, set in ResponseGetTimedActionTimestamp.
 	Value() int64
 	// SetValue assigns int64 provided by user to ResponseGetTimedActionTimestamp
@@ -62775,6 +63976,26 @@ func (obj *responseGetTimedActionTimestamp) populateXml(xObj *Argument) error {
 			Value: strconv.FormatInt(obj.Value(), 10),
 		}
 		xObj.Member = append(xObj.Member, member)
+	}
+
+	return nil
+}
+
+func (obj *responseGetTimedActionTimestamp) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetTimedActionTimestamp")
+	}
+
+	if xObj.RetVal[0].Value != "" {
+		retVal := xObj.RetVal[0].Value
+
+		v, err := strconv.ParseInt(retVal, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not parse string to int64: %v", err)
+		}
+		obj.SetValue(v)
+
 	}
 
 	return nil
@@ -63005,6 +64226,17 @@ func (obj *responseScheduleTimedActions) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseScheduleTimedActions) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ResponseScheduleTimedActions is description is TBD
 type ResponseScheduleTimedActions interface {
 	Validation
@@ -63041,6 +64273,8 @@ type ResponseScheduleTimedActions interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Error returns bool, set in ResponseScheduleTimedActions.
 	Error() bool
 	// SetError assigns bool provided by user to ResponseScheduleTimedActions
@@ -63081,6 +64315,39 @@ func (obj *responseScheduleTimedActions) populateXml(xObj *Argument) error {
 			Value: obj.ErrorMessage(),
 		}
 		xObj.Member = append(xObj.Member, member)
+	}
+
+	return nil
+}
+
+func (obj *responseScheduleTimedActions) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 2 {
+		return fmt.Errorf("insufficient value in ResponseScheduleTimedActions")
+	}
+
+	if xObj.RetVal[0].Value != "" {
+		retVal := xObj.RetVal[0].Value
+		var value bool
+		if retVal == "1" {
+			{
+				value = true
+			}
+		} else {
+			{
+				value = false
+			}
+		}
+
+		obj.SetError(value)
+
+	}
+
+	if xObj.RetVal[1].Value != "" {
+		retVal := xObj.RetVal[1].Value
+
+		obj.SetErrorMessage(retVal)
+
 	}
 
 	return nil
@@ -63333,6 +64600,17 @@ func (obj *responseConfigureUpdateStreams) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseConfigureUpdateStreams) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ResponseConfigureUpdateStreams is description is TBD
 type ResponseConfigureUpdateStreams interface {
 	Validation
@@ -63369,6 +64647,8 @@ type ResponseConfigureUpdateStreams interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// Timestamp returns int64, set in ResponseConfigureUpdateStreams.
 	Timestamp() int64
 	// SetTimestamp assigns int64 provided by user to ResponseConfigureUpdateStreams
@@ -63387,6 +64667,26 @@ func (obj *responseConfigureUpdateStreams) populateXml(xObj *Argument) error {
 			Value: strconv.FormatInt(obj.Timestamp(), 10),
 		}
 		xObj.Member = append(xObj.Member, member)
+	}
+
+	return nil
+}
+
+func (obj *responseConfigureUpdateStreams) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseConfigureUpdateStreams")
+	}
+
+	if xObj.RetVal[0].Value != "" {
+		retVal := xObj.RetVal[0].Value
+
+		v, err := strconv.ParseInt(retVal, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not parse string to int64: %v", err)
+		}
+		obj.SetTimestamp(v)
+
 	}
 
 	return nil
@@ -63618,6 +64918,17 @@ func (obj *responseRefreshValueList) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseRefreshValueList) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseRefreshValueList) setNil() {
 	obj.valueListUdfDataHolder = nil
 	obj.validationErrors = nil
@@ -63661,6 +64972,8 @@ type ResponseRefreshValueList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// ValueListUdfData returns StreamStreamValueListSettingList, set in ResponseRefreshValueList.
 	// StreamStreamValueListSettingList is tBD
 	ValueListUdfData() StreamStreamValueListSettingList
@@ -63673,6 +64986,15 @@ type ResponseRefreshValueList interface {
 }
 
 func (obj *responseRefreshValueList) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseRefreshValueList) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseRefreshValueList")
+	}
 
 	return nil
 }
@@ -63915,6 +65237,17 @@ func (obj *responseGetMacSecSaKeyStatus) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetMacSecSaKeyStatus) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetMacSecSaKeyStatus) setNil() {
 	obj.txMacSecSaKeyStatusListHolder = nil
 	obj.rxMacSecSaKeyStatusListHolder = nil
@@ -63959,6 +65292,8 @@ type ResponseGetMacSecSaKeyStatus interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// TxMacSecSaKeyStatusList returns MacSecTxMacSecSaKeyStatusTypeList, set in ResponseGetMacSecSaKeyStatus.
 	// MacSecTxMacSecSaKeyStatusTypeList is tBD
 	TxMacSecSaKeyStatusList() MacSecTxMacSecSaKeyStatusTypeList
@@ -63979,6 +65314,15 @@ type ResponseGetMacSecSaKeyStatus interface {
 }
 
 func (obj *responseGetMacSecSaKeyStatus) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetMacSecSaKeyStatus) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 2 {
+		return fmt.Errorf("insufficient value in ResponseGetMacSecSaKeyStatus")
+	}
 
 	return nil
 }
@@ -64253,6 +65597,17 @@ func (obj *responseGetStatCatalog) ToRpfXml() (*Argument, error) {
 	return ret, err
 }
 
+func (obj *responseGetStatCatalog) FromRpfXml(rBytes []byte) error {
+	res := ObjectResponse{}
+	if err := xml.Unmarshal(rBytes, &res); err != nil {
+		return err
+	}
+	if err := obj.populateFromXml(&res); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (obj *responseGetStatCatalog) setNil() {
 	obj.catalogItemHolder = nil
 	obj.validationErrors = nil
@@ -64296,6 +65651,8 @@ type ResponseGetStatCatalog interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*ObjectResponse) error
+	FromRpfXml([]byte) error
 	// CatalogItem returns StatCatalogStHtgCatalogItem, set in ResponseGetStatCatalog.
 	// StatCatalogStHtgCatalogItem is tBD
 	CatalogItem() StatCatalogStHtgCatalogItem
@@ -64308,6 +65665,15 @@ type ResponseGetStatCatalog interface {
 }
 
 func (obj *responseGetStatCatalog) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *responseGetStatCatalog) populateFromXml(xObj *ObjectResponse) error {
+
+	if len(xObj.RetVal) != 1 {
+		return fmt.Errorf("insufficient value in ResponseGetStatCatalog")
+	}
 
 	return nil
 }
@@ -64584,6 +65950,7 @@ type Version interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ApiSpecVersion returns string, set in Version.
 	ApiSpecVersion() string
 	// SetApiSpecVersion assigns string provided by user to Version
@@ -64632,6 +65999,11 @@ func (obj *version) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *version) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -64950,6 +66322,7 @@ type PFTypeReleaseType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Major returns int32, set in PFTypeReleaseType.
 	Major() int32
 	// SetMajor assigns int32 provided by user to PFTypeReleaseType
@@ -64985,6 +66358,11 @@ func (obj *pFTypeReleaseType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeReleaseType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -65272,6 +66650,7 @@ type PFTypeRevisionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Branch returns int32, set in PFTypeRevisionType.
 	Branch() int32
 	// SetBranch assigns int32 provided by user to PFTypeRevisionType
@@ -65307,6 +66686,11 @@ func (obj *pFTypeRevisionType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeRevisionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -65604,6 +66988,7 @@ type DebugTopologyDebugPortInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Topology returns DebugTopologyDebugPortTopologyInfo, set in DebugTopologyDebugPortInfo.
 	// DebugTopologyDebugPortTopologyInfo is tBD
 	Topology() DebugTopologyDebugPortTopologyInfo
@@ -65624,6 +67009,11 @@ type DebugTopologyDebugPortInfo interface {
 }
 
 func (obj *debugTopologyDebugPortInfo) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -65933,6 +67323,7 @@ type ServereEvent interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EEvent returns ServereEventEEventEnum, set in ServereEvent
 	EEvent() ServereEventEEventEnum
 	// SetEEvent assigns ServereEventEEventEnum provided by user to ServereEvent
@@ -65952,6 +67343,11 @@ func (obj *servereEvent) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *servereEvent) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -66239,6 +67635,7 @@ type PortBasicConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Loopback returns PortBasicConfigurationTypeLoopbackEnum, set in PortBasicConfigurationType
 	Loopback() PortBasicConfigurationTypeLoopbackEnum
 	// SetLoopback assigns PortBasicConfigurationTypeLoopbackEnum provided by user to PortBasicConfigurationType
@@ -66356,6 +67753,11 @@ func (obj *portBasicConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portBasicConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -66781,6 +68183,7 @@ type PortTransmitConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TransmitMode returns PortTransmitConfigurationTypeTransmitModeEnum, set in PortTransmitConfigurationType
 	TransmitMode() PortTransmitConfigurationTypeTransmitModeEnum
 	// SetTransmitMode assigns PortTransmitConfigurationTypeTransmitModeEnum provided by user to PortTransmitConfigurationType
@@ -66877,6 +68280,11 @@ func (obj *portTransmitConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portTransmitConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -67312,6 +68720,7 @@ type PortPauseConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// FlowControl returns PortPauseConfigurationTypeFlowControlEnum, set in PortPauseConfigurationType
 	FlowControl() PortPauseConfigurationTypeFlowControlEnum
 	// SetFlowControl assigns PortPauseConfigurationTypeFlowControlEnum provided by user to PortPauseConfigurationType
@@ -67348,6 +68757,11 @@ func (obj *portPauseConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portPauseConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -67693,6 +69107,7 @@ type PortEthernetConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Advertise1000FullDuplex returns bool, set in PortEthernetConfigurationType.
 	Advertise1000FullDuplex() bool
 	// SetAdvertise1000FullDuplex assigns bool provided by user to PortEthernetConfigurationType
@@ -67848,6 +69263,11 @@ func (obj *portEthernetConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portEthernetConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -68325,6 +69745,7 @@ type PortDataCenterConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DataCenterMode returns PortDataCenterConfigurationTypeDataCenterModeEnum, set in PortDataCenterConfigurationType
 	DataCenterMode() PortDataCenterConfigurationTypeDataCenterModeEnum
 	// SetDataCenterMode assigns PortDataCenterConfigurationTypeDataCenterModeEnum provided by user to PortDataCenterConfigurationType
@@ -68344,6 +69765,11 @@ func (obj *portDataCenterConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portDataCenterConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -68635,6 +70061,7 @@ type PortPfcConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PriorityQueueMap returns PortPfcPriorityQueueMapType, set in PortPfcConfigurationType.
 	// PortPfcPriorityQueueMapType is tBD
 	PriorityQueueMap() PortPfcPriorityQueueMapType
@@ -68663,6 +70090,11 @@ func (obj *portPfcConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portPfcConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -68969,6 +70401,7 @@ type PortTxLaneConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxLaneMapping returns PortTxLaneMappingType, set in PortTxLaneConfigurationType.
 	// PortTxLaneMappingType is tBD
 	TxLaneMapping() PortTxLaneMappingType
@@ -68981,6 +70414,11 @@ type PortTxLaneConfigurationType interface {
 }
 
 func (obj *portTxLaneConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *portTxLaneConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -69269,6 +70707,7 @@ type CaptureConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Direction returns CaptureConfigurationTypeDirectionEnum, set in CaptureConfigurationType
 	Direction() CaptureConfigurationTypeDirectionEnum
 	// SetDirection assigns CaptureConfigurationTypeDirectionEnum provided by user to CaptureConfigurationType
@@ -69345,6 +70784,11 @@ func (obj *captureConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -69825,6 +71269,7 @@ type PacketGroupPGIDRange interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Start returns IdTypePacketGroupId, set in PacketGroupPGIDRange.
 	// IdTypePacketGroupId is tBD
 	Start() IdTypePacketGroupId
@@ -69845,6 +71290,11 @@ type PacketGroupPGIDRange interface {
 }
 
 func (obj *packetGroupPGIDRange) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *packetGroupPGIDRange) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -70162,6 +71612,7 @@ type PortRxModeSet interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxModeSet returns PortRxModeSetPorteRxModeIterIter, set in PortRxModeSet
 	RxModeSet() PortRxModeSetPorteRxModeIter
 	setNil()
@@ -70185,6 +71636,11 @@ func (obj *portRxModeSet) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *portRxModeSet) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -70529,6 +71985,7 @@ type PFTypeMilliSecondsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MilliSeconds returns int64, set in PFTypeMilliSecondsType.
 	MilliSeconds() int64
 	// SetMilliSeconds assigns int64 provided by user to PFTypeMilliSecondsType
@@ -70548,6 +72005,11 @@ func (obj *pFTypeMilliSecondsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeMilliSecondsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -70825,6 +72287,7 @@ type PacketGroupConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DelayVariationMode returns PacketGroupConfigurationTypeDelayVariationModeEnum, set in PacketGroupConfigurationType
 	DelayVariationMode() PacketGroupConfigurationTypeDelayVariationModeEnum
 	// SetDelayVariationMode assigns PacketGroupConfigurationTypeDelayVariationModeEnum provided by user to PacketGroupConfigurationType
@@ -71421,6 +72884,11 @@ func (obj *packetGroupConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *packetGroupConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -72547,6 +74015,7 @@ type DataIntegrityRxConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableTimeStamp returns bool, set in DataIntegrityRxConfigurationType.
 	EnableTimeStamp() bool
 	// SetEnableTimeStamp assigns bool provided by user to DataIntegrityRxConfigurationType
@@ -72604,6 +74073,11 @@ func (obj *dataIntegrityRxConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *dataIntegrityRxConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -72913,6 +74387,7 @@ type RxAutoInstrumentationConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StartScanOffset returns int32, set in RxAutoInstrumentationConfigurationType.
 	StartScanOffset() int32
 	// SetStartScanOffset assigns int32 provided by user to RxAutoInstrumentationConfigurationType
@@ -73002,6 +74477,11 @@ func (obj *rxAutoInstrumentationConfigurationType) populateXml(xObj *Argument) e
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *rxAutoInstrumentationConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -73363,6 +74843,7 @@ type RateMonitoringRateMonitoringList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RateMonitoringList returns RateMonitoringRateMonitoringListRateMonitoringConfigurationTypeIterIter, set in RateMonitoringRateMonitoringList
 	RateMonitoringList() RateMonitoringRateMonitoringListRateMonitoringConfigurationTypeIter
 	setNil()
@@ -73386,6 +74867,11 @@ func (obj *rateMonitoringRateMonitoringList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *rateMonitoringRateMonitoringList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -73730,6 +75216,7 @@ type ServerePulseAction interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EPulseAction returns ServerePulseActionEPulseActionEnum, set in ServerePulseAction
 	EPulseAction() ServerePulseActionEPulseActionEnum
 	// SetEPulseAction assigns ServerePulseActionEPulseActionEnum provided by user to ServerePulseAction
@@ -73749,6 +75236,11 @@ func (obj *serverePulseAction) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverePulseAction) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -74046,6 +75538,7 @@ type ServerTimedAction interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Action returns ServerTimedActionActionEnum, set in ServerTimedAction
 	Action() ServerTimedActionActionEnum
 	// SetAction assigns ServerTimedActionActionEnum provided by user to ServerTimedAction
@@ -74081,6 +75574,11 @@ func (obj *serverTimedAction) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverTimedAction) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -74404,6 +75902,7 @@ type StreamStreamConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamConfigurationList returns StreamStreamConfigurationListStreamStreamConfigurationTypeIterIter, set in StreamStreamConfigurationList
 	StreamConfigurationList() StreamStreamConfigurationListStreamStreamConfigurationTypeIter
 	setNil()
@@ -74427,6 +75926,11 @@ func (obj *streamStreamConfigurationList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamStreamConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -74781,6 +76285,7 @@ type StreamStreamUpdateConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamStreamUpdateConfigurationType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -74801,6 +76306,11 @@ type StreamStreamUpdateConfigurationType interface {
 }
 
 func (obj *streamStreamUpdateConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamStreamUpdateConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -75118,6 +76628,7 @@ type StreamBackgroundDataSettingList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// BackgroundDataSettingList returns StreamBackgroundDataSettingListStreamBackgroundDataSettingTypeIterIter, set in StreamBackgroundDataSettingList
 	BackgroundDataSettingList() StreamBackgroundDataSettingListStreamBackgroundDataSettingTypeIter
 	setNil()
@@ -75141,6 +76652,11 @@ func (obj *streamBackgroundDataSettingList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamBackgroundDataSettingList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -75493,6 +77009,7 @@ type StreamStreamRangeListSettingList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamRangeListSettingList returns StreamStreamRangeListSettingListStreamStreamRangeListSettingTypeIterIter, set in StreamStreamRangeListSettingList
 	StreamRangeListSettingList() StreamStreamRangeListSettingListStreamStreamRangeListSettingTypeIter
 	setNil()
@@ -75516,6 +77033,11 @@ func (obj *streamStreamRangeListSettingList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamStreamRangeListSettingList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -75870,6 +77392,7 @@ type StreamStreamTableUdfDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamStreamTableUdfDataType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -75928,6 +77451,11 @@ func (obj *streamStreamTableUdfDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamStreamTableUdfDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -76291,6 +77819,7 @@ type StreamKillBitListSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamKillBitListSettingType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -76311,6 +77840,11 @@ type StreamKillBitListSettingType interface {
 }
 
 func (obj *streamKillBitListSettingType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamKillBitListSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -76630,6 +78164,7 @@ type StreamStreamValueListSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamStreamValueListSettingType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -76650,6 +78185,11 @@ type StreamStreamValueListSettingType interface {
 }
 
 func (obj *streamStreamValueListSettingType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamStreamValueListSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -76969,6 +78509,7 @@ type MacSecRxMGIDConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableMgid0 returns bool, set in MacSecRxMGIDConfigurationType.
 	EnableMgid0() bool
 	// SetEnableMgid0 assigns bool provided by user to MacSecRxMGIDConfigurationType
@@ -77033,6 +78574,11 @@ func (obj *macSecRxMGIDConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMGIDConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -77386,6 +78932,7 @@ type MacSecUnauthenticatedDataConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// FirstByteOffset returns int32, set in MacSecUnauthenticatedDataConfigurationType.
 	FirstByteOffset() int32
 	// SetFirstByteOffset assigns int32 provided by user to MacSecUnauthenticatedDataConfigurationType
@@ -77421,6 +78968,11 @@ func (obj *macSecUnauthenticatedDataConfigurationType) populateXml(xObj *Argumen
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecUnauthenticatedDataConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -77716,6 +79268,7 @@ type MacSecTxScConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxScConfigurationList returns MacSecTxScConfigurationListMacSecTxScConfigurationTypeIterIter, set in MacSecTxScConfigurationList
 	TxScConfigurationList() MacSecTxScConfigurationListMacSecTxScConfigurationTypeIter
 	setNil()
@@ -77739,6 +79292,11 @@ func (obj *macSecTxScConfigurationList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecTxScConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -78091,6 +79649,7 @@ type MacSecRxScConfigurationList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxScConfigurationList returns MacSecRxScConfigurationListMacSecRxScConfigurationTypeIterIter, set in MacSecRxScConfigurationList
 	RxScConfigurationList() MacSecRxScConfigurationListMacSecRxScConfigurationTypeIter
 	setNil()
@@ -78114,6 +79673,11 @@ func (obj *macSecRxScConfigurationList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecRxScConfigurationList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -78466,6 +80030,7 @@ type MacSecMacSecStreamControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableMacSec returns bool, set in MacSecMacSecStreamControlType.
 	EnableMacSec() bool
 	// SetEnableMacSec assigns bool provided by user to MacSecMacSecStreamControlType
@@ -78746,6 +80311,11 @@ func (obj *macSecMacSecStreamControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecMacSecStreamControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -79320,6 +80890,7 @@ type MacSecTxSaKeyConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecTxSaKeyConfigurationType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -79462,6 +81033,11 @@ func (obj *macSecTxSaKeyConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecTxSaKeyConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -79948,6 +81524,7 @@ type MacSecRxSaKeyConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecRxSaKeyConfigurationType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -80020,6 +81597,11 @@ func (obj *macSecRxSaKeyConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxSaKeyConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -80406,6 +81988,7 @@ type IdTypeSecureChannelId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeSecureChannelId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeSecureChannelId
@@ -80425,6 +82008,11 @@ func (obj *idTypeSecureChannelId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeSecureChannelId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -80700,6 +82288,7 @@ type MacSecSaKeyStateConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecSaKeyStateConfigurationType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -80736,6 +82325,11 @@ func (obj *macSecSaKeyStateConfigurationType) populateXml(xObj *Argument) error 
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecSaKeyStateConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -81081,6 +82675,7 @@ type MacSecRxMacSecUDSConfigType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MacsecUdsId returns int32, set in MacSecRxMacSecUDSConfigType.
 	MacsecUdsId() int32
 	// SetMacsecUdsId assigns int32 provided by user to MacSecRxMacSecUDSConfigType
@@ -81182,6 +82777,11 @@ func (obj *macSecRxMacSecUDSConfigType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMacSecUDSConfigType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -81567,6 +83167,7 @@ type DebugTopologyDebugPortInfoWithUniqueIdList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DebugPortInfoWithUniqueIdList returns DebugTopologyDebugPortInfoWithUniqueIdListDebugTopologyDebugPortInfoWithUniqueIdIterIter, set in DebugTopologyDebugPortInfoWithUniqueIdList
 	DebugPortInfoWithUniqueIdList() DebugTopologyDebugPortInfoWithUniqueIdListDebugTopologyDebugPortInfoWithUniqueIdIter
 	setNil()
@@ -81590,6 +83191,11 @@ func (obj *debugTopologyDebugPortInfoWithUniqueIdList) populateXml(xObj *Argumen
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortInfoWithUniqueIdList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -81934,6 +83540,7 @@ type DebugTopologyInterceptorInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// InterceptorRunningMode returns DebugTopologyInterceptorInfoInterceptorRunningModeEnum, set in DebugTopologyInterceptorInfo
 	InterceptorRunningMode() DebugTopologyInterceptorInfoInterceptorRunningModeEnum
 	// SetInterceptorRunningMode assigns DebugTopologyInterceptorInfoInterceptorRunningModeEnum provided by user to DebugTopologyInterceptorInfo
@@ -81969,6 +83576,11 @@ func (obj *debugTopologyInterceptorInfo) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyInterceptorInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -82278,6 +83890,7 @@ type ServerOwnershipInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Owner returns string, set in ServerOwnershipInfo.
 	Owner() string
 	// SetOwner assigns string provided by user to ServerOwnershipInfo
@@ -82322,6 +83935,11 @@ func (obj *serverOwnershipInfo) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *serverOwnershipInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -82650,6 +84268,7 @@ type CapturePacketCountList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PacketCountList returns CapturePacketCountListCapturePacketCountTypeIterIter, set in CapturePacketCountList
 	PacketCountList() CapturePacketCountListCapturePacketCountTypeIter
 	setNil()
@@ -82673,6 +84292,11 @@ func (obj *capturePacketCountList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *capturePacketCountList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -83025,6 +84649,7 @@ type CaptureStatusList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StatusList returns CaptureStatusListCaptureStatusTypeIterIter, set in CaptureStatusList
 	StatusList() CaptureStatusListCaptureStatusTypeIter
 	setNil()
@@ -83048,6 +84673,11 @@ func (obj *captureStatusList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *captureStatusList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -83392,6 +85022,7 @@ type CaptureRecordType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Count returns int32, set in CaptureRecordType.
 	Count() int32
 	// SetCount assigns int32 provided by user to CaptureRecordType
@@ -83427,6 +85058,11 @@ func (obj *captureRecordType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureRecordType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -83714,6 +85350,7 @@ type ServereNTPState interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ENtpState returns ServereNTPStateENtpStateEnum, set in ServereNTPState
 	ENtpState() ServereNTPStateENtpStateEnum
 	// SetENtpState assigns ServereNTPStateENtpStateEnum provided by user to ServereNTPState
@@ -83733,6 +85370,11 @@ func (obj *servereNTPState) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *servereNTPState) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -84020,6 +85662,7 @@ type MacSecTxMacSecSaKeyStatusTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxMacSecSaKeyStatusTypeList returns MacSecTxMacSecSaKeyStatusTypeListMacSecTxMacSecSaKeyStatusTypeIterIter, set in MacSecTxMacSecSaKeyStatusTypeList
 	TxMacSecSaKeyStatusTypeList() MacSecTxMacSecSaKeyStatusTypeListMacSecTxMacSecSaKeyStatusTypeIter
 	setNil()
@@ -84043,6 +85686,11 @@ func (obj *macSecTxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecTxMacSecSaKeyStatusTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -84395,6 +86043,7 @@ type MacSecRxMacSecSaKeyStatusTypeList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RxMacSecSaKeyStatusTypeList returns MacSecRxMacSecSaKeyStatusTypeListMacSecRxMacSecSaKeyStatusTypeIterIter, set in MacSecRxMacSecSaKeyStatusTypeList
 	RxMacSecSaKeyStatusTypeList() MacSecRxMacSecSaKeyStatusTypeListMacSecRxMacSecSaKeyStatusTypeIter
 	setNil()
@@ -84418,6 +86067,11 @@ func (obj *macSecRxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMacSecSaKeyStatusTypeList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -84772,6 +86426,7 @@ type StatCatalogStHtgCatalogItem interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PortId returns IdTypePortId, set in StatCatalogStHtgCatalogItem.
 	// IdTypePortId is tBD
 	PortId() IdTypePortId
@@ -84840,6 +86495,11 @@ func (obj *statCatalogStHtgCatalogItem) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *statCatalogStHtgCatalogItem) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -85215,6 +86875,7 @@ type DebugTopologyDebugPortTopologyInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ChassisNameOrIp returns string, set in DebugTopologyDebugPortTopologyInfo.
 	ChassisNameOrIp() string
 	// SetChassisNameOrIp assigns string provided by user to DebugTopologyDebugPortTopologyInfo
@@ -85336,6 +86997,11 @@ func (obj *debugTopologyDebugPortTopologyInfo) populateXml(xObj *Argument) error
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortTopologyInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -85733,6 +87399,7 @@ type DebugTopologyDebugPortConnectionInfo interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TargetAddress returns string, set in DebugTopologyDebugPortConnectionInfo.
 	TargetAddress() string
 	// SetTargetAddress assigns string provided by user to DebugTopologyDebugPortConnectionInfo
@@ -85800,6 +87467,11 @@ func (obj *debugTopologyDebugPortConnectionInfo) populateXml(xObj *Argument) err
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortConnectionInfo) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -86131,6 +87803,7 @@ type PFTypePartsPerMillionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Ppm returns int32, set in PFTypePartsPerMillionType.
 	Ppm() int32
 	// SetPpm assigns int32 provided by user to PFTypePartsPerMillionType
@@ -86166,6 +87839,11 @@ func (obj *pFTypePartsPerMillionType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypePartsPerMillionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -86453,6 +88131,7 @@ type PFTypePercentType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Percent returns int32, set in PFTypePercentType.
 	Percent() int32
 	// SetPercent assigns int32 provided by user to PFTypePercentType
@@ -86488,6 +88167,11 @@ func (obj *pFTypePercentType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypePercentType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -86775,6 +88459,7 @@ type PFTypeMacAddressType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Address returns int64, set in PFTypeMacAddressType.
 	Address() int64
 	// SetAddress assigns int64 provided by user to PFTypeMacAddressType
@@ -86794,6 +88479,11 @@ func (obj *pFTypeMacAddressType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeMacAddressType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -87081,6 +88771,7 @@ type PortPfcPriorityQueueMapType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Priority0 returns PortPfcPriorityQueueType, set in PortPfcPriorityQueueMapType.
 	// PortPfcPriorityQueueType is tBD
 	Priority0() PortPfcPriorityQueueType
@@ -87149,6 +88840,11 @@ type PortPfcPriorityQueueMapType interface {
 }
 
 func (obj *portPfcPriorityQueueMapType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *portPfcPriorityQueueMapType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -87664,6 +89360,7 @@ type PortTxLaneMappingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Mapping returns PortTxLaneList, set in PortTxLaneMappingType.
 	// PortTxLaneList is tBD
 	Mapping() PortTxLaneList
@@ -87676,6 +89373,11 @@ type PortTxLaneMappingType interface {
 }
 
 func (obj *portTxLaneMappingType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *portTxLaneMappingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -87960,6 +89662,7 @@ type CaptureSettingsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// CaptureMode returns CaptureSettingsTypeCaptureModeEnum, set in CaptureSettingsType
 	CaptureMode() CaptureSettingsTypeCaptureModeEnum
 	// SetCaptureMode assigns CaptureSettingsTypeCaptureModeEnum provided by user to CaptureSettingsType
@@ -88052,6 +89755,11 @@ func (obj *captureSettingsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureSettingsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -88498,6 +90206,7 @@ type CapturePatternList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PatternList returns CapturePatternListCapturePatternTypeIterIter, set in CapturePatternList
 	PatternList() CapturePatternListCapturePatternTypeIter
 	setNil()
@@ -88521,6 +90230,11 @@ func (obj *capturePatternList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *capturePatternList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -88873,6 +90587,7 @@ type CaptureExpressionList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ExpressionList returns CaptureExpressionListCaptureExpressionTypeIterIter, set in CaptureExpressionList
 	ExpressionList() CaptureExpressionListCaptureExpressionTypeIter
 	setNil()
@@ -88896,6 +90611,11 @@ func (obj *captureExpressionList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *captureExpressionList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -89240,6 +90960,7 @@ type IdTypePacketGroupId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypePacketGroupId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypePacketGroupId
@@ -89259,6 +90980,11 @@ func (obj *idTypePacketGroupId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypePacketGroupId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -89524,6 +91250,7 @@ type PorteRxMode interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ERxMode returns PorteRxModeERxModeEnum, set in PorteRxMode
 	ERxMode() PorteRxModeERxModeEnum
 	// SetERxMode assigns PorteRxModeERxModeEnum provided by user to PorteRxMode
@@ -89543,6 +91270,11 @@ func (obj *porteRxMode) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *porteRxMode) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -89832,6 +91564,7 @@ type PacketGroupLatencyBinList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// LatencyBinList returns []float64, set in PacketGroupLatencyBinList.
 	LatencyBinList() []float64
 	// SetLatencyBinList assigns []float64 provided by user to PacketGroupLatencyBinList
@@ -89851,6 +91584,11 @@ func (obj *packetGroupLatencyBinList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *packetGroupLatencyBinList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -90123,6 +91861,7 @@ type PacketGroupSizeBinsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableSizeBins returns bool, set in PacketGroupSizeBinsType.
 	EnableSizeBins() bool
 	// SetEnableSizeBins assigns bool provided by user to PacketGroupSizeBinsType
@@ -90157,6 +91896,11 @@ func (obj *packetGroupSizeBinsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *packetGroupSizeBinsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -90463,6 +92207,7 @@ type PacketGroupSplitPacketGroupList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SplitPacketGroupList returns PacketGroupSplitPacketGroupListSplitPacketGroupConfigurationTypeIterIter, set in PacketGroupSplitPacketGroupList
 	SplitPacketGroupList() PacketGroupSplitPacketGroupListSplitPacketGroupConfigurationTypeIter
 	setNil()
@@ -90486,6 +92231,11 @@ func (obj *packetGroupSplitPacketGroupList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *packetGroupSplitPacketGroupList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -90830,6 +92580,7 @@ type RateMonitoringConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableJitterFilter returns bool, set in RateMonitoringConfigurationType.
 	EnableJitterFilter() bool
 	// SetEnableJitterFilter assigns bool provided by user to RateMonitoringConfigurationType
@@ -90919,6 +92670,11 @@ func (obj *rateMonitoringConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *rateMonitoringConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -91282,6 +93038,7 @@ type StreamStreamConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamStreamConfigurationType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -91334,6 +93091,11 @@ func (obj *streamStreamConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamStreamConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -91699,6 +93461,7 @@ type IdTypeStreamId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeStreamId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeStreamId
@@ -91718,6 +93481,11 @@ func (obj *idTypeStreamId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeStreamId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -91991,6 +93759,7 @@ type StreamConfigurationUpdateDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// IsSetStreamControl returns bool, set in StreamConfigurationUpdateDataType.
 	IsSetStreamControl() bool
 	// SetIsSetStreamControl assigns bool provided by user to StreamConfigurationUpdateDataType
@@ -92179,6 +93948,11 @@ func (obj *streamConfigurationUpdateDataType) populateXml(xObj *Argument) error 
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamConfigurationUpdateDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -92641,6 +94415,7 @@ type StreamBackgroundDataSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamBackgroundDataSettingType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -92661,6 +94436,11 @@ type StreamBackgroundDataSettingType interface {
 }
 
 func (obj *streamBackgroundDataSettingType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamBackgroundDataSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -92980,6 +94760,7 @@ type StreamStreamRangeListSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamId returns IdTypeStreamId, set in StreamStreamRangeListSettingType.
 	// IdTypeStreamId is tBD
 	StreamId() IdTypeStreamId
@@ -93000,6 +94781,11 @@ type StreamStreamRangeListSettingType interface {
 }
 
 func (obj *streamStreamRangeListSettingType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamStreamRangeListSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -93317,6 +95103,7 @@ type TableUdfColumnMVDataList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ColumnMvDataList returns TableUdfColumnMVDataListTableUdfColumnMVDataTypeIterIter, set in TableUdfColumnMVDataList
 	ColumnMvDataList() TableUdfColumnMVDataListTableUdfColumnMVDataTypeIter
 	setNil()
@@ -93340,6 +95127,11 @@ func (obj *tableUdfColumnMVDataList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *tableUdfColumnMVDataList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -93692,6 +95484,7 @@ type UdfKillBitList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// KillBitList returns UdfKillBitListUdfKillBitListTypeIterIter, set in UdfKillBitList
 	KillBitList() UdfKillBitListUdfKillBitListTypeIter
 	setNil()
@@ -93715,6 +95508,11 @@ func (obj *udfKillBitList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *udfKillBitList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -94067,6 +95865,7 @@ type UdfValueList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ValueList returns UdfValueListUdfValueListTypeIterIter, set in UdfValueList
 	ValueList() UdfValueListUdfValueListTypeIter
 	setNil()
@@ -94090,6 +95889,11 @@ func (obj *udfValueList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *udfValueList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -94434,6 +96238,7 @@ type MacSecSplitMGIDConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DevIdOffset returns int32, set in MacSecSplitMGIDConfigurationType.
 	DevIdOffset() int32
 	// SetDevIdOffset assigns int32 provided by user to MacSecSplitMGIDConfigurationType
@@ -94501,6 +96306,11 @@ func (obj *macSecSplitMGIDConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecSplitMGIDConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -94836,6 +96646,7 @@ type MacSecTxScConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecTxScConfigurationType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -94980,6 +96791,11 @@ func (obj *macSecTxScConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecTxScConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -95467,6 +97283,7 @@ type MacSecRxScConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecRxScConfigurationType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -95609,6 +97426,11 @@ func (obj *macSecRxScConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxScConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -96063,6 +97885,7 @@ type MacSecKeyConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// KeyId returns IdTypeKeyId, set in MacSecKeyConfigurationType.
 	// IdTypeKeyId is tBD
 	KeyId() IdTypeKeyId
@@ -96139,6 +97962,11 @@ func (obj *macSecKeyConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecKeyConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -96503,6 +98331,7 @@ type IdTypeKeyId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeKeyId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeKeyId
@@ -96522,6 +98351,11 @@ func (obj *idTypeKeyId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeKeyId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -96795,6 +98629,7 @@ type DebugTopologyDebugPortInfoWithUniqueId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UniquePortId returns int32, set in DebugTopologyDebugPortInfoWithUniqueId.
 	UniquePortId() int32
 	// SetUniquePortId assigns int32 provided by user to DebugTopologyDebugPortInfoWithUniqueId
@@ -96823,6 +98658,11 @@ func (obj *debugTopologyDebugPortInfoWithUniqueId) populateXml(xObj *Argument) e
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *debugTopologyDebugPortInfoWithUniqueId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -97121,6 +98961,7 @@ type CapturePacketCountType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Direction returns CapturePacketCountTypeDirectionEnum, set in CapturePacketCountType
 	Direction() CapturePacketCountTypeDirectionEnum
 	// SetDirection assigns CapturePacketCountTypeDirectionEnum provided by user to CapturePacketCountType
@@ -97156,6 +98997,11 @@ func (obj *capturePacketCountType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *capturePacketCountType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -97457,6 +99303,7 @@ type CaptureStatusType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Direction returns CaptureStatusTypeDirectionEnum, set in CaptureStatusType
 	Direction() CaptureStatusTypeDirectionEnum
 	// SetDirection assigns CaptureStatusTypeDirectionEnum provided by user to CaptureStatusType
@@ -97606,6 +99453,11 @@ func (obj *captureStatusType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureStatusType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -98059,6 +99911,7 @@ type MacSecTxMacSecSaKeyStatusType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecTxMacSecSaKeyStatusType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -98103,6 +99956,11 @@ func (obj *macSecTxMacSecSaKeyStatusType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecTxMacSecSaKeyStatusType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -98459,6 +100317,7 @@ type MacSecRxMacSecSaKeyStatusType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ScId returns IdTypeSecureChannelId, set in MacSecRxMacSecSaKeyStatusType.
 	// IdTypeSecureChannelId is tBD
 	ScId() IdTypeSecureChannelId
@@ -98535,6 +100394,11 @@ func (obj *macSecRxMacSecSaKeyStatusType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *macSecRxMacSecSaKeyStatusType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -98935,6 +100799,7 @@ type StatCatalogStHtgCatalogStatList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StHtgCatalogStatList returns StatCatalogStHtgCatalogStatListStatCatalogStHtgCatalogStatIterIter, set in StatCatalogStHtgCatalogStatList
 	StHtgCatalogStatList() StatCatalogStHtgCatalogStatListStatCatalogStHtgCatalogStatIter
 	setNil()
@@ -98958,6 +100823,11 @@ func (obj *statCatalogStHtgCatalogStatList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *statCatalogStHtgCatalogStatList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -99310,6 +101180,7 @@ type PortPfcPriorityQueueType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enable returns bool, set in PortPfcPriorityQueueType.
 	Enable() bool
 	// SetEnable assigns bool provided by user to PortPfcPriorityQueueType
@@ -99344,6 +101215,11 @@ func (obj *portPfcPriorityQueueType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portPfcPriorityQueueType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -99650,6 +101526,7 @@ type PortTxLaneList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// TxLaneList returns PortTxLaneListPortTxLaneTypeIterIter, set in PortTxLaneList
 	TxLaneList() PortTxLaneListPortTxLaneTypeIter
 	setNil()
@@ -99673,6 +101550,11 @@ func (obj *portTxLaneList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *portTxLaneList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -100017,6 +101899,7 @@ type PFTypeKBType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// KB returns int32, set in PFTypeKBType.
 	KB() int32
 	// SetKB assigns int32 provided by user to PFTypeKBType
@@ -100036,6 +101919,11 @@ func (obj *pFTypeKBType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeKBType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -100317,6 +102205,7 @@ type CapturePatternType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PatternId returns IdTypeCapturePatternId, set in CapturePatternType.
 	// IdTypeCapturePatternId is tBD
 	PatternId() IdTypeCapturePatternId
@@ -100377,6 +102266,11 @@ func (obj *capturePatternType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *capturePatternType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -100835,6 +102729,7 @@ type CaptureExpressionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ExpressionKind returns CaptureExpressionTypeExpressionKindEnum, set in CaptureExpressionType
 	ExpressionKind() CaptureExpressionTypeExpressionKindEnum
 	// SetExpressionKind assigns CaptureExpressionTypeExpressionKindEnum provided by user to CaptureExpressionType
@@ -100949,6 +102844,11 @@ func (obj *captureExpressionType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureExpressionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -101476,6 +103376,7 @@ type PacketGroupSizeBinList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SizeBinList returns []int32, set in PacketGroupSizeBinList.
 	SizeBinList() []int32
 	// SetSizeBinList assigns []int32 provided by user to PacketGroupSizeBinList
@@ -101494,6 +103395,11 @@ func (obj *packetGroupSizeBinList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *packetGroupSizeBinList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -101758,6 +103664,7 @@ type SplitPacketGroupConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// GroupIdOffset returns int32, set in SplitPacketGroupConfigurationType.
 	GroupIdOffset() int32
 	// SetGroupIdOffset assigns int32 provided by user to SplitPacketGroupConfigurationType
@@ -101825,6 +103732,11 @@ func (obj *splitPacketGroupConfigurationType) populateXml(xObj *Argument) error 
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *splitPacketGroupConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -102208,6 +104120,7 @@ type StreamConfigurationDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// StreamControl returns StreamStreamControlType, set in StreamConfigurationDataType.
 	// StreamStreamControlType is tBD
 	StreamControl() StreamStreamControlType
@@ -102348,6 +104261,11 @@ type StreamConfigurationDataType interface {
 }
 
 func (obj *streamConfigurationDataType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamConfigurationDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -103152,6 +105070,7 @@ type StreamBackgroundDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Protocol returns string, set in StreamBackgroundDataType.
 	Protocol() string
 	// SetProtocol assigns string provided by user to StreamBackgroundDataType
@@ -103187,6 +105106,11 @@ func (obj *streamBackgroundDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamBackgroundDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -103488,6 +105412,7 @@ type UdfRangeListType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfId returns IdTypeUdfId, set in UdfRangeListType.
 	// IdTypeUdfId is tBD
 	UdfId() IdTypeUdfId
@@ -103524,6 +105449,11 @@ type UdfRangeListType interface {
 }
 
 func (obj *udfRangeListType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *udfRangeListType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -103907,6 +105837,7 @@ type TableUdfColumnMVDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ColumnId returns TableUdfColId, set in TableUdfColumnMVDataType.
 	// TableUdfColId is tBD
 	ColumnId() TableUdfColId
@@ -103935,6 +105866,11 @@ func (obj *tableUdfColumnMVDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *tableUdfColumnMVDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -104243,6 +106179,7 @@ type UdfKillBitListType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfId returns IdTypeUdfId, set in UdfKillBitListType.
 	// IdTypeUdfId is tBD
 	UdfId() IdTypeUdfId
@@ -104263,6 +106200,11 @@ type UdfKillBitListType interface {
 }
 
 func (obj *udfKillBitListType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *udfKillBitListType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -104582,6 +106524,7 @@ type UdfValueListType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfId returns IdTypeUdfId, set in UdfValueListType.
 	// IdTypeUdfId is tBD
 	UdfId() IdTypeUdfId
@@ -104602,6 +106545,11 @@ type UdfValueListType interface {
 }
 
 func (obj *udfValueListType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *udfValueListType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -104911,6 +106859,7 @@ type StatCatalogStHtgCatalogStat interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Name returns string, set in StatCatalogStHtgCatalogStat.
 	Name() string
 	// SetName assigns string provided by user to StatCatalogStHtgCatalogStat
@@ -105058,6 +107007,11 @@ func (obj *statCatalogStHtgCatalogStat) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *statCatalogStHtgCatalogStat) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -105525,6 +107479,7 @@ type PortPfcPriorityQueueChannelSet interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PfcPriorityQueueChannelSet returns []int32, set in PortPfcPriorityQueueChannelSet.
 	PfcPriorityQueueChannelSet() []int32
 	// SetPfcPriorityQueueChannelSet assigns []int32 provided by user to PortPfcPriorityQueueChannelSet
@@ -105543,6 +107498,11 @@ func (obj *portPfcPriorityQueueChannelSet) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *portPfcPriorityQueueChannelSet) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -105815,6 +107775,7 @@ type PortTxLaneType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PhysicalLane returns string, set in PortTxLaneType.
 	PhysicalLane() string
 	// SetPhysicalLane assigns string provided by user to PortTxLaneType
@@ -105859,6 +107820,11 @@ func (obj *portTxLaneType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *portTxLaneType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -106179,6 +108145,7 @@ type IdTypeCapturePatternId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeCapturePatternId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeCapturePatternId
@@ -106198,6 +108165,11 @@ func (obj *idTypeCapturePatternId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeCapturePatternId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -106473,6 +108445,7 @@ type CaptureMacPatternType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Address returns PFTypeMacAddressType, set in CaptureMacPatternType.
 	// PFTypeMacAddressType is the MAC address comprises 48 bits (6 octets) usually denoted using hexadecimal radix as 01:23:45:67:89:ab. The representation is held in the least significant 48 bits of an int64. The most significant 16 bits will be ignored.
 	Address() PFTypeMacAddressType
@@ -106493,6 +108466,11 @@ type CaptureMacPatternType interface {
 }
 
 func (obj *captureMacPatternType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *captureMacPatternType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -106802,6 +108780,7 @@ type CaptureDataPatternType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Anchor returns CaptureDataPatternTypeAnchorEnum, set in CaptureDataPatternType
 	Anchor() CaptureDataPatternTypeAnchorEnum
 	// SetAnchor assigns CaptureDataPatternTypeAnchorEnum provided by user to CaptureDataPatternType
@@ -106869,6 +108848,11 @@ func (obj *captureDataPatternType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureDataPatternType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -107214,6 +109198,7 @@ type CaptureQoSPatternType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// QosByteOffset returns int32, set in CaptureQoSPatternType.
 	QosByteOffset() int32
 	// SetQosByteOffset assigns int32 provided by user to CaptureQoSPatternType
@@ -107297,6 +109282,11 @@ func (obj *captureQoSPatternType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureQoSPatternType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -107664,6 +109654,7 @@ type CaptureFrameSizeRangeType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// IsEnabled returns bool, set in CaptureFrameSizeRangeType.
 	IsEnabled() bool
 	// SetIsEnabled assigns bool provided by user to CaptureFrameSizeRangeType
@@ -107743,6 +109734,11 @@ func (obj *captureFrameSizeRangeType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureFrameSizeRangeType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -108082,6 +110078,7 @@ type CaptureExpressionContent interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ExpressionContent returns CaptureExpressionContentCaptureExpressionElementTypeIterIter, set in CaptureExpressionContent
 	ExpressionContent() CaptureExpressionContentCaptureExpressionElementTypeIter
 	setNil()
@@ -108105,6 +110102,11 @@ func (obj *captureExpressionContent) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *captureExpressionContent) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -108461,6 +110463,7 @@ type StreamStreamControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Dma returns StreamStreamControlTypeDmaEnum, set in StreamStreamControlType
 	Dma() StreamStreamControlTypeDmaEnum
 	// SetDma assigns StreamStreamControlTypeDmaEnum provided by user to StreamStreamControlType
@@ -108717,6 +110720,11 @@ func (obj *streamStreamControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamStreamControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -109411,6 +111419,7 @@ type StreamInterFrameGapControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// IfgType returns StreamInterFrameGapControlTypeIfgTypeEnum, set in StreamInterFrameGapControlType
 	IfgType() StreamInterFrameGapControlTypeIfgTypeEnum
 	// SetIfgType assigns StreamInterFrameGapControlTypeIfgTypeEnum provided by user to StreamInterFrameGapControlType
@@ -109463,6 +111472,11 @@ func (obj *streamInterFrameGapControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamInterFrameGapControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -109880,6 +111894,7 @@ type StreamRateControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RateMode returns StreamRateControlTypeRateModeEnum, set in StreamRateControlType
 	RateMode() StreamRateControlTypeRateModeEnum
 	// SetRateMode assigns StreamRateControlTypeRateModeEnum provided by user to StreamRateControlType
@@ -109938,6 +111953,11 @@ func (obj *streamRateControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamRateControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -110306,6 +112326,7 @@ type StreamInterBurstGapControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableIbg returns bool, set in StreamInterBurstGapControlType.
 	EnableIbg() bool
 	// SetEnableIbg assigns bool provided by user to StreamInterBurstGapControlType
@@ -110348,6 +112369,11 @@ func (obj *streamInterBurstGapControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamInterBurstGapControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -110689,6 +112715,7 @@ type StreamInterStreamGapControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableIsg returns bool, set in StreamInterStreamGapControlType.
 	EnableIsg() bool
 	// SetEnableIsg assigns bool provided by user to StreamInterStreamGapControlType
@@ -110731,6 +112758,11 @@ func (obj *streamInterStreamGapControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamInterStreamGapControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -111074,6 +113106,7 @@ type StreamDstAddrControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// DstAddr returns PFTypeMacAddressType, set in StreamDstAddrControlType.
 	// PFTypeMacAddressType is the MAC address comprises 48 bits (6 octets) usually denoted using hexadecimal radix as 01:23:45:67:89:ab. The representation is held in the least significant 48 bits of an int64. The most significant 16 bits will be ignored.
 	DstAddr() PFTypeMacAddressType
@@ -111172,6 +113205,11 @@ func (obj *streamDstAddrControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamDstAddrControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -111640,6 +113678,7 @@ type StreamSrcAddrControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SrcAddr returns PFTypeMacAddressType, set in StreamSrcAddrControlType.
 	// PFTypeMacAddressType is the MAC address comprises 48 bits (6 octets) usually denoted using hexadecimal radix as 01:23:45:67:89:ab. The representation is held in the least significant 48 bits of an int64. The most significant 16 bits will be ignored.
 	SrcAddr() PFTypeMacAddressType
@@ -111738,6 +113777,11 @@ func (obj *streamSrcAddrControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamSrcAddrControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -112206,6 +114250,7 @@ type StreamFrameControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// FramePreemptionType returns StreamFramePreemptionType, set in StreamFrameControlType.
 	// StreamFramePreemptionType is models parameters to support Tx Frame Preemption
 	FramePreemptionType() StreamFramePreemptionType
@@ -112448,6 +114493,11 @@ func (obj *streamFrameControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamFrameControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -113140,6 +115190,7 @@ type StreamBackgroundDataControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Size returns int32, set in StreamBackgroundDataControlType.
 	Size() int32
 	// SetSize assigns int32 provided by user to StreamBackgroundDataControlType
@@ -113168,6 +115219,11 @@ func (obj *streamBackgroundDataControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamBackgroundDataControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -113476,6 +115532,7 @@ type StreamProtocolHeaderInfoListType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SpecialProtocolInfo returns StreamSpecialProtocolInfoType, set in StreamProtocolHeaderInfoListType.
 	// StreamSpecialProtocolInfoType is tBD
 	SpecialProtocolInfo() StreamSpecialProtocolInfoType
@@ -113496,6 +115553,11 @@ type StreamProtocolHeaderInfoListType interface {
 }
 
 func (obj *streamProtocolHeaderInfoListType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamProtocolHeaderInfoListType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -113813,6 +115875,7 @@ type UdfUdfConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfList returns UdfUdfList, set in UdfUdfConfigurationType.
 	// UdfUdfList is tBD
 	UdfList() UdfUdfList
@@ -113825,6 +115888,11 @@ type UdfUdfConfigurationType interface {
 }
 
 func (obj *udfUdfConfigurationType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *udfUdfConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -114109,6 +116177,7 @@ type TableUdfTableUdfConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Rows returns int32, set in TableUdfTableUdfConfigurationType.
 	Rows() int32
 	// SetRows assigns int32 provided by user to TableUdfTableUdfConfigurationType
@@ -114137,6 +116206,11 @@ func (obj *tableUdfTableUdfConfigurationType) populateXml(xObj *Argument) error 
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *tableUdfTableUdfConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -114445,6 +116519,7 @@ type UdfSequenceUdfConfigurationType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enable returns bool, set in UdfSequenceUdfConfigurationType.
 	Enable() bool
 	// SetEnable assigns bool provided by user to UdfSequenceUdfConfigurationType
@@ -114567,6 +116642,11 @@ func (obj *udfSequenceUdfConfigurationType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfSequenceUdfConfigurationType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -115008,6 +117088,7 @@ type StreamDataIntegrityTxType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enable returns bool, set in StreamDataIntegrityTxType.
 	Enable() bool
 	// SetEnable assigns bool provided by user to StreamDataIntegrityTxType
@@ -115135,6 +117216,11 @@ func (obj *streamDataIntegrityTxType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamDataIntegrityTxType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -115546,6 +117632,7 @@ type StreamAutodetectSignatureTxType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// InsertSignature returns bool, set in StreamAutodetectSignatureTxType.
 	InsertSignature() bool
 	// SetInsertSignature assigns bool provided by user to StreamAutodetectSignatureTxType
@@ -115603,6 +117690,11 @@ func (obj *streamAutodetectSignatureTxType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamAutodetectSignatureTxType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -115912,6 +118004,7 @@ type IdTypeUdfId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeUdfId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeUdfId
@@ -115931,6 +118024,11 @@ func (obj *idTypeUdfId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeUdfId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -116196,6 +118294,7 @@ type UdfUdfMVDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Data returns string, set in UdfUdfMVDataType.
 	Data() string
 	// SetData assigns string provided by user to UdfUdfMVDataType
@@ -116231,6 +118330,11 @@ func (obj *udfUdfMVDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfUdfMVDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -116518,6 +118622,7 @@ type TableUdfColId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in TableUdfColId.
 	Id() int32
 	// SetId assigns int32 provided by user to TableUdfColId
@@ -116537,6 +118642,11 @@ func (obj *tableUdfColId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *tableUdfColId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -116802,6 +118912,7 @@ type PFTypePicoSecondsType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PicoSeconds returns int64, set in PFTypePicoSecondsType.
 	PicoSeconds() int64
 	// SetPicoSeconds assigns int64 provided by user to PFTypePicoSecondsType
@@ -116821,6 +118932,11 @@ func (obj *pFTypePicoSecondsType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypePicoSecondsType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -117094,6 +119210,7 @@ type CaptureExpressionElementType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ElementKind returns CaptureExpressionElementTypeElementKindEnum, set in CaptureExpressionElementType
 	ElementKind() CaptureExpressionElementTypeElementKindEnum
 	// SetElementKind assigns CaptureExpressionElementTypeElementKindEnum provided by user to CaptureExpressionElementType
@@ -117138,6 +119255,11 @@ func (obj *captureExpressionElementType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *captureExpressionElementType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -117490,6 +119612,7 @@ type StreamTsnQbvGateConfigType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enabled returns bool, set in StreamTsnQbvGateConfigType.
 	Enabled() bool
 	// SetEnabled assigns bool provided by user to StreamTsnQbvGateConfigType
@@ -117531,6 +119654,11 @@ func (obj *streamTsnQbvGateConfigType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamTsnQbvGateConfigType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -117842,6 +119970,7 @@ type StreamTxDelayType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Duration returns int64, set in StreamTxDelayType.
 	Duration() int64
 	// SetDuration assigns int64 provided by user to StreamTxDelayType
@@ -117892,6 +120021,11 @@ func (obj *streamTxDelayType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamTxDelayType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -118215,6 +120349,7 @@ type PFTypeGapTimeType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Duration returns int64, set in PFTypeGapTimeType.
 	Duration() int64
 	// SetDuration assigns int64 provided by user to PFTypeGapTimeType
@@ -118250,6 +120385,11 @@ func (obj *pFTypeGapTimeType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeGapTimeType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -118551,6 +120691,7 @@ type PFTypeGapPrecisionTimeType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Duration returns float64, set in PFTypeGapPrecisionTimeType.
 	Duration() float64
 	// SetDuration assigns float64 provided by user to PFTypeGapPrecisionTimeType
@@ -118585,6 +120726,11 @@ func (obj *pFTypeGapPrecisionTimeType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeGapPrecisionTimeType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -118886,6 +121032,7 @@ type StreamFramePreemptionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// SmdType returns StreamFramePreemptionTypeSmdTypeEnum, set in StreamFramePreemptionType
 	SmdType() StreamFramePreemptionTypeSmdTypeEnum
 	// SetSmdType assigns StreamFramePreemptionTypeSmdTypeEnum provided by user to StreamFramePreemptionType
@@ -118937,6 +121084,11 @@ func (obj *streamFramePreemptionType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamFramePreemptionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -119314,6 +121466,7 @@ type PFTypeFixedPoint16 interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Value returns int64, set in PFTypeFixedPoint16.
 	Value() int64
 	// SetValue assigns int64 provided by user to PFTypeFixedPoint16
@@ -119333,6 +121486,11 @@ func (obj *pFTypeFixedPoint16) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *pFTypeFixedPoint16) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -119608,6 +121766,7 @@ type StreamRandomSizeControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// RandomSizeType returns StreamRandomSizeControlTypeRandomSizeTypeEnum, set in StreamRandomSizeControlType
 	RandomSizeType() StreamRandomSizeControlTypeRandomSizeTypeEnum
 	// SetRandomSizeType assigns StreamRandomSizeControlTypeRandomSizeTypeEnum provided by user to StreamRandomSizeControlType
@@ -119644,6 +121803,11 @@ func (obj *streamRandomSizeControlType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamRandomSizeControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -120009,6 +122173,7 @@ type StreamBackgroundOverlayList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// BackgroundOverlayList returns StreamBackgroundOverlayListStreamBackgroundOverlayTypeIterIter, set in StreamBackgroundOverlayList
 	BackgroundOverlayList() StreamBackgroundOverlayListStreamBackgroundOverlayTypeIter
 	setNil()
@@ -120032,6 +122197,11 @@ func (obj *streamBackgroundOverlayList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamBackgroundOverlayList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -120376,6 +122546,7 @@ type StreamSpecialProtocolInfoType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// EnableIsl returns bool, set in StreamSpecialProtocolInfoType.
 	EnableIsl() bool
 	// SetEnableIsl assigns bool provided by user to StreamSpecialProtocolInfoType
@@ -120553,6 +122724,11 @@ func (obj *streamSpecialProtocolInfoType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamSpecialProtocolInfoType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -121002,6 +123178,7 @@ type StreamProtocolHeaderInfoList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ProtocolHeaderInfoList returns StreamProtocolHeaderInfoListStreamProtocolHeaderInfoTypeIterIter, set in StreamProtocolHeaderInfoList
 	ProtocolHeaderInfoList() StreamProtocolHeaderInfoListStreamProtocolHeaderInfoTypeIter
 	setNil()
@@ -121025,6 +123202,11 @@ func (obj *streamProtocolHeaderInfoList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamProtocolHeaderInfoList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -121377,6 +123559,7 @@ type UdfUdfList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfList returns UdfUdfListUdfUdfTypeIterIter, set in UdfUdfList
 	UdfList() UdfUdfListUdfUdfTypeIter
 	setNil()
@@ -121400,6 +123583,11 @@ func (obj *udfUdfList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *udfUdfList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -121752,6 +123940,7 @@ type TableUdfColumnSettingList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ColumnSettingList returns TableUdfColumnSettingListTableUdfColumnSettingTypeIterIter, set in TableUdfColumnSettingList
 	ColumnSettingList() TableUdfColumnSettingListTableUdfColumnSettingTypeIter
 	setNil()
@@ -121775,6 +123964,11 @@ func (obj *tableUdfColumnSettingList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *tableUdfColumnSettingList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -122119,6 +124313,7 @@ type IdTypeStreamGroupId interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Id returns int32, set in IdTypeStreamGroupId.
 	Id() int32
 	// SetId assigns int32 provided by user to IdTypeStreamGroupId
@@ -122138,6 +124333,11 @@ func (obj *idTypeStreamGroupId) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *idTypeStreamGroupId) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -122411,6 +124611,7 @@ type StreamRandomQuadGaussianControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Quadgaussian returns StreamQuadGaussianDataList, set in StreamRandomQuadGaussianControlType.
 	// StreamQuadGaussianDataList is tBD
 	Quadgaussian() StreamQuadGaussianDataList
@@ -122423,6 +124624,11 @@ type StreamRandomQuadGaussianControlType interface {
 }
 
 func (obj *streamRandomQuadGaussianControlType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamRandomQuadGaussianControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -122707,6 +124913,7 @@ type StreamRandomWeightedPairControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Weightedpair returns StreamWeightedPairDataList, set in StreamRandomWeightedPairControlType.
 	// StreamWeightedPairDataList is tBD
 	Weightedpair() StreamWeightedPairDataList
@@ -122735,6 +124942,11 @@ func (obj *streamRandomWeightedPairControlType) populateXml(xObj *Argument) erro
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamRandomWeightedPairControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -123033,6 +125245,7 @@ type StreamBackgroundOverlayType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Offset returns int32, set in StreamBackgroundOverlayType.
 	Offset() int32
 	// SetOffset assigns int32 provided by user to StreamBackgroundOverlayType
@@ -123068,6 +125281,11 @@ func (obj *streamBackgroundOverlayType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamBackgroundOverlayType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -123365,6 +125583,7 @@ type StreamProtocolHeaderInfoType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Name returns string, set in StreamProtocolHeaderInfoType.
 	Name() string
 	// SetName assigns string provided by user to StreamProtocolHeaderInfoType
@@ -123531,6 +125750,11 @@ func (obj *streamProtocolHeaderInfoType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamProtocolHeaderInfoType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -124042,6 +126266,7 @@ type UdfUdfType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// UdfId returns IdTypeUdfId, set in UdfUdfType.
 	// IdTypeUdfId is tBD
 	UdfId() IdTypeUdfId
@@ -124234,6 +126459,11 @@ func (obj *udfUdfType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfUdfType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -124983,6 +127213,7 @@ type TableUdfColumnSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ColId returns TableUdfColId, set in TableUdfColumnSettingType.
 	// TableUdfColId is tBD
 	ColId() TableUdfColId
@@ -125027,6 +127258,11 @@ func (obj *tableUdfColumnSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *tableUdfColumnSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -125355,6 +127591,7 @@ type StreamQuadGaussianDataList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// QuadGaussianDataList returns StreamQuadGaussianDataListStreamQuadGaussianControlTypeIterIter, set in StreamQuadGaussianDataList
 	QuadGaussianDataList() StreamQuadGaussianDataListStreamQuadGaussianControlTypeIter
 	setNil()
@@ -125378,6 +127615,11 @@ func (obj *streamQuadGaussianDataList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamQuadGaussianDataList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -125730,6 +127972,7 @@ type StreamWeightedPairDataList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// WeightedPairDataList returns StreamWeightedPairDataListStreamWeightedPairDataTypeIterIter, set in StreamWeightedPairDataList
 	WeightedPairDataList() StreamWeightedPairDataListStreamWeightedPairDataTypeIter
 	setNil()
@@ -125753,6 +127996,11 @@ func (obj *streamWeightedPairDataList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamWeightedPairDataList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -126105,6 +128353,7 @@ type StreamChecksumDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ChecksumType returns StreamChecksumDataTypeChecksumTypeEnum, set in StreamChecksumDataType
 	ChecksumType() StreamChecksumDataTypeChecksumTypeEnum
 	// SetChecksumType assigns StreamChecksumDataTypeChecksumTypeEnum provided by user to StreamChecksumDataType
@@ -126263,6 +128512,11 @@ func (obj *streamChecksumDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamChecksumDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -126741,6 +128995,7 @@ type StreamLengthInsertionType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Value returns int32, set in StreamLengthInsertionType.
 	Value() int32
 	// SetValue assigns int32 provided by user to StreamLengthInsertionType
@@ -126776,6 +129031,11 @@ func (obj *streamLengthInsertionType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamLengthInsertionType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -127063,6 +129323,7 @@ type UdfCounterSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Repeat returns int64, set in UdfCounterSettingType.
 	Repeat() int64
 	// SetRepeat assigns int64 provided by user to UdfCounterSettingType
@@ -127158,6 +129419,11 @@ func (obj *udfCounterSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfCounterSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -127511,6 +129777,7 @@ type UdfIPv4SettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// InitVal returns int64, set in UdfIPv4SettingType.
 	InitVal() int64
 	// SetInitVal assigns int64 provided by user to UdfIPv4SettingType
@@ -127638,6 +129905,11 @@ func (obj *udfIPv4SettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfIPv4SettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -128035,6 +130307,7 @@ type UdfNestedCounterSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// InitVal returns int64, set in UdfNestedCounterSettingType.
 	InitVal() int64
 	// SetInitVal assigns int64 provided by user to UdfNestedCounterSettingType
@@ -128172,6 +130445,11 @@ func (obj *udfNestedCounterSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfNestedCounterSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -128591,6 +130869,7 @@ type UdfUdfValueListSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Length returns int32, set in UdfUdfValueListSettingType.
 	Length() int32
 	// SetLength assigns int32 provided by user to UdfUdfValueListSettingType
@@ -128766,6 +131045,11 @@ func (obj *udfUdfValueListSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfUdfValueListSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -129229,6 +131513,7 @@ type UdfRandomSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MaskSelect returns int64, set in UdfRandomSettingType.
 	MaskSelect() int64
 	// SetMaskSelect assigns int64 provided by user to UdfRandomSettingType
@@ -129344,6 +131629,11 @@ func (obj *udfRandomSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfRandomSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -129755,6 +132045,7 @@ type UdfKillBitSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Length returns int32, set in UdfKillBitSettingType.
 	Length() int32
 	// SetLength assigns int32 provided by user to UdfKillBitSettingType
@@ -129774,6 +132065,11 @@ func (obj *udfKillBitSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfKillBitSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -130047,6 +132343,7 @@ type UdfSkipValueSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enable returns bool, set in UdfSkipValueSettingType.
 	Enable() bool
 	// SetEnable assigns bool provided by user to UdfSkipValueSettingType
@@ -130081,6 +132378,11 @@ func (obj *udfSkipValueSettingType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfSkipValueSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -130387,6 +132689,7 @@ type UdfSkipSynchronizationSettingType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Enable returns bool, set in UdfSkipSynchronizationSettingType.
 	Enable() bool
 	// SetEnable assigns bool provided by user to UdfSkipSynchronizationSettingType
@@ -130421,6 +132724,11 @@ func (obj *udfSkipSynchronizationSettingType) populateXml(xObj *Argument) error 
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *udfSkipSynchronizationSettingType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -130733,6 +133041,7 @@ type StreamQuadGaussianControlType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// FirstGaussian returns StreamQuadGaussianPacketDataType, set in StreamQuadGaussianControlType.
 	// StreamQuadGaussianPacketDataType is tBD
 	FirstGaussian() StreamQuadGaussianPacketDataType
@@ -130769,6 +133078,11 @@ type StreamQuadGaussianControlType interface {
 }
 
 func (obj *streamQuadGaussianControlType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamQuadGaussianControlType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -131144,6 +133458,7 @@ type StreamWeightedPairDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// LengthWeight returns int32, set in StreamWeightedPairDataType.
 	LengthWeight() int32
 	// SetLengthWeight assigns int32 provided by user to StreamWeightedPairDataType
@@ -131195,6 +133510,11 @@ func (obj *streamWeightedPairDataType) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamWeightedPairDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -131512,6 +133832,7 @@ type StreamPseudoHeaderFieldList interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// PseudoHeaderFieldList returns StreamPseudoHeaderFieldListStreamPseudoHeaderFieldIterIter, set in StreamPseudoHeaderFieldList
 	PseudoHeaderFieldList() StreamPseudoHeaderFieldListStreamPseudoHeaderFieldIter
 	setNil()
@@ -131535,6 +133856,11 @@ func (obj *streamPseudoHeaderFieldList) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *streamPseudoHeaderFieldList) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -131879,6 +134205,7 @@ type UdfListInt64 interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// ListInt64 returns []int64, set in UdfListInt64.
 	ListInt64() []int64
 	// SetListInt64 assigns []int64 provided by user to UdfListInt64
@@ -131897,6 +134224,11 @@ func (obj *udfListInt64) populateXml(xObj *Argument) error {
 			xObj.Item = append(xObj.Item, it)
 		}
 	}
+
+	return nil
+}
+
+func (obj *udfListInt64) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -132173,6 +134505,7 @@ type StreamQuadGaussianPacketDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// LengthWeight returns StreamQuadGaussianFractionalDataType, set in StreamQuadGaussianPacketDataType.
 	// StreamQuadGaussianFractionalDataType is tBD
 	LengthWeight() StreamQuadGaussianFractionalDataType
@@ -132201,6 +134534,11 @@ type StreamQuadGaussianPacketDataType interface {
 }
 
 func (obj *streamQuadGaussianPacketDataType) populateXml(xObj *Argument) error {
+
+	return nil
+}
+
+func (obj *streamQuadGaussianPacketDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -132543,6 +134881,7 @@ type StreamPseudoHeaderField interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// Mode returns StreamPseudoHeaderFieldModeEnum, set in StreamPseudoHeaderField
 	Mode() StreamPseudoHeaderFieldModeEnum
 	// SetMode assigns StreamPseudoHeaderFieldModeEnum provided by user to StreamPseudoHeaderField
@@ -132610,6 +134949,11 @@ func (obj *streamPseudoHeaderField) populateXml(xObj *Argument) error {
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamPseudoHeaderField) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
@@ -132955,6 +135299,7 @@ type StreamQuadGaussianFractionalDataType interface {
 	setDefault()
 	ToRpfXml() (*Argument, error)
 	populateXml(*Argument) error
+	populateFromXml(*RetVal) error
 	// MInteger returns int64, set in StreamQuadGaussianFractionalDataType.
 	MInteger() int64
 	// SetMInteger assigns int64 provided by user to StreamQuadGaussianFractionalDataType
@@ -132990,6 +135335,11 @@ func (obj *streamQuadGaussianFractionalDataType) populateXml(xObj *Argument) err
 		}
 		xObj.Member = append(xObj.Member, member)
 	}
+
+	return nil
+}
+
+func (obj *streamQuadGaussianFractionalDataType) populateFromXml(xObj *RetVal) error {
 
 	return nil
 }
