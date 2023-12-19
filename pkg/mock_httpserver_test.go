@@ -87,11 +87,11 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 	case openapiart.PrefixConfigResponse.STATUS_500:
 		err := openapiart.NewError()
 		var code int32 = 500
-		err.Msg().Code = &code
+		_ = err.SetCode(code)
 		e := err.SetKind("internal")
 		fmt.Println(e)
-		err.Msg().Errors = []string{"internal err 1", "internal err 2", "internal err 3"}
-		jsonStr, _ := err.ToJson()
+		_ = err.SetErrors([]string{"internal err 1", "internal err 2", "internal err 3"})
+		jsonStr, _ := err.Marshal().ToJson()
 		return nil, fmt.Errorf(jsonStr)
 	}
 	return response, nil
@@ -99,8 +99,8 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 
 func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) (openapiart.UpdateConfigurationResponse, error) {
 	response := openapiart.NewUpdateConfigurationResponse()
-	data, _ := httpServer.Config.ToJson()
-	err := response.PrefixConfig().FromJson(data)
+	data, _ := httpServer.Config.Marshal().ToJson()
+	err := response.PrefixConfig().Unmarshal().FromJson(data)
 	if err != nil {
 		log.Print(err.Error())
 	}
@@ -136,7 +136,8 @@ func (h *metricsHandler) GetController() interfaces.MetricsController {
 }
 
 func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) (openapiart.GetMetricsResponse, error) {
-	choice := req.Msg().GetChoice().String()
+	ch, _ := req.Marshal().ToProto()
+	choice := ch.GetChoice().String()
 	switch choice {
 	case "port":
 		response := openapiart.NewGetMetricsResponse()

@@ -8,8 +8,7 @@ import (
 )
 
 func TestMultipleIter(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("test")
 	config.SetB(1.234)
 	config.SetC(32)
@@ -29,7 +28,7 @@ func TestMultipleIter(t *testing.T) {
 	assert.Equal(t, len(config.G2().Items()), 1)
 	t.Log(config)
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Fatalf("error: %s", err.Error())
 	}
