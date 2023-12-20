@@ -45239,7 +45239,7 @@ func (obj *debugTopologyDebugPortInfoList) populateXml(xObj *Argument) error {
 	if len(obj.DebugPortInfoList().Items()) != 0 {
 		for _, item := range obj.DebugPortInfoList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.DebugTopology+DebugPortInfo",
 			}
 
 			tmpArg := &Argument{}
@@ -45613,7 +45613,7 @@ func (obj *debugTopologyDebugPortIdList) populateXml(xObj *Argument) error {
 	if len(obj.DebugPortIdList()) != 0 {
 		for _, item := range obj.DebugPortIdList() {
 			it := Item{
-				Type:  "None",
+				Type:  "int32",
 				Value: strconv.FormatInt(int64(item), 10),
 			}
 
@@ -46236,7 +46236,7 @@ func (obj *idTypePortIdList) populateXml(xObj *Argument) error {
 	if len(obj.PortIdList().Items()) != 0 {
 		for _, item := range obj.PortIdList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.IdType+PortId",
 			}
 
 			tmpArg := &Argument{}
@@ -46617,7 +46617,7 @@ func (obj *serverEventSubscribeList) populateXml(xObj *Argument) error {
 	if len(obj.EventSubscribeList().Items()) != 0 {
 		for _, item := range obj.EventSubscribeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Server+eEvent",
 			}
 
 			tmpArg := &Argument{}
@@ -48379,7 +48379,7 @@ func (obj *captureConfigurationList) populateXml(xObj *Argument) error {
 	if len(obj.ConfigurationList().Items()) != 0 {
 		for _, item := range obj.ConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+ConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -49544,7 +49544,7 @@ func (obj *packetGroupPGIDRangeList) populateXml(xObj *Argument) error {
 	if len(obj.PgidRangeList().Items()) != 0 {
 		for _, item := range obj.PgidRangeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.PacketGroup+PGIDRange",
 			}
 
 			tmpArg := &Argument{}
@@ -51284,7 +51284,7 @@ func (obj *serverPulseActionList) populateXml(xObj *Argument) error {
 	if len(obj.PulseActionList().Items()) != 0 {
 		for _, item := range obj.PulseActionList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Server+ePulseAction",
 			}
 
 			tmpArg := &Argument{}
@@ -52257,7 +52257,7 @@ func (obj *serverTimedActionList) populateXml(xObj *Argument) error {
 	if len(obj.TimedActionList().Items()) != 0 {
 		for _, item := range obj.TimedActionList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Server+TimedAction",
 			}
 
 			tmpArg := &Argument{}
@@ -52990,7 +52990,7 @@ func (obj *streamStreamUpdateConfigurationList) populateXml(xObj *Argument) erro
 	if len(obj.StreamUpdateConfigurationList().Items()) != 0 {
 		for _, item := range obj.StreamUpdateConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamUpdateConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -54579,7 +54579,7 @@ func (obj *streamStreamTableUdfDataTypeList) populateXml(xObj *Argument) error {
 	if len(obj.StreamTableUdfDataTypeList().Items()) != 0 {
 		for _, item := range obj.StreamTableUdfDataTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamTableUdfDataType",
 			}
 
 			tmpArg := &Argument{}
@@ -54960,7 +54960,7 @@ func (obj *streamKillBitListSettingList) populateXml(xObj *Argument) error {
 	if len(obj.KillBitListSettingList().Items()) != 0 {
 		for _, item := range obj.KillBitListSettingList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+KillBitListSettingType",
 			}
 
 			tmpArg := &Argument{}
@@ -55341,7 +55341,7 @@ func (obj *streamStreamValueListSettingList) populateXml(xObj *Argument) error {
 	if len(obj.StreamValueListSettingList().Items()) != 0 {
 		for _, item := range obj.StreamValueListSettingList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamValueListSettingType",
 			}
 
 			tmpArg := &Argument{}
@@ -57047,7 +57047,7 @@ func (obj *macSecMacSecStreamControlTypeList) populateXml(xObj *Argument) error 
 	if len(obj.MacSecStreamControlTypeList().Items()) != 0 {
 		for _, item := range obj.MacSecStreamControlTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+MacSecStreamControlType",
 			}
 
 			tmpArg := &Argument{}
@@ -57428,7 +57428,7 @@ func (obj *macSecTxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 	if len(obj.TxSaKeyConfigurationTypeList().Items()) != 0 {
 		for _, item := range obj.TxSaKeyConfigurationTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+TxSaKeyConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -57809,7 +57809,7 @@ func (obj *macSecRxSaKeyConfigurationTypeList) populateXml(xObj *Argument) error
 	if len(obj.RxSaKeyConfigurationTypeList().Items()) != 0 {
 		for _, item := range obj.RxSaKeyConfigurationTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxSaKeyConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -58190,7 +58190,7 @@ func (obj *serverMacSecSaList) populateXml(xObj *Argument) error {
 	if len(obj.MacSecSaList().Items()) != 0 {
 		for _, item := range obj.MacSecSaList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.IdType+SecureChannelId",
 			}
 
 			tmpArg := &Argument{}
@@ -58571,7 +58571,7 @@ func (obj *macSecSaKeyStateConfigurationList) populateXml(xObj *Argument) error 
 	if len(obj.SaKeyStateConfigurationList().Items()) != 0 {
 		for _, item := range obj.SaKeyStateConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+SaKeyStateConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -58952,7 +58952,7 @@ func (obj *macSecRxMacSecUDSConfigList) populateXml(xObj *Argument) error {
 	if len(obj.RxMacSecUdsConfigList().Items()) != 0 {
 		for _, item := range obj.RxMacSecUdsConfigList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxMacSecUDSConfigType",
 			}
 
 			tmpArg := &Argument{}
@@ -71637,7 +71637,7 @@ func (obj *portRxModeSet) populateXml(xObj *Argument) error {
 	if len(obj.RxModeSet().Items()) != 0 {
 		for _, item := range obj.RxModeSet().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Port+eRxMode",
 			}
 
 			tmpArg := &Argument{}
@@ -74868,7 +74868,7 @@ func (obj *rateMonitoringRateMonitoringList) populateXml(xObj *Argument) error {
 	if len(obj.RateMonitoringList().Items()) != 0 {
 		for _, item := range obj.RateMonitoringList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.RateMonitoring+ConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -75927,7 +75927,7 @@ func (obj *streamStreamConfigurationList) populateXml(xObj *Argument) error {
 	if len(obj.StreamConfigurationList().Items()) != 0 {
 		for _, item := range obj.StreamConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -76653,7 +76653,7 @@ func (obj *streamBackgroundDataSettingList) populateXml(xObj *Argument) error {
 	if len(obj.BackgroundDataSettingList().Items()) != 0 {
 		for _, item := range obj.BackgroundDataSettingList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+BackgroundDataSettingType",
 			}
 
 			tmpArg := &Argument{}
@@ -77034,7 +77034,7 @@ func (obj *streamStreamRangeListSettingList) populateXml(xObj *Argument) error {
 	if len(obj.StreamRangeListSettingList().Items()) != 0 {
 		for _, item := range obj.StreamRangeListSettingList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+StreamRangeListSettingType",
 			}
 
 			tmpArg := &Argument{}
@@ -79293,7 +79293,7 @@ func (obj *macSecTxScConfigurationList) populateXml(xObj *Argument) error {
 	if len(obj.TxScConfigurationList().Items()) != 0 {
 		for _, item := range obj.TxScConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+TxScConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -79674,7 +79674,7 @@ func (obj *macSecRxScConfigurationList) populateXml(xObj *Argument) error {
 	if len(obj.RxScConfigurationList().Items()) != 0 {
 		for _, item := range obj.RxScConfigurationList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxScConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -83192,7 +83192,7 @@ func (obj *debugTopologyDebugPortInfoWithUniqueIdList) populateXml(xObj *Argumen
 	if len(obj.DebugPortInfoWithUniqueIdList().Items()) != 0 {
 		for _, item := range obj.DebugPortInfoWithUniqueIdList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.DebugTopology+DebugPortInfoWithUniqueId",
 			}
 
 			tmpArg := &Argument{}
@@ -84293,7 +84293,7 @@ func (obj *capturePacketCountList) populateXml(xObj *Argument) error {
 	if len(obj.PacketCountList().Items()) != 0 {
 		for _, item := range obj.PacketCountList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+PacketCountType",
 			}
 
 			tmpArg := &Argument{}
@@ -84674,7 +84674,7 @@ func (obj *captureStatusList) populateXml(xObj *Argument) error {
 	if len(obj.StatusList().Items()) != 0 {
 		for _, item := range obj.StatusList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+StatusType",
 			}
 
 			tmpArg := &Argument{}
@@ -85687,7 +85687,7 @@ func (obj *macSecTxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 	if len(obj.TxMacSecSaKeyStatusTypeList().Items()) != 0 {
 		for _, item := range obj.TxMacSecSaKeyStatusTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+TxMacSecSaKeyStatusType",
 			}
 
 			tmpArg := &Argument{}
@@ -86068,7 +86068,7 @@ func (obj *macSecRxMacSecSaKeyStatusTypeList) populateXml(xObj *Argument) error 
 	if len(obj.RxMacSecSaKeyStatusTypeList().Items()) != 0 {
 		for _, item := range obj.RxMacSecSaKeyStatusTypeList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.MacSec+RxMacSecSaKeyStatusType",
 			}
 
 			tmpArg := &Argument{}
@@ -90231,7 +90231,7 @@ func (obj *capturePatternList) populateXml(xObj *Argument) error {
 	if len(obj.PatternList().Items()) != 0 {
 		for _, item := range obj.PatternList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+PatternType",
 			}
 
 			tmpArg := &Argument{}
@@ -90612,7 +90612,7 @@ func (obj *captureExpressionList) populateXml(xObj *Argument) error {
 	if len(obj.ExpressionList().Items()) != 0 {
 		for _, item := range obj.ExpressionList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+ExpressionType",
 			}
 
 			tmpArg := &Argument{}
@@ -91590,7 +91590,7 @@ func (obj *packetGroupLatencyBinList) populateXml(xObj *Argument) error {
 	if len(obj.LatencyBinList()) != 0 {
 		for _, item := range obj.LatencyBinList() {
 			it := Item{
-				Type: "None",
+				Type: "double",
 
 				Value: fmt.Sprintf("%v", item),
 			}
@@ -92232,7 +92232,7 @@ func (obj *packetGroupSplitPacketGroupList) populateXml(xObj *Argument) error {
 	if len(obj.SplitPacketGroupList().Items()) != 0 {
 		for _, item := range obj.SplitPacketGroupList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.SplitPacketGroup+ConfigurationType",
 			}
 
 			tmpArg := &Argument{}
@@ -95128,7 +95128,7 @@ func (obj *tableUdfColumnMVDataList) populateXml(xObj *Argument) error {
 	if len(obj.ColumnMvDataList().Items()) != 0 {
 		for _, item := range obj.ColumnMvDataList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.TableUdf+ColumnMVDataType",
 			}
 
 			tmpArg := &Argument{}
@@ -95509,7 +95509,7 @@ func (obj *udfKillBitList) populateXml(xObj *Argument) error {
 	if len(obj.KillBitList().Items()) != 0 {
 		for _, item := range obj.KillBitList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Udf+KillBitListType",
 			}
 
 			tmpArg := &Argument{}
@@ -95890,7 +95890,7 @@ func (obj *udfValueList) populateXml(xObj *Argument) error {
 	if len(obj.ValueList().Items()) != 0 {
 		for _, item := range obj.ValueList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Udf+ValueListType",
 			}
 
 			tmpArg := &Argument{}
@@ -100824,7 +100824,7 @@ func (obj *statCatalogStHtgCatalogStatList) populateXml(xObj *Argument) error {
 	if len(obj.StHtgCatalogStatList().Items()) != 0 {
 		for _, item := range obj.StHtgCatalogStatList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.StatCatalog+StHtgCatalogStat",
 			}
 
 			tmpArg := &Argument{}
@@ -101551,7 +101551,7 @@ func (obj *portTxLaneList) populateXml(xObj *Argument) error {
 	if len(obj.TxLaneList().Items()) != 0 {
 		for _, item := range obj.TxLaneList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Port+TxLaneType",
 			}
 
 			tmpArg := &Argument{}
@@ -103402,7 +103402,7 @@ func (obj *packetGroupSizeBinList) populateXml(xObj *Argument) error {
 	if len(obj.SizeBinList()) != 0 {
 		for _, item := range obj.SizeBinList() {
 			it := Item{
-				Type:  "None",
+				Type:  "int32",
 				Value: strconv.FormatInt(int64(item), 10),
 			}
 
@@ -107505,7 +107505,7 @@ func (obj *portPfcPriorityQueueChannelSet) populateXml(xObj *Argument) error {
 	if len(obj.PfcPriorityQueueChannelSet()) != 0 {
 		for _, item := range obj.PfcPriorityQueueChannelSet() {
 			it := Item{
-				Type:  "None",
+				Type:  "int32",
 				Value: strconv.FormatInt(int64(item), 10),
 			}
 
@@ -110103,7 +110103,7 @@ func (obj *captureExpressionContent) populateXml(xObj *Argument) error {
 	if len(obj.ExpressionContent().Items()) != 0 {
 		for _, item := range obj.ExpressionContent().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Capture+ExpressionElementType",
 			}
 
 			tmpArg := &Argument{}
@@ -122198,7 +122198,7 @@ func (obj *streamBackgroundOverlayList) populateXml(xObj *Argument) error {
 	if len(obj.BackgroundOverlayList().Items()) != 0 {
 		for _, item := range obj.BackgroundOverlayList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+BackgroundOverlayType",
 			}
 
 			tmpArg := &Argument{}
@@ -123203,7 +123203,7 @@ func (obj *streamProtocolHeaderInfoList) populateXml(xObj *Argument) error {
 	if len(obj.ProtocolHeaderInfoList().Items()) != 0 {
 		for _, item := range obj.ProtocolHeaderInfoList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+ProtocolHeaderInfoType",
 			}
 
 			tmpArg := &Argument{}
@@ -123584,7 +123584,7 @@ func (obj *udfUdfList) populateXml(xObj *Argument) error {
 	if len(obj.UdfList().Items()) != 0 {
 		for _, item := range obj.UdfList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Udf+UdfType",
 			}
 
 			tmpArg := &Argument{}
@@ -123965,7 +123965,7 @@ func (obj *tableUdfColumnSettingList) populateXml(xObj *Argument) error {
 	if len(obj.ColumnSettingList().Items()) != 0 {
 		for _, item := range obj.ColumnSettingList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.TableUdf+ColumnSettingType",
 			}
 
 			tmpArg := &Argument{}
@@ -127616,7 +127616,7 @@ func (obj *streamQuadGaussianDataList) populateXml(xObj *Argument) error {
 	if len(obj.QuadGaussianDataList().Items()) != 0 {
 		for _, item := range obj.QuadGaussianDataList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+QuadGaussianControlType",
 			}
 
 			tmpArg := &Argument{}
@@ -127997,7 +127997,7 @@ func (obj *streamWeightedPairDataList) populateXml(xObj *Argument) error {
 	if len(obj.WeightedPairDataList().Items()) != 0 {
 		for _, item := range obj.WeightedPairDataList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+WeightedPairDataType",
 			}
 
 			tmpArg := &Argument{}
@@ -133857,7 +133857,7 @@ func (obj *streamPseudoHeaderFieldList) populateXml(xObj *Argument) error {
 	if len(obj.PseudoHeaderFieldList().Items()) != 0 {
 		for _, item := range obj.PseudoHeaderFieldList().Items() {
 			it := Item{
-				Type: "",
+				Type: "Ixia.IxOS.RPC.PCPU.RPF.Stream+PseudoHeaderField",
 			}
 
 			tmpArg := &Argument{}
@@ -134231,7 +134231,7 @@ func (obj *udfListInt64) populateXml(xObj *Argument) error {
 	if len(obj.ListInt64()) != 0 {
 		for _, item := range obj.ListInt64() {
 			it := Item{
-				Type:  "None",
+				Type:  "int64",
 				Value: strconv.FormatInt(item, 10),
 			}
 
