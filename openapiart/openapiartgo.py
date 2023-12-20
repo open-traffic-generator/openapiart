@@ -1629,7 +1629,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 xObj.Method = "{m_name}"
                 args := []Argument{{}}
                 """.format(
-                m_name=new.interface.replace("Request", "")
+                m_name=new.interface[7:]
             )
             for field in new.interface_fields:
                 value = ""
@@ -1672,10 +1672,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
 
             # write the out args for request
             for method in self._api.external_new_methods:
-                if (
-                    method.interface
-                    == new.interface.replace("Request", "") + "Response"
-                ):
+                if method.interface == new.interface[7:] + "Response":
                     ref = method.schema_object["properties"][
                         "status_code_200"
                     ]["$ref"]

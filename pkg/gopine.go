@@ -5386,7 +5386,7 @@ type RequestInitRequest interface {
 func (obj *requestInitRequest) populateXml(xObj *ObjectRequest) error {
 
 	xObj.Type = "Ixia.IxOS.RPC.PCPU.RPF.Server"
-	xObj.Method = "Init"
+	xObj.Method = "InitRequest"
 	args := []Argument{}
 
 	if obj.HasRequestedVersion() {
@@ -5404,6 +5404,13 @@ func (obj *requestInitRequest) populateXml(xObj *ObjectRequest) error {
 
 		args = append(args, arg)
 	}
+
+	argProvidedVersion := Argument{
+		Direction: ArgumentDirectionOut,
+		Name:      "ProvidedVersion",
+		Type:      "Ixia.IxOS.RPC.PCPU.RPF.PFType+VersionType",
+	}
+	args = append(args, argProvidedVersion)
 	xObj.Argument = args
 	return nil
 }
@@ -6442,7 +6449,7 @@ type RequestFeatureRequest interface {
 func (obj *requestFeatureRequest) populateXml(xObj *ObjectRequest) error {
 
 	xObj.Type = "Ixia.IxOS.RPC.PCPU.RPF.Server"
-	xObj.Method = "Feature"
+	xObj.Method = "FeatureRequest"
 	args := []Argument{}
 
 	if obj.HasSubtree() {
@@ -6456,6 +6463,13 @@ func (obj *requestFeatureRequest) populateXml(xObj *ObjectRequest) error {
 
 		args = append(args, arg)
 	}
+
+	argFeatures := Argument{
+		Direction: ArgumentDirectionOut,
+		Name:      "Features",
+		Type:      "string",
+	}
+	args = append(args, argFeatures)
 	xObj.Argument = args
 	return nil
 }
