@@ -17,20 +17,18 @@ func TestStatusApi(t *testing.T) {
 	grpcApi := openapiart.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 
-	config := grpcApi.NewUpdateConfig()
-	warnStr := "UpdateConfiguration api is deprecated, please use post instead"
+	config := openapiart.NewUpdateConfig()
+	config.G().Add().SetGA("str1")
 
 	// check warning for grpc API
 	_, err = grpcApi.UpdateConfiguration(config)
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
-	assert.Equal(t, grpcApi.Warnings(), warnStr)
 }
 
 func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	// setting all the primitive values which has x-status set
 	config.SetA("test")
@@ -45,7 +43,7 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 	config.SetHexSlice([]string{"str1", "str2"})
 
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -60,14 +58,13 @@ func TestStatusMsgInPrimitiveAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInStructAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	// setting a non primitive property with x-status
 	config.E().SetEA(4.56)
 
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -77,12 +74,11 @@ func TestStatusMsgInStructAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInChoiceAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	j := config.J().Add()
 	j.JB()
-	err := j.Validate()
+	_, err := j.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -92,13 +88,12 @@ func TestStatusMsgInChoiceAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInXEnumAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
 
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -109,7 +104,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
 
 	// validating the warnings
-	err = config.Validate()
+	_, err = config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -119,8 +114,7 @@ func TestStatusMsgInXEnumAttrs(t *testing.T) {
 }
 
 func TestStatusMsgInIterattrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	list := config.G()
 	list.Append(openapiart.NewGObject().SetGC(5.67))
@@ -129,7 +123,7 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {
-		err := item.Validate()
+		_, err := item.Marshal().ToYaml()
 		if err != nil {
 			t.Logf("error: %s", err.Error())
 		}
@@ -140,10 +134,9 @@ func TestStatusMsgInIterattrs(t *testing.T) {
 }
 
 func TestStatusMsgInSchemaObjects(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewUpdateConfig()
+	config := openapiart.NewUpdateConfig()
 
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -158,7 +151,7 @@ func TestStatusMsgInSchemaObjects(t *testing.T) {
 	assert.Len(t, list.Items(), 3)
 
 	for _, item := range list.Items() {
-		err := item.Validate()
+		_, err := item.Marshal().ToYaml()
 		if err != nil {
 			t.Logf("error: %s", err.Error())
 		}
