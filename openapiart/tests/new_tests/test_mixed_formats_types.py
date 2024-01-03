@@ -1,7 +1,7 @@
 import pytest
 import importlib
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyapi")
 
 
 def test_formats_sanity(api):

@@ -29,7 +29,7 @@ def test_reuired_error(api):
     # Objective is that the SDK should raise proper exception.
 
     config = api.test_config()
-    err_msg1 = "int_val is a mandatory property of <class 'sanity.sanity.RequiredVal'> and should not be set to None"
+    err_msg1 = "int_val is a mandatory property of <class 'pyapi.pyapi.RequiredVal'> and should not be set to None"
     with pytest.raises(Exception) as execinfo:
         r_val = config.native_features.required_val
         config.serialize()
@@ -39,7 +39,7 @@ def test_reuired_error(api):
     r_val.str_val = "str"
     r_val.bool_val = False
 
-    err_msg2 = "num_val is a mandatory property of <class 'sanity.sanity.RequiredVal'> and should not be set to None"
+    err_msg2 = "num_val is a mandatory property of <class 'pyapi.pyapi.RequiredVal'> and should not be set to None"
     with pytest.raises(Exception) as execinfo:
         config.serialize()
 
@@ -74,7 +74,7 @@ def test_required_array_val_errors(api):
     # Objective is that the SDK should raise proper exception.
 
     config = api.test_config()
-    err_msg1 = "int_vals is a mandatory property of <class 'sanity.sanity.RequiredValArray'> and should not be set to None"
+    err_msg1 = "int_vals is a mandatory property of <class 'pyapi.pyapi.RequiredValArray'> and should not be set to None"
     with pytest.raises(Exception) as execinfo:
         r_val = config.native_features.required_val_array
         config.serialize()
@@ -84,7 +84,7 @@ def test_required_array_val_errors(api):
     r_val.num_vals = [4.35, 1.23]
     r_val.str_vals = ["str1", "str2"]
 
-    err_msg2 = "bool_vals is a mandatory property of <class 'sanity.sanity.RequiredValArray'> and should not be set to None"
+    err_msg2 = "bool_vals is a mandatory property of <class 'pyapi.pyapi.RequiredValArray'> and should not be set to None"
     with pytest.raises(Exception) as execinfo:
         config.serialize()
 

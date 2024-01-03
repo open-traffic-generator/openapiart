@@ -3,7 +3,7 @@ import pytest
 import os
 from openapiart.openapiart import OpenApiArt as openapiart_class
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyapi")
 
 # Add all miscellaneous tests in this test script
 

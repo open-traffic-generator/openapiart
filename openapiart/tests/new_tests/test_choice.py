@@ -105,7 +105,7 @@ def test_choice_with_required_field(api):
 
     assert (
         execinfo.value.args[0]
-        == "choice is a mandatory property of <class 'sanity.sanity.ChoiceValWithNoProperties'> and should not be set to None"
+        == "choice is a mandatory property of <class 'pyapi.pyapi.ChoiceValWithNoProperties'> and should not be set to None"
     )
 
     c.intermediate_obj.str_val = "str1"
