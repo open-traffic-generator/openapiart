@@ -19,10 +19,63 @@ import (
 	openapi "github.com/open-traffic-generator/goapi/pkg/openapi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+// function related to error handling
+func FromError(err error) (Error, bool) {
+	if rErr, ok := err.(Error); ok {
+		return rErr, true
+	}
+
+	rErr := NewError()
+	if err := rErr.Unmarshal().FromJson(err.Error()); err == nil {
+		return rErr, true
+	}
+
+	return fromGrpcError(err)
+}
+
+func setResponseErr(obj Error, code int32, message string) {
+	errors := []string{}
+	errors = append(errors, message)
+	obj.msg().Code = &code
+	obj.msg().Errors = errors
+}
+
+// parses and return errors for grpc response
+func fromGrpcError(err error) (Error, bool) {
+	st, ok := status.FromError(err)
+	if ok {
+		rErr := NewError()
+		if err := rErr.Unmarshal().FromJson(st.Message()); err == nil {
+			var code = int32(st.Code())
+			rErr.msg().Code = &code
+			return rErr, true
+		}
+
+		setResponseErr(rErr, int32(st.Code()), st.Message())
+		return rErr, true
+	}
+
+	return nil, false
+}
+
+// parses and return errors for http responses
+func fromHttpError(statusCode int, body []byte) Error {
+	rErr := NewError()
+	bStr := string(body)
+	if err := rErr.Unmarshal().FromJson(bStr); err == nil {
+		return rErr
+	}
+
+	setResponseErr(rErr, int32(statusCode), bStr)
+
+	return rErr
+}
 
 type versionMeta struct {
 	checkVersion  bool
@@ -31,7 +84,7 @@ type versionMeta struct {
 	checkError    error
 }
 type goapiApi struct {
-	api
+	apiSt
 	grpcClient  openapi.OpenapiClient
 	httpClient  httpClient
 	versionMeta *versionMeta
@@ -87,7 +140,7 @@ func (api *goapiApi) Close() error {
 }
 
 // NewApi returns a new instance of the top level interface hierarchy
-func NewApi() GoapiApi {
+func NewApi() Api {
 	api := goapiApi{}
 	api.versionMeta = &versionMeta{checkVersion: false}
 	return &api
@@ -150,61 +203,8 @@ func (api *goapiApi) httpSendRecv(urlPath string, jsonBody string, method string
 }
 
 // GoapiApi demonstrates the features of the OpenAPIArt package
-type GoapiApi interface {
-	Api
-	// PrefixConfig is container which retains the configuration
-	// NewPrefixConfig returns a new instance of PrefixConfig.
-	NewPrefixConfig() PrefixConfig
-	// UpdateConfig is under Review: the whole schema is being reviewed
-	//
-	// Object to Test required Parameter
-	// NewUpdateConfig returns a new instance of UpdateConfig.
-	NewUpdateConfig() UpdateConfig
-	// MetricsRequest is description is TBD
-	// NewMetricsRequest returns a new instance of MetricsRequest.
-	NewMetricsRequest() MetricsRequest
-	// ApiTestInputBody is description is TBD
-	// NewApiTestInputBody returns a new instance of ApiTestInputBody.
-	NewApiTestInputBody() ApiTestInputBody
-	// SetConfigResponse is description is TBD
-	// NewSetConfigResponse returns a new instance of SetConfigResponse.
-	NewSetConfigResponse() SetConfigResponse
-	// UpdateConfigurationResponse is description is TBD
-	// NewUpdateConfigurationResponse returns a new instance of UpdateConfigurationResponse.
-	NewUpdateConfigurationResponse() UpdateConfigurationResponse
-	// GetConfigResponse is description is TBD
-	// NewGetConfigResponse returns a new instance of GetConfigResponse.
-	NewGetConfigResponse() GetConfigResponse
-	// GetMetricsResponse is description is TBD
-	// NewGetMetricsResponse returns a new instance of GetMetricsResponse.
-	NewGetMetricsResponse() GetMetricsResponse
-	// GetWarningsResponse is description is TBD
-	// NewGetWarningsResponse returns a new instance of GetWarningsResponse.
-	NewGetWarningsResponse() GetWarningsResponse
-	// ClearWarningsResponse is description is TBD
-	// NewClearWarningsResponse returns a new instance of ClearWarningsResponse.
-	NewClearWarningsResponse() ClearWarningsResponse
-	// GetRootResponseResponse is description is TBD
-	// NewGetRootResponseResponse returns a new instance of GetRootResponseResponse.
-	NewGetRootResponseResponse() GetRootResponseResponse
-	// DummyResponseTestResponse is description is TBD
-	// NewDummyResponseTestResponse returns a new instance of DummyResponseTestResponse.
-	NewDummyResponseTestResponse() DummyResponseTestResponse
-	// PostRootResponseResponse is description is TBD
-	// NewPostRootResponseResponse returns a new instance of PostRootResponseResponse.
-	NewPostRootResponseResponse() PostRootResponseResponse
-	// GetAllItemsResponse is description is TBD
-	// NewGetAllItemsResponse returns a new instance of GetAllItemsResponse.
-	NewGetAllItemsResponse() GetAllItemsResponse
-	// GetSingleItemResponse is description is TBD
-	// NewGetSingleItemResponse returns a new instance of GetSingleItemResponse.
-	NewGetSingleItemResponse() GetSingleItemResponse
-	// GetSingleItemLevel2Response is description is TBD
-	// NewGetSingleItemLevel2Response returns a new instance of GetSingleItemLevel2Response.
-	NewGetSingleItemLevel2Response() GetSingleItemLevel2Response
-	// GetVersionResponse is description is TBD
-	// NewGetVersionResponse returns a new instance of GetVersionResponse.
-	NewGetVersionResponse() GetVersionResponse
+type Api interface {
+	api
 	// SetConfig sets configuration resources.
 	SetConfig(prefixConfig PrefixConfig) ([]byte, error)
 	// UpdateConfiguration deprecated: please use post instead
@@ -243,74 +243,6 @@ type GoapiApi interface {
 	// CheckVersionCompatibility compares API spec version for local client and remote server,
 	// and returns an error if they are not compatible according to Semantic Versioning 2.0.0
 	CheckVersionCompatibility() error
-}
-
-func (api *goapiApi) NewPrefixConfig() PrefixConfig {
-	return NewPrefixConfig()
-}
-
-func (api *goapiApi) NewUpdateConfig() UpdateConfig {
-	return NewUpdateConfig()
-}
-
-func (api *goapiApi) NewMetricsRequest() MetricsRequest {
-	return NewMetricsRequest()
-}
-
-func (api *goapiApi) NewApiTestInputBody() ApiTestInputBody {
-	return NewApiTestInputBody()
-}
-
-func (api *goapiApi) NewSetConfigResponse() SetConfigResponse {
-	return NewSetConfigResponse()
-}
-
-func (api *goapiApi) NewUpdateConfigurationResponse() UpdateConfigurationResponse {
-	return NewUpdateConfigurationResponse()
-}
-
-func (api *goapiApi) NewGetConfigResponse() GetConfigResponse {
-	return NewGetConfigResponse()
-}
-
-func (api *goapiApi) NewGetMetricsResponse() GetMetricsResponse {
-	return NewGetMetricsResponse()
-}
-
-func (api *goapiApi) NewGetWarningsResponse() GetWarningsResponse {
-	return NewGetWarningsResponse()
-}
-
-func (api *goapiApi) NewClearWarningsResponse() ClearWarningsResponse {
-	return NewClearWarningsResponse()
-}
-
-func (api *goapiApi) NewGetRootResponseResponse() GetRootResponseResponse {
-	return NewGetRootResponseResponse()
-}
-
-func (api *goapiApi) NewDummyResponseTestResponse() DummyResponseTestResponse {
-	return NewDummyResponseTestResponse()
-}
-
-func (api *goapiApi) NewPostRootResponseResponse() PostRootResponseResponse {
-	return NewPostRootResponseResponse()
-}
-
-func (api *goapiApi) NewGetAllItemsResponse() GetAllItemsResponse {
-	return NewGetAllItemsResponse()
-}
-
-func (api *goapiApi) NewGetSingleItemResponse() GetSingleItemResponse {
-	return NewGetSingleItemResponse()
-}
-
-func (api *goapiApi) NewGetSingleItemLevel2Response() GetSingleItemLevel2Response {
-	return NewGetSingleItemLevel2Response()
-}
-
-func (api *goapiApi) NewGetVersionResponse() GetVersionResponse {
-	return NewGetVersionResponse()
 }
 
 func (api *goapiApi) GetLocalVersion() Version {
@@ -393,7 +325,7 @@ func (api *goapiApi) CheckVersionCompatibility() error {
 
 func (api *goapiApi) SetConfig(prefixConfig PrefixConfig) ([]byte, error) {
 
-	if err := prefixConfig.Validate(); err != nil {
+	if err := prefixConfig.validate(); err != nil {
 		return nil, err
 	}
 
@@ -406,12 +338,12 @@ func (api *goapiApi) SetConfig(prefixConfig PrefixConfig) ([]byte, error) {
 	if err := api.grpcConnect(); err != nil {
 		return nil, err
 	}
-	request := openapi.SetConfigRequest{PrefixConfig: prefixConfig.Msg()}
+	request := openapi.SetConfigRequest{PrefixConfig: prefixConfig.msg()}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
 	resp, err := api.grpcClient.SetConfig(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
@@ -425,7 +357,7 @@ func (api *goapiApi) SetConfig(prefixConfig PrefixConfig) ([]byte, error) {
 func (api *goapiApi) UpdateConfiguration(updateConfig UpdateConfig) (PrefixConfig, error) {
 	api.addWarnings("UpdateConfiguration api is deprecated, please use post instead")
 
-	if err := updateConfig.Validate(); err != nil {
+	if err := updateConfig.validate(); err != nil {
 		return nil, err
 	}
 
@@ -438,19 +370,19 @@ func (api *goapiApi) UpdateConfiguration(updateConfig UpdateConfig) (PrefixConfi
 	if err := api.grpcConnect(); err != nil {
 		return nil, err
 	}
-	request := openapi.UpdateConfigurationRequest{UpdateConfig: updateConfig.Msg()}
+	request := openapi.UpdateConfigurationRequest{UpdateConfig: updateConfig.msg()}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
 	resp, err := api.grpcClient.UpdateConfiguration(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewPrefixConfig()
 	if resp.GetPrefixConfig() != nil {
-		return ret.SetMsg(resp.GetPrefixConfig()), nil
+		return ret.setMsg(resp.GetPrefixConfig()), nil
 	}
 
 	return ret, nil
@@ -472,14 +404,14 @@ func (api *goapiApi) GetConfig() (PrefixConfig, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetConfig(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewPrefixConfig()
 	if resp.GetPrefixConfig() != nil {
-		return ret.SetMsg(resp.GetPrefixConfig()), nil
+		return ret.setMsg(resp.GetPrefixConfig()), nil
 	}
 
 	return ret, nil
@@ -487,7 +419,7 @@ func (api *goapiApi) GetConfig() (PrefixConfig, error) {
 
 func (api *goapiApi) GetMetrics(metricsRequest MetricsRequest) (Metrics, error) {
 
-	if err := metricsRequest.Validate(); err != nil {
+	if err := metricsRequest.validate(); err != nil {
 		return nil, err
 	}
 
@@ -500,19 +432,19 @@ func (api *goapiApi) GetMetrics(metricsRequest MetricsRequest) (Metrics, error) 
 	if err := api.grpcConnect(); err != nil {
 		return nil, err
 	}
-	request := openapi.GetMetricsRequest{MetricsRequest: metricsRequest.Msg()}
+	request := openapi.GetMetricsRequest{MetricsRequest: metricsRequest.msg()}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetMetrics(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewMetrics()
 	if resp.GetMetrics() != nil {
-		return ret.SetMsg(resp.GetMetrics()), nil
+		return ret.setMsg(resp.GetMetrics()), nil
 	}
 
 	return ret, nil
@@ -534,14 +466,14 @@ func (api *goapiApi) GetWarnings() (WarningDetails, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetWarnings(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewWarningDetails()
 	if resp.GetWarningDetails() != nil {
-		return ret.SetMsg(resp.GetWarningDetails()), nil
+		return ret.setMsg(resp.GetWarningDetails()), nil
 	}
 
 	return ret, nil
@@ -563,7 +495,7 @@ func (api *goapiApi) ClearWarnings() (*string, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.ClearWarnings(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
@@ -591,14 +523,14 @@ func (api *goapiApi) GetRootResponse() (CommonResponseSuccess, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetRootResponse(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewCommonResponseSuccess()
 	if resp.GetCommonResponseSuccess() != nil {
-		return ret.SetMsg(resp.GetCommonResponseSuccess()), nil
+		return ret.setMsg(resp.GetCommonResponseSuccess()), nil
 	}
 
 	return ret, nil
@@ -620,7 +552,7 @@ func (api *goapiApi) DummyResponseTest() (*string, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.DummyResponseTest(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
@@ -634,7 +566,7 @@ func (api *goapiApi) DummyResponseTest() (*string, error) {
 
 func (api *goapiApi) PostRootResponse(apiTestInputBody ApiTestInputBody) (CommonResponseSuccess, error) {
 
-	if err := apiTestInputBody.Validate(); err != nil {
+	if err := apiTestInputBody.validate(); err != nil {
 		return nil, err
 	}
 
@@ -647,19 +579,19 @@ func (api *goapiApi) PostRootResponse(apiTestInputBody ApiTestInputBody) (Common
 	if err := api.grpcConnect(); err != nil {
 		return nil, err
 	}
-	request := openapi.PostRootResponseRequest{ApiTestInputBody: apiTestInputBody.Msg()}
+	request := openapi.PostRootResponseRequest{ApiTestInputBody: apiTestInputBody.msg()}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
 	defer cancelFunc()
 	resp, err := api.grpcClient.PostRootResponse(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewCommonResponseSuccess()
 	if resp.GetCommonResponseSuccess() != nil {
-		return ret.SetMsg(resp.GetCommonResponseSuccess()), nil
+		return ret.setMsg(resp.GetCommonResponseSuccess()), nil
 	}
 
 	return ret, nil
@@ -681,14 +613,14 @@ func (api *goapiApi) GetAllItems() (ServiceAbcItemList, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetAllItems(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewServiceAbcItemList()
 	if resp.GetServiceAbcItemList() != nil {
-		return ret.SetMsg(resp.GetServiceAbcItemList()), nil
+		return ret.setMsg(resp.GetServiceAbcItemList()), nil
 	}
 
 	return ret, nil
@@ -710,14 +642,14 @@ func (api *goapiApi) GetSingleItem() (ServiceAbcItem, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetSingleItem(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewServiceAbcItem()
 	if resp.GetServiceAbcItem() != nil {
-		return ret.SetMsg(resp.GetServiceAbcItem()), nil
+		return ret.setMsg(resp.GetServiceAbcItem()), nil
 	}
 
 	return ret, nil
@@ -739,14 +671,14 @@ func (api *goapiApi) GetSingleItemLevel2() (ServiceAbcItem, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetSingleItemLevel2(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewServiceAbcItem()
 	if resp.GetServiceAbcItem() != nil {
-		return ret.SetMsg(resp.GetServiceAbcItem()), nil
+		return ret.setMsg(resp.GetServiceAbcItem()), nil
 	}
 
 	return ret, nil
@@ -765,21 +697,21 @@ func (api *goapiApi) GetVersion() (Version, error) {
 	defer cancelFunc()
 	resp, err := api.grpcClient.GetVersion(ctx, &request)
 	if err != nil {
-		if er, ok := api.fromGrpcError(err); ok {
+		if er, ok := fromGrpcError(err); ok {
 			return nil, er
 		}
 		return nil, err
 	}
 	ret := NewVersion()
 	if resp.GetVersion() != nil {
-		return ret.SetMsg(resp.GetVersion()), nil
+		return ret.setMsg(resp.GetVersion()), nil
 	}
 
 	return ret, nil
 }
 
 func (api *goapiApi) httpSetConfig(prefixConfig PrefixConfig) ([]byte, error) {
-	prefixConfigJson, err := prefixConfig.ToJson()
+	prefixConfigJson, err := prefixConfig.Marshal().ToJson()
 	if err != nil {
 		return nil, err
 	}
@@ -796,12 +728,12 @@ func (api *goapiApi) httpSetConfig(prefixConfig PrefixConfig) ([]byte, error) {
 	if resp.StatusCode == 200 {
 		return bodyBytes, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
 func (api *goapiApi) httpUpdateConfiguration(updateConfig UpdateConfig) (PrefixConfig, error) {
-	updateConfigJson, err := updateConfig.ToJson()
+	updateConfigJson, err := updateConfig.Marshal().ToJson()
 	if err != nil {
 		return nil, err
 	}
@@ -816,13 +748,13 @@ func (api *goapiApi) httpUpdateConfiguration(updateConfig UpdateConfig) (PrefixC
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewUpdateConfigurationResponse().PrefixConfig()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewUpdateConfigurationResponse().PrefixConfig()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -837,18 +769,18 @@ func (api *goapiApi) httpGetConfig() (PrefixConfig, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetConfigResponse().PrefixConfig()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetConfigResponse().PrefixConfig()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
 func (api *goapiApi) httpGetMetrics(metricsRequest MetricsRequest) (Metrics, error) {
-	metricsRequestJson, err := metricsRequest.ToJson()
+	metricsRequestJson, err := metricsRequest.Marshal().ToJson()
 	if err != nil {
 		return nil, err
 	}
@@ -863,13 +795,13 @@ func (api *goapiApi) httpGetMetrics(metricsRequest MetricsRequest) (Metrics, err
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetMetricsResponse().Metrics()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetMetricsResponse().Metrics()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -884,13 +816,13 @@ func (api *goapiApi) httpGetWarnings() (WarningDetails, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetWarningsResponse().WarningDetails()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetWarningsResponse().WarningDetails()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -908,7 +840,7 @@ func (api *goapiApi) httpClearWarnings() (*string, error) {
 		bodyString := string(bodyBytes)
 		return &bodyString, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -923,13 +855,13 @@ func (api *goapiApi) httpGetRootResponse() (CommonResponseSuccess, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetRootResponseResponse().CommonResponseSuccess()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetRootResponseResponse().CommonResponseSuccess()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -947,12 +879,12 @@ func (api *goapiApi) httpDummyResponseTest() (*string, error) {
 		bodyString := string(bodyBytes)
 		return &bodyString, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
 func (api *goapiApi) httpPostRootResponse(apiTestInputBody ApiTestInputBody) (CommonResponseSuccess, error) {
-	apiTestInputBodyJson, err := apiTestInputBody.ToJson()
+	apiTestInputBodyJson, err := apiTestInputBody.Marshal().ToJson()
 	if err != nil {
 		return nil, err
 	}
@@ -967,13 +899,13 @@ func (api *goapiApi) httpPostRootResponse(apiTestInputBody ApiTestInputBody) (Co
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewPostRootResponseResponse().CommonResponseSuccess()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewPostRootResponseResponse().CommonResponseSuccess()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -988,13 +920,13 @@ func (api *goapiApi) httpGetAllItems() (ServiceAbcItemList, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetAllItemsResponse().ServiceAbcItemList()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetAllItemsResponse().ServiceAbcItemList()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -1009,13 +941,13 @@ func (api *goapiApi) httpGetSingleItem() (ServiceAbcItem, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetSingleItemResponse().ServiceAbcItem()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetSingleItemResponse().ServiceAbcItem()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -1030,13 +962,13 @@ func (api *goapiApi) httpGetSingleItemLevel2() (ServiceAbcItem, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetSingleItemLevel2Response().ServiceAbcItem()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetSingleItemLevel2Response().ServiceAbcItem()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -1051,13 +983,13 @@ func (api *goapiApi) httpGetVersion() (Version, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 200 {
-		obj := api.NewGetVersionResponse().Version()
-		if err := obj.FromJson(string(bodyBytes)); err != nil {
+		obj := NewGetVersionResponse().Version()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
 			return nil, err
 		}
 		return obj, nil
 	} else {
-		return nil, api.fromHttpError(resp.StatusCode, bodyBytes)
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
 }
 
@@ -1065,6 +997,8 @@ func (api *goapiApi) httpGetVersion() (Version, error) {
 type prefixConfig struct {
 	validation
 	obj                        *openapi.PrefixConfig
+	marshaller                 marshalPrefixConfig
+	unMarshaller               unMarshalPrefixConfig
 	requiredObjectHolder       EObject
 	optionalObjectHolder       EObject
 	eHolder                    EObject
@@ -1100,26 +1034,70 @@ func NewPrefixConfig() PrefixConfig {
 	return &obj
 }
 
-func (obj *prefixConfig) Msg() *openapi.PrefixConfig {
+func (obj *prefixConfig) msg() *openapi.PrefixConfig {
 	return obj.obj
 }
 
-func (obj *prefixConfig) SetMsg(msg *openapi.PrefixConfig) PrefixConfig {
+func (obj *prefixConfig) setMsg(msg *openapi.PrefixConfig) PrefixConfig {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *prefixConfig) ToProto() (*openapi.PrefixConfig, error) {
-	err := obj.validateToAndFrom()
+type marshalprefixConfig struct {
+	obj *prefixConfig
+}
+
+type marshalPrefixConfig interface {
+	// ToProto marshals PrefixConfig to protobuf object *openapi.PrefixConfig
+	ToProto() (*openapi.PrefixConfig, error)
+	// ToPbText marshals PrefixConfig to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PrefixConfig to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PrefixConfig to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalprefixConfig struct {
+	obj *prefixConfig
+}
+
+type unMarshalPrefixConfig interface {
+	// FromProto unmarshals PrefixConfig from protobuf object *openapi.PrefixConfig
+	FromProto(msg *openapi.PrefixConfig) (PrefixConfig, error)
+	// FromPbText unmarshals PrefixConfig from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PrefixConfig from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PrefixConfig from JSON text
+	FromJson(value string) error
+}
+
+func (obj *prefixConfig) Marshal() marshalPrefixConfig {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalprefixConfig{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *prefixConfig) Unmarshal() unMarshalPrefixConfig {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalprefixConfig{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalprefixConfig) ToProto() (*openapi.PrefixConfig, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *prefixConfig) FromProto(msg *openapi.PrefixConfig) (PrefixConfig, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalprefixConfig) FromProto(msg *openapi.PrefixConfig) (PrefixConfig, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -1127,33 +1105,33 @@ func (obj *prefixConfig) FromProto(msg *openapi.PrefixConfig) (PrefixConfig, err
 	return newObj, nil
 }
 
-func (obj *prefixConfig) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalprefixConfig) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *prefixConfig) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalprefixConfig) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *prefixConfig) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalprefixConfig) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -1162,7 +1140,7 @@ func (obj *prefixConfig) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -1173,7 +1151,7 @@ func (obj *prefixConfig) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *prefixConfig) FromYaml(value string) error {
+func (m *unMarshalprefixConfig) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -1185,21 +1163,21 @@ func (obj *prefixConfig) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *prefixConfig) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalprefixConfig) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -1209,14 +1187,14 @@ func (obj *prefixConfig) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *prefixConfig) FromJson(value string) error {
+func (m *unMarshalprefixConfig) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -1224,13 +1202,13 @@ func (obj *prefixConfig) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -1243,14 +1221,14 @@ func (obj *prefixConfig) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *prefixConfig) Validate() error {
+func (obj *prefixConfig) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *prefixConfig) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -1258,16 +1236,16 @@ func (obj *prefixConfig) String() string {
 }
 
 func (obj *prefixConfig) Clone() (PrefixConfig, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPrefixConfig()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -1310,30 +1288,18 @@ func (obj *prefixConfig) setNil() {
 // PrefixConfig is container which retains the configuration
 type PrefixConfig interface {
 	Validation
-	// Msg marshals PrefixConfig to protobuf object *openapi.PrefixConfig
+	// msg marshals PrefixConfig to protobuf object *openapi.PrefixConfig
 	// and doesn't set defaults
-	Msg() *openapi.PrefixConfig
-	// SetMsg unmarshals PrefixConfig from protobuf object *openapi.PrefixConfig
+	msg() *openapi.PrefixConfig
+	// setMsg unmarshals PrefixConfig from protobuf object *openapi.PrefixConfig
 	// and doesn't set defaults
-	SetMsg(*openapi.PrefixConfig) PrefixConfig
-	// ToProto marshals PrefixConfig to protobuf object *openapi.PrefixConfig
-	ToProto() (*openapi.PrefixConfig, error)
-	// ToPbText marshals PrefixConfig to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PrefixConfig to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PrefixConfig to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PrefixConfig from protobuf object *openapi.PrefixConfig
-	FromProto(msg *openapi.PrefixConfig) (PrefixConfig, error)
-	// FromPbText unmarshals PrefixConfig from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PrefixConfig from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PrefixConfig from JSON text
-	FromJson(value string) error
-	// Validate validates PrefixConfig
-	Validate() error
+	setMsg(*openapi.PrefixConfig) PrefixConfig
+	// provides marshal interface
+	Marshal() marshalPrefixConfig
+	// provides unmarshal interface
+	Unmarshal() unMarshalPrefixConfig
+	// validate validates PrefixConfig
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -1642,7 +1608,7 @@ type PrefixConfig interface {
 // RequiredObject returns a EObject
 func (obj *prefixConfig) RequiredObject() EObject {
 	if obj.obj.RequiredObject == nil {
-		obj.obj.RequiredObject = NewEObject().Msg()
+		obj.obj.RequiredObject = NewEObject().msg()
 	}
 	if obj.requiredObjectHolder == nil {
 		obj.requiredObjectHolder = &eObject{obj: obj.obj.RequiredObject}
@@ -1655,7 +1621,7 @@ func (obj *prefixConfig) RequiredObject() EObject {
 func (obj *prefixConfig) SetRequiredObject(value EObject) PrefixConfig {
 
 	obj.requiredObjectHolder = nil
-	obj.obj.RequiredObject = value.Msg()
+	obj.obj.RequiredObject = value.msg()
 
 	return obj
 }
@@ -1664,7 +1630,7 @@ func (obj *prefixConfig) SetRequiredObject(value EObject) PrefixConfig {
 // OptionalObject returns a EObject
 func (obj *prefixConfig) OptionalObject() EObject {
 	if obj.obj.OptionalObject == nil {
-		obj.obj.OptionalObject = NewEObject().Msg()
+		obj.obj.OptionalObject = NewEObject().msg()
 	}
 	if obj.optionalObjectHolder == nil {
 		obj.optionalObjectHolder = &eObject{obj: obj.obj.OptionalObject}
@@ -1683,7 +1649,7 @@ func (obj *prefixConfig) HasOptionalObject() bool {
 func (obj *prefixConfig) SetOptionalObject(value EObject) PrefixConfig {
 
 	obj.optionalObjectHolder = nil
-	obj.obj.OptionalObject = value.Msg()
+	obj.obj.OptionalObject = value.msg()
 
 	return obj
 }
@@ -1896,7 +1862,7 @@ func (obj *prefixConfig) SetDValues(value []PrefixConfigDValuesEnum) PrefixConfi
 // E returns a EObject
 func (obj *prefixConfig) E() EObject {
 	if obj.obj.E == nil {
-		obj.obj.E = NewEObject().Msg()
+		obj.obj.E = NewEObject().msg()
 	}
 	if obj.eHolder == nil {
 		obj.eHolder = &eObject{obj: obj.obj.E}
@@ -1919,7 +1885,7 @@ func (obj *prefixConfig) HasE() bool {
 func (obj *prefixConfig) SetE(value EObject) PrefixConfig {
 
 	obj.eHolder = nil
-	obj.obj.E = value.Msg()
+	obj.obj.E = value.msg()
 
 	return obj
 }
@@ -1928,7 +1894,7 @@ func (obj *prefixConfig) SetE(value EObject) PrefixConfig {
 // F returns a FObject
 func (obj *prefixConfig) F() FObject {
 	if obj.obj.F == nil {
-		obj.obj.F = NewFObject().Msg()
+		obj.obj.F = NewFObject().msg()
 	}
 	if obj.fHolder == nil {
 		obj.fHolder = &fObject{obj: obj.obj.F}
@@ -1947,7 +1913,7 @@ func (obj *prefixConfig) HasF() bool {
 func (obj *prefixConfig) SetF(value FObject) PrefixConfig {
 
 	obj.fHolder = nil
-	obj.obj.F = value.Msg()
+	obj.obj.F = value.msg()
 
 	return obj
 }
@@ -2009,7 +1975,7 @@ func (obj *prefixConfigGObjectIter) Add() GObject {
 
 func (obj *prefixConfigGObjectIter) Append(items ...GObject) PrefixConfigGObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.gObjectSlice = append(obj.gObjectSlice, item)
 	}
@@ -2017,7 +1983,7 @@ func (obj *prefixConfigGObjectIter) Append(items ...GObject) PrefixConfigGObject
 }
 
 func (obj *prefixConfigGObjectIter) Set(index int, newObj GObject) PrefixConfigGObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.gObjectSlice[index] = newObj
 	return obj
 }
@@ -2133,7 +2099,7 @@ func (obj *prefixConfigJObjectIter) Add() JObject {
 
 func (obj *prefixConfigJObjectIter) Append(items ...JObject) PrefixConfigJObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.jObjectSlice = append(obj.jObjectSlice, item)
 	}
@@ -2141,7 +2107,7 @@ func (obj *prefixConfigJObjectIter) Append(items ...JObject) PrefixConfigJObject
 }
 
 func (obj *prefixConfigJObjectIter) Set(index int, newObj JObject) PrefixConfigJObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.jObjectSlice[index] = newObj
 	return obj
 }
@@ -2167,7 +2133,7 @@ func (obj *prefixConfigJObjectIter) appendHolderSlice(item JObject) PrefixConfig
 // K returns a KObject
 func (obj *prefixConfig) K() KObject {
 	if obj.obj.K == nil {
-		obj.obj.K = NewKObject().Msg()
+		obj.obj.K = NewKObject().msg()
 	}
 	if obj.kHolder == nil {
 		obj.kHolder = &kObject{obj: obj.obj.K}
@@ -2186,7 +2152,7 @@ func (obj *prefixConfig) HasK() bool {
 func (obj *prefixConfig) SetK(value KObject) PrefixConfig {
 
 	obj.kHolder = nil
-	obj.obj.K = value.Msg()
+	obj.obj.K = value.msg()
 
 	return obj
 }
@@ -2195,7 +2161,7 @@ func (obj *prefixConfig) SetK(value KObject) PrefixConfig {
 // L returns a LObject
 func (obj *prefixConfig) L() LObject {
 	if obj.obj.L == nil {
-		obj.obj.L = NewLObject().Msg()
+		obj.obj.L = NewLObject().msg()
 	}
 	if obj.lHolder == nil {
 		obj.lHolder = &lObject{obj: obj.obj.L}
@@ -2214,7 +2180,7 @@ func (obj *prefixConfig) HasL() bool {
 func (obj *prefixConfig) SetL(value LObject) PrefixConfig {
 
 	obj.lHolder = nil
-	obj.obj.L = value.Msg()
+	obj.obj.L = value.msg()
 
 	return obj
 }
@@ -2265,7 +2231,7 @@ func (obj *prefixConfig) SetListOfIntegerValues(value []int32) PrefixConfig {
 // Level returns a LevelOne
 func (obj *prefixConfig) Level() LevelOne {
 	if obj.obj.Level == nil {
-		obj.obj.Level = NewLevelOne().Msg()
+		obj.obj.Level = NewLevelOne().msg()
 	}
 	if obj.levelHolder == nil {
 		obj.levelHolder = &levelOne{obj: obj.obj.Level}
@@ -2284,7 +2250,7 @@ func (obj *prefixConfig) HasLevel() bool {
 func (obj *prefixConfig) SetLevel(value LevelOne) PrefixConfig {
 
 	obj.levelHolder = nil
-	obj.obj.Level = value.Msg()
+	obj.obj.Level = value.msg()
 
 	return obj
 }
@@ -2293,7 +2259,7 @@ func (obj *prefixConfig) SetLevel(value LevelOne) PrefixConfig {
 // Mandatory returns a Mandate
 func (obj *prefixConfig) Mandatory() Mandate {
 	if obj.obj.Mandatory == nil {
-		obj.obj.Mandatory = NewMandate().Msg()
+		obj.obj.Mandatory = NewMandate().msg()
 	}
 	if obj.mandatoryHolder == nil {
 		obj.mandatoryHolder = &mandate{obj: obj.obj.Mandatory}
@@ -2312,7 +2278,7 @@ func (obj *prefixConfig) HasMandatory() bool {
 func (obj *prefixConfig) SetMandatory(value Mandate) PrefixConfig {
 
 	obj.mandatoryHolder = nil
-	obj.obj.Mandatory = value.Msg()
+	obj.obj.Mandatory = value.msg()
 
 	return obj
 }
@@ -2321,7 +2287,7 @@ func (obj *prefixConfig) SetMandatory(value Mandate) PrefixConfig {
 // Ipv4Pattern returns a Ipv4Pattern
 func (obj *prefixConfig) Ipv4Pattern() Ipv4Pattern {
 	if obj.obj.Ipv4Pattern == nil {
-		obj.obj.Ipv4Pattern = NewIpv4Pattern().Msg()
+		obj.obj.Ipv4Pattern = NewIpv4Pattern().msg()
 	}
 	if obj.ipv4PatternHolder == nil {
 		obj.ipv4PatternHolder = &ipv4Pattern{obj: obj.obj.Ipv4Pattern}
@@ -2340,7 +2306,7 @@ func (obj *prefixConfig) HasIpv4Pattern() bool {
 func (obj *prefixConfig) SetIpv4Pattern(value Ipv4Pattern) PrefixConfig {
 
 	obj.ipv4PatternHolder = nil
-	obj.obj.Ipv4Pattern = value.Msg()
+	obj.obj.Ipv4Pattern = value.msg()
 
 	return obj
 }
@@ -2349,7 +2315,7 @@ func (obj *prefixConfig) SetIpv4Pattern(value Ipv4Pattern) PrefixConfig {
 // Ipv6Pattern returns a Ipv6Pattern
 func (obj *prefixConfig) Ipv6Pattern() Ipv6Pattern {
 	if obj.obj.Ipv6Pattern == nil {
-		obj.obj.Ipv6Pattern = NewIpv6Pattern().Msg()
+		obj.obj.Ipv6Pattern = NewIpv6Pattern().msg()
 	}
 	if obj.ipv6PatternHolder == nil {
 		obj.ipv6PatternHolder = &ipv6Pattern{obj: obj.obj.Ipv6Pattern}
@@ -2368,7 +2334,7 @@ func (obj *prefixConfig) HasIpv6Pattern() bool {
 func (obj *prefixConfig) SetIpv6Pattern(value Ipv6Pattern) PrefixConfig {
 
 	obj.ipv6PatternHolder = nil
-	obj.obj.Ipv6Pattern = value.Msg()
+	obj.obj.Ipv6Pattern = value.msg()
 
 	return obj
 }
@@ -2377,7 +2343,7 @@ func (obj *prefixConfig) SetIpv6Pattern(value Ipv6Pattern) PrefixConfig {
 // MacPattern returns a MacPattern
 func (obj *prefixConfig) MacPattern() MacPattern {
 	if obj.obj.MacPattern == nil {
-		obj.obj.MacPattern = NewMacPattern().Msg()
+		obj.obj.MacPattern = NewMacPattern().msg()
 	}
 	if obj.macPatternHolder == nil {
 		obj.macPatternHolder = &macPattern{obj: obj.obj.MacPattern}
@@ -2396,7 +2362,7 @@ func (obj *prefixConfig) HasMacPattern() bool {
 func (obj *prefixConfig) SetMacPattern(value MacPattern) PrefixConfig {
 
 	obj.macPatternHolder = nil
-	obj.obj.MacPattern = value.Msg()
+	obj.obj.MacPattern = value.msg()
 
 	return obj
 }
@@ -2405,7 +2371,7 @@ func (obj *prefixConfig) SetMacPattern(value MacPattern) PrefixConfig {
 // IntegerPattern returns a IntegerPattern
 func (obj *prefixConfig) IntegerPattern() IntegerPattern {
 	if obj.obj.IntegerPattern == nil {
-		obj.obj.IntegerPattern = NewIntegerPattern().Msg()
+		obj.obj.IntegerPattern = NewIntegerPattern().msg()
 	}
 	if obj.integerPatternHolder == nil {
 		obj.integerPatternHolder = &integerPattern{obj: obj.obj.IntegerPattern}
@@ -2424,7 +2390,7 @@ func (obj *prefixConfig) HasIntegerPattern() bool {
 func (obj *prefixConfig) SetIntegerPattern(value IntegerPattern) PrefixConfig {
 
 	obj.integerPatternHolder = nil
-	obj.obj.IntegerPattern = value.Msg()
+	obj.obj.IntegerPattern = value.msg()
 
 	return obj
 }
@@ -2433,7 +2399,7 @@ func (obj *prefixConfig) SetIntegerPattern(value IntegerPattern) PrefixConfig {
 // ChecksumPattern returns a ChecksumPattern
 func (obj *prefixConfig) ChecksumPattern() ChecksumPattern {
 	if obj.obj.ChecksumPattern == nil {
-		obj.obj.ChecksumPattern = NewChecksumPattern().Msg()
+		obj.obj.ChecksumPattern = NewChecksumPattern().msg()
 	}
 	if obj.checksumPatternHolder == nil {
 		obj.checksumPatternHolder = &checksumPattern{obj: obj.obj.ChecksumPattern}
@@ -2452,7 +2418,7 @@ func (obj *prefixConfig) HasChecksumPattern() bool {
 func (obj *prefixConfig) SetChecksumPattern(value ChecksumPattern) PrefixConfig {
 
 	obj.checksumPatternHolder = nil
-	obj.obj.ChecksumPattern = value.Msg()
+	obj.obj.ChecksumPattern = value.msg()
 
 	return obj
 }
@@ -2461,7 +2427,7 @@ func (obj *prefixConfig) SetChecksumPattern(value ChecksumPattern) PrefixConfig 
 // Case returns a Layer1Ieee802X
 func (obj *prefixConfig) Case() Layer1Ieee802X {
 	if obj.obj.Case == nil {
-		obj.obj.Case = NewLayer1Ieee802X().Msg()
+		obj.obj.Case = NewLayer1Ieee802X().msg()
 	}
 	if obj.caseHolder == nil {
 		obj.caseHolder = &layer1Ieee802X{obj: obj.obj.Case}
@@ -2480,7 +2446,7 @@ func (obj *prefixConfig) HasCase() bool {
 func (obj *prefixConfig) SetCase(value Layer1Ieee802X) PrefixConfig {
 
 	obj.caseHolder = nil
-	obj.obj.Case = value.Msg()
+	obj.obj.Case = value.msg()
 
 	return obj
 }
@@ -2489,7 +2455,7 @@ func (obj *prefixConfig) SetCase(value Layer1Ieee802X) PrefixConfig {
 // MObject returns a MObject
 func (obj *prefixConfig) MObject() MObject {
 	if obj.obj.MObject == nil {
-		obj.obj.MObject = NewMObject().Msg()
+		obj.obj.MObject = NewMObject().msg()
 	}
 	if obj.mObjectHolder == nil {
 		obj.mObjectHolder = &mObject{obj: obj.obj.MObject}
@@ -2508,7 +2474,7 @@ func (obj *prefixConfig) HasMObject() bool {
 func (obj *prefixConfig) SetMObject(value MObject) PrefixConfig {
 
 	obj.mObjectHolder = nil
-	obj.obj.MObject = value.Msg()
+	obj.obj.MObject = value.msg()
 
 	return obj
 }
@@ -2560,7 +2526,7 @@ func (obj *prefixConfig) SetInteger64List(value []int64) PrefixConfig {
 // HeaderChecksum returns a PatternPrefixConfigHeaderChecksum
 func (obj *prefixConfig) HeaderChecksum() PatternPrefixConfigHeaderChecksum {
 	if obj.obj.HeaderChecksum == nil {
-		obj.obj.HeaderChecksum = NewPatternPrefixConfigHeaderChecksum().Msg()
+		obj.obj.HeaderChecksum = NewPatternPrefixConfigHeaderChecksum().msg()
 	}
 	if obj.headerChecksumHolder == nil {
 		obj.headerChecksumHolder = &patternPrefixConfigHeaderChecksum{obj: obj.obj.HeaderChecksum}
@@ -2579,7 +2545,7 @@ func (obj *prefixConfig) HasHeaderChecksum() bool {
 func (obj *prefixConfig) SetHeaderChecksum(value PatternPrefixConfigHeaderChecksum) PrefixConfig {
 
 	obj.headerChecksumHolder = nil
-	obj.obj.HeaderChecksum = value.Msg()
+	obj.obj.HeaderChecksum = value.msg()
 
 	return obj
 }
@@ -2641,7 +2607,7 @@ func (obj *prefixConfig) SetHexSlice(value []string) PrefixConfig {
 // AutoFieldTest returns a PatternPrefixConfigAutoFieldTest
 func (obj *prefixConfig) AutoFieldTest() PatternPrefixConfigAutoFieldTest {
 	if obj.obj.AutoFieldTest == nil {
-		obj.obj.AutoFieldTest = NewPatternPrefixConfigAutoFieldTest().Msg()
+		obj.obj.AutoFieldTest = NewPatternPrefixConfigAutoFieldTest().msg()
 	}
 	if obj.autoFieldTestHolder == nil {
 		obj.autoFieldTestHolder = &patternPrefixConfigAutoFieldTest{obj: obj.obj.AutoFieldTest}
@@ -2660,7 +2626,7 @@ func (obj *prefixConfig) HasAutoFieldTest() bool {
 func (obj *prefixConfig) SetAutoFieldTest(value PatternPrefixConfigAutoFieldTest) PrefixConfig {
 
 	obj.autoFieldTestHolder = nil
-	obj.obj.AutoFieldTest = value.Msg()
+	obj.obj.AutoFieldTest = value.msg()
 
 	return obj
 }
@@ -2744,7 +2710,7 @@ func (obj *prefixConfigWObjectIter) Add() WObject {
 
 func (obj *prefixConfigWObjectIter) Append(items ...WObject) PrefixConfigWObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.wObjectSlice = append(obj.wObjectSlice, item)
 	}
@@ -2752,7 +2718,7 @@ func (obj *prefixConfigWObjectIter) Append(items ...WObject) PrefixConfigWObject
 }
 
 func (obj *prefixConfigWObjectIter) Set(index int, newObj WObject) PrefixConfigWObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.wObjectSlice[index] = newObj
 	return obj
 }
@@ -2831,7 +2797,7 @@ func (obj *prefixConfigZObjectIter) Add() ZObject {
 
 func (obj *prefixConfigZObjectIter) Append(items ...ZObject) PrefixConfigZObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.zObjectSlice = append(obj.zObjectSlice, item)
 	}
@@ -2839,7 +2805,7 @@ func (obj *prefixConfigZObjectIter) Append(items ...ZObject) PrefixConfigZObject
 }
 
 func (obj *prefixConfigZObjectIter) Set(index int, newObj ZObject) PrefixConfigZObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.zObjectSlice[index] = newObj
 	return obj
 }
@@ -2865,7 +2831,7 @@ func (obj *prefixConfigZObjectIter) appendHolderSlice(item ZObject) PrefixConfig
 // ZObject returns a ZObject
 func (obj *prefixConfig) ZObject() ZObject {
 	if obj.obj.ZObject == nil {
-		obj.obj.ZObject = NewZObject().Msg()
+		obj.obj.ZObject = NewZObject().msg()
 	}
 	if obj.zObjectHolder == nil {
 		obj.zObjectHolder = &zObject{obj: obj.obj.ZObject}
@@ -2884,7 +2850,7 @@ func (obj *prefixConfig) HasZObject() bool {
 func (obj *prefixConfig) SetZObject(value ZObject) PrefixConfig {
 
 	obj.zObjectHolder = nil
-	obj.obj.ZObject = value.Msg()
+	obj.obj.ZObject = value.msg()
 
 	return obj
 }
@@ -2893,7 +2859,7 @@ func (obj *prefixConfig) SetZObject(value ZObject) PrefixConfig {
 // YObject returns a YObject
 func (obj *prefixConfig) YObject() YObject {
 	if obj.obj.YObject == nil {
-		obj.obj.YObject = NewYObject().Msg()
+		obj.obj.YObject = NewYObject().msg()
 	}
 	if obj.yObjectHolder == nil {
 		obj.yObjectHolder = &yObject{obj: obj.obj.YObject}
@@ -2912,7 +2878,7 @@ func (obj *prefixConfig) HasYObject() bool {
 func (obj *prefixConfig) SetYObject(value YObject) PrefixConfig {
 
 	obj.yObjectHolder = nil
-	obj.obj.YObject = value.Msg()
+	obj.obj.YObject = value.msg()
 
 	return obj
 }
@@ -2974,7 +2940,7 @@ func (obj *prefixConfigChoiceObjectIter) Add() ChoiceObject {
 
 func (obj *prefixConfigChoiceObjectIter) Append(items ...ChoiceObject) PrefixConfigChoiceObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.choiceObjectSlice = append(obj.choiceObjectSlice, item)
 	}
@@ -2982,7 +2948,7 @@ func (obj *prefixConfigChoiceObjectIter) Append(items ...ChoiceObject) PrefixCon
 }
 
 func (obj *prefixConfigChoiceObjectIter) Set(index int, newObj ChoiceObject) PrefixConfigChoiceObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.choiceObjectSlice[index] = newObj
 	return obj
 }
@@ -3008,7 +2974,7 @@ func (obj *prefixConfigChoiceObjectIter) appendHolderSlice(item ChoiceObject) Pr
 // RequiredChoiceObject returns a RequiredChoiceParent
 func (obj *prefixConfig) RequiredChoiceObject() RequiredChoiceParent {
 	if obj.obj.RequiredChoiceObject == nil {
-		obj.obj.RequiredChoiceObject = NewRequiredChoiceParent().Msg()
+		obj.obj.RequiredChoiceObject = NewRequiredChoiceParent().msg()
 	}
 	if obj.requiredChoiceObjectHolder == nil {
 		obj.requiredChoiceObjectHolder = &requiredChoiceParent{obj: obj.obj.RequiredChoiceObject}
@@ -3027,7 +2993,7 @@ func (obj *prefixConfig) HasRequiredChoiceObject() bool {
 func (obj *prefixConfig) SetRequiredChoiceObject(value RequiredChoiceParent) PrefixConfig {
 
 	obj.requiredChoiceObjectHolder = nil
-	obj.obj.RequiredChoiceObject = value.Msg()
+	obj.obj.RequiredChoiceObject = value.msg()
 
 	return obj
 }
@@ -3584,8 +3550,10 @@ func (obj *prefixConfig) setDefault() {
 // ***** UpdateConfig *****
 type updateConfig struct {
 	validation
-	obj     *openapi.UpdateConfig
-	gHolder UpdateConfigGObjectIter
+	obj          *openapi.UpdateConfig
+	marshaller   marshalUpdateConfig
+	unMarshaller unMarshalUpdateConfig
+	gHolder      UpdateConfigGObjectIter
 }
 
 func NewUpdateConfig() UpdateConfig {
@@ -3594,26 +3562,70 @@ func NewUpdateConfig() UpdateConfig {
 	return &obj
 }
 
-func (obj *updateConfig) Msg() *openapi.UpdateConfig {
+func (obj *updateConfig) msg() *openapi.UpdateConfig {
 	return obj.obj
 }
 
-func (obj *updateConfig) SetMsg(msg *openapi.UpdateConfig) UpdateConfig {
+func (obj *updateConfig) setMsg(msg *openapi.UpdateConfig) UpdateConfig {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *updateConfig) ToProto() (*openapi.UpdateConfig, error) {
-	err := obj.validateToAndFrom()
+type marshalupdateConfig struct {
+	obj *updateConfig
+}
+
+type marshalUpdateConfig interface {
+	// ToProto marshals UpdateConfig to protobuf object *openapi.UpdateConfig
+	ToProto() (*openapi.UpdateConfig, error)
+	// ToPbText marshals UpdateConfig to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals UpdateConfig to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals UpdateConfig to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalupdateConfig struct {
+	obj *updateConfig
+}
+
+type unMarshalUpdateConfig interface {
+	// FromProto unmarshals UpdateConfig from protobuf object *openapi.UpdateConfig
+	FromProto(msg *openapi.UpdateConfig) (UpdateConfig, error)
+	// FromPbText unmarshals UpdateConfig from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals UpdateConfig from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals UpdateConfig from JSON text
+	FromJson(value string) error
+}
+
+func (obj *updateConfig) Marshal() marshalUpdateConfig {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalupdateConfig{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *updateConfig) Unmarshal() unMarshalUpdateConfig {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalupdateConfig{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalupdateConfig) ToProto() (*openapi.UpdateConfig, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *updateConfig) FromProto(msg *openapi.UpdateConfig) (UpdateConfig, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalupdateConfig) FromProto(msg *openapi.UpdateConfig) (UpdateConfig, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -3621,33 +3633,33 @@ func (obj *updateConfig) FromProto(msg *openapi.UpdateConfig) (UpdateConfig, err
 	return newObj, nil
 }
 
-func (obj *updateConfig) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfig) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *updateConfig) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalupdateConfig) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *updateConfig) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfig) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -3656,7 +3668,7 @@ func (obj *updateConfig) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -3667,7 +3679,7 @@ func (obj *updateConfig) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *updateConfig) FromYaml(value string) error {
+func (m *unMarshalupdateConfig) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -3679,21 +3691,21 @@ func (obj *updateConfig) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *updateConfig) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfig) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -3703,14 +3715,14 @@ func (obj *updateConfig) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *updateConfig) FromJson(value string) error {
+func (m *unMarshalupdateConfig) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -3718,13 +3730,13 @@ func (obj *updateConfig) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -3737,14 +3749,14 @@ func (obj *updateConfig) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *updateConfig) Validate() error {
+func (obj *updateConfig) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *updateConfig) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -3752,16 +3764,16 @@ func (obj *updateConfig) String() string {
 }
 
 func (obj *updateConfig) Clone() (UpdateConfig, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewUpdateConfig()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -3780,30 +3792,18 @@ func (obj *updateConfig) setNil() {
 // Object to Test required Parameter
 type UpdateConfig interface {
 	Validation
-	// Msg marshals UpdateConfig to protobuf object *openapi.UpdateConfig
+	// msg marshals UpdateConfig to protobuf object *openapi.UpdateConfig
 	// and doesn't set defaults
-	Msg() *openapi.UpdateConfig
-	// SetMsg unmarshals UpdateConfig from protobuf object *openapi.UpdateConfig
+	msg() *openapi.UpdateConfig
+	// setMsg unmarshals UpdateConfig from protobuf object *openapi.UpdateConfig
 	// and doesn't set defaults
-	SetMsg(*openapi.UpdateConfig) UpdateConfig
-	// ToProto marshals UpdateConfig to protobuf object *openapi.UpdateConfig
-	ToProto() (*openapi.UpdateConfig, error)
-	// ToPbText marshals UpdateConfig to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals UpdateConfig to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals UpdateConfig to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals UpdateConfig from protobuf object *openapi.UpdateConfig
-	FromProto(msg *openapi.UpdateConfig) (UpdateConfig, error)
-	// FromPbText unmarshals UpdateConfig from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals UpdateConfig from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals UpdateConfig from JSON text
-	FromJson(value string) error
-	// Validate validates UpdateConfig
-	Validate() error
+	setMsg(*openapi.UpdateConfig) UpdateConfig
+	// provides marshal interface
+	Marshal() marshalUpdateConfig
+	// provides unmarshal interface
+	Unmarshal() unMarshalUpdateConfig
+	// validate validates UpdateConfig
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -3873,7 +3873,7 @@ func (obj *updateConfigGObjectIter) Add() GObject {
 
 func (obj *updateConfigGObjectIter) Append(items ...GObject) UpdateConfigGObjectIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.gObjectSlice = append(obj.gObjectSlice, item)
 	}
@@ -3881,7 +3881,7 @@ func (obj *updateConfigGObjectIter) Append(items ...GObject) UpdateConfigGObject
 }
 
 func (obj *updateConfigGObjectIter) Set(index int, newObj GObject) UpdateConfigGObjectIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.gObjectSlice[index] = newObj
 	return obj
 }
@@ -3933,7 +3933,9 @@ func (obj *updateConfig) setDefault() {
 // ***** MetricsRequest *****
 type metricsRequest struct {
 	validation
-	obj *openapi.MetricsRequest
+	obj          *openapi.MetricsRequest
+	marshaller   marshalMetricsRequest
+	unMarshaller unMarshalMetricsRequest
 }
 
 func NewMetricsRequest() MetricsRequest {
@@ -3942,26 +3944,70 @@ func NewMetricsRequest() MetricsRequest {
 	return &obj
 }
 
-func (obj *metricsRequest) Msg() *openapi.MetricsRequest {
+func (obj *metricsRequest) msg() *openapi.MetricsRequest {
 	return obj.obj
 }
 
-func (obj *metricsRequest) SetMsg(msg *openapi.MetricsRequest) MetricsRequest {
+func (obj *metricsRequest) setMsg(msg *openapi.MetricsRequest) MetricsRequest {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *metricsRequest) ToProto() (*openapi.MetricsRequest, error) {
-	err := obj.validateToAndFrom()
+type marshalmetricsRequest struct {
+	obj *metricsRequest
+}
+
+type marshalMetricsRequest interface {
+	// ToProto marshals MetricsRequest to protobuf object *openapi.MetricsRequest
+	ToProto() (*openapi.MetricsRequest, error)
+	// ToPbText marshals MetricsRequest to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MetricsRequest to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MetricsRequest to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmetricsRequest struct {
+	obj *metricsRequest
+}
+
+type unMarshalMetricsRequest interface {
+	// FromProto unmarshals MetricsRequest from protobuf object *openapi.MetricsRequest
+	FromProto(msg *openapi.MetricsRequest) (MetricsRequest, error)
+	// FromPbText unmarshals MetricsRequest from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MetricsRequest from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MetricsRequest from JSON text
+	FromJson(value string) error
+}
+
+func (obj *metricsRequest) Marshal() marshalMetricsRequest {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmetricsRequest{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *metricsRequest) Unmarshal() unMarshalMetricsRequest {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmetricsRequest{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmetricsRequest) ToProto() (*openapi.MetricsRequest, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *metricsRequest) FromProto(msg *openapi.MetricsRequest) (MetricsRequest, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalmetricsRequest) FromProto(msg *openapi.MetricsRequest) (MetricsRequest, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -3969,33 +4015,33 @@ func (obj *metricsRequest) FromProto(msg *openapi.MetricsRequest) (MetricsReques
 	return newObj, nil
 }
 
-func (obj *metricsRequest) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetricsRequest) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *metricsRequest) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalmetricsRequest) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *metricsRequest) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetricsRequest) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4004,7 +4050,7 @@ func (obj *metricsRequest) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -4015,7 +4061,7 @@ func (obj *metricsRequest) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *metricsRequest) FromYaml(value string) error {
+func (m *unMarshalmetricsRequest) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -4027,21 +4073,21 @@ func (obj *metricsRequest) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *metricsRequest) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetricsRequest) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4051,14 +4097,14 @@ func (obj *metricsRequest) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *metricsRequest) FromJson(value string) error {
+func (m *unMarshalmetricsRequest) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -4066,13 +4112,13 @@ func (obj *metricsRequest) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -4085,14 +4131,14 @@ func (obj *metricsRequest) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *metricsRequest) Validate() error {
+func (obj *metricsRequest) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *metricsRequest) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -4100,16 +4146,16 @@ func (obj *metricsRequest) String() string {
 }
 
 func (obj *metricsRequest) Clone() (MetricsRequest, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewMetricsRequest()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -4119,30 +4165,18 @@ func (obj *metricsRequest) Clone() (MetricsRequest, error) {
 // MetricsRequest is description is TBD
 type MetricsRequest interface {
 	Validation
-	// Msg marshals MetricsRequest to protobuf object *openapi.MetricsRequest
+	// msg marshals MetricsRequest to protobuf object *openapi.MetricsRequest
 	// and doesn't set defaults
-	Msg() *openapi.MetricsRequest
-	// SetMsg unmarshals MetricsRequest from protobuf object *openapi.MetricsRequest
+	msg() *openapi.MetricsRequest
+	// setMsg unmarshals MetricsRequest from protobuf object *openapi.MetricsRequest
 	// and doesn't set defaults
-	SetMsg(*openapi.MetricsRequest) MetricsRequest
-	// ToProto marshals MetricsRequest to protobuf object *openapi.MetricsRequest
-	ToProto() (*openapi.MetricsRequest, error)
-	// ToPbText marshals MetricsRequest to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals MetricsRequest to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals MetricsRequest to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals MetricsRequest from protobuf object *openapi.MetricsRequest
-	FromProto(msg *openapi.MetricsRequest) (MetricsRequest, error)
-	// FromPbText unmarshals MetricsRequest from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals MetricsRequest from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals MetricsRequest from JSON text
-	FromJson(value string) error
-	// Validate validates MetricsRequest
-	Validate() error
+	setMsg(*openapi.MetricsRequest) MetricsRequest
+	// provides marshal interface
+	Marshal() marshalMetricsRequest
+	// provides unmarshal interface
+	Unmarshal() unMarshalMetricsRequest
+	// validate validates MetricsRequest
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -4152,8 +4186,8 @@ type MetricsRequest interface {
 	setDefault()
 	// Choice returns MetricsRequestChoiceEnum, set in MetricsRequest
 	Choice() MetricsRequestChoiceEnum
-	// SetChoice assigns MetricsRequestChoiceEnum provided by user to MetricsRequest
-	SetChoice(value MetricsRequestChoiceEnum) MetricsRequest
+	// setChoice assigns MetricsRequestChoiceEnum provided by user to MetricsRequest
+	setChoice(value MetricsRequestChoiceEnum) MetricsRequest
 	// HasChoice checks if Choice has been set in MetricsRequest
 	HasChoice() bool
 	// Port returns string, set in MetricsRequest.
@@ -4191,7 +4225,7 @@ func (obj *metricsRequest) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *metricsRequest) SetChoice(value MetricsRequestChoiceEnum) MetricsRequest {
+func (obj *metricsRequest) setChoice(value MetricsRequestChoiceEnum) MetricsRequest {
 	intValue, ok := openapi.MetricsRequest_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -4210,7 +4244,7 @@ func (obj *metricsRequest) SetChoice(value MetricsRequestChoiceEnum) MetricsRequ
 func (obj *metricsRequest) Port() string {
 
 	if obj.obj.Port == nil {
-		obj.SetChoice(MetricsRequestChoice.PORT)
+		obj.setChoice(MetricsRequestChoice.PORT)
 	}
 
 	return *obj.obj.Port
@@ -4226,7 +4260,7 @@ func (obj *metricsRequest) HasPort() bool {
 // description is TBD
 // SetPort sets the string value in the MetricsRequest object
 func (obj *metricsRequest) SetPort(value string) MetricsRequest {
-	obj.SetChoice(MetricsRequestChoice.PORT)
+	obj.setChoice(MetricsRequestChoice.PORT)
 	obj.obj.Port = &value
 	return obj
 }
@@ -4236,7 +4270,7 @@ func (obj *metricsRequest) SetPort(value string) MetricsRequest {
 func (obj *metricsRequest) Flow() string {
 
 	if obj.obj.Flow == nil {
-		obj.SetChoice(MetricsRequestChoice.FLOW)
+		obj.setChoice(MetricsRequestChoice.FLOW)
 	}
 
 	return *obj.obj.Flow
@@ -4252,7 +4286,7 @@ func (obj *metricsRequest) HasFlow() bool {
 // description is TBD
 // SetFlow sets the string value in the MetricsRequest object
 func (obj *metricsRequest) SetFlow(value string) MetricsRequest {
-	obj.SetChoice(MetricsRequestChoice.FLOW)
+	obj.setChoice(MetricsRequestChoice.FLOW)
 	obj.obj.Flow = &value
 	return obj
 }
@@ -4266,7 +4300,7 @@ func (obj *metricsRequest) validateObj(vObj *validation, set_default bool) {
 
 func (obj *metricsRequest) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(MetricsRequestChoice.PORT)
+		obj.setChoice(MetricsRequestChoice.PORT)
 
 	}
 
@@ -4275,7 +4309,9 @@ func (obj *metricsRequest) setDefault() {
 // ***** ApiTestInputBody *****
 type apiTestInputBody struct {
 	validation
-	obj *openapi.ApiTestInputBody
+	obj          *openapi.ApiTestInputBody
+	marshaller   marshalApiTestInputBody
+	unMarshaller unMarshalApiTestInputBody
 }
 
 func NewApiTestInputBody() ApiTestInputBody {
@@ -4284,26 +4320,70 @@ func NewApiTestInputBody() ApiTestInputBody {
 	return &obj
 }
 
-func (obj *apiTestInputBody) Msg() *openapi.ApiTestInputBody {
+func (obj *apiTestInputBody) msg() *openapi.ApiTestInputBody {
 	return obj.obj
 }
 
-func (obj *apiTestInputBody) SetMsg(msg *openapi.ApiTestInputBody) ApiTestInputBody {
+func (obj *apiTestInputBody) setMsg(msg *openapi.ApiTestInputBody) ApiTestInputBody {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *apiTestInputBody) ToProto() (*openapi.ApiTestInputBody, error) {
-	err := obj.validateToAndFrom()
+type marshalapiTestInputBody struct {
+	obj *apiTestInputBody
+}
+
+type marshalApiTestInputBody interface {
+	// ToProto marshals ApiTestInputBody to protobuf object *openapi.ApiTestInputBody
+	ToProto() (*openapi.ApiTestInputBody, error)
+	// ToPbText marshals ApiTestInputBody to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ApiTestInputBody to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ApiTestInputBody to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalapiTestInputBody struct {
+	obj *apiTestInputBody
+}
+
+type unMarshalApiTestInputBody interface {
+	// FromProto unmarshals ApiTestInputBody from protobuf object *openapi.ApiTestInputBody
+	FromProto(msg *openapi.ApiTestInputBody) (ApiTestInputBody, error)
+	// FromPbText unmarshals ApiTestInputBody from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ApiTestInputBody from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ApiTestInputBody from JSON text
+	FromJson(value string) error
+}
+
+func (obj *apiTestInputBody) Marshal() marshalApiTestInputBody {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalapiTestInputBody{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *apiTestInputBody) Unmarshal() unMarshalApiTestInputBody {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalapiTestInputBody{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalapiTestInputBody) ToProto() (*openapi.ApiTestInputBody, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *apiTestInputBody) FromProto(msg *openapi.ApiTestInputBody) (ApiTestInputBody, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalapiTestInputBody) FromProto(msg *openapi.ApiTestInputBody) (ApiTestInputBody, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -4311,33 +4391,33 @@ func (obj *apiTestInputBody) FromProto(msg *openapi.ApiTestInputBody) (ApiTestIn
 	return newObj, nil
 }
 
-func (obj *apiTestInputBody) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalapiTestInputBody) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *apiTestInputBody) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalapiTestInputBody) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *apiTestInputBody) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalapiTestInputBody) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4346,7 +4426,7 @@ func (obj *apiTestInputBody) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -4357,7 +4437,7 @@ func (obj *apiTestInputBody) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *apiTestInputBody) FromYaml(value string) error {
+func (m *unMarshalapiTestInputBody) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -4369,21 +4449,21 @@ func (obj *apiTestInputBody) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *apiTestInputBody) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalapiTestInputBody) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4393,14 +4473,14 @@ func (obj *apiTestInputBody) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *apiTestInputBody) FromJson(value string) error {
+func (m *unMarshalapiTestInputBody) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -4408,13 +4488,13 @@ func (obj *apiTestInputBody) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -4427,14 +4507,14 @@ func (obj *apiTestInputBody) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *apiTestInputBody) Validate() error {
+func (obj *apiTestInputBody) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *apiTestInputBody) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -4442,16 +4522,16 @@ func (obj *apiTestInputBody) String() string {
 }
 
 func (obj *apiTestInputBody) Clone() (ApiTestInputBody, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewApiTestInputBody()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -4461,30 +4541,18 @@ func (obj *apiTestInputBody) Clone() (ApiTestInputBody, error) {
 // ApiTestInputBody is description is TBD
 type ApiTestInputBody interface {
 	Validation
-	// Msg marshals ApiTestInputBody to protobuf object *openapi.ApiTestInputBody
+	// msg marshals ApiTestInputBody to protobuf object *openapi.ApiTestInputBody
 	// and doesn't set defaults
-	Msg() *openapi.ApiTestInputBody
-	// SetMsg unmarshals ApiTestInputBody from protobuf object *openapi.ApiTestInputBody
+	msg() *openapi.ApiTestInputBody
+	// setMsg unmarshals ApiTestInputBody from protobuf object *openapi.ApiTestInputBody
 	// and doesn't set defaults
-	SetMsg(*openapi.ApiTestInputBody) ApiTestInputBody
-	// ToProto marshals ApiTestInputBody to protobuf object *openapi.ApiTestInputBody
-	ToProto() (*openapi.ApiTestInputBody, error)
-	// ToPbText marshals ApiTestInputBody to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ApiTestInputBody to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ApiTestInputBody to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ApiTestInputBody from protobuf object *openapi.ApiTestInputBody
-	FromProto(msg *openapi.ApiTestInputBody) (ApiTestInputBody, error)
-	// FromPbText unmarshals ApiTestInputBody from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ApiTestInputBody from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ApiTestInputBody from JSON text
-	FromJson(value string) error
-	// Validate validates ApiTestInputBody
-	Validate() error
+	setMsg(*openapi.ApiTestInputBody) ApiTestInputBody
+	// provides marshal interface
+	Marshal() marshalApiTestInputBody
+	// provides unmarshal interface
+	Unmarshal() unMarshalApiTestInputBody
+	// validate validates ApiTestInputBody
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -4536,7 +4604,9 @@ func (obj *apiTestInputBody) setDefault() {
 // ***** SetConfigResponse *****
 type setConfigResponse struct {
 	validation
-	obj *openapi.SetConfigResponse
+	obj          *openapi.SetConfigResponse
+	marshaller   marshalSetConfigResponse
+	unMarshaller unMarshalSetConfigResponse
 }
 
 func NewSetConfigResponse() SetConfigResponse {
@@ -4545,26 +4615,70 @@ func NewSetConfigResponse() SetConfigResponse {
 	return &obj
 }
 
-func (obj *setConfigResponse) Msg() *openapi.SetConfigResponse {
+func (obj *setConfigResponse) msg() *openapi.SetConfigResponse {
 	return obj.obj
 }
 
-func (obj *setConfigResponse) SetMsg(msg *openapi.SetConfigResponse) SetConfigResponse {
+func (obj *setConfigResponse) setMsg(msg *openapi.SetConfigResponse) SetConfigResponse {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *setConfigResponse) ToProto() (*openapi.SetConfigResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalsetConfigResponse struct {
+	obj *setConfigResponse
+}
+
+type marshalSetConfigResponse interface {
+	// ToProto marshals SetConfigResponse to protobuf object *openapi.SetConfigResponse
+	ToProto() (*openapi.SetConfigResponse, error)
+	// ToPbText marshals SetConfigResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals SetConfigResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals SetConfigResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalsetConfigResponse struct {
+	obj *setConfigResponse
+}
+
+type unMarshalSetConfigResponse interface {
+	// FromProto unmarshals SetConfigResponse from protobuf object *openapi.SetConfigResponse
+	FromProto(msg *openapi.SetConfigResponse) (SetConfigResponse, error)
+	// FromPbText unmarshals SetConfigResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals SetConfigResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals SetConfigResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *setConfigResponse) Marshal() marshalSetConfigResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalsetConfigResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *setConfigResponse) Unmarshal() unMarshalSetConfigResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalsetConfigResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalsetConfigResponse) ToProto() (*openapi.SetConfigResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *setConfigResponse) FromProto(msg *openapi.SetConfigResponse) (SetConfigResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalsetConfigResponse) FromProto(msg *openapi.SetConfigResponse) (SetConfigResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -4572,33 +4686,33 @@ func (obj *setConfigResponse) FromProto(msg *openapi.SetConfigResponse) (SetConf
 	return newObj, nil
 }
 
-func (obj *setConfigResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalsetConfigResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *setConfigResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalsetConfigResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *setConfigResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalsetConfigResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4607,7 +4721,7 @@ func (obj *setConfigResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -4618,7 +4732,7 @@ func (obj *setConfigResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *setConfigResponse) FromYaml(value string) error {
+func (m *unMarshalsetConfigResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -4630,21 +4744,21 @@ func (obj *setConfigResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *setConfigResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalsetConfigResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4654,14 +4768,14 @@ func (obj *setConfigResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *setConfigResponse) FromJson(value string) error {
+func (m *unMarshalsetConfigResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -4669,13 +4783,13 @@ func (obj *setConfigResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -4688,14 +4802,14 @@ func (obj *setConfigResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *setConfigResponse) Validate() error {
+func (obj *setConfigResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *setConfigResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -4703,16 +4817,16 @@ func (obj *setConfigResponse) String() string {
 }
 
 func (obj *setConfigResponse) Clone() (SetConfigResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewSetConfigResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -4722,30 +4836,18 @@ func (obj *setConfigResponse) Clone() (SetConfigResponse, error) {
 // SetConfigResponse is description is TBD
 type SetConfigResponse interface {
 	Validation
-	// Msg marshals SetConfigResponse to protobuf object *openapi.SetConfigResponse
+	// msg marshals SetConfigResponse to protobuf object *openapi.SetConfigResponse
 	// and doesn't set defaults
-	Msg() *openapi.SetConfigResponse
-	// SetMsg unmarshals SetConfigResponse from protobuf object *openapi.SetConfigResponse
+	msg() *openapi.SetConfigResponse
+	// setMsg unmarshals SetConfigResponse from protobuf object *openapi.SetConfigResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.SetConfigResponse) SetConfigResponse
-	// ToProto marshals SetConfigResponse to protobuf object *openapi.SetConfigResponse
-	ToProto() (*openapi.SetConfigResponse, error)
-	// ToPbText marshals SetConfigResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals SetConfigResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals SetConfigResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals SetConfigResponse from protobuf object *openapi.SetConfigResponse
-	FromProto(msg *openapi.SetConfigResponse) (SetConfigResponse, error)
-	// FromPbText unmarshals SetConfigResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals SetConfigResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals SetConfigResponse from JSON text
-	FromJson(value string) error
-	// Validate validates SetConfigResponse
-	Validate() error
+	setMsg(*openapi.SetConfigResponse) SetConfigResponse
+	// provides marshal interface
+	Marshal() marshalSetConfigResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalSetConfigResponse
+	// validate validates SetConfigResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -4797,6 +4899,8 @@ func (obj *setConfigResponse) setDefault() {
 type updateConfigurationResponse struct {
 	validation
 	obj                *openapi.UpdateConfigurationResponse
+	marshaller         marshalUpdateConfigurationResponse
+	unMarshaller       unMarshalUpdateConfigurationResponse
 	prefixConfigHolder PrefixConfig
 }
 
@@ -4806,26 +4910,70 @@ func NewUpdateConfigurationResponse() UpdateConfigurationResponse {
 	return &obj
 }
 
-func (obj *updateConfigurationResponse) Msg() *openapi.UpdateConfigurationResponse {
+func (obj *updateConfigurationResponse) msg() *openapi.UpdateConfigurationResponse {
 	return obj.obj
 }
 
-func (obj *updateConfigurationResponse) SetMsg(msg *openapi.UpdateConfigurationResponse) UpdateConfigurationResponse {
+func (obj *updateConfigurationResponse) setMsg(msg *openapi.UpdateConfigurationResponse) UpdateConfigurationResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *updateConfigurationResponse) ToProto() (*openapi.UpdateConfigurationResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalupdateConfigurationResponse struct {
+	obj *updateConfigurationResponse
+}
+
+type marshalUpdateConfigurationResponse interface {
+	// ToProto marshals UpdateConfigurationResponse to protobuf object *openapi.UpdateConfigurationResponse
+	ToProto() (*openapi.UpdateConfigurationResponse, error)
+	// ToPbText marshals UpdateConfigurationResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals UpdateConfigurationResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals UpdateConfigurationResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalupdateConfigurationResponse struct {
+	obj *updateConfigurationResponse
+}
+
+type unMarshalUpdateConfigurationResponse interface {
+	// FromProto unmarshals UpdateConfigurationResponse from protobuf object *openapi.UpdateConfigurationResponse
+	FromProto(msg *openapi.UpdateConfigurationResponse) (UpdateConfigurationResponse, error)
+	// FromPbText unmarshals UpdateConfigurationResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals UpdateConfigurationResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals UpdateConfigurationResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *updateConfigurationResponse) Marshal() marshalUpdateConfigurationResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalupdateConfigurationResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *updateConfigurationResponse) Unmarshal() unMarshalUpdateConfigurationResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalupdateConfigurationResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalupdateConfigurationResponse) ToProto() (*openapi.UpdateConfigurationResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *updateConfigurationResponse) FromProto(msg *openapi.UpdateConfigurationResponse) (UpdateConfigurationResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalupdateConfigurationResponse) FromProto(msg *openapi.UpdateConfigurationResponse) (UpdateConfigurationResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -4833,33 +4981,33 @@ func (obj *updateConfigurationResponse) FromProto(msg *openapi.UpdateConfigurati
 	return newObj, nil
 }
 
-func (obj *updateConfigurationResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfigurationResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *updateConfigurationResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalupdateConfigurationResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *updateConfigurationResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfigurationResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4868,7 +5016,7 @@ func (obj *updateConfigurationResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -4879,7 +5027,7 @@ func (obj *updateConfigurationResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *updateConfigurationResponse) FromYaml(value string) error {
+func (m *unMarshalupdateConfigurationResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -4891,21 +5039,21 @@ func (obj *updateConfigurationResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *updateConfigurationResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalupdateConfigurationResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -4915,14 +5063,14 @@ func (obj *updateConfigurationResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *updateConfigurationResponse) FromJson(value string) error {
+func (m *unMarshalupdateConfigurationResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -4930,13 +5078,13 @@ func (obj *updateConfigurationResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -4949,14 +5097,14 @@ func (obj *updateConfigurationResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *updateConfigurationResponse) Validate() error {
+func (obj *updateConfigurationResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *updateConfigurationResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -4964,16 +5112,16 @@ func (obj *updateConfigurationResponse) String() string {
 }
 
 func (obj *updateConfigurationResponse) Clone() (UpdateConfigurationResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewUpdateConfigurationResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -4990,30 +5138,18 @@ func (obj *updateConfigurationResponse) setNil() {
 // UpdateConfigurationResponse is description is TBD
 type UpdateConfigurationResponse interface {
 	Validation
-	// Msg marshals UpdateConfigurationResponse to protobuf object *openapi.UpdateConfigurationResponse
+	// msg marshals UpdateConfigurationResponse to protobuf object *openapi.UpdateConfigurationResponse
 	// and doesn't set defaults
-	Msg() *openapi.UpdateConfigurationResponse
-	// SetMsg unmarshals UpdateConfigurationResponse from protobuf object *openapi.UpdateConfigurationResponse
+	msg() *openapi.UpdateConfigurationResponse
+	// setMsg unmarshals UpdateConfigurationResponse from protobuf object *openapi.UpdateConfigurationResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.UpdateConfigurationResponse) UpdateConfigurationResponse
-	// ToProto marshals UpdateConfigurationResponse to protobuf object *openapi.UpdateConfigurationResponse
-	ToProto() (*openapi.UpdateConfigurationResponse, error)
-	// ToPbText marshals UpdateConfigurationResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals UpdateConfigurationResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals UpdateConfigurationResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals UpdateConfigurationResponse from protobuf object *openapi.UpdateConfigurationResponse
-	FromProto(msg *openapi.UpdateConfigurationResponse) (UpdateConfigurationResponse, error)
-	// FromPbText unmarshals UpdateConfigurationResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals UpdateConfigurationResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals UpdateConfigurationResponse from JSON text
-	FromJson(value string) error
-	// Validate validates UpdateConfigurationResponse
-	Validate() error
+	setMsg(*openapi.UpdateConfigurationResponse) UpdateConfigurationResponse
+	// provides marshal interface
+	Marshal() marshalUpdateConfigurationResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalUpdateConfigurationResponse
+	// validate validates UpdateConfigurationResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -5036,7 +5172,7 @@ type UpdateConfigurationResponse interface {
 // PrefixConfig returns a PrefixConfig
 func (obj *updateConfigurationResponse) PrefixConfig() PrefixConfig {
 	if obj.obj.PrefixConfig == nil {
-		obj.obj.PrefixConfig = NewPrefixConfig().Msg()
+		obj.obj.PrefixConfig = NewPrefixConfig().msg()
 	}
 	if obj.prefixConfigHolder == nil {
 		obj.prefixConfigHolder = &prefixConfig{obj: obj.obj.PrefixConfig}
@@ -5055,7 +5191,7 @@ func (obj *updateConfigurationResponse) HasPrefixConfig() bool {
 func (obj *updateConfigurationResponse) SetPrefixConfig(value PrefixConfig) UpdateConfigurationResponse {
 
 	obj.prefixConfigHolder = nil
-	obj.obj.PrefixConfig = value.Msg()
+	obj.obj.PrefixConfig = value.msg()
 
 	return obj
 }
@@ -5080,6 +5216,8 @@ func (obj *updateConfigurationResponse) setDefault() {
 type getConfigResponse struct {
 	validation
 	obj                *openapi.GetConfigResponse
+	marshaller         marshalGetConfigResponse
+	unMarshaller       unMarshalGetConfigResponse
 	prefixConfigHolder PrefixConfig
 }
 
@@ -5089,26 +5227,70 @@ func NewGetConfigResponse() GetConfigResponse {
 	return &obj
 }
 
-func (obj *getConfigResponse) Msg() *openapi.GetConfigResponse {
+func (obj *getConfigResponse) msg() *openapi.GetConfigResponse {
 	return obj.obj
 }
 
-func (obj *getConfigResponse) SetMsg(msg *openapi.GetConfigResponse) GetConfigResponse {
+func (obj *getConfigResponse) setMsg(msg *openapi.GetConfigResponse) GetConfigResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getConfigResponse) ToProto() (*openapi.GetConfigResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetConfigResponse struct {
+	obj *getConfigResponse
+}
+
+type marshalGetConfigResponse interface {
+	// ToProto marshals GetConfigResponse to protobuf object *openapi.GetConfigResponse
+	ToProto() (*openapi.GetConfigResponse, error)
+	// ToPbText marshals GetConfigResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetConfigResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetConfigResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetConfigResponse struct {
+	obj *getConfigResponse
+}
+
+type unMarshalGetConfigResponse interface {
+	// FromProto unmarshals GetConfigResponse from protobuf object *openapi.GetConfigResponse
+	FromProto(msg *openapi.GetConfigResponse) (GetConfigResponse, error)
+	// FromPbText unmarshals GetConfigResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetConfigResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetConfigResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getConfigResponse) Marshal() marshalGetConfigResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetConfigResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getConfigResponse) Unmarshal() unMarshalGetConfigResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetConfigResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetConfigResponse) ToProto() (*openapi.GetConfigResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getConfigResponse) FromProto(msg *openapi.GetConfigResponse) (GetConfigResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetConfigResponse) FromProto(msg *openapi.GetConfigResponse) (GetConfigResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -5116,33 +5298,33 @@ func (obj *getConfigResponse) FromProto(msg *openapi.GetConfigResponse) (GetConf
 	return newObj, nil
 }
 
-func (obj *getConfigResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetConfigResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getConfigResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetConfigResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getConfigResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetConfigResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5151,7 +5333,7 @@ func (obj *getConfigResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -5162,7 +5344,7 @@ func (obj *getConfigResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getConfigResponse) FromYaml(value string) error {
+func (m *unMarshalgetConfigResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -5174,21 +5356,21 @@ func (obj *getConfigResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getConfigResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetConfigResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5198,14 +5380,14 @@ func (obj *getConfigResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getConfigResponse) FromJson(value string) error {
+func (m *unMarshalgetConfigResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -5213,13 +5395,13 @@ func (obj *getConfigResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -5232,14 +5414,14 @@ func (obj *getConfigResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getConfigResponse) Validate() error {
+func (obj *getConfigResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getConfigResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -5247,16 +5429,16 @@ func (obj *getConfigResponse) String() string {
 }
 
 func (obj *getConfigResponse) Clone() (GetConfigResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetConfigResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -5273,30 +5455,18 @@ func (obj *getConfigResponse) setNil() {
 // GetConfigResponse is description is TBD
 type GetConfigResponse interface {
 	Validation
-	// Msg marshals GetConfigResponse to protobuf object *openapi.GetConfigResponse
+	// msg marshals GetConfigResponse to protobuf object *openapi.GetConfigResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetConfigResponse
-	// SetMsg unmarshals GetConfigResponse from protobuf object *openapi.GetConfigResponse
+	msg() *openapi.GetConfigResponse
+	// setMsg unmarshals GetConfigResponse from protobuf object *openapi.GetConfigResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetConfigResponse) GetConfigResponse
-	// ToProto marshals GetConfigResponse to protobuf object *openapi.GetConfigResponse
-	ToProto() (*openapi.GetConfigResponse, error)
-	// ToPbText marshals GetConfigResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetConfigResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetConfigResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetConfigResponse from protobuf object *openapi.GetConfigResponse
-	FromProto(msg *openapi.GetConfigResponse) (GetConfigResponse, error)
-	// FromPbText unmarshals GetConfigResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetConfigResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetConfigResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetConfigResponse
-	Validate() error
+	setMsg(*openapi.GetConfigResponse) GetConfigResponse
+	// provides marshal interface
+	Marshal() marshalGetConfigResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetConfigResponse
+	// validate validates GetConfigResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -5319,7 +5489,7 @@ type GetConfigResponse interface {
 // PrefixConfig returns a PrefixConfig
 func (obj *getConfigResponse) PrefixConfig() PrefixConfig {
 	if obj.obj.PrefixConfig == nil {
-		obj.obj.PrefixConfig = NewPrefixConfig().Msg()
+		obj.obj.PrefixConfig = NewPrefixConfig().msg()
 	}
 	if obj.prefixConfigHolder == nil {
 		obj.prefixConfigHolder = &prefixConfig{obj: obj.obj.PrefixConfig}
@@ -5338,7 +5508,7 @@ func (obj *getConfigResponse) HasPrefixConfig() bool {
 func (obj *getConfigResponse) SetPrefixConfig(value PrefixConfig) GetConfigResponse {
 
 	obj.prefixConfigHolder = nil
-	obj.obj.PrefixConfig = value.Msg()
+	obj.obj.PrefixConfig = value.msg()
 
 	return obj
 }
@@ -5363,6 +5533,8 @@ func (obj *getConfigResponse) setDefault() {
 type getMetricsResponse struct {
 	validation
 	obj           *openapi.GetMetricsResponse
+	marshaller    marshalGetMetricsResponse
+	unMarshaller  unMarshalGetMetricsResponse
 	metricsHolder Metrics
 }
 
@@ -5372,26 +5544,70 @@ func NewGetMetricsResponse() GetMetricsResponse {
 	return &obj
 }
 
-func (obj *getMetricsResponse) Msg() *openapi.GetMetricsResponse {
+func (obj *getMetricsResponse) msg() *openapi.GetMetricsResponse {
 	return obj.obj
 }
 
-func (obj *getMetricsResponse) SetMsg(msg *openapi.GetMetricsResponse) GetMetricsResponse {
+func (obj *getMetricsResponse) setMsg(msg *openapi.GetMetricsResponse) GetMetricsResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getMetricsResponse) ToProto() (*openapi.GetMetricsResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetMetricsResponse struct {
+	obj *getMetricsResponse
+}
+
+type marshalGetMetricsResponse interface {
+	// ToProto marshals GetMetricsResponse to protobuf object *openapi.GetMetricsResponse
+	ToProto() (*openapi.GetMetricsResponse, error)
+	// ToPbText marshals GetMetricsResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetMetricsResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetMetricsResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetMetricsResponse struct {
+	obj *getMetricsResponse
+}
+
+type unMarshalGetMetricsResponse interface {
+	// FromProto unmarshals GetMetricsResponse from protobuf object *openapi.GetMetricsResponse
+	FromProto(msg *openapi.GetMetricsResponse) (GetMetricsResponse, error)
+	// FromPbText unmarshals GetMetricsResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetMetricsResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetMetricsResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getMetricsResponse) Marshal() marshalGetMetricsResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetMetricsResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getMetricsResponse) Unmarshal() unMarshalGetMetricsResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetMetricsResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetMetricsResponse) ToProto() (*openapi.GetMetricsResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getMetricsResponse) FromProto(msg *openapi.GetMetricsResponse) (GetMetricsResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetMetricsResponse) FromProto(msg *openapi.GetMetricsResponse) (GetMetricsResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -5399,33 +5615,33 @@ func (obj *getMetricsResponse) FromProto(msg *openapi.GetMetricsResponse) (GetMe
 	return newObj, nil
 }
 
-func (obj *getMetricsResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetMetricsResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getMetricsResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetMetricsResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getMetricsResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetMetricsResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5434,7 +5650,7 @@ func (obj *getMetricsResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -5445,7 +5661,7 @@ func (obj *getMetricsResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getMetricsResponse) FromYaml(value string) error {
+func (m *unMarshalgetMetricsResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -5457,21 +5673,21 @@ func (obj *getMetricsResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getMetricsResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetMetricsResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5481,14 +5697,14 @@ func (obj *getMetricsResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getMetricsResponse) FromJson(value string) error {
+func (m *unMarshalgetMetricsResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -5496,13 +5712,13 @@ func (obj *getMetricsResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -5515,14 +5731,14 @@ func (obj *getMetricsResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getMetricsResponse) Validate() error {
+func (obj *getMetricsResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getMetricsResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -5530,16 +5746,16 @@ func (obj *getMetricsResponse) String() string {
 }
 
 func (obj *getMetricsResponse) Clone() (GetMetricsResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetMetricsResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -5556,30 +5772,18 @@ func (obj *getMetricsResponse) setNil() {
 // GetMetricsResponse is description is TBD
 type GetMetricsResponse interface {
 	Validation
-	// Msg marshals GetMetricsResponse to protobuf object *openapi.GetMetricsResponse
+	// msg marshals GetMetricsResponse to protobuf object *openapi.GetMetricsResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetMetricsResponse
-	// SetMsg unmarshals GetMetricsResponse from protobuf object *openapi.GetMetricsResponse
+	msg() *openapi.GetMetricsResponse
+	// setMsg unmarshals GetMetricsResponse from protobuf object *openapi.GetMetricsResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetMetricsResponse) GetMetricsResponse
-	// ToProto marshals GetMetricsResponse to protobuf object *openapi.GetMetricsResponse
-	ToProto() (*openapi.GetMetricsResponse, error)
-	// ToPbText marshals GetMetricsResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetMetricsResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetMetricsResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetMetricsResponse from protobuf object *openapi.GetMetricsResponse
-	FromProto(msg *openapi.GetMetricsResponse) (GetMetricsResponse, error)
-	// FromPbText unmarshals GetMetricsResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetMetricsResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetMetricsResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetMetricsResponse
-	Validate() error
+	setMsg(*openapi.GetMetricsResponse) GetMetricsResponse
+	// provides marshal interface
+	Marshal() marshalGetMetricsResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetMetricsResponse
+	// validate validates GetMetricsResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -5602,7 +5806,7 @@ type GetMetricsResponse interface {
 // Metrics returns a Metrics
 func (obj *getMetricsResponse) Metrics() Metrics {
 	if obj.obj.Metrics == nil {
-		obj.obj.Metrics = NewMetrics().Msg()
+		obj.obj.Metrics = NewMetrics().msg()
 	}
 	if obj.metricsHolder == nil {
 		obj.metricsHolder = &metrics{obj: obj.obj.Metrics}
@@ -5621,7 +5825,7 @@ func (obj *getMetricsResponse) HasMetrics() bool {
 func (obj *getMetricsResponse) SetMetrics(value Metrics) GetMetricsResponse {
 
 	obj.metricsHolder = nil
-	obj.obj.Metrics = value.Msg()
+	obj.obj.Metrics = value.msg()
 
 	return obj
 }
@@ -5646,6 +5850,8 @@ func (obj *getMetricsResponse) setDefault() {
 type getWarningsResponse struct {
 	validation
 	obj                  *openapi.GetWarningsResponse
+	marshaller           marshalGetWarningsResponse
+	unMarshaller         unMarshalGetWarningsResponse
 	warningDetailsHolder WarningDetails
 }
 
@@ -5655,26 +5861,70 @@ func NewGetWarningsResponse() GetWarningsResponse {
 	return &obj
 }
 
-func (obj *getWarningsResponse) Msg() *openapi.GetWarningsResponse {
+func (obj *getWarningsResponse) msg() *openapi.GetWarningsResponse {
 	return obj.obj
 }
 
-func (obj *getWarningsResponse) SetMsg(msg *openapi.GetWarningsResponse) GetWarningsResponse {
+func (obj *getWarningsResponse) setMsg(msg *openapi.GetWarningsResponse) GetWarningsResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getWarningsResponse) ToProto() (*openapi.GetWarningsResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetWarningsResponse struct {
+	obj *getWarningsResponse
+}
+
+type marshalGetWarningsResponse interface {
+	// ToProto marshals GetWarningsResponse to protobuf object *openapi.GetWarningsResponse
+	ToProto() (*openapi.GetWarningsResponse, error)
+	// ToPbText marshals GetWarningsResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetWarningsResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetWarningsResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetWarningsResponse struct {
+	obj *getWarningsResponse
+}
+
+type unMarshalGetWarningsResponse interface {
+	// FromProto unmarshals GetWarningsResponse from protobuf object *openapi.GetWarningsResponse
+	FromProto(msg *openapi.GetWarningsResponse) (GetWarningsResponse, error)
+	// FromPbText unmarshals GetWarningsResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetWarningsResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetWarningsResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getWarningsResponse) Marshal() marshalGetWarningsResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetWarningsResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getWarningsResponse) Unmarshal() unMarshalGetWarningsResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetWarningsResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetWarningsResponse) ToProto() (*openapi.GetWarningsResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getWarningsResponse) FromProto(msg *openapi.GetWarningsResponse) (GetWarningsResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetWarningsResponse) FromProto(msg *openapi.GetWarningsResponse) (GetWarningsResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -5682,33 +5932,33 @@ func (obj *getWarningsResponse) FromProto(msg *openapi.GetWarningsResponse) (Get
 	return newObj, nil
 }
 
-func (obj *getWarningsResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetWarningsResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getWarningsResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetWarningsResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getWarningsResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetWarningsResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5717,7 +5967,7 @@ func (obj *getWarningsResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -5728,7 +5978,7 @@ func (obj *getWarningsResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getWarningsResponse) FromYaml(value string) error {
+func (m *unMarshalgetWarningsResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -5740,21 +5990,21 @@ func (obj *getWarningsResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getWarningsResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetWarningsResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5764,14 +6014,14 @@ func (obj *getWarningsResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getWarningsResponse) FromJson(value string) error {
+func (m *unMarshalgetWarningsResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -5779,13 +6029,13 @@ func (obj *getWarningsResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -5798,14 +6048,14 @@ func (obj *getWarningsResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getWarningsResponse) Validate() error {
+func (obj *getWarningsResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getWarningsResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -5813,16 +6063,16 @@ func (obj *getWarningsResponse) String() string {
 }
 
 func (obj *getWarningsResponse) Clone() (GetWarningsResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetWarningsResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -5839,30 +6089,18 @@ func (obj *getWarningsResponse) setNil() {
 // GetWarningsResponse is description is TBD
 type GetWarningsResponse interface {
 	Validation
-	// Msg marshals GetWarningsResponse to protobuf object *openapi.GetWarningsResponse
+	// msg marshals GetWarningsResponse to protobuf object *openapi.GetWarningsResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetWarningsResponse
-	// SetMsg unmarshals GetWarningsResponse from protobuf object *openapi.GetWarningsResponse
+	msg() *openapi.GetWarningsResponse
+	// setMsg unmarshals GetWarningsResponse from protobuf object *openapi.GetWarningsResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetWarningsResponse) GetWarningsResponse
-	// ToProto marshals GetWarningsResponse to protobuf object *openapi.GetWarningsResponse
-	ToProto() (*openapi.GetWarningsResponse, error)
-	// ToPbText marshals GetWarningsResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetWarningsResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetWarningsResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetWarningsResponse from protobuf object *openapi.GetWarningsResponse
-	FromProto(msg *openapi.GetWarningsResponse) (GetWarningsResponse, error)
-	// FromPbText unmarshals GetWarningsResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetWarningsResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetWarningsResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetWarningsResponse
-	Validate() error
+	setMsg(*openapi.GetWarningsResponse) GetWarningsResponse
+	// provides marshal interface
+	Marshal() marshalGetWarningsResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetWarningsResponse
+	// validate validates GetWarningsResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -5885,7 +6123,7 @@ type GetWarningsResponse interface {
 // WarningDetails returns a WarningDetails
 func (obj *getWarningsResponse) WarningDetails() WarningDetails {
 	if obj.obj.WarningDetails == nil {
-		obj.obj.WarningDetails = NewWarningDetails().Msg()
+		obj.obj.WarningDetails = NewWarningDetails().msg()
 	}
 	if obj.warningDetailsHolder == nil {
 		obj.warningDetailsHolder = &warningDetails{obj: obj.obj.WarningDetails}
@@ -5904,7 +6142,7 @@ func (obj *getWarningsResponse) HasWarningDetails() bool {
 func (obj *getWarningsResponse) SetWarningDetails(value WarningDetails) GetWarningsResponse {
 
 	obj.warningDetailsHolder = nil
-	obj.obj.WarningDetails = value.Msg()
+	obj.obj.WarningDetails = value.msg()
 
 	return obj
 }
@@ -5928,7 +6166,9 @@ func (obj *getWarningsResponse) setDefault() {
 // ***** ClearWarningsResponse *****
 type clearWarningsResponse struct {
 	validation
-	obj *openapi.ClearWarningsResponse
+	obj          *openapi.ClearWarningsResponse
+	marshaller   marshalClearWarningsResponse
+	unMarshaller unMarshalClearWarningsResponse
 }
 
 func NewClearWarningsResponse() ClearWarningsResponse {
@@ -5937,26 +6177,70 @@ func NewClearWarningsResponse() ClearWarningsResponse {
 	return &obj
 }
 
-func (obj *clearWarningsResponse) Msg() *openapi.ClearWarningsResponse {
+func (obj *clearWarningsResponse) msg() *openapi.ClearWarningsResponse {
 	return obj.obj
 }
 
-func (obj *clearWarningsResponse) SetMsg(msg *openapi.ClearWarningsResponse) ClearWarningsResponse {
+func (obj *clearWarningsResponse) setMsg(msg *openapi.ClearWarningsResponse) ClearWarningsResponse {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *clearWarningsResponse) ToProto() (*openapi.ClearWarningsResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalclearWarningsResponse struct {
+	obj *clearWarningsResponse
+}
+
+type marshalClearWarningsResponse interface {
+	// ToProto marshals ClearWarningsResponse to protobuf object *openapi.ClearWarningsResponse
+	ToProto() (*openapi.ClearWarningsResponse, error)
+	// ToPbText marshals ClearWarningsResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ClearWarningsResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ClearWarningsResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalclearWarningsResponse struct {
+	obj *clearWarningsResponse
+}
+
+type unMarshalClearWarningsResponse interface {
+	// FromProto unmarshals ClearWarningsResponse from protobuf object *openapi.ClearWarningsResponse
+	FromProto(msg *openapi.ClearWarningsResponse) (ClearWarningsResponse, error)
+	// FromPbText unmarshals ClearWarningsResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ClearWarningsResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ClearWarningsResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *clearWarningsResponse) Marshal() marshalClearWarningsResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalclearWarningsResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *clearWarningsResponse) Unmarshal() unMarshalClearWarningsResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalclearWarningsResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalclearWarningsResponse) ToProto() (*openapi.ClearWarningsResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *clearWarningsResponse) FromProto(msg *openapi.ClearWarningsResponse) (ClearWarningsResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalclearWarningsResponse) FromProto(msg *openapi.ClearWarningsResponse) (ClearWarningsResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -5964,33 +6248,33 @@ func (obj *clearWarningsResponse) FromProto(msg *openapi.ClearWarningsResponse) 
 	return newObj, nil
 }
 
-func (obj *clearWarningsResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalclearWarningsResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *clearWarningsResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalclearWarningsResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *clearWarningsResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalclearWarningsResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -5999,7 +6283,7 @@ func (obj *clearWarningsResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -6010,7 +6294,7 @@ func (obj *clearWarningsResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *clearWarningsResponse) FromYaml(value string) error {
+func (m *unMarshalclearWarningsResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -6022,21 +6306,21 @@ func (obj *clearWarningsResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *clearWarningsResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalclearWarningsResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6046,14 +6330,14 @@ func (obj *clearWarningsResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *clearWarningsResponse) FromJson(value string) error {
+func (m *unMarshalclearWarningsResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -6061,13 +6345,13 @@ func (obj *clearWarningsResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -6080,14 +6364,14 @@ func (obj *clearWarningsResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *clearWarningsResponse) Validate() error {
+func (obj *clearWarningsResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *clearWarningsResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -6095,16 +6379,16 @@ func (obj *clearWarningsResponse) String() string {
 }
 
 func (obj *clearWarningsResponse) Clone() (ClearWarningsResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewClearWarningsResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -6114,30 +6398,18 @@ func (obj *clearWarningsResponse) Clone() (ClearWarningsResponse, error) {
 // ClearWarningsResponse is description is TBD
 type ClearWarningsResponse interface {
 	Validation
-	// Msg marshals ClearWarningsResponse to protobuf object *openapi.ClearWarningsResponse
+	// msg marshals ClearWarningsResponse to protobuf object *openapi.ClearWarningsResponse
 	// and doesn't set defaults
-	Msg() *openapi.ClearWarningsResponse
-	// SetMsg unmarshals ClearWarningsResponse from protobuf object *openapi.ClearWarningsResponse
+	msg() *openapi.ClearWarningsResponse
+	// setMsg unmarshals ClearWarningsResponse from protobuf object *openapi.ClearWarningsResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.ClearWarningsResponse) ClearWarningsResponse
-	// ToProto marshals ClearWarningsResponse to protobuf object *openapi.ClearWarningsResponse
-	ToProto() (*openapi.ClearWarningsResponse, error)
-	// ToPbText marshals ClearWarningsResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ClearWarningsResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ClearWarningsResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ClearWarningsResponse from protobuf object *openapi.ClearWarningsResponse
-	FromProto(msg *openapi.ClearWarningsResponse) (ClearWarningsResponse, error)
-	// FromPbText unmarshals ClearWarningsResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ClearWarningsResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ClearWarningsResponse from JSON text
-	FromJson(value string) error
-	// Validate validates ClearWarningsResponse
-	Validate() error
+	setMsg(*openapi.ClearWarningsResponse) ClearWarningsResponse
+	// provides marshal interface
+	Marshal() marshalClearWarningsResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalClearWarningsResponse
+	// validate validates ClearWarningsResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -6187,6 +6459,8 @@ func (obj *clearWarningsResponse) setDefault() {
 type getRootResponseResponse struct {
 	validation
 	obj                         *openapi.GetRootResponseResponse
+	marshaller                  marshalGetRootResponseResponse
+	unMarshaller                unMarshalGetRootResponseResponse
 	commonResponseSuccessHolder CommonResponseSuccess
 }
 
@@ -6196,26 +6470,70 @@ func NewGetRootResponseResponse() GetRootResponseResponse {
 	return &obj
 }
 
-func (obj *getRootResponseResponse) Msg() *openapi.GetRootResponseResponse {
+func (obj *getRootResponseResponse) msg() *openapi.GetRootResponseResponse {
 	return obj.obj
 }
 
-func (obj *getRootResponseResponse) SetMsg(msg *openapi.GetRootResponseResponse) GetRootResponseResponse {
+func (obj *getRootResponseResponse) setMsg(msg *openapi.GetRootResponseResponse) GetRootResponseResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getRootResponseResponse) ToProto() (*openapi.GetRootResponseResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetRootResponseResponse struct {
+	obj *getRootResponseResponse
+}
+
+type marshalGetRootResponseResponse interface {
+	// ToProto marshals GetRootResponseResponse to protobuf object *openapi.GetRootResponseResponse
+	ToProto() (*openapi.GetRootResponseResponse, error)
+	// ToPbText marshals GetRootResponseResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetRootResponseResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetRootResponseResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetRootResponseResponse struct {
+	obj *getRootResponseResponse
+}
+
+type unMarshalGetRootResponseResponse interface {
+	// FromProto unmarshals GetRootResponseResponse from protobuf object *openapi.GetRootResponseResponse
+	FromProto(msg *openapi.GetRootResponseResponse) (GetRootResponseResponse, error)
+	// FromPbText unmarshals GetRootResponseResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetRootResponseResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetRootResponseResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getRootResponseResponse) Marshal() marshalGetRootResponseResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetRootResponseResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getRootResponseResponse) Unmarshal() unMarshalGetRootResponseResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetRootResponseResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetRootResponseResponse) ToProto() (*openapi.GetRootResponseResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getRootResponseResponse) FromProto(msg *openapi.GetRootResponseResponse) (GetRootResponseResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetRootResponseResponse) FromProto(msg *openapi.GetRootResponseResponse) (GetRootResponseResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -6223,33 +6541,33 @@ func (obj *getRootResponseResponse) FromProto(msg *openapi.GetRootResponseRespon
 	return newObj, nil
 }
 
-func (obj *getRootResponseResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetRootResponseResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getRootResponseResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetRootResponseResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getRootResponseResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetRootResponseResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6258,7 +6576,7 @@ func (obj *getRootResponseResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -6269,7 +6587,7 @@ func (obj *getRootResponseResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getRootResponseResponse) FromYaml(value string) error {
+func (m *unMarshalgetRootResponseResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -6281,21 +6599,21 @@ func (obj *getRootResponseResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getRootResponseResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetRootResponseResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6305,14 +6623,14 @@ func (obj *getRootResponseResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getRootResponseResponse) FromJson(value string) error {
+func (m *unMarshalgetRootResponseResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -6320,13 +6638,13 @@ func (obj *getRootResponseResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -6339,14 +6657,14 @@ func (obj *getRootResponseResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getRootResponseResponse) Validate() error {
+func (obj *getRootResponseResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getRootResponseResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -6354,16 +6672,16 @@ func (obj *getRootResponseResponse) String() string {
 }
 
 func (obj *getRootResponseResponse) Clone() (GetRootResponseResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetRootResponseResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -6380,30 +6698,18 @@ func (obj *getRootResponseResponse) setNil() {
 // GetRootResponseResponse is description is TBD
 type GetRootResponseResponse interface {
 	Validation
-	// Msg marshals GetRootResponseResponse to protobuf object *openapi.GetRootResponseResponse
+	// msg marshals GetRootResponseResponse to protobuf object *openapi.GetRootResponseResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetRootResponseResponse
-	// SetMsg unmarshals GetRootResponseResponse from protobuf object *openapi.GetRootResponseResponse
+	msg() *openapi.GetRootResponseResponse
+	// setMsg unmarshals GetRootResponseResponse from protobuf object *openapi.GetRootResponseResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetRootResponseResponse) GetRootResponseResponse
-	// ToProto marshals GetRootResponseResponse to protobuf object *openapi.GetRootResponseResponse
-	ToProto() (*openapi.GetRootResponseResponse, error)
-	// ToPbText marshals GetRootResponseResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetRootResponseResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetRootResponseResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetRootResponseResponse from protobuf object *openapi.GetRootResponseResponse
-	FromProto(msg *openapi.GetRootResponseResponse) (GetRootResponseResponse, error)
-	// FromPbText unmarshals GetRootResponseResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetRootResponseResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetRootResponseResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetRootResponseResponse
-	Validate() error
+	setMsg(*openapi.GetRootResponseResponse) GetRootResponseResponse
+	// provides marshal interface
+	Marshal() marshalGetRootResponseResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetRootResponseResponse
+	// validate validates GetRootResponseResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -6426,7 +6732,7 @@ type GetRootResponseResponse interface {
 // CommonResponseSuccess returns a CommonResponseSuccess
 func (obj *getRootResponseResponse) CommonResponseSuccess() CommonResponseSuccess {
 	if obj.obj.CommonResponseSuccess == nil {
-		obj.obj.CommonResponseSuccess = NewCommonResponseSuccess().Msg()
+		obj.obj.CommonResponseSuccess = NewCommonResponseSuccess().msg()
 	}
 	if obj.commonResponseSuccessHolder == nil {
 		obj.commonResponseSuccessHolder = &commonResponseSuccess{obj: obj.obj.CommonResponseSuccess}
@@ -6445,7 +6751,7 @@ func (obj *getRootResponseResponse) HasCommonResponseSuccess() bool {
 func (obj *getRootResponseResponse) SetCommonResponseSuccess(value CommonResponseSuccess) GetRootResponseResponse {
 
 	obj.commonResponseSuccessHolder = nil
-	obj.obj.CommonResponseSuccess = value.Msg()
+	obj.obj.CommonResponseSuccess = value.msg()
 
 	return obj
 }
@@ -6469,7 +6775,9 @@ func (obj *getRootResponseResponse) setDefault() {
 // ***** DummyResponseTestResponse *****
 type dummyResponseTestResponse struct {
 	validation
-	obj *openapi.DummyResponseTestResponse
+	obj          *openapi.DummyResponseTestResponse
+	marshaller   marshalDummyResponseTestResponse
+	unMarshaller unMarshalDummyResponseTestResponse
 }
 
 func NewDummyResponseTestResponse() DummyResponseTestResponse {
@@ -6478,26 +6786,70 @@ func NewDummyResponseTestResponse() DummyResponseTestResponse {
 	return &obj
 }
 
-func (obj *dummyResponseTestResponse) Msg() *openapi.DummyResponseTestResponse {
+func (obj *dummyResponseTestResponse) msg() *openapi.DummyResponseTestResponse {
 	return obj.obj
 }
 
-func (obj *dummyResponseTestResponse) SetMsg(msg *openapi.DummyResponseTestResponse) DummyResponseTestResponse {
+func (obj *dummyResponseTestResponse) setMsg(msg *openapi.DummyResponseTestResponse) DummyResponseTestResponse {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *dummyResponseTestResponse) ToProto() (*openapi.DummyResponseTestResponse, error) {
-	err := obj.validateToAndFrom()
+type marshaldummyResponseTestResponse struct {
+	obj *dummyResponseTestResponse
+}
+
+type marshalDummyResponseTestResponse interface {
+	// ToProto marshals DummyResponseTestResponse to protobuf object *openapi.DummyResponseTestResponse
+	ToProto() (*openapi.DummyResponseTestResponse, error)
+	// ToPbText marshals DummyResponseTestResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals DummyResponseTestResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals DummyResponseTestResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaldummyResponseTestResponse struct {
+	obj *dummyResponseTestResponse
+}
+
+type unMarshalDummyResponseTestResponse interface {
+	// FromProto unmarshals DummyResponseTestResponse from protobuf object *openapi.DummyResponseTestResponse
+	FromProto(msg *openapi.DummyResponseTestResponse) (DummyResponseTestResponse, error)
+	// FromPbText unmarshals DummyResponseTestResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals DummyResponseTestResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals DummyResponseTestResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *dummyResponseTestResponse) Marshal() marshalDummyResponseTestResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaldummyResponseTestResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *dummyResponseTestResponse) Unmarshal() unMarshalDummyResponseTestResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaldummyResponseTestResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaldummyResponseTestResponse) ToProto() (*openapi.DummyResponseTestResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *dummyResponseTestResponse) FromProto(msg *openapi.DummyResponseTestResponse) (DummyResponseTestResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshaldummyResponseTestResponse) FromProto(msg *openapi.DummyResponseTestResponse) (DummyResponseTestResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -6505,33 +6857,33 @@ func (obj *dummyResponseTestResponse) FromProto(msg *openapi.DummyResponseTestRe
 	return newObj, nil
 }
 
-func (obj *dummyResponseTestResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaldummyResponseTestResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *dummyResponseTestResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshaldummyResponseTestResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *dummyResponseTestResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaldummyResponseTestResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6540,7 +6892,7 @@ func (obj *dummyResponseTestResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -6551,7 +6903,7 @@ func (obj *dummyResponseTestResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *dummyResponseTestResponse) FromYaml(value string) error {
+func (m *unMarshaldummyResponseTestResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -6563,21 +6915,21 @@ func (obj *dummyResponseTestResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *dummyResponseTestResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaldummyResponseTestResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6587,14 +6939,14 @@ func (obj *dummyResponseTestResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *dummyResponseTestResponse) FromJson(value string) error {
+func (m *unMarshaldummyResponseTestResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -6602,13 +6954,13 @@ func (obj *dummyResponseTestResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -6621,14 +6973,14 @@ func (obj *dummyResponseTestResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *dummyResponseTestResponse) Validate() error {
+func (obj *dummyResponseTestResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *dummyResponseTestResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -6636,16 +6988,16 @@ func (obj *dummyResponseTestResponse) String() string {
 }
 
 func (obj *dummyResponseTestResponse) Clone() (DummyResponseTestResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewDummyResponseTestResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -6655,30 +7007,18 @@ func (obj *dummyResponseTestResponse) Clone() (DummyResponseTestResponse, error)
 // DummyResponseTestResponse is description is TBD
 type DummyResponseTestResponse interface {
 	Validation
-	// Msg marshals DummyResponseTestResponse to protobuf object *openapi.DummyResponseTestResponse
+	// msg marshals DummyResponseTestResponse to protobuf object *openapi.DummyResponseTestResponse
 	// and doesn't set defaults
-	Msg() *openapi.DummyResponseTestResponse
-	// SetMsg unmarshals DummyResponseTestResponse from protobuf object *openapi.DummyResponseTestResponse
+	msg() *openapi.DummyResponseTestResponse
+	// setMsg unmarshals DummyResponseTestResponse from protobuf object *openapi.DummyResponseTestResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.DummyResponseTestResponse) DummyResponseTestResponse
-	// ToProto marshals DummyResponseTestResponse to protobuf object *openapi.DummyResponseTestResponse
-	ToProto() (*openapi.DummyResponseTestResponse, error)
-	// ToPbText marshals DummyResponseTestResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals DummyResponseTestResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals DummyResponseTestResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals DummyResponseTestResponse from protobuf object *openapi.DummyResponseTestResponse
-	FromProto(msg *openapi.DummyResponseTestResponse) (DummyResponseTestResponse, error)
-	// FromPbText unmarshals DummyResponseTestResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals DummyResponseTestResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals DummyResponseTestResponse from JSON text
-	FromJson(value string) error
-	// Validate validates DummyResponseTestResponse
-	Validate() error
+	setMsg(*openapi.DummyResponseTestResponse) DummyResponseTestResponse
+	// provides marshal interface
+	Marshal() marshalDummyResponseTestResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalDummyResponseTestResponse
+	// validate validates DummyResponseTestResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -6728,6 +7068,8 @@ func (obj *dummyResponseTestResponse) setDefault() {
 type postRootResponseResponse struct {
 	validation
 	obj                         *openapi.PostRootResponseResponse
+	marshaller                  marshalPostRootResponseResponse
+	unMarshaller                unMarshalPostRootResponseResponse
 	commonResponseSuccessHolder CommonResponseSuccess
 }
 
@@ -6737,26 +7079,70 @@ func NewPostRootResponseResponse() PostRootResponseResponse {
 	return &obj
 }
 
-func (obj *postRootResponseResponse) Msg() *openapi.PostRootResponseResponse {
+func (obj *postRootResponseResponse) msg() *openapi.PostRootResponseResponse {
 	return obj.obj
 }
 
-func (obj *postRootResponseResponse) SetMsg(msg *openapi.PostRootResponseResponse) PostRootResponseResponse {
+func (obj *postRootResponseResponse) setMsg(msg *openapi.PostRootResponseResponse) PostRootResponseResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *postRootResponseResponse) ToProto() (*openapi.PostRootResponseResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalpostRootResponseResponse struct {
+	obj *postRootResponseResponse
+}
+
+type marshalPostRootResponseResponse interface {
+	// ToProto marshals PostRootResponseResponse to protobuf object *openapi.PostRootResponseResponse
+	ToProto() (*openapi.PostRootResponseResponse, error)
+	// ToPbText marshals PostRootResponseResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PostRootResponseResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PostRootResponseResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpostRootResponseResponse struct {
+	obj *postRootResponseResponse
+}
+
+type unMarshalPostRootResponseResponse interface {
+	// FromProto unmarshals PostRootResponseResponse from protobuf object *openapi.PostRootResponseResponse
+	FromProto(msg *openapi.PostRootResponseResponse) (PostRootResponseResponse, error)
+	// FromPbText unmarshals PostRootResponseResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PostRootResponseResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PostRootResponseResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *postRootResponseResponse) Marshal() marshalPostRootResponseResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpostRootResponseResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *postRootResponseResponse) Unmarshal() unMarshalPostRootResponseResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpostRootResponseResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpostRootResponseResponse) ToProto() (*openapi.PostRootResponseResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *postRootResponseResponse) FromProto(msg *openapi.PostRootResponseResponse) (PostRootResponseResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpostRootResponseResponse) FromProto(msg *openapi.PostRootResponseResponse) (PostRootResponseResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -6764,33 +7150,33 @@ func (obj *postRootResponseResponse) FromProto(msg *openapi.PostRootResponseResp
 	return newObj, nil
 }
 
-func (obj *postRootResponseResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpostRootResponseResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *postRootResponseResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpostRootResponseResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *postRootResponseResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpostRootResponseResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6799,7 +7185,7 @@ func (obj *postRootResponseResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -6810,7 +7196,7 @@ func (obj *postRootResponseResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *postRootResponseResponse) FromYaml(value string) error {
+func (m *unMarshalpostRootResponseResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -6822,21 +7208,21 @@ func (obj *postRootResponseResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *postRootResponseResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpostRootResponseResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -6846,14 +7232,14 @@ func (obj *postRootResponseResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *postRootResponseResponse) FromJson(value string) error {
+func (m *unMarshalpostRootResponseResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -6861,13 +7247,13 @@ func (obj *postRootResponseResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -6880,14 +7266,14 @@ func (obj *postRootResponseResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *postRootResponseResponse) Validate() error {
+func (obj *postRootResponseResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *postRootResponseResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -6895,16 +7281,16 @@ func (obj *postRootResponseResponse) String() string {
 }
 
 func (obj *postRootResponseResponse) Clone() (PostRootResponseResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPostRootResponseResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -6921,30 +7307,18 @@ func (obj *postRootResponseResponse) setNil() {
 // PostRootResponseResponse is description is TBD
 type PostRootResponseResponse interface {
 	Validation
-	// Msg marshals PostRootResponseResponse to protobuf object *openapi.PostRootResponseResponse
+	// msg marshals PostRootResponseResponse to protobuf object *openapi.PostRootResponseResponse
 	// and doesn't set defaults
-	Msg() *openapi.PostRootResponseResponse
-	// SetMsg unmarshals PostRootResponseResponse from protobuf object *openapi.PostRootResponseResponse
+	msg() *openapi.PostRootResponseResponse
+	// setMsg unmarshals PostRootResponseResponse from protobuf object *openapi.PostRootResponseResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.PostRootResponseResponse) PostRootResponseResponse
-	// ToProto marshals PostRootResponseResponse to protobuf object *openapi.PostRootResponseResponse
-	ToProto() (*openapi.PostRootResponseResponse, error)
-	// ToPbText marshals PostRootResponseResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PostRootResponseResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PostRootResponseResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PostRootResponseResponse from protobuf object *openapi.PostRootResponseResponse
-	FromProto(msg *openapi.PostRootResponseResponse) (PostRootResponseResponse, error)
-	// FromPbText unmarshals PostRootResponseResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PostRootResponseResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PostRootResponseResponse from JSON text
-	FromJson(value string) error
-	// Validate validates PostRootResponseResponse
-	Validate() error
+	setMsg(*openapi.PostRootResponseResponse) PostRootResponseResponse
+	// provides marshal interface
+	Marshal() marshalPostRootResponseResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalPostRootResponseResponse
+	// validate validates PostRootResponseResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -6967,7 +7341,7 @@ type PostRootResponseResponse interface {
 // CommonResponseSuccess returns a CommonResponseSuccess
 func (obj *postRootResponseResponse) CommonResponseSuccess() CommonResponseSuccess {
 	if obj.obj.CommonResponseSuccess == nil {
-		obj.obj.CommonResponseSuccess = NewCommonResponseSuccess().Msg()
+		obj.obj.CommonResponseSuccess = NewCommonResponseSuccess().msg()
 	}
 	if obj.commonResponseSuccessHolder == nil {
 		obj.commonResponseSuccessHolder = &commonResponseSuccess{obj: obj.obj.CommonResponseSuccess}
@@ -6986,7 +7360,7 @@ func (obj *postRootResponseResponse) HasCommonResponseSuccess() bool {
 func (obj *postRootResponseResponse) SetCommonResponseSuccess(value CommonResponseSuccess) PostRootResponseResponse {
 
 	obj.commonResponseSuccessHolder = nil
-	obj.obj.CommonResponseSuccess = value.Msg()
+	obj.obj.CommonResponseSuccess = value.msg()
 
 	return obj
 }
@@ -7011,6 +7385,8 @@ func (obj *postRootResponseResponse) setDefault() {
 type getAllItemsResponse struct {
 	validation
 	obj                      *openapi.GetAllItemsResponse
+	marshaller               marshalGetAllItemsResponse
+	unMarshaller             unMarshalGetAllItemsResponse
 	serviceAbcItemListHolder ServiceAbcItemList
 }
 
@@ -7020,26 +7396,70 @@ func NewGetAllItemsResponse() GetAllItemsResponse {
 	return &obj
 }
 
-func (obj *getAllItemsResponse) Msg() *openapi.GetAllItemsResponse {
+func (obj *getAllItemsResponse) msg() *openapi.GetAllItemsResponse {
 	return obj.obj
 }
 
-func (obj *getAllItemsResponse) SetMsg(msg *openapi.GetAllItemsResponse) GetAllItemsResponse {
+func (obj *getAllItemsResponse) setMsg(msg *openapi.GetAllItemsResponse) GetAllItemsResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getAllItemsResponse) ToProto() (*openapi.GetAllItemsResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetAllItemsResponse struct {
+	obj *getAllItemsResponse
+}
+
+type marshalGetAllItemsResponse interface {
+	// ToProto marshals GetAllItemsResponse to protobuf object *openapi.GetAllItemsResponse
+	ToProto() (*openapi.GetAllItemsResponse, error)
+	// ToPbText marshals GetAllItemsResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetAllItemsResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetAllItemsResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetAllItemsResponse struct {
+	obj *getAllItemsResponse
+}
+
+type unMarshalGetAllItemsResponse interface {
+	// FromProto unmarshals GetAllItemsResponse from protobuf object *openapi.GetAllItemsResponse
+	FromProto(msg *openapi.GetAllItemsResponse) (GetAllItemsResponse, error)
+	// FromPbText unmarshals GetAllItemsResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetAllItemsResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetAllItemsResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getAllItemsResponse) Marshal() marshalGetAllItemsResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetAllItemsResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getAllItemsResponse) Unmarshal() unMarshalGetAllItemsResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetAllItemsResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetAllItemsResponse) ToProto() (*openapi.GetAllItemsResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getAllItemsResponse) FromProto(msg *openapi.GetAllItemsResponse) (GetAllItemsResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetAllItemsResponse) FromProto(msg *openapi.GetAllItemsResponse) (GetAllItemsResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -7047,33 +7467,33 @@ func (obj *getAllItemsResponse) FromProto(msg *openapi.GetAllItemsResponse) (Get
 	return newObj, nil
 }
 
-func (obj *getAllItemsResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetAllItemsResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getAllItemsResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetAllItemsResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getAllItemsResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetAllItemsResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7082,7 +7502,7 @@ func (obj *getAllItemsResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -7093,7 +7513,7 @@ func (obj *getAllItemsResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getAllItemsResponse) FromYaml(value string) error {
+func (m *unMarshalgetAllItemsResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -7105,21 +7525,21 @@ func (obj *getAllItemsResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getAllItemsResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetAllItemsResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7129,14 +7549,14 @@ func (obj *getAllItemsResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getAllItemsResponse) FromJson(value string) error {
+func (m *unMarshalgetAllItemsResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -7144,13 +7564,13 @@ func (obj *getAllItemsResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -7163,14 +7583,14 @@ func (obj *getAllItemsResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getAllItemsResponse) Validate() error {
+func (obj *getAllItemsResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getAllItemsResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -7178,16 +7598,16 @@ func (obj *getAllItemsResponse) String() string {
 }
 
 func (obj *getAllItemsResponse) Clone() (GetAllItemsResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetAllItemsResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -7204,30 +7624,18 @@ func (obj *getAllItemsResponse) setNil() {
 // GetAllItemsResponse is description is TBD
 type GetAllItemsResponse interface {
 	Validation
-	// Msg marshals GetAllItemsResponse to protobuf object *openapi.GetAllItemsResponse
+	// msg marshals GetAllItemsResponse to protobuf object *openapi.GetAllItemsResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetAllItemsResponse
-	// SetMsg unmarshals GetAllItemsResponse from protobuf object *openapi.GetAllItemsResponse
+	msg() *openapi.GetAllItemsResponse
+	// setMsg unmarshals GetAllItemsResponse from protobuf object *openapi.GetAllItemsResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetAllItemsResponse) GetAllItemsResponse
-	// ToProto marshals GetAllItemsResponse to protobuf object *openapi.GetAllItemsResponse
-	ToProto() (*openapi.GetAllItemsResponse, error)
-	// ToPbText marshals GetAllItemsResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetAllItemsResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetAllItemsResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetAllItemsResponse from protobuf object *openapi.GetAllItemsResponse
-	FromProto(msg *openapi.GetAllItemsResponse) (GetAllItemsResponse, error)
-	// FromPbText unmarshals GetAllItemsResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetAllItemsResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetAllItemsResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetAllItemsResponse
-	Validate() error
+	setMsg(*openapi.GetAllItemsResponse) GetAllItemsResponse
+	// provides marshal interface
+	Marshal() marshalGetAllItemsResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetAllItemsResponse
+	// validate validates GetAllItemsResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -7250,7 +7658,7 @@ type GetAllItemsResponse interface {
 // ServiceAbcItemList returns a ServiceAbcItemList
 func (obj *getAllItemsResponse) ServiceAbcItemList() ServiceAbcItemList {
 	if obj.obj.ServiceAbcItemList == nil {
-		obj.obj.ServiceAbcItemList = NewServiceAbcItemList().Msg()
+		obj.obj.ServiceAbcItemList = NewServiceAbcItemList().msg()
 	}
 	if obj.serviceAbcItemListHolder == nil {
 		obj.serviceAbcItemListHolder = &serviceAbcItemList{obj: obj.obj.ServiceAbcItemList}
@@ -7269,7 +7677,7 @@ func (obj *getAllItemsResponse) HasServiceAbcItemList() bool {
 func (obj *getAllItemsResponse) SetServiceAbcItemList(value ServiceAbcItemList) GetAllItemsResponse {
 
 	obj.serviceAbcItemListHolder = nil
-	obj.obj.ServiceAbcItemList = value.Msg()
+	obj.obj.ServiceAbcItemList = value.msg()
 
 	return obj
 }
@@ -7294,6 +7702,8 @@ func (obj *getAllItemsResponse) setDefault() {
 type getSingleItemResponse struct {
 	validation
 	obj                  *openapi.GetSingleItemResponse
+	marshaller           marshalGetSingleItemResponse
+	unMarshaller         unMarshalGetSingleItemResponse
 	serviceAbcItemHolder ServiceAbcItem
 }
 
@@ -7303,26 +7713,70 @@ func NewGetSingleItemResponse() GetSingleItemResponse {
 	return &obj
 }
 
-func (obj *getSingleItemResponse) Msg() *openapi.GetSingleItemResponse {
+func (obj *getSingleItemResponse) msg() *openapi.GetSingleItemResponse {
 	return obj.obj
 }
 
-func (obj *getSingleItemResponse) SetMsg(msg *openapi.GetSingleItemResponse) GetSingleItemResponse {
+func (obj *getSingleItemResponse) setMsg(msg *openapi.GetSingleItemResponse) GetSingleItemResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getSingleItemResponse) ToProto() (*openapi.GetSingleItemResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetSingleItemResponse struct {
+	obj *getSingleItemResponse
+}
+
+type marshalGetSingleItemResponse interface {
+	// ToProto marshals GetSingleItemResponse to protobuf object *openapi.GetSingleItemResponse
+	ToProto() (*openapi.GetSingleItemResponse, error)
+	// ToPbText marshals GetSingleItemResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetSingleItemResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetSingleItemResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetSingleItemResponse struct {
+	obj *getSingleItemResponse
+}
+
+type unMarshalGetSingleItemResponse interface {
+	// FromProto unmarshals GetSingleItemResponse from protobuf object *openapi.GetSingleItemResponse
+	FromProto(msg *openapi.GetSingleItemResponse) (GetSingleItemResponse, error)
+	// FromPbText unmarshals GetSingleItemResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetSingleItemResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetSingleItemResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getSingleItemResponse) Marshal() marshalGetSingleItemResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetSingleItemResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getSingleItemResponse) Unmarshal() unMarshalGetSingleItemResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetSingleItemResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetSingleItemResponse) ToProto() (*openapi.GetSingleItemResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getSingleItemResponse) FromProto(msg *openapi.GetSingleItemResponse) (GetSingleItemResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetSingleItemResponse) FromProto(msg *openapi.GetSingleItemResponse) (GetSingleItemResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -7330,33 +7784,33 @@ func (obj *getSingleItemResponse) FromProto(msg *openapi.GetSingleItemResponse) 
 	return newObj, nil
 }
 
-func (obj *getSingleItemResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getSingleItemResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetSingleItemResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getSingleItemResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7365,7 +7819,7 @@ func (obj *getSingleItemResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -7376,7 +7830,7 @@ func (obj *getSingleItemResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getSingleItemResponse) FromYaml(value string) error {
+func (m *unMarshalgetSingleItemResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -7388,21 +7842,21 @@ func (obj *getSingleItemResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getSingleItemResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7412,14 +7866,14 @@ func (obj *getSingleItemResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getSingleItemResponse) FromJson(value string) error {
+func (m *unMarshalgetSingleItemResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -7427,13 +7881,13 @@ func (obj *getSingleItemResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -7446,14 +7900,14 @@ func (obj *getSingleItemResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getSingleItemResponse) Validate() error {
+func (obj *getSingleItemResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getSingleItemResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -7461,16 +7915,16 @@ func (obj *getSingleItemResponse) String() string {
 }
 
 func (obj *getSingleItemResponse) Clone() (GetSingleItemResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetSingleItemResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -7487,30 +7941,18 @@ func (obj *getSingleItemResponse) setNil() {
 // GetSingleItemResponse is description is TBD
 type GetSingleItemResponse interface {
 	Validation
-	// Msg marshals GetSingleItemResponse to protobuf object *openapi.GetSingleItemResponse
+	// msg marshals GetSingleItemResponse to protobuf object *openapi.GetSingleItemResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetSingleItemResponse
-	// SetMsg unmarshals GetSingleItemResponse from protobuf object *openapi.GetSingleItemResponse
+	msg() *openapi.GetSingleItemResponse
+	// setMsg unmarshals GetSingleItemResponse from protobuf object *openapi.GetSingleItemResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetSingleItemResponse) GetSingleItemResponse
-	// ToProto marshals GetSingleItemResponse to protobuf object *openapi.GetSingleItemResponse
-	ToProto() (*openapi.GetSingleItemResponse, error)
-	// ToPbText marshals GetSingleItemResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetSingleItemResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetSingleItemResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetSingleItemResponse from protobuf object *openapi.GetSingleItemResponse
-	FromProto(msg *openapi.GetSingleItemResponse) (GetSingleItemResponse, error)
-	// FromPbText unmarshals GetSingleItemResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetSingleItemResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetSingleItemResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetSingleItemResponse
-	Validate() error
+	setMsg(*openapi.GetSingleItemResponse) GetSingleItemResponse
+	// provides marshal interface
+	Marshal() marshalGetSingleItemResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetSingleItemResponse
+	// validate validates GetSingleItemResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -7533,7 +7975,7 @@ type GetSingleItemResponse interface {
 // ServiceAbcItem returns a ServiceAbcItem
 func (obj *getSingleItemResponse) ServiceAbcItem() ServiceAbcItem {
 	if obj.obj.ServiceAbcItem == nil {
-		obj.obj.ServiceAbcItem = NewServiceAbcItem().Msg()
+		obj.obj.ServiceAbcItem = NewServiceAbcItem().msg()
 	}
 	if obj.serviceAbcItemHolder == nil {
 		obj.serviceAbcItemHolder = &serviceAbcItem{obj: obj.obj.ServiceAbcItem}
@@ -7552,7 +7994,7 @@ func (obj *getSingleItemResponse) HasServiceAbcItem() bool {
 func (obj *getSingleItemResponse) SetServiceAbcItem(value ServiceAbcItem) GetSingleItemResponse {
 
 	obj.serviceAbcItemHolder = nil
-	obj.obj.ServiceAbcItem = value.Msg()
+	obj.obj.ServiceAbcItem = value.msg()
 
 	return obj
 }
@@ -7577,6 +8019,8 @@ func (obj *getSingleItemResponse) setDefault() {
 type getSingleItemLevel2Response struct {
 	validation
 	obj                  *openapi.GetSingleItemLevel2Response
+	marshaller           marshalGetSingleItemLevel2Response
+	unMarshaller         unMarshalGetSingleItemLevel2Response
 	serviceAbcItemHolder ServiceAbcItem
 }
 
@@ -7586,26 +8030,70 @@ func NewGetSingleItemLevel2Response() GetSingleItemLevel2Response {
 	return &obj
 }
 
-func (obj *getSingleItemLevel2Response) Msg() *openapi.GetSingleItemLevel2Response {
+func (obj *getSingleItemLevel2Response) msg() *openapi.GetSingleItemLevel2Response {
 	return obj.obj
 }
 
-func (obj *getSingleItemLevel2Response) SetMsg(msg *openapi.GetSingleItemLevel2Response) GetSingleItemLevel2Response {
+func (obj *getSingleItemLevel2Response) setMsg(msg *openapi.GetSingleItemLevel2Response) GetSingleItemLevel2Response {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getSingleItemLevel2Response) ToProto() (*openapi.GetSingleItemLevel2Response, error) {
-	err := obj.validateToAndFrom()
+type marshalgetSingleItemLevel2Response struct {
+	obj *getSingleItemLevel2Response
+}
+
+type marshalGetSingleItemLevel2Response interface {
+	// ToProto marshals GetSingleItemLevel2Response to protobuf object *openapi.GetSingleItemLevel2Response
+	ToProto() (*openapi.GetSingleItemLevel2Response, error)
+	// ToPbText marshals GetSingleItemLevel2Response to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetSingleItemLevel2Response to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetSingleItemLevel2Response to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetSingleItemLevel2Response struct {
+	obj *getSingleItemLevel2Response
+}
+
+type unMarshalGetSingleItemLevel2Response interface {
+	// FromProto unmarshals GetSingleItemLevel2Response from protobuf object *openapi.GetSingleItemLevel2Response
+	FromProto(msg *openapi.GetSingleItemLevel2Response) (GetSingleItemLevel2Response, error)
+	// FromPbText unmarshals GetSingleItemLevel2Response from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetSingleItemLevel2Response from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetSingleItemLevel2Response from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getSingleItemLevel2Response) Marshal() marshalGetSingleItemLevel2Response {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetSingleItemLevel2Response{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getSingleItemLevel2Response) Unmarshal() unMarshalGetSingleItemLevel2Response {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetSingleItemLevel2Response{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetSingleItemLevel2Response) ToProto() (*openapi.GetSingleItemLevel2Response, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getSingleItemLevel2Response) FromProto(msg *openapi.GetSingleItemLevel2Response) (GetSingleItemLevel2Response, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetSingleItemLevel2Response) FromProto(msg *openapi.GetSingleItemLevel2Response) (GetSingleItemLevel2Response, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -7613,33 +8101,33 @@ func (obj *getSingleItemLevel2Response) FromProto(msg *openapi.GetSingleItemLeve
 	return newObj, nil
 }
 
-func (obj *getSingleItemLevel2Response) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemLevel2Response) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getSingleItemLevel2Response) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetSingleItemLevel2Response) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getSingleItemLevel2Response) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemLevel2Response) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7648,7 +8136,7 @@ func (obj *getSingleItemLevel2Response) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -7659,7 +8147,7 @@ func (obj *getSingleItemLevel2Response) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getSingleItemLevel2Response) FromYaml(value string) error {
+func (m *unMarshalgetSingleItemLevel2Response) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -7671,21 +8159,21 @@ func (obj *getSingleItemLevel2Response) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getSingleItemLevel2Response) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetSingleItemLevel2Response) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7695,14 +8183,14 @@ func (obj *getSingleItemLevel2Response) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getSingleItemLevel2Response) FromJson(value string) error {
+func (m *unMarshalgetSingleItemLevel2Response) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -7710,13 +8198,13 @@ func (obj *getSingleItemLevel2Response) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -7729,14 +8217,14 @@ func (obj *getSingleItemLevel2Response) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getSingleItemLevel2Response) Validate() error {
+func (obj *getSingleItemLevel2Response) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getSingleItemLevel2Response) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -7744,16 +8232,16 @@ func (obj *getSingleItemLevel2Response) String() string {
 }
 
 func (obj *getSingleItemLevel2Response) Clone() (GetSingleItemLevel2Response, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetSingleItemLevel2Response()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -7770,30 +8258,18 @@ func (obj *getSingleItemLevel2Response) setNil() {
 // GetSingleItemLevel2Response is description is TBD
 type GetSingleItemLevel2Response interface {
 	Validation
-	// Msg marshals GetSingleItemLevel2Response to protobuf object *openapi.GetSingleItemLevel2Response
+	// msg marshals GetSingleItemLevel2Response to protobuf object *openapi.GetSingleItemLevel2Response
 	// and doesn't set defaults
-	Msg() *openapi.GetSingleItemLevel2Response
-	// SetMsg unmarshals GetSingleItemLevel2Response from protobuf object *openapi.GetSingleItemLevel2Response
+	msg() *openapi.GetSingleItemLevel2Response
+	// setMsg unmarshals GetSingleItemLevel2Response from protobuf object *openapi.GetSingleItemLevel2Response
 	// and doesn't set defaults
-	SetMsg(*openapi.GetSingleItemLevel2Response) GetSingleItemLevel2Response
-	// ToProto marshals GetSingleItemLevel2Response to protobuf object *openapi.GetSingleItemLevel2Response
-	ToProto() (*openapi.GetSingleItemLevel2Response, error)
-	// ToPbText marshals GetSingleItemLevel2Response to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetSingleItemLevel2Response to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetSingleItemLevel2Response to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetSingleItemLevel2Response from protobuf object *openapi.GetSingleItemLevel2Response
-	FromProto(msg *openapi.GetSingleItemLevel2Response) (GetSingleItemLevel2Response, error)
-	// FromPbText unmarshals GetSingleItemLevel2Response from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetSingleItemLevel2Response from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetSingleItemLevel2Response from JSON text
-	FromJson(value string) error
-	// Validate validates GetSingleItemLevel2Response
-	Validate() error
+	setMsg(*openapi.GetSingleItemLevel2Response) GetSingleItemLevel2Response
+	// provides marshal interface
+	Marshal() marshalGetSingleItemLevel2Response
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetSingleItemLevel2Response
+	// validate validates GetSingleItemLevel2Response
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -7816,7 +8292,7 @@ type GetSingleItemLevel2Response interface {
 // ServiceAbcItem returns a ServiceAbcItem
 func (obj *getSingleItemLevel2Response) ServiceAbcItem() ServiceAbcItem {
 	if obj.obj.ServiceAbcItem == nil {
-		obj.obj.ServiceAbcItem = NewServiceAbcItem().Msg()
+		obj.obj.ServiceAbcItem = NewServiceAbcItem().msg()
 	}
 	if obj.serviceAbcItemHolder == nil {
 		obj.serviceAbcItemHolder = &serviceAbcItem{obj: obj.obj.ServiceAbcItem}
@@ -7835,7 +8311,7 @@ func (obj *getSingleItemLevel2Response) HasServiceAbcItem() bool {
 func (obj *getSingleItemLevel2Response) SetServiceAbcItem(value ServiceAbcItem) GetSingleItemLevel2Response {
 
 	obj.serviceAbcItemHolder = nil
-	obj.obj.ServiceAbcItem = value.Msg()
+	obj.obj.ServiceAbcItem = value.msg()
 
 	return obj
 }
@@ -7860,6 +8336,8 @@ func (obj *getSingleItemLevel2Response) setDefault() {
 type getVersionResponse struct {
 	validation
 	obj           *openapi.GetVersionResponse
+	marshaller    marshalGetVersionResponse
+	unMarshaller  unMarshalGetVersionResponse
 	versionHolder Version
 }
 
@@ -7869,26 +8347,70 @@ func NewGetVersionResponse() GetVersionResponse {
 	return &obj
 }
 
-func (obj *getVersionResponse) Msg() *openapi.GetVersionResponse {
+func (obj *getVersionResponse) msg() *openapi.GetVersionResponse {
 	return obj.obj
 }
 
-func (obj *getVersionResponse) SetMsg(msg *openapi.GetVersionResponse) GetVersionResponse {
+func (obj *getVersionResponse) setMsg(msg *openapi.GetVersionResponse) GetVersionResponse {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *getVersionResponse) ToProto() (*openapi.GetVersionResponse, error) {
-	err := obj.validateToAndFrom()
+type marshalgetVersionResponse struct {
+	obj *getVersionResponse
+}
+
+type marshalGetVersionResponse interface {
+	// ToProto marshals GetVersionResponse to protobuf object *openapi.GetVersionResponse
+	ToProto() (*openapi.GetVersionResponse, error)
+	// ToPbText marshals GetVersionResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetVersionResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetVersionResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetVersionResponse struct {
+	obj *getVersionResponse
+}
+
+type unMarshalGetVersionResponse interface {
+	// FromProto unmarshals GetVersionResponse from protobuf object *openapi.GetVersionResponse
+	FromProto(msg *openapi.GetVersionResponse) (GetVersionResponse, error)
+	// FromPbText unmarshals GetVersionResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetVersionResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetVersionResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getVersionResponse) Marshal() marshalGetVersionResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetVersionResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getVersionResponse) Unmarshal() unMarshalGetVersionResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetVersionResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetVersionResponse) ToProto() (*openapi.GetVersionResponse, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *getVersionResponse) FromProto(msg *openapi.GetVersionResponse) (GetVersionResponse, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgetVersionResponse) FromProto(msg *openapi.GetVersionResponse) (GetVersionResponse, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -7896,33 +8418,33 @@ func (obj *getVersionResponse) FromProto(msg *openapi.GetVersionResponse) (GetVe
 	return newObj, nil
 }
 
-func (obj *getVersionResponse) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetVersionResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *getVersionResponse) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgetVersionResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *getVersionResponse) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetVersionResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7931,7 +8453,7 @@ func (obj *getVersionResponse) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -7942,7 +8464,7 @@ func (obj *getVersionResponse) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *getVersionResponse) FromYaml(value string) error {
+func (m *unMarshalgetVersionResponse) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -7954,21 +8476,21 @@ func (obj *getVersionResponse) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *getVersionResponse) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgetVersionResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -7978,14 +8500,14 @@ func (obj *getVersionResponse) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *getVersionResponse) FromJson(value string) error {
+func (m *unMarshalgetVersionResponse) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -7993,13 +8515,13 @@ func (obj *getVersionResponse) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -8012,14 +8534,14 @@ func (obj *getVersionResponse) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *getVersionResponse) Validate() error {
+func (obj *getVersionResponse) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *getVersionResponse) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -8027,16 +8549,16 @@ func (obj *getVersionResponse) String() string {
 }
 
 func (obj *getVersionResponse) Clone() (GetVersionResponse, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGetVersionResponse()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -8053,30 +8575,18 @@ func (obj *getVersionResponse) setNil() {
 // GetVersionResponse is description is TBD
 type GetVersionResponse interface {
 	Validation
-	// Msg marshals GetVersionResponse to protobuf object *openapi.GetVersionResponse
+	// msg marshals GetVersionResponse to protobuf object *openapi.GetVersionResponse
 	// and doesn't set defaults
-	Msg() *openapi.GetVersionResponse
-	// SetMsg unmarshals GetVersionResponse from protobuf object *openapi.GetVersionResponse
+	msg() *openapi.GetVersionResponse
+	// setMsg unmarshals GetVersionResponse from protobuf object *openapi.GetVersionResponse
 	// and doesn't set defaults
-	SetMsg(*openapi.GetVersionResponse) GetVersionResponse
-	// ToProto marshals GetVersionResponse to protobuf object *openapi.GetVersionResponse
-	ToProto() (*openapi.GetVersionResponse, error)
-	// ToPbText marshals GetVersionResponse to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GetVersionResponse to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GetVersionResponse to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GetVersionResponse from protobuf object *openapi.GetVersionResponse
-	FromProto(msg *openapi.GetVersionResponse) (GetVersionResponse, error)
-	// FromPbText unmarshals GetVersionResponse from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GetVersionResponse from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GetVersionResponse from JSON text
-	FromJson(value string) error
-	// Validate validates GetVersionResponse
-	Validate() error
+	setMsg(*openapi.GetVersionResponse) GetVersionResponse
+	// provides marshal interface
+	Marshal() marshalGetVersionResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetVersionResponse
+	// validate validates GetVersionResponse
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -8099,7 +8609,7 @@ type GetVersionResponse interface {
 // Version returns a Version
 func (obj *getVersionResponse) Version() Version {
 	if obj.obj.Version == nil {
-		obj.obj.Version = NewVersion().Msg()
+		obj.obj.Version = NewVersion().msg()
 	}
 	if obj.versionHolder == nil {
 		obj.versionHolder = &version{obj: obj.obj.Version}
@@ -8118,7 +8628,7 @@ func (obj *getVersionResponse) HasVersion() bool {
 func (obj *getVersionResponse) SetVersion(value Version) GetVersionResponse {
 
 	obj.versionHolder = nil
-	obj.obj.Version = value.Msg()
+	obj.obj.Version = value.msg()
 
 	return obj
 }
@@ -8142,7 +8652,9 @@ func (obj *getVersionResponse) setDefault() {
 // ***** EObject *****
 type eObject struct {
 	validation
-	obj *openapi.EObject
+	obj          *openapi.EObject
+	marshaller   marshalEObject
+	unMarshaller unMarshalEObject
 }
 
 func NewEObject() EObject {
@@ -8151,26 +8663,70 @@ func NewEObject() EObject {
 	return &obj
 }
 
-func (obj *eObject) Msg() *openapi.EObject {
+func (obj *eObject) msg() *openapi.EObject {
 	return obj.obj
 }
 
-func (obj *eObject) SetMsg(msg *openapi.EObject) EObject {
+func (obj *eObject) setMsg(msg *openapi.EObject) EObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *eObject) ToProto() (*openapi.EObject, error) {
-	err := obj.validateToAndFrom()
+type marshaleObject struct {
+	obj *eObject
+}
+
+type marshalEObject interface {
+	// ToProto marshals EObject to protobuf object *openapi.EObject
+	ToProto() (*openapi.EObject, error)
+	// ToPbText marshals EObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals EObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals EObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaleObject struct {
+	obj *eObject
+}
+
+type unMarshalEObject interface {
+	// FromProto unmarshals EObject from protobuf object *openapi.EObject
+	FromProto(msg *openapi.EObject) (EObject, error)
+	// FromPbText unmarshals EObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals EObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals EObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *eObject) Marshal() marshalEObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaleObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *eObject) Unmarshal() unMarshalEObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaleObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaleObject) ToProto() (*openapi.EObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *eObject) FromProto(msg *openapi.EObject) (EObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshaleObject) FromProto(msg *openapi.EObject) (EObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -8178,33 +8734,33 @@ func (obj *eObject) FromProto(msg *openapi.EObject) (EObject, error) {
 	return newObj, nil
 }
 
-func (obj *eObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaleObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *eObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshaleObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *eObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaleObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8213,7 +8769,7 @@ func (obj *eObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -8224,7 +8780,7 @@ func (obj *eObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *eObject) FromYaml(value string) error {
+func (m *unMarshaleObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -8236,21 +8792,21 @@ func (obj *eObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *eObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaleObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8260,14 +8816,14 @@ func (obj *eObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *eObject) FromJson(value string) error {
+func (m *unMarshaleObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -8275,13 +8831,13 @@ func (obj *eObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -8294,14 +8850,14 @@ func (obj *eObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *eObject) Validate() error {
+func (obj *eObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *eObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -8309,16 +8865,16 @@ func (obj *eObject) String() string {
 }
 
 func (obj *eObject) Clone() (EObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewEObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -8328,30 +8884,18 @@ func (obj *eObject) Clone() (EObject, error) {
 // EObject is description is TBD
 type EObject interface {
 	Validation
-	// Msg marshals EObject to protobuf object *openapi.EObject
+	// msg marshals EObject to protobuf object *openapi.EObject
 	// and doesn't set defaults
-	Msg() *openapi.EObject
-	// SetMsg unmarshals EObject from protobuf object *openapi.EObject
+	msg() *openapi.EObject
+	// setMsg unmarshals EObject from protobuf object *openapi.EObject
 	// and doesn't set defaults
-	SetMsg(*openapi.EObject) EObject
-	// ToProto marshals EObject to protobuf object *openapi.EObject
-	ToProto() (*openapi.EObject, error)
-	// ToPbText marshals EObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals EObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals EObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals EObject from protobuf object *openapi.EObject
-	FromProto(msg *openapi.EObject) (EObject, error)
-	// FromPbText unmarshals EObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals EObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals EObject from JSON text
-	FromJson(value string) error
-	// Validate validates EObject
-	Validate() error
+	setMsg(*openapi.EObject) EObject
+	// provides marshal interface
+	Marshal() marshalEObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalEObject
+	// validate validates EObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -8508,7 +9052,9 @@ func (obj *eObject) setDefault() {
 // ***** FObject *****
 type fObject struct {
 	validation
-	obj *openapi.FObject
+	obj          *openapi.FObject
+	marshaller   marshalFObject
+	unMarshaller unMarshalFObject
 }
 
 func NewFObject() FObject {
@@ -8517,26 +9063,70 @@ func NewFObject() FObject {
 	return &obj
 }
 
-func (obj *fObject) Msg() *openapi.FObject {
+func (obj *fObject) msg() *openapi.FObject {
 	return obj.obj
 }
 
-func (obj *fObject) SetMsg(msg *openapi.FObject) FObject {
+func (obj *fObject) setMsg(msg *openapi.FObject) FObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *fObject) ToProto() (*openapi.FObject, error) {
-	err := obj.validateToAndFrom()
+type marshalfObject struct {
+	obj *fObject
+}
+
+type marshalFObject interface {
+	// ToProto marshals FObject to protobuf object *openapi.FObject
+	ToProto() (*openapi.FObject, error)
+	// ToPbText marshals FObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals FObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals FObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalfObject struct {
+	obj *fObject
+}
+
+type unMarshalFObject interface {
+	// FromProto unmarshals FObject from protobuf object *openapi.FObject
+	FromProto(msg *openapi.FObject) (FObject, error)
+	// FromPbText unmarshals FObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals FObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals FObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *fObject) Marshal() marshalFObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalfObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *fObject) Unmarshal() unMarshalFObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalfObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalfObject) ToProto() (*openapi.FObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *fObject) FromProto(msg *openapi.FObject) (FObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalfObject) FromProto(msg *openapi.FObject) (FObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -8544,33 +9134,33 @@ func (obj *fObject) FromProto(msg *openapi.FObject) (FObject, error) {
 	return newObj, nil
 }
 
-func (obj *fObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalfObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *fObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalfObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *fObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalfObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8579,7 +9169,7 @@ func (obj *fObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -8590,7 +9180,7 @@ func (obj *fObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *fObject) FromYaml(value string) error {
+func (m *unMarshalfObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -8602,21 +9192,21 @@ func (obj *fObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *fObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalfObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8626,14 +9216,14 @@ func (obj *fObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *fObject) FromJson(value string) error {
+func (m *unMarshalfObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -8641,13 +9231,13 @@ func (obj *fObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -8660,14 +9250,14 @@ func (obj *fObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *fObject) Validate() error {
+func (obj *fObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *fObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -8675,16 +9265,16 @@ func (obj *fObject) String() string {
 }
 
 func (obj *fObject) Clone() (FObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewFObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -8694,30 +9284,18 @@ func (obj *fObject) Clone() (FObject, error) {
 // FObject is description is TBD
 type FObject interface {
 	Validation
-	// Msg marshals FObject to protobuf object *openapi.FObject
+	// msg marshals FObject to protobuf object *openapi.FObject
 	// and doesn't set defaults
-	Msg() *openapi.FObject
-	// SetMsg unmarshals FObject from protobuf object *openapi.FObject
+	msg() *openapi.FObject
+	// setMsg unmarshals FObject from protobuf object *openapi.FObject
 	// and doesn't set defaults
-	SetMsg(*openapi.FObject) FObject
-	// ToProto marshals FObject to protobuf object *openapi.FObject
-	ToProto() (*openapi.FObject, error)
-	// ToPbText marshals FObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals FObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals FObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals FObject from protobuf object *openapi.FObject
-	FromProto(msg *openapi.FObject) (FObject, error)
-	// FromPbText unmarshals FObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals FObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals FObject from JSON text
-	FromJson(value string) error
-	// Validate validates FObject
-	Validate() error
+	setMsg(*openapi.FObject) FObject
+	// provides marshal interface
+	Marshal() marshalFObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalFObject
+	// validate validates FObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -8727,10 +9305,12 @@ type FObject interface {
 	setDefault()
 	// Choice returns FObjectChoiceEnum, set in FObject
 	Choice() FObjectChoiceEnum
-	// SetChoice assigns FObjectChoiceEnum provided by user to FObject
-	SetChoice(value FObjectChoiceEnum) FObject
+	// setChoice assigns FObjectChoiceEnum provided by user to FObject
+	setChoice(value FObjectChoiceEnum) FObject
 	// HasChoice checks if Choice has been set in FObject
 	HasChoice() bool
+	// getter for FC to set choice.
+	FC()
 	// FA returns string, set in FObject.
 	FA() string
 	// SetFA assigns string provided by user to FObject
@@ -8762,13 +9342,18 @@ func (obj *fObject) Choice() FObjectChoiceEnum {
 	return FObjectChoiceEnum(obj.obj.Choice.Enum().String())
 }
 
+// getter for FC to set choice
+func (obj *fObject) FC() {
+	obj.setChoice(FObjectChoice.F_C)
+}
+
 // description is TBD
 // Choice returns a string
 func (obj *fObject) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *fObject) SetChoice(value FObjectChoiceEnum) FObject {
+func (obj *fObject) setChoice(value FObjectChoiceEnum) FObject {
 	intValue, ok := openapi.FObject_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -8798,7 +9383,7 @@ func (obj *fObject) SetChoice(value FObjectChoiceEnum) FObject {
 func (obj *fObject) FA() string {
 
 	if obj.obj.FA == nil {
-		obj.SetChoice(FObjectChoice.F_A)
+		obj.setChoice(FObjectChoice.F_A)
 	}
 
 	return *obj.obj.FA
@@ -8814,7 +9399,7 @@ func (obj *fObject) HasFA() bool {
 // description is TBD
 // SetFA sets the string value in the FObject object
 func (obj *fObject) SetFA(value string) FObject {
-	obj.SetChoice(FObjectChoice.F_A)
+	obj.setChoice(FObjectChoice.F_A)
 	obj.obj.FA = &value
 	return obj
 }
@@ -8824,7 +9409,7 @@ func (obj *fObject) SetFA(value string) FObject {
 func (obj *fObject) FB() float64 {
 
 	if obj.obj.FB == nil {
-		obj.SetChoice(FObjectChoice.F_B)
+		obj.setChoice(FObjectChoice.F_B)
 	}
 
 	return *obj.obj.FB
@@ -8840,7 +9425,7 @@ func (obj *fObject) HasFB() bool {
 // description is TBD
 // SetFB sets the float64 value in the FObject object
 func (obj *fObject) SetFB(value float64) FObject {
-	obj.SetChoice(FObjectChoice.F_B)
+	obj.setChoice(FObjectChoice.F_B)
 	obj.obj.FB = &value
 	return obj
 }
@@ -8854,7 +9439,7 @@ func (obj *fObject) validateObj(vObj *validation, set_default bool) {
 
 func (obj *fObject) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(FObjectChoice.F_A)
+		obj.setChoice(FObjectChoice.F_A)
 
 	}
 
@@ -8863,7 +9448,9 @@ func (obj *fObject) setDefault() {
 // ***** GObject *****
 type gObject struct {
 	validation
-	obj *openapi.GObject
+	obj          *openapi.GObject
+	marshaller   marshalGObject
+	unMarshaller unMarshalGObject
 }
 
 func NewGObject() GObject {
@@ -8872,26 +9459,70 @@ func NewGObject() GObject {
 	return &obj
 }
 
-func (obj *gObject) Msg() *openapi.GObject {
+func (obj *gObject) msg() *openapi.GObject {
 	return obj.obj
 }
 
-func (obj *gObject) SetMsg(msg *openapi.GObject) GObject {
+func (obj *gObject) setMsg(msg *openapi.GObject) GObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *gObject) ToProto() (*openapi.GObject, error) {
-	err := obj.validateToAndFrom()
+type marshalgObject struct {
+	obj *gObject
+}
+
+type marshalGObject interface {
+	// ToProto marshals GObject to protobuf object *openapi.GObject
+	ToProto() (*openapi.GObject, error)
+	// ToPbText marshals GObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgObject struct {
+	obj *gObject
+}
+
+type unMarshalGObject interface {
+	// FromProto unmarshals GObject from protobuf object *openapi.GObject
+	FromProto(msg *openapi.GObject) (GObject, error)
+	// FromPbText unmarshals GObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *gObject) Marshal() marshalGObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *gObject) Unmarshal() unMarshalGObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgObject) ToProto() (*openapi.GObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *gObject) FromProto(msg *openapi.GObject) (GObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalgObject) FromProto(msg *openapi.GObject) (GObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -8899,33 +9530,33 @@ func (obj *gObject) FromProto(msg *openapi.GObject) (GObject, error) {
 	return newObj, nil
 }
 
-func (obj *gObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *gObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalgObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *gObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8934,7 +9565,7 @@ func (obj *gObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -8945,7 +9576,7 @@ func (obj *gObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *gObject) FromYaml(value string) error {
+func (m *unMarshalgObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -8957,21 +9588,21 @@ func (obj *gObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *gObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalgObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -8981,14 +9612,14 @@ func (obj *gObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *gObject) FromJson(value string) error {
+func (m *unMarshalgObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -8996,13 +9627,13 @@ func (obj *gObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -9015,14 +9646,14 @@ func (obj *gObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *gObject) Validate() error {
+func (obj *gObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *gObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -9030,16 +9661,16 @@ func (obj *gObject) String() string {
 }
 
 func (obj *gObject) Clone() (GObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewGObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -9051,30 +9682,18 @@ func (obj *gObject) Clone() (GObject, error) {
 // Description TBD
 type GObject interface {
 	Validation
-	// Msg marshals GObject to protobuf object *openapi.GObject
+	// msg marshals GObject to protobuf object *openapi.GObject
 	// and doesn't set defaults
-	Msg() *openapi.GObject
-	// SetMsg unmarshals GObject from protobuf object *openapi.GObject
+	msg() *openapi.GObject
+	// setMsg unmarshals GObject from protobuf object *openapi.GObject
 	// and doesn't set defaults
-	SetMsg(*openapi.GObject) GObject
-	// ToProto marshals GObject to protobuf object *openapi.GObject
-	ToProto() (*openapi.GObject, error)
-	// ToPbText marshals GObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals GObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals GObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals GObject from protobuf object *openapi.GObject
-	FromProto(msg *openapi.GObject) (GObject, error)
-	// FromPbText unmarshals GObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals GObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals GObject from JSON text
-	FromJson(value string) error
-	// Validate validates GObject
-	Validate() error
+	setMsg(*openapi.GObject) GObject
+	// provides marshal interface
+	Marshal() marshalGObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalGObject
+	// validate validates GObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -9102,8 +9721,8 @@ type GObject interface {
 	HasGC() bool
 	// Choice returns GObjectChoiceEnum, set in GObject
 	Choice() GObjectChoiceEnum
-	// SetChoice assigns GObjectChoiceEnum provided by user to GObject
-	SetChoice(value GObjectChoiceEnum) GObject
+	// setChoice assigns GObjectChoiceEnum provided by user to GObject
+	setChoice(value GObjectChoiceEnum) GObject
 	// HasChoice checks if Choice has been set in GObject
 	HasChoice() bool
 	// GD returns string, set in GObject.
@@ -9225,7 +9844,7 @@ func (obj *gObject) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *gObject) SetChoice(value GObjectChoiceEnum) GObject {
+func (obj *gObject) setChoice(value GObjectChoiceEnum) GObject {
 	intValue, ok := openapi.GObject_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -9255,7 +9874,7 @@ func (obj *gObject) SetChoice(value GObjectChoiceEnum) GObject {
 func (obj *gObject) GD() string {
 
 	if obj.obj.GD == nil {
-		obj.SetChoice(GObjectChoice.G_D)
+		obj.setChoice(GObjectChoice.G_D)
 	}
 
 	return *obj.obj.GD
@@ -9271,7 +9890,7 @@ func (obj *gObject) HasGD() bool {
 // description is TBD
 // SetGD sets the string value in the GObject object
 func (obj *gObject) SetGD(value string) GObject {
-	obj.SetChoice(GObjectChoice.G_D)
+	obj.setChoice(GObjectChoice.G_D)
 	obj.obj.GD = &value
 	return obj
 }
@@ -9281,7 +9900,7 @@ func (obj *gObject) SetGD(value string) GObject {
 func (obj *gObject) GE() float64 {
 
 	if obj.obj.GE == nil {
-		obj.SetChoice(GObjectChoice.G_E)
+		obj.setChoice(GObjectChoice.G_E)
 	}
 
 	return *obj.obj.GE
@@ -9297,7 +9916,7 @@ func (obj *gObject) HasGE() bool {
 // description is TBD
 // SetGE sets the float64 value in the GObject object
 func (obj *gObject) SetGE(value float64) GObject {
-	obj.SetChoice(GObjectChoice.G_E)
+	obj.setChoice(GObjectChoice.G_E)
 	obj.obj.GE = &value
 	return obj
 }
@@ -9376,7 +9995,7 @@ func (obj *gObject) validateObj(vObj *validation, set_default bool) {
 
 func (obj *gObject) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(GObjectChoice.G_D)
+		obj.setChoice(GObjectChoice.G_D)
 
 	}
 	if obj.obj.GA == nil {
@@ -9398,9 +10017,11 @@ func (obj *gObject) setDefault() {
 // ***** JObject *****
 type jObject struct {
 	validation
-	obj      *openapi.JObject
-	jAHolder EObject
-	jBHolder FObject
+	obj          *openapi.JObject
+	marshaller   marshalJObject
+	unMarshaller unMarshalJObject
+	jAHolder     EObject
+	jBHolder     FObject
 }
 
 func NewJObject() JObject {
@@ -9409,26 +10030,70 @@ func NewJObject() JObject {
 	return &obj
 }
 
-func (obj *jObject) Msg() *openapi.JObject {
+func (obj *jObject) msg() *openapi.JObject {
 	return obj.obj
 }
 
-func (obj *jObject) SetMsg(msg *openapi.JObject) JObject {
+func (obj *jObject) setMsg(msg *openapi.JObject) JObject {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *jObject) ToProto() (*openapi.JObject, error) {
-	err := obj.validateToAndFrom()
+type marshaljObject struct {
+	obj *jObject
+}
+
+type marshalJObject interface {
+	// ToProto marshals JObject to protobuf object *openapi.JObject
+	ToProto() (*openapi.JObject, error)
+	// ToPbText marshals JObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals JObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals JObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaljObject struct {
+	obj *jObject
+}
+
+type unMarshalJObject interface {
+	// FromProto unmarshals JObject from protobuf object *openapi.JObject
+	FromProto(msg *openapi.JObject) (JObject, error)
+	// FromPbText unmarshals JObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals JObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals JObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *jObject) Marshal() marshalJObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaljObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *jObject) Unmarshal() unMarshalJObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaljObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaljObject) ToProto() (*openapi.JObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *jObject) FromProto(msg *openapi.JObject) (JObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshaljObject) FromProto(msg *openapi.JObject) (JObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -9436,33 +10101,33 @@ func (obj *jObject) FromProto(msg *openapi.JObject) (JObject, error) {
 	return newObj, nil
 }
 
-func (obj *jObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaljObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *jObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshaljObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *jObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaljObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -9471,7 +10136,7 @@ func (obj *jObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -9482,7 +10147,7 @@ func (obj *jObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *jObject) FromYaml(value string) error {
+func (m *unMarshaljObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -9494,21 +10159,21 @@ func (obj *jObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *jObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshaljObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -9518,14 +10183,14 @@ func (obj *jObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *jObject) FromJson(value string) error {
+func (m *unMarshaljObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -9533,13 +10198,13 @@ func (obj *jObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -9552,14 +10217,14 @@ func (obj *jObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *jObject) Validate() error {
+func (obj *jObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *jObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -9567,16 +10232,16 @@ func (obj *jObject) String() string {
 }
 
 func (obj *jObject) Clone() (JObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewJObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -9594,30 +10259,18 @@ func (obj *jObject) setNil() {
 // JObject is description is TBD
 type JObject interface {
 	Validation
-	// Msg marshals JObject to protobuf object *openapi.JObject
+	// msg marshals JObject to protobuf object *openapi.JObject
 	// and doesn't set defaults
-	Msg() *openapi.JObject
-	// SetMsg unmarshals JObject from protobuf object *openapi.JObject
+	msg() *openapi.JObject
+	// setMsg unmarshals JObject from protobuf object *openapi.JObject
 	// and doesn't set defaults
-	SetMsg(*openapi.JObject) JObject
-	// ToProto marshals JObject to protobuf object *openapi.JObject
-	ToProto() (*openapi.JObject, error)
-	// ToPbText marshals JObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals JObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals JObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals JObject from protobuf object *openapi.JObject
-	FromProto(msg *openapi.JObject) (JObject, error)
-	// FromPbText unmarshals JObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals JObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals JObject from JSON text
-	FromJson(value string) error
-	// Validate validates JObject
-	Validate() error
+	setMsg(*openapi.JObject) JObject
+	// provides marshal interface
+	Marshal() marshalJObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalJObject
+	// validate validates JObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -9627,8 +10280,8 @@ type JObject interface {
 	setDefault()
 	// Choice returns JObjectChoiceEnum, set in JObject
 	Choice() JObjectChoiceEnum
-	// SetChoice assigns JObjectChoiceEnum provided by user to JObject
-	SetChoice(value JObjectChoiceEnum) JObject
+	// setChoice assigns JObjectChoiceEnum provided by user to JObject
+	setChoice(value JObjectChoiceEnum) JObject
 	// HasChoice checks if Choice has been set in JObject
 	HasChoice() bool
 	// JA returns EObject, set in JObject.
@@ -9671,7 +10324,7 @@ func (obj *jObject) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *jObject) SetChoice(value JObjectChoiceEnum) JObject {
+func (obj *jObject) setChoice(value JObjectChoiceEnum) JObject {
 	intValue, ok := openapi.JObject_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -9686,11 +10339,11 @@ func (obj *jObject) SetChoice(value JObjectChoiceEnum) JObject {
 	obj.jAHolder = nil
 
 	if value == JObjectChoice.J_A {
-		obj.obj.JA = NewEObject().Msg()
+		obj.obj.JA = NewEObject().msg()
 	}
 
 	if value == JObjectChoice.J_B {
-		obj.obj.JB = NewFObject().Msg()
+		obj.obj.JB = NewFObject().msg()
 	}
 
 	return obj
@@ -9700,7 +10353,7 @@ func (obj *jObject) SetChoice(value JObjectChoiceEnum) JObject {
 // JA returns a EObject
 func (obj *jObject) JA() EObject {
 	if obj.obj.JA == nil {
-		obj.SetChoice(JObjectChoice.J_A)
+		obj.setChoice(JObjectChoice.J_A)
 	}
 	if obj.jAHolder == nil {
 		obj.jAHolder = &eObject{obj: obj.obj.JA}
@@ -9717,9 +10370,9 @@ func (obj *jObject) HasJA() bool {
 // description is TBD
 // SetJA sets the EObject value in the JObject object
 func (obj *jObject) SetJA(value EObject) JObject {
-	obj.SetChoice(JObjectChoice.J_A)
+	obj.setChoice(JObjectChoice.J_A)
 	obj.jAHolder = nil
-	obj.obj.JA = value.Msg()
+	obj.obj.JA = value.msg()
 
 	return obj
 }
@@ -9728,7 +10381,7 @@ func (obj *jObject) SetJA(value EObject) JObject {
 // JB returns a FObject
 func (obj *jObject) JB() FObject {
 	if obj.obj.JB == nil {
-		obj.SetChoice(JObjectChoice.J_B)
+		obj.setChoice(JObjectChoice.J_B)
 	}
 	if obj.jBHolder == nil {
 		obj.jBHolder = &fObject{obj: obj.obj.JB}
@@ -9745,9 +10398,9 @@ func (obj *jObject) HasJB() bool {
 // description is TBD
 // SetJB sets the FObject value in the JObject object
 func (obj *jObject) SetJB(value FObject) JObject {
-	obj.SetChoice(JObjectChoice.J_B)
+	obj.setChoice(JObjectChoice.J_B)
 	obj.jBHolder = nil
-	obj.obj.JB = value.Msg()
+	obj.obj.JB = value.msg()
 
 	return obj
 }
@@ -9775,7 +10428,7 @@ func (obj *jObject) validateObj(vObj *validation, set_default bool) {
 
 func (obj *jObject) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(JObjectChoice.J_A)
+		obj.setChoice(JObjectChoice.J_A)
 
 	}
 
@@ -9785,6 +10438,8 @@ func (obj *jObject) setDefault() {
 type kObject struct {
 	validation
 	obj           *openapi.KObject
+	marshaller    marshalKObject
+	unMarshaller  unMarshalKObject
 	eObjectHolder EObject
 	fObjectHolder FObject
 }
@@ -9795,26 +10450,70 @@ func NewKObject() KObject {
 	return &obj
 }
 
-func (obj *kObject) Msg() *openapi.KObject {
+func (obj *kObject) msg() *openapi.KObject {
 	return obj.obj
 }
 
-func (obj *kObject) SetMsg(msg *openapi.KObject) KObject {
+func (obj *kObject) setMsg(msg *openapi.KObject) KObject {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *kObject) ToProto() (*openapi.KObject, error) {
-	err := obj.validateToAndFrom()
+type marshalkObject struct {
+	obj *kObject
+}
+
+type marshalKObject interface {
+	// ToProto marshals KObject to protobuf object *openapi.KObject
+	ToProto() (*openapi.KObject, error)
+	// ToPbText marshals KObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals KObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals KObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalkObject struct {
+	obj *kObject
+}
+
+type unMarshalKObject interface {
+	// FromProto unmarshals KObject from protobuf object *openapi.KObject
+	FromProto(msg *openapi.KObject) (KObject, error)
+	// FromPbText unmarshals KObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals KObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals KObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *kObject) Marshal() marshalKObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalkObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *kObject) Unmarshal() unMarshalKObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalkObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalkObject) ToProto() (*openapi.KObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *kObject) FromProto(msg *openapi.KObject) (KObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalkObject) FromProto(msg *openapi.KObject) (KObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -9822,33 +10521,33 @@ func (obj *kObject) FromProto(msg *openapi.KObject) (KObject, error) {
 	return newObj, nil
 }
 
-func (obj *kObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalkObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *kObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalkObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *kObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalkObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -9857,7 +10556,7 @@ func (obj *kObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -9868,7 +10567,7 @@ func (obj *kObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *kObject) FromYaml(value string) error {
+func (m *unMarshalkObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -9880,21 +10579,21 @@ func (obj *kObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *kObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalkObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -9904,14 +10603,14 @@ func (obj *kObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *kObject) FromJson(value string) error {
+func (m *unMarshalkObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -9919,13 +10618,13 @@ func (obj *kObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -9938,14 +10637,14 @@ func (obj *kObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *kObject) Validate() error {
+func (obj *kObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *kObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -9953,16 +10652,16 @@ func (obj *kObject) String() string {
 }
 
 func (obj *kObject) Clone() (KObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewKObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -9980,30 +10679,18 @@ func (obj *kObject) setNil() {
 // KObject is description is TBD
 type KObject interface {
 	Validation
-	// Msg marshals KObject to protobuf object *openapi.KObject
+	// msg marshals KObject to protobuf object *openapi.KObject
 	// and doesn't set defaults
-	Msg() *openapi.KObject
-	// SetMsg unmarshals KObject from protobuf object *openapi.KObject
+	msg() *openapi.KObject
+	// setMsg unmarshals KObject from protobuf object *openapi.KObject
 	// and doesn't set defaults
-	SetMsg(*openapi.KObject) KObject
-	// ToProto marshals KObject to protobuf object *openapi.KObject
-	ToProto() (*openapi.KObject, error)
-	// ToPbText marshals KObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals KObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals KObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals KObject from protobuf object *openapi.KObject
-	FromProto(msg *openapi.KObject) (KObject, error)
-	// FromPbText unmarshals KObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals KObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals KObject from JSON text
-	FromJson(value string) error
-	// Validate validates KObject
-	Validate() error
+	setMsg(*openapi.KObject) KObject
+	// provides marshal interface
+	Marshal() marshalKObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalKObject
+	// validate validates KObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -10034,7 +10721,7 @@ type KObject interface {
 // EObject returns a EObject
 func (obj *kObject) EObject() EObject {
 	if obj.obj.EObject == nil {
-		obj.obj.EObject = NewEObject().Msg()
+		obj.obj.EObject = NewEObject().msg()
 	}
 	if obj.eObjectHolder == nil {
 		obj.eObjectHolder = &eObject{obj: obj.obj.EObject}
@@ -10053,7 +10740,7 @@ func (obj *kObject) HasEObject() bool {
 func (obj *kObject) SetEObject(value EObject) KObject {
 
 	obj.eObjectHolder = nil
-	obj.obj.EObject = value.Msg()
+	obj.obj.EObject = value.msg()
 
 	return obj
 }
@@ -10062,7 +10749,7 @@ func (obj *kObject) SetEObject(value EObject) KObject {
 // FObject returns a FObject
 func (obj *kObject) FObject() FObject {
 	if obj.obj.FObject == nil {
-		obj.obj.FObject = NewFObject().Msg()
+		obj.obj.FObject = NewFObject().msg()
 	}
 	if obj.fObjectHolder == nil {
 		obj.fObjectHolder = &fObject{obj: obj.obj.FObject}
@@ -10081,7 +10768,7 @@ func (obj *kObject) HasFObject() bool {
 func (obj *kObject) SetFObject(value FObject) KObject {
 
 	obj.fObjectHolder = nil
-	obj.obj.FObject = value.Msg()
+	obj.obj.FObject = value.msg()
 
 	return obj
 }
@@ -10110,7 +10797,9 @@ func (obj *kObject) setDefault() {
 // ***** LObject *****
 type lObject struct {
 	validation
-	obj *openapi.LObject
+	obj          *openapi.LObject
+	marshaller   marshalLObject
+	unMarshaller unMarshalLObject
 }
 
 func NewLObject() LObject {
@@ -10119,26 +10808,70 @@ func NewLObject() LObject {
 	return &obj
 }
 
-func (obj *lObject) Msg() *openapi.LObject {
+func (obj *lObject) msg() *openapi.LObject {
 	return obj.obj
 }
 
-func (obj *lObject) SetMsg(msg *openapi.LObject) LObject {
+func (obj *lObject) setMsg(msg *openapi.LObject) LObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *lObject) ToProto() (*openapi.LObject, error) {
-	err := obj.validateToAndFrom()
+type marshallObject struct {
+	obj *lObject
+}
+
+type marshalLObject interface {
+	// ToProto marshals LObject to protobuf object *openapi.LObject
+	ToProto() (*openapi.LObject, error)
+	// ToPbText marshals LObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallObject struct {
+	obj *lObject
+}
+
+type unMarshalLObject interface {
+	// FromProto unmarshals LObject from protobuf object *openapi.LObject
+	FromProto(msg *openapi.LObject) (LObject, error)
+	// FromPbText unmarshals LObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *lObject) Marshal() marshalLObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *lObject) Unmarshal() unMarshalLObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallObject) ToProto() (*openapi.LObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *lObject) FromProto(msg *openapi.LObject) (LObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallObject) FromProto(msg *openapi.LObject) (LObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -10146,33 +10879,33 @@ func (obj *lObject) FromProto(msg *openapi.LObject) (LObject, error) {
 	return newObj, nil
 }
 
-func (obj *lObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *lObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *lObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -10181,7 +10914,7 @@ func (obj *lObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -10192,7 +10925,7 @@ func (obj *lObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *lObject) FromYaml(value string) error {
+func (m *unMarshallObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -10204,21 +10937,21 @@ func (obj *lObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *lObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -10228,14 +10961,14 @@ func (obj *lObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *lObject) FromJson(value string) error {
+func (m *unMarshallObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -10243,13 +10976,13 @@ func (obj *lObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -10262,14 +10995,14 @@ func (obj *lObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *lObject) Validate() error {
+func (obj *lObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *lObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -10277,16 +11010,16 @@ func (obj *lObject) String() string {
 }
 
 func (obj *lObject) Clone() (LObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -10296,30 +11029,18 @@ func (obj *lObject) Clone() (LObject, error) {
 // LObject is format validation object
 type LObject interface {
 	Validation
-	// Msg marshals LObject to protobuf object *openapi.LObject
+	// msg marshals LObject to protobuf object *openapi.LObject
 	// and doesn't set defaults
-	Msg() *openapi.LObject
-	// SetMsg unmarshals LObject from protobuf object *openapi.LObject
+	msg() *openapi.LObject
+	// setMsg unmarshals LObject from protobuf object *openapi.LObject
 	// and doesn't set defaults
-	SetMsg(*openapi.LObject) LObject
-	// ToProto marshals LObject to protobuf object *openapi.LObject
-	ToProto() (*openapi.LObject, error)
-	// ToPbText marshals LObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals LObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals LObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals LObject from protobuf object *openapi.LObject
-	FromProto(msg *openapi.LObject) (LObject, error)
-	// FromPbText unmarshals LObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals LObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals LObject from JSON text
-	FromJson(value string) error
-	// Validate validates LObject
-	Validate() error
+	setMsg(*openapi.LObject) LObject
+	// provides marshal interface
+	Marshal() marshalLObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalLObject
+	// validate validates LObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -10613,9 +11334,11 @@ func (obj *lObject) setDefault() {
 // ***** LevelOne *****
 type levelOne struct {
 	validation
-	obj        *openapi.LevelOne
-	l1P1Holder LevelTwo
-	l1P2Holder LevelFour
+	obj          *openapi.LevelOne
+	marshaller   marshalLevelOne
+	unMarshaller unMarshalLevelOne
+	l1P1Holder   LevelTwo
+	l1P2Holder   LevelFour
 }
 
 func NewLevelOne() LevelOne {
@@ -10624,26 +11347,70 @@ func NewLevelOne() LevelOne {
 	return &obj
 }
 
-func (obj *levelOne) Msg() *openapi.LevelOne {
+func (obj *levelOne) msg() *openapi.LevelOne {
 	return obj.obj
 }
 
-func (obj *levelOne) SetMsg(msg *openapi.LevelOne) LevelOne {
+func (obj *levelOne) setMsg(msg *openapi.LevelOne) LevelOne {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *levelOne) ToProto() (*openapi.LevelOne, error) {
-	err := obj.validateToAndFrom()
+type marshallevelOne struct {
+	obj *levelOne
+}
+
+type marshalLevelOne interface {
+	// ToProto marshals LevelOne to protobuf object *openapi.LevelOne
+	ToProto() (*openapi.LevelOne, error)
+	// ToPbText marshals LevelOne to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LevelOne to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LevelOne to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallevelOne struct {
+	obj *levelOne
+}
+
+type unMarshalLevelOne interface {
+	// FromProto unmarshals LevelOne from protobuf object *openapi.LevelOne
+	FromProto(msg *openapi.LevelOne) (LevelOne, error)
+	// FromPbText unmarshals LevelOne from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LevelOne from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LevelOne from JSON text
+	FromJson(value string) error
+}
+
+func (obj *levelOne) Marshal() marshalLevelOne {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallevelOne{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *levelOne) Unmarshal() unMarshalLevelOne {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallevelOne{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallevelOne) ToProto() (*openapi.LevelOne, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *levelOne) FromProto(msg *openapi.LevelOne) (LevelOne, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallevelOne) FromProto(msg *openapi.LevelOne) (LevelOne, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -10651,33 +11418,33 @@ func (obj *levelOne) FromProto(msg *openapi.LevelOne) (LevelOne, error) {
 	return newObj, nil
 }
 
-func (obj *levelOne) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelOne) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *levelOne) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallevelOne) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *levelOne) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelOne) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -10686,7 +11453,7 @@ func (obj *levelOne) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -10697,7 +11464,7 @@ func (obj *levelOne) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *levelOne) FromYaml(value string) error {
+func (m *unMarshallevelOne) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -10709,21 +11476,21 @@ func (obj *levelOne) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *levelOne) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelOne) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -10733,14 +11500,14 @@ func (obj *levelOne) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *levelOne) FromJson(value string) error {
+func (m *unMarshallevelOne) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -10748,13 +11515,13 @@ func (obj *levelOne) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -10767,14 +11534,14 @@ func (obj *levelOne) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *levelOne) Validate() error {
+func (obj *levelOne) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *levelOne) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -10782,16 +11549,16 @@ func (obj *levelOne) String() string {
 }
 
 func (obj *levelOne) Clone() (LevelOne, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLevelOne()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -10809,30 +11576,18 @@ func (obj *levelOne) setNil() {
 // LevelOne is to Test Multi level non-primitive types
 type LevelOne interface {
 	Validation
-	// Msg marshals LevelOne to protobuf object *openapi.LevelOne
+	// msg marshals LevelOne to protobuf object *openapi.LevelOne
 	// and doesn't set defaults
-	Msg() *openapi.LevelOne
-	// SetMsg unmarshals LevelOne from protobuf object *openapi.LevelOne
+	msg() *openapi.LevelOne
+	// setMsg unmarshals LevelOne from protobuf object *openapi.LevelOne
 	// and doesn't set defaults
-	SetMsg(*openapi.LevelOne) LevelOne
-	// ToProto marshals LevelOne to protobuf object *openapi.LevelOne
-	ToProto() (*openapi.LevelOne, error)
-	// ToPbText marshals LevelOne to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals LevelOne to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals LevelOne to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals LevelOne from protobuf object *openapi.LevelOne
-	FromProto(msg *openapi.LevelOne) (LevelOne, error)
-	// FromPbText unmarshals LevelOne from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals LevelOne from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals LevelOne from JSON text
-	FromJson(value string) error
-	// Validate validates LevelOne
-	Validate() error
+	setMsg(*openapi.LevelOne) LevelOne
+	// provides marshal interface
+	Marshal() marshalLevelOne
+	// provides unmarshal interface
+	Unmarshal() unMarshalLevelOne
+	// validate validates LevelOne
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -10863,7 +11618,7 @@ type LevelOne interface {
 // L1P1 returns a LevelTwo
 func (obj *levelOne) L1P1() LevelTwo {
 	if obj.obj.L1P1 == nil {
-		obj.obj.L1P1 = NewLevelTwo().Msg()
+		obj.obj.L1P1 = NewLevelTwo().msg()
 	}
 	if obj.l1P1Holder == nil {
 		obj.l1P1Holder = &levelTwo{obj: obj.obj.L1P1}
@@ -10882,7 +11637,7 @@ func (obj *levelOne) HasL1P1() bool {
 func (obj *levelOne) SetL1P1(value LevelTwo) LevelOne {
 
 	obj.l1P1Holder = nil
-	obj.obj.L1P1 = value.Msg()
+	obj.obj.L1P1 = value.msg()
 
 	return obj
 }
@@ -10891,7 +11646,7 @@ func (obj *levelOne) SetL1P1(value LevelTwo) LevelOne {
 // L1P2 returns a LevelFour
 func (obj *levelOne) L1P2() LevelFour {
 	if obj.obj.L1P2 == nil {
-		obj.obj.L1P2 = NewLevelFour().Msg()
+		obj.obj.L1P2 = NewLevelFour().msg()
 	}
 	if obj.l1P2Holder == nil {
 		obj.l1P2Holder = &levelFour{obj: obj.obj.L1P2}
@@ -10910,7 +11665,7 @@ func (obj *levelOne) HasL1P2() bool {
 func (obj *levelOne) SetL1P2(value LevelFour) LevelOne {
 
 	obj.l1P2Holder = nil
-	obj.obj.L1P2 = value.Msg()
+	obj.obj.L1P2 = value.msg()
 
 	return obj
 }
@@ -10939,7 +11694,9 @@ func (obj *levelOne) setDefault() {
 // ***** Mandate *****
 type mandate struct {
 	validation
-	obj *openapi.Mandate
+	obj          *openapi.Mandate
+	marshaller   marshalMandate
+	unMarshaller unMarshalMandate
 }
 
 func NewMandate() Mandate {
@@ -10948,26 +11705,70 @@ func NewMandate() Mandate {
 	return &obj
 }
 
-func (obj *mandate) Msg() *openapi.Mandate {
+func (obj *mandate) msg() *openapi.Mandate {
 	return obj.obj
 }
 
-func (obj *mandate) SetMsg(msg *openapi.Mandate) Mandate {
+func (obj *mandate) setMsg(msg *openapi.Mandate) Mandate {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *mandate) ToProto() (*openapi.Mandate, error) {
-	err := obj.validateToAndFrom()
+type marshalmandate struct {
+	obj *mandate
+}
+
+type marshalMandate interface {
+	// ToProto marshals Mandate to protobuf object *openapi.Mandate
+	ToProto() (*openapi.Mandate, error)
+	// ToPbText marshals Mandate to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Mandate to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Mandate to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmandate struct {
+	obj *mandate
+}
+
+type unMarshalMandate interface {
+	// FromProto unmarshals Mandate from protobuf object *openapi.Mandate
+	FromProto(msg *openapi.Mandate) (Mandate, error)
+	// FromPbText unmarshals Mandate from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Mandate from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Mandate from JSON text
+	FromJson(value string) error
+}
+
+func (obj *mandate) Marshal() marshalMandate {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmandate{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *mandate) Unmarshal() unMarshalMandate {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmandate{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmandate) ToProto() (*openapi.Mandate, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *mandate) FromProto(msg *openapi.Mandate) (Mandate, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalmandate) FromProto(msg *openapi.Mandate) (Mandate, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -10975,33 +11776,33 @@ func (obj *mandate) FromProto(msg *openapi.Mandate) (Mandate, error) {
 	return newObj, nil
 }
 
-func (obj *mandate) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmandate) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *mandate) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalmandate) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *mandate) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmandate) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11010,7 +11811,7 @@ func (obj *mandate) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -11021,7 +11822,7 @@ func (obj *mandate) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *mandate) FromYaml(value string) error {
+func (m *unMarshalmandate) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -11033,21 +11834,21 @@ func (obj *mandate) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *mandate) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmandate) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11057,14 +11858,14 @@ func (obj *mandate) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *mandate) FromJson(value string) error {
+func (m *unMarshalmandate) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -11072,13 +11873,13 @@ func (obj *mandate) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -11091,14 +11892,14 @@ func (obj *mandate) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *mandate) Validate() error {
+func (obj *mandate) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *mandate) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -11106,16 +11907,16 @@ func (obj *mandate) String() string {
 }
 
 func (obj *mandate) Clone() (Mandate, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewMandate()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -11125,30 +11926,18 @@ func (obj *mandate) Clone() (Mandate, error) {
 // Mandate is object to Test required Parameter
 type Mandate interface {
 	Validation
-	// Msg marshals Mandate to protobuf object *openapi.Mandate
+	// msg marshals Mandate to protobuf object *openapi.Mandate
 	// and doesn't set defaults
-	Msg() *openapi.Mandate
-	// SetMsg unmarshals Mandate from protobuf object *openapi.Mandate
+	msg() *openapi.Mandate
+	// setMsg unmarshals Mandate from protobuf object *openapi.Mandate
 	// and doesn't set defaults
-	SetMsg(*openapi.Mandate) Mandate
-	// ToProto marshals Mandate to protobuf object *openapi.Mandate
-	ToProto() (*openapi.Mandate, error)
-	// ToPbText marshals Mandate to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Mandate to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Mandate to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Mandate from protobuf object *openapi.Mandate
-	FromProto(msg *openapi.Mandate) (Mandate, error)
-	// FromPbText unmarshals Mandate from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Mandate from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Mandate from JSON text
-	FromJson(value string) error
-	// Validate validates Mandate
-	Validate() error
+	setMsg(*openapi.Mandate) Mandate
+	// provides marshal interface
+	Marshal() marshalMandate
+	// provides unmarshal interface
+	Unmarshal() unMarshalMandate
+	// validate validates Mandate
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -11196,8 +11985,10 @@ func (obj *mandate) setDefault() {
 // ***** Ipv4Pattern *****
 type ipv4Pattern struct {
 	validation
-	obj        *openapi.Ipv4Pattern
-	ipv4Holder PatternIpv4PatternIpv4
+	obj          *openapi.Ipv4Pattern
+	marshaller   marshalIpv4Pattern
+	unMarshaller unMarshalIpv4Pattern
+	ipv4Holder   PatternIpv4PatternIpv4
 }
 
 func NewIpv4Pattern() Ipv4Pattern {
@@ -11206,26 +11997,70 @@ func NewIpv4Pattern() Ipv4Pattern {
 	return &obj
 }
 
-func (obj *ipv4Pattern) Msg() *openapi.Ipv4Pattern {
+func (obj *ipv4Pattern) msg() *openapi.Ipv4Pattern {
 	return obj.obj
 }
 
-func (obj *ipv4Pattern) SetMsg(msg *openapi.Ipv4Pattern) Ipv4Pattern {
+func (obj *ipv4Pattern) setMsg(msg *openapi.Ipv4Pattern) Ipv4Pattern {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *ipv4Pattern) ToProto() (*openapi.Ipv4Pattern, error) {
-	err := obj.validateToAndFrom()
+type marshalipv4Pattern struct {
+	obj *ipv4Pattern
+}
+
+type marshalIpv4Pattern interface {
+	// ToProto marshals Ipv4Pattern to protobuf object *openapi.Ipv4Pattern
+	ToProto() (*openapi.Ipv4Pattern, error)
+	// ToPbText marshals Ipv4Pattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Ipv4Pattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Ipv4Pattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalipv4Pattern struct {
+	obj *ipv4Pattern
+}
+
+type unMarshalIpv4Pattern interface {
+	// FromProto unmarshals Ipv4Pattern from protobuf object *openapi.Ipv4Pattern
+	FromProto(msg *openapi.Ipv4Pattern) (Ipv4Pattern, error)
+	// FromPbText unmarshals Ipv4Pattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Ipv4Pattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Ipv4Pattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *ipv4Pattern) Marshal() marshalIpv4Pattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalipv4Pattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *ipv4Pattern) Unmarshal() unMarshalIpv4Pattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalipv4Pattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalipv4Pattern) ToProto() (*openapi.Ipv4Pattern, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *ipv4Pattern) FromProto(msg *openapi.Ipv4Pattern) (Ipv4Pattern, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalipv4Pattern) FromProto(msg *openapi.Ipv4Pattern) (Ipv4Pattern, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -11233,33 +12068,33 @@ func (obj *ipv4Pattern) FromProto(msg *openapi.Ipv4Pattern) (Ipv4Pattern, error)
 	return newObj, nil
 }
 
-func (obj *ipv4Pattern) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv4Pattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *ipv4Pattern) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalipv4Pattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *ipv4Pattern) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv4Pattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11268,7 +12103,7 @@ func (obj *ipv4Pattern) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -11279,7 +12114,7 @@ func (obj *ipv4Pattern) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *ipv4Pattern) FromYaml(value string) error {
+func (m *unMarshalipv4Pattern) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -11291,21 +12126,21 @@ func (obj *ipv4Pattern) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *ipv4Pattern) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv4Pattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11315,14 +12150,14 @@ func (obj *ipv4Pattern) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *ipv4Pattern) FromJson(value string) error {
+func (m *unMarshalipv4Pattern) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -11330,13 +12165,13 @@ func (obj *ipv4Pattern) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -11349,14 +12184,14 @@ func (obj *ipv4Pattern) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *ipv4Pattern) Validate() error {
+func (obj *ipv4Pattern) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *ipv4Pattern) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -11364,16 +12199,16 @@ func (obj *ipv4Pattern) String() string {
 }
 
 func (obj *ipv4Pattern) Clone() (Ipv4Pattern, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewIpv4Pattern()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -11390,30 +12225,18 @@ func (obj *ipv4Pattern) setNil() {
 // Ipv4Pattern is test ipv4 pattern
 type Ipv4Pattern interface {
 	Validation
-	// Msg marshals Ipv4Pattern to protobuf object *openapi.Ipv4Pattern
+	// msg marshals Ipv4Pattern to protobuf object *openapi.Ipv4Pattern
 	// and doesn't set defaults
-	Msg() *openapi.Ipv4Pattern
-	// SetMsg unmarshals Ipv4Pattern from protobuf object *openapi.Ipv4Pattern
+	msg() *openapi.Ipv4Pattern
+	// setMsg unmarshals Ipv4Pattern from protobuf object *openapi.Ipv4Pattern
 	// and doesn't set defaults
-	SetMsg(*openapi.Ipv4Pattern) Ipv4Pattern
-	// ToProto marshals Ipv4Pattern to protobuf object *openapi.Ipv4Pattern
-	ToProto() (*openapi.Ipv4Pattern, error)
-	// ToPbText marshals Ipv4Pattern to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Ipv4Pattern to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Ipv4Pattern to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Ipv4Pattern from protobuf object *openapi.Ipv4Pattern
-	FromProto(msg *openapi.Ipv4Pattern) (Ipv4Pattern, error)
-	// FromPbText unmarshals Ipv4Pattern from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Ipv4Pattern from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Ipv4Pattern from JSON text
-	FromJson(value string) error
-	// Validate validates Ipv4Pattern
-	Validate() error
+	setMsg(*openapi.Ipv4Pattern) Ipv4Pattern
+	// provides marshal interface
+	Marshal() marshalIpv4Pattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalIpv4Pattern
+	// validate validates Ipv4Pattern
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -11436,7 +12259,7 @@ type Ipv4Pattern interface {
 // Ipv4 returns a PatternIpv4PatternIpv4
 func (obj *ipv4Pattern) Ipv4() PatternIpv4PatternIpv4 {
 	if obj.obj.Ipv4 == nil {
-		obj.obj.Ipv4 = NewPatternIpv4PatternIpv4().Msg()
+		obj.obj.Ipv4 = NewPatternIpv4PatternIpv4().msg()
 	}
 	if obj.ipv4Holder == nil {
 		obj.ipv4Holder = &patternIpv4PatternIpv4{obj: obj.obj.Ipv4}
@@ -11455,7 +12278,7 @@ func (obj *ipv4Pattern) HasIpv4() bool {
 func (obj *ipv4Pattern) SetIpv4(value PatternIpv4PatternIpv4) Ipv4Pattern {
 
 	obj.ipv4Holder = nil
-	obj.obj.Ipv4 = value.Msg()
+	obj.obj.Ipv4 = value.msg()
 
 	return obj
 }
@@ -11479,8 +12302,10 @@ func (obj *ipv4Pattern) setDefault() {
 // ***** Ipv6Pattern *****
 type ipv6Pattern struct {
 	validation
-	obj        *openapi.Ipv6Pattern
-	ipv6Holder PatternIpv6PatternIpv6
+	obj          *openapi.Ipv6Pattern
+	marshaller   marshalIpv6Pattern
+	unMarshaller unMarshalIpv6Pattern
+	ipv6Holder   PatternIpv6PatternIpv6
 }
 
 func NewIpv6Pattern() Ipv6Pattern {
@@ -11489,26 +12314,70 @@ func NewIpv6Pattern() Ipv6Pattern {
 	return &obj
 }
 
-func (obj *ipv6Pattern) Msg() *openapi.Ipv6Pattern {
+func (obj *ipv6Pattern) msg() *openapi.Ipv6Pattern {
 	return obj.obj
 }
 
-func (obj *ipv6Pattern) SetMsg(msg *openapi.Ipv6Pattern) Ipv6Pattern {
+func (obj *ipv6Pattern) setMsg(msg *openapi.Ipv6Pattern) Ipv6Pattern {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *ipv6Pattern) ToProto() (*openapi.Ipv6Pattern, error) {
-	err := obj.validateToAndFrom()
+type marshalipv6Pattern struct {
+	obj *ipv6Pattern
+}
+
+type marshalIpv6Pattern interface {
+	// ToProto marshals Ipv6Pattern to protobuf object *openapi.Ipv6Pattern
+	ToProto() (*openapi.Ipv6Pattern, error)
+	// ToPbText marshals Ipv6Pattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Ipv6Pattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Ipv6Pattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalipv6Pattern struct {
+	obj *ipv6Pattern
+}
+
+type unMarshalIpv6Pattern interface {
+	// FromProto unmarshals Ipv6Pattern from protobuf object *openapi.Ipv6Pattern
+	FromProto(msg *openapi.Ipv6Pattern) (Ipv6Pattern, error)
+	// FromPbText unmarshals Ipv6Pattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Ipv6Pattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Ipv6Pattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *ipv6Pattern) Marshal() marshalIpv6Pattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalipv6Pattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *ipv6Pattern) Unmarshal() unMarshalIpv6Pattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalipv6Pattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalipv6Pattern) ToProto() (*openapi.Ipv6Pattern, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *ipv6Pattern) FromProto(msg *openapi.Ipv6Pattern) (Ipv6Pattern, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalipv6Pattern) FromProto(msg *openapi.Ipv6Pattern) (Ipv6Pattern, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -11516,33 +12385,33 @@ func (obj *ipv6Pattern) FromProto(msg *openapi.Ipv6Pattern) (Ipv6Pattern, error)
 	return newObj, nil
 }
 
-func (obj *ipv6Pattern) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv6Pattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *ipv6Pattern) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalipv6Pattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *ipv6Pattern) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv6Pattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11551,7 +12420,7 @@ func (obj *ipv6Pattern) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -11562,7 +12431,7 @@ func (obj *ipv6Pattern) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *ipv6Pattern) FromYaml(value string) error {
+func (m *unMarshalipv6Pattern) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -11574,21 +12443,21 @@ func (obj *ipv6Pattern) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *ipv6Pattern) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalipv6Pattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11598,14 +12467,14 @@ func (obj *ipv6Pattern) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *ipv6Pattern) FromJson(value string) error {
+func (m *unMarshalipv6Pattern) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -11613,13 +12482,13 @@ func (obj *ipv6Pattern) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -11632,14 +12501,14 @@ func (obj *ipv6Pattern) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *ipv6Pattern) Validate() error {
+func (obj *ipv6Pattern) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *ipv6Pattern) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -11647,16 +12516,16 @@ func (obj *ipv6Pattern) String() string {
 }
 
 func (obj *ipv6Pattern) Clone() (Ipv6Pattern, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewIpv6Pattern()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -11673,30 +12542,18 @@ func (obj *ipv6Pattern) setNil() {
 // Ipv6Pattern is test ipv6 pattern
 type Ipv6Pattern interface {
 	Validation
-	// Msg marshals Ipv6Pattern to protobuf object *openapi.Ipv6Pattern
+	// msg marshals Ipv6Pattern to protobuf object *openapi.Ipv6Pattern
 	// and doesn't set defaults
-	Msg() *openapi.Ipv6Pattern
-	// SetMsg unmarshals Ipv6Pattern from protobuf object *openapi.Ipv6Pattern
+	msg() *openapi.Ipv6Pattern
+	// setMsg unmarshals Ipv6Pattern from protobuf object *openapi.Ipv6Pattern
 	// and doesn't set defaults
-	SetMsg(*openapi.Ipv6Pattern) Ipv6Pattern
-	// ToProto marshals Ipv6Pattern to protobuf object *openapi.Ipv6Pattern
-	ToProto() (*openapi.Ipv6Pattern, error)
-	// ToPbText marshals Ipv6Pattern to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Ipv6Pattern to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Ipv6Pattern to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Ipv6Pattern from protobuf object *openapi.Ipv6Pattern
-	FromProto(msg *openapi.Ipv6Pattern) (Ipv6Pattern, error)
-	// FromPbText unmarshals Ipv6Pattern from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Ipv6Pattern from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Ipv6Pattern from JSON text
-	FromJson(value string) error
-	// Validate validates Ipv6Pattern
-	Validate() error
+	setMsg(*openapi.Ipv6Pattern) Ipv6Pattern
+	// provides marshal interface
+	Marshal() marshalIpv6Pattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalIpv6Pattern
+	// validate validates Ipv6Pattern
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -11719,7 +12576,7 @@ type Ipv6Pattern interface {
 // Ipv6 returns a PatternIpv6PatternIpv6
 func (obj *ipv6Pattern) Ipv6() PatternIpv6PatternIpv6 {
 	if obj.obj.Ipv6 == nil {
-		obj.obj.Ipv6 = NewPatternIpv6PatternIpv6().Msg()
+		obj.obj.Ipv6 = NewPatternIpv6PatternIpv6().msg()
 	}
 	if obj.ipv6Holder == nil {
 		obj.ipv6Holder = &patternIpv6PatternIpv6{obj: obj.obj.Ipv6}
@@ -11738,7 +12595,7 @@ func (obj *ipv6Pattern) HasIpv6() bool {
 func (obj *ipv6Pattern) SetIpv6(value PatternIpv6PatternIpv6) Ipv6Pattern {
 
 	obj.ipv6Holder = nil
-	obj.obj.Ipv6 = value.Msg()
+	obj.obj.Ipv6 = value.msg()
 
 	return obj
 }
@@ -11762,8 +12619,10 @@ func (obj *ipv6Pattern) setDefault() {
 // ***** MacPattern *****
 type macPattern struct {
 	validation
-	obj       *openapi.MacPattern
-	macHolder PatternMacPatternMac
+	obj          *openapi.MacPattern
+	marshaller   marshalMacPattern
+	unMarshaller unMarshalMacPattern
+	macHolder    PatternMacPatternMac
 }
 
 func NewMacPattern() MacPattern {
@@ -11772,26 +12631,70 @@ func NewMacPattern() MacPattern {
 	return &obj
 }
 
-func (obj *macPattern) Msg() *openapi.MacPattern {
+func (obj *macPattern) msg() *openapi.MacPattern {
 	return obj.obj
 }
 
-func (obj *macPattern) SetMsg(msg *openapi.MacPattern) MacPattern {
+func (obj *macPattern) setMsg(msg *openapi.MacPattern) MacPattern {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *macPattern) ToProto() (*openapi.MacPattern, error) {
-	err := obj.validateToAndFrom()
+type marshalmacPattern struct {
+	obj *macPattern
+}
+
+type marshalMacPattern interface {
+	// ToProto marshals MacPattern to protobuf object *openapi.MacPattern
+	ToProto() (*openapi.MacPattern, error)
+	// ToPbText marshals MacPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MacPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MacPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmacPattern struct {
+	obj *macPattern
+}
+
+type unMarshalMacPattern interface {
+	// FromProto unmarshals MacPattern from protobuf object *openapi.MacPattern
+	FromProto(msg *openapi.MacPattern) (MacPattern, error)
+	// FromPbText unmarshals MacPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MacPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MacPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *macPattern) Marshal() marshalMacPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmacPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *macPattern) Unmarshal() unMarshalMacPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmacPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmacPattern) ToProto() (*openapi.MacPattern, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *macPattern) FromProto(msg *openapi.MacPattern) (MacPattern, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalmacPattern) FromProto(msg *openapi.MacPattern) (MacPattern, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -11799,33 +12702,33 @@ func (obj *macPattern) FromProto(msg *openapi.MacPattern) (MacPattern, error) {
 	return newObj, nil
 }
 
-func (obj *macPattern) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmacPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *macPattern) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalmacPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *macPattern) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmacPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11834,7 +12737,7 @@ func (obj *macPattern) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -11845,7 +12748,7 @@ func (obj *macPattern) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *macPattern) FromYaml(value string) error {
+func (m *unMarshalmacPattern) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -11857,21 +12760,21 @@ func (obj *macPattern) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *macPattern) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmacPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -11881,14 +12784,14 @@ func (obj *macPattern) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *macPattern) FromJson(value string) error {
+func (m *unMarshalmacPattern) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -11896,13 +12799,13 @@ func (obj *macPattern) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -11915,14 +12818,14 @@ func (obj *macPattern) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *macPattern) Validate() error {
+func (obj *macPattern) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *macPattern) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -11930,16 +12833,16 @@ func (obj *macPattern) String() string {
 }
 
 func (obj *macPattern) Clone() (MacPattern, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewMacPattern()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -11956,30 +12859,18 @@ func (obj *macPattern) setNil() {
 // MacPattern is test mac pattern
 type MacPattern interface {
 	Validation
-	// Msg marshals MacPattern to protobuf object *openapi.MacPattern
+	// msg marshals MacPattern to protobuf object *openapi.MacPattern
 	// and doesn't set defaults
-	Msg() *openapi.MacPattern
-	// SetMsg unmarshals MacPattern from protobuf object *openapi.MacPattern
+	msg() *openapi.MacPattern
+	// setMsg unmarshals MacPattern from protobuf object *openapi.MacPattern
 	// and doesn't set defaults
-	SetMsg(*openapi.MacPattern) MacPattern
-	// ToProto marshals MacPattern to protobuf object *openapi.MacPattern
-	ToProto() (*openapi.MacPattern, error)
-	// ToPbText marshals MacPattern to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals MacPattern to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals MacPattern to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals MacPattern from protobuf object *openapi.MacPattern
-	FromProto(msg *openapi.MacPattern) (MacPattern, error)
-	// FromPbText unmarshals MacPattern from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals MacPattern from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals MacPattern from JSON text
-	FromJson(value string) error
-	// Validate validates MacPattern
-	Validate() error
+	setMsg(*openapi.MacPattern) MacPattern
+	// provides marshal interface
+	Marshal() marshalMacPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalMacPattern
+	// validate validates MacPattern
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -12002,7 +12893,7 @@ type MacPattern interface {
 // Mac returns a PatternMacPatternMac
 func (obj *macPattern) Mac() PatternMacPatternMac {
 	if obj.obj.Mac == nil {
-		obj.obj.Mac = NewPatternMacPatternMac().Msg()
+		obj.obj.Mac = NewPatternMacPatternMac().msg()
 	}
 	if obj.macHolder == nil {
 		obj.macHolder = &patternMacPatternMac{obj: obj.obj.Mac}
@@ -12021,7 +12912,7 @@ func (obj *macPattern) HasMac() bool {
 func (obj *macPattern) SetMac(value PatternMacPatternMac) MacPattern {
 
 	obj.macHolder = nil
-	obj.obj.Mac = value.Msg()
+	obj.obj.Mac = value.msg()
 
 	return obj
 }
@@ -12046,6 +12937,8 @@ func (obj *macPattern) setDefault() {
 type integerPattern struct {
 	validation
 	obj           *openapi.IntegerPattern
+	marshaller    marshalIntegerPattern
+	unMarshaller  unMarshalIntegerPattern
 	integerHolder PatternIntegerPatternInteger
 }
 
@@ -12055,26 +12948,70 @@ func NewIntegerPattern() IntegerPattern {
 	return &obj
 }
 
-func (obj *integerPattern) Msg() *openapi.IntegerPattern {
+func (obj *integerPattern) msg() *openapi.IntegerPattern {
 	return obj.obj
 }
 
-func (obj *integerPattern) SetMsg(msg *openapi.IntegerPattern) IntegerPattern {
+func (obj *integerPattern) setMsg(msg *openapi.IntegerPattern) IntegerPattern {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *integerPattern) ToProto() (*openapi.IntegerPattern, error) {
-	err := obj.validateToAndFrom()
+type marshalintegerPattern struct {
+	obj *integerPattern
+}
+
+type marshalIntegerPattern interface {
+	// ToProto marshals IntegerPattern to protobuf object *openapi.IntegerPattern
+	ToProto() (*openapi.IntegerPattern, error)
+	// ToPbText marshals IntegerPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals IntegerPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals IntegerPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalintegerPattern struct {
+	obj *integerPattern
+}
+
+type unMarshalIntegerPattern interface {
+	// FromProto unmarshals IntegerPattern from protobuf object *openapi.IntegerPattern
+	FromProto(msg *openapi.IntegerPattern) (IntegerPattern, error)
+	// FromPbText unmarshals IntegerPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals IntegerPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals IntegerPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *integerPattern) Marshal() marshalIntegerPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalintegerPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *integerPattern) Unmarshal() unMarshalIntegerPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalintegerPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalintegerPattern) ToProto() (*openapi.IntegerPattern, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *integerPattern) FromProto(msg *openapi.IntegerPattern) (IntegerPattern, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalintegerPattern) FromProto(msg *openapi.IntegerPattern) (IntegerPattern, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -12082,33 +13019,33 @@ func (obj *integerPattern) FromProto(msg *openapi.IntegerPattern) (IntegerPatter
 	return newObj, nil
 }
 
-func (obj *integerPattern) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalintegerPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *integerPattern) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalintegerPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *integerPattern) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalintegerPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12117,7 +13054,7 @@ func (obj *integerPattern) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -12128,7 +13065,7 @@ func (obj *integerPattern) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *integerPattern) FromYaml(value string) error {
+func (m *unMarshalintegerPattern) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -12140,21 +13077,21 @@ func (obj *integerPattern) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *integerPattern) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalintegerPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12164,14 +13101,14 @@ func (obj *integerPattern) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *integerPattern) FromJson(value string) error {
+func (m *unMarshalintegerPattern) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -12179,13 +13116,13 @@ func (obj *integerPattern) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -12198,14 +13135,14 @@ func (obj *integerPattern) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *integerPattern) Validate() error {
+func (obj *integerPattern) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *integerPattern) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -12213,16 +13150,16 @@ func (obj *integerPattern) String() string {
 }
 
 func (obj *integerPattern) Clone() (IntegerPattern, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewIntegerPattern()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -12239,30 +13176,18 @@ func (obj *integerPattern) setNil() {
 // IntegerPattern is test integer pattern
 type IntegerPattern interface {
 	Validation
-	// Msg marshals IntegerPattern to protobuf object *openapi.IntegerPattern
+	// msg marshals IntegerPattern to protobuf object *openapi.IntegerPattern
 	// and doesn't set defaults
-	Msg() *openapi.IntegerPattern
-	// SetMsg unmarshals IntegerPattern from protobuf object *openapi.IntegerPattern
+	msg() *openapi.IntegerPattern
+	// setMsg unmarshals IntegerPattern from protobuf object *openapi.IntegerPattern
 	// and doesn't set defaults
-	SetMsg(*openapi.IntegerPattern) IntegerPattern
-	// ToProto marshals IntegerPattern to protobuf object *openapi.IntegerPattern
-	ToProto() (*openapi.IntegerPattern, error)
-	// ToPbText marshals IntegerPattern to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals IntegerPattern to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals IntegerPattern to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals IntegerPattern from protobuf object *openapi.IntegerPattern
-	FromProto(msg *openapi.IntegerPattern) (IntegerPattern, error)
-	// FromPbText unmarshals IntegerPattern from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals IntegerPattern from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals IntegerPattern from JSON text
-	FromJson(value string) error
-	// Validate validates IntegerPattern
-	Validate() error
+	setMsg(*openapi.IntegerPattern) IntegerPattern
+	// provides marshal interface
+	Marshal() marshalIntegerPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalIntegerPattern
+	// validate validates IntegerPattern
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -12285,7 +13210,7 @@ type IntegerPattern interface {
 // Integer returns a PatternIntegerPatternInteger
 func (obj *integerPattern) Integer() PatternIntegerPatternInteger {
 	if obj.obj.Integer == nil {
-		obj.obj.Integer = NewPatternIntegerPatternInteger().Msg()
+		obj.obj.Integer = NewPatternIntegerPatternInteger().msg()
 	}
 	if obj.integerHolder == nil {
 		obj.integerHolder = &patternIntegerPatternInteger{obj: obj.obj.Integer}
@@ -12304,7 +13229,7 @@ func (obj *integerPattern) HasInteger() bool {
 func (obj *integerPattern) SetInteger(value PatternIntegerPatternInteger) IntegerPattern {
 
 	obj.integerHolder = nil
-	obj.obj.Integer = value.Msg()
+	obj.obj.Integer = value.msg()
 
 	return obj
 }
@@ -12329,6 +13254,8 @@ func (obj *integerPattern) setDefault() {
 type checksumPattern struct {
 	validation
 	obj            *openapi.ChecksumPattern
+	marshaller     marshalChecksumPattern
+	unMarshaller   unMarshalChecksumPattern
 	checksumHolder PatternChecksumPatternChecksum
 }
 
@@ -12338,26 +13265,70 @@ func NewChecksumPattern() ChecksumPattern {
 	return &obj
 }
 
-func (obj *checksumPattern) Msg() *openapi.ChecksumPattern {
+func (obj *checksumPattern) msg() *openapi.ChecksumPattern {
 	return obj.obj
 }
 
-func (obj *checksumPattern) SetMsg(msg *openapi.ChecksumPattern) ChecksumPattern {
+func (obj *checksumPattern) setMsg(msg *openapi.ChecksumPattern) ChecksumPattern {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *checksumPattern) ToProto() (*openapi.ChecksumPattern, error) {
-	err := obj.validateToAndFrom()
+type marshalchecksumPattern struct {
+	obj *checksumPattern
+}
+
+type marshalChecksumPattern interface {
+	// ToProto marshals ChecksumPattern to protobuf object *openapi.ChecksumPattern
+	ToProto() (*openapi.ChecksumPattern, error)
+	// ToPbText marshals ChecksumPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChecksumPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChecksumPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchecksumPattern struct {
+	obj *checksumPattern
+}
+
+type unMarshalChecksumPattern interface {
+	// FromProto unmarshals ChecksumPattern from protobuf object *openapi.ChecksumPattern
+	FromProto(msg *openapi.ChecksumPattern) (ChecksumPattern, error)
+	// FromPbText unmarshals ChecksumPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChecksumPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChecksumPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *checksumPattern) Marshal() marshalChecksumPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchecksumPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *checksumPattern) Unmarshal() unMarshalChecksumPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchecksumPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchecksumPattern) ToProto() (*openapi.ChecksumPattern, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *checksumPattern) FromProto(msg *openapi.ChecksumPattern) (ChecksumPattern, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalchecksumPattern) FromProto(msg *openapi.ChecksumPattern) (ChecksumPattern, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -12365,33 +13336,33 @@ func (obj *checksumPattern) FromProto(msg *openapi.ChecksumPattern) (ChecksumPat
 	return newObj, nil
 }
 
-func (obj *checksumPattern) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchecksumPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *checksumPattern) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalchecksumPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *checksumPattern) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchecksumPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12400,7 +13371,7 @@ func (obj *checksumPattern) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -12411,7 +13382,7 @@ func (obj *checksumPattern) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *checksumPattern) FromYaml(value string) error {
+func (m *unMarshalchecksumPattern) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -12423,21 +13394,21 @@ func (obj *checksumPattern) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *checksumPattern) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchecksumPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12447,14 +13418,14 @@ func (obj *checksumPattern) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *checksumPattern) FromJson(value string) error {
+func (m *unMarshalchecksumPattern) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -12462,13 +13433,13 @@ func (obj *checksumPattern) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -12481,14 +13452,14 @@ func (obj *checksumPattern) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *checksumPattern) Validate() error {
+func (obj *checksumPattern) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *checksumPattern) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -12496,16 +13467,16 @@ func (obj *checksumPattern) String() string {
 }
 
 func (obj *checksumPattern) Clone() (ChecksumPattern, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewChecksumPattern()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -12522,30 +13493,18 @@ func (obj *checksumPattern) setNil() {
 // ChecksumPattern is test checksum pattern
 type ChecksumPattern interface {
 	Validation
-	// Msg marshals ChecksumPattern to protobuf object *openapi.ChecksumPattern
+	// msg marshals ChecksumPattern to protobuf object *openapi.ChecksumPattern
 	// and doesn't set defaults
-	Msg() *openapi.ChecksumPattern
-	// SetMsg unmarshals ChecksumPattern from protobuf object *openapi.ChecksumPattern
+	msg() *openapi.ChecksumPattern
+	// setMsg unmarshals ChecksumPattern from protobuf object *openapi.ChecksumPattern
 	// and doesn't set defaults
-	SetMsg(*openapi.ChecksumPattern) ChecksumPattern
-	// ToProto marshals ChecksumPattern to protobuf object *openapi.ChecksumPattern
-	ToProto() (*openapi.ChecksumPattern, error)
-	// ToPbText marshals ChecksumPattern to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ChecksumPattern to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ChecksumPattern to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ChecksumPattern from protobuf object *openapi.ChecksumPattern
-	FromProto(msg *openapi.ChecksumPattern) (ChecksumPattern, error)
-	// FromPbText unmarshals ChecksumPattern from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ChecksumPattern from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ChecksumPattern from JSON text
-	FromJson(value string) error
-	// Validate validates ChecksumPattern
-	Validate() error
+	setMsg(*openapi.ChecksumPattern) ChecksumPattern
+	// provides marshal interface
+	Marshal() marshalChecksumPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalChecksumPattern
+	// validate validates ChecksumPattern
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -12568,7 +13527,7 @@ type ChecksumPattern interface {
 // Checksum returns a PatternChecksumPatternChecksum
 func (obj *checksumPattern) Checksum() PatternChecksumPatternChecksum {
 	if obj.obj.Checksum == nil {
-		obj.obj.Checksum = NewPatternChecksumPatternChecksum().Msg()
+		obj.obj.Checksum = NewPatternChecksumPatternChecksum().msg()
 	}
 	if obj.checksumHolder == nil {
 		obj.checksumHolder = &patternChecksumPatternChecksum{obj: obj.obj.Checksum}
@@ -12587,7 +13546,7 @@ func (obj *checksumPattern) HasChecksum() bool {
 func (obj *checksumPattern) SetChecksum(value PatternChecksumPatternChecksum) ChecksumPattern {
 
 	obj.checksumHolder = nil
-	obj.obj.Checksum = value.Msg()
+	obj.obj.Checksum = value.msg()
 
 	return obj
 }
@@ -12611,7 +13570,9 @@ func (obj *checksumPattern) setDefault() {
 // ***** Layer1Ieee802X *****
 type layer1Ieee802X struct {
 	validation
-	obj *openapi.Layer1Ieee802X
+	obj          *openapi.Layer1Ieee802X
+	marshaller   marshalLayer1Ieee802X
+	unMarshaller unMarshalLayer1Ieee802X
 }
 
 func NewLayer1Ieee802X() Layer1Ieee802X {
@@ -12620,26 +13581,70 @@ func NewLayer1Ieee802X() Layer1Ieee802X {
 	return &obj
 }
 
-func (obj *layer1Ieee802X) Msg() *openapi.Layer1Ieee802X {
+func (obj *layer1Ieee802X) msg() *openapi.Layer1Ieee802X {
 	return obj.obj
 }
 
-func (obj *layer1Ieee802X) SetMsg(msg *openapi.Layer1Ieee802X) Layer1Ieee802X {
+func (obj *layer1Ieee802X) setMsg(msg *openapi.Layer1Ieee802X) Layer1Ieee802X {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *layer1Ieee802X) ToProto() (*openapi.Layer1Ieee802X, error) {
-	err := obj.validateToAndFrom()
+type marshallayer1Ieee802X struct {
+	obj *layer1Ieee802X
+}
+
+type marshalLayer1Ieee802X interface {
+	// ToProto marshals Layer1Ieee802X to protobuf object *openapi.Layer1Ieee802X
+	ToProto() (*openapi.Layer1Ieee802X, error)
+	// ToPbText marshals Layer1Ieee802X to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Layer1Ieee802X to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Layer1Ieee802X to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallayer1Ieee802X struct {
+	obj *layer1Ieee802X
+}
+
+type unMarshalLayer1Ieee802X interface {
+	// FromProto unmarshals Layer1Ieee802X from protobuf object *openapi.Layer1Ieee802X
+	FromProto(msg *openapi.Layer1Ieee802X) (Layer1Ieee802X, error)
+	// FromPbText unmarshals Layer1Ieee802X from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Layer1Ieee802X from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Layer1Ieee802X from JSON text
+	FromJson(value string) error
+}
+
+func (obj *layer1Ieee802X) Marshal() marshalLayer1Ieee802X {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallayer1Ieee802X{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *layer1Ieee802X) Unmarshal() unMarshalLayer1Ieee802X {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallayer1Ieee802X{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallayer1Ieee802X) ToProto() (*openapi.Layer1Ieee802X, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *layer1Ieee802X) FromProto(msg *openapi.Layer1Ieee802X) (Layer1Ieee802X, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallayer1Ieee802X) FromProto(msg *openapi.Layer1Ieee802X) (Layer1Ieee802X, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -12647,33 +13652,33 @@ func (obj *layer1Ieee802X) FromProto(msg *openapi.Layer1Ieee802X) (Layer1Ieee802
 	return newObj, nil
 }
 
-func (obj *layer1Ieee802X) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallayer1Ieee802X) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *layer1Ieee802X) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallayer1Ieee802X) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *layer1Ieee802X) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallayer1Ieee802X) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12682,7 +13687,7 @@ func (obj *layer1Ieee802X) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -12693,7 +13698,7 @@ func (obj *layer1Ieee802X) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *layer1Ieee802X) FromYaml(value string) error {
+func (m *unMarshallayer1Ieee802X) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -12705,21 +13710,21 @@ func (obj *layer1Ieee802X) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *layer1Ieee802X) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallayer1Ieee802X) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12729,14 +13734,14 @@ func (obj *layer1Ieee802X) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *layer1Ieee802X) FromJson(value string) error {
+func (m *unMarshallayer1Ieee802X) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -12744,13 +13749,13 @@ func (obj *layer1Ieee802X) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -12763,14 +13768,14 @@ func (obj *layer1Ieee802X) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *layer1Ieee802X) Validate() error {
+func (obj *layer1Ieee802X) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *layer1Ieee802X) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -12778,16 +13783,16 @@ func (obj *layer1Ieee802X) String() string {
 }
 
 func (obj *layer1Ieee802X) Clone() (Layer1Ieee802X, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLayer1Ieee802X()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -12797,30 +13802,18 @@ func (obj *layer1Ieee802X) Clone() (Layer1Ieee802X, error) {
 // Layer1Ieee802X is description is TBD
 type Layer1Ieee802X interface {
 	Validation
-	// Msg marshals Layer1Ieee802X to protobuf object *openapi.Layer1Ieee802X
+	// msg marshals Layer1Ieee802X to protobuf object *openapi.Layer1Ieee802X
 	// and doesn't set defaults
-	Msg() *openapi.Layer1Ieee802X
-	// SetMsg unmarshals Layer1Ieee802X from protobuf object *openapi.Layer1Ieee802X
+	msg() *openapi.Layer1Ieee802X
+	// setMsg unmarshals Layer1Ieee802X from protobuf object *openapi.Layer1Ieee802X
 	// and doesn't set defaults
-	SetMsg(*openapi.Layer1Ieee802X) Layer1Ieee802X
-	// ToProto marshals Layer1Ieee802X to protobuf object *openapi.Layer1Ieee802X
-	ToProto() (*openapi.Layer1Ieee802X, error)
-	// ToPbText marshals Layer1Ieee802X to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Layer1Ieee802X to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Layer1Ieee802X to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Layer1Ieee802X from protobuf object *openapi.Layer1Ieee802X
-	FromProto(msg *openapi.Layer1Ieee802X) (Layer1Ieee802X, error)
-	// FromPbText unmarshals Layer1Ieee802X from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Layer1Ieee802X from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Layer1Ieee802X from JSON text
-	FromJson(value string) error
-	// Validate validates Layer1Ieee802X
-	Validate() error
+	setMsg(*openapi.Layer1Ieee802X) Layer1Ieee802X
+	// provides marshal interface
+	Marshal() marshalLayer1Ieee802X
+	// provides unmarshal interface
+	Unmarshal() unMarshalLayer1Ieee802X
+	// validate validates Layer1Ieee802X
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -12872,7 +13865,9 @@ func (obj *layer1Ieee802X) setDefault() {
 // ***** MObject *****
 type mObject struct {
 	validation
-	obj *openapi.MObject
+	obj          *openapi.MObject
+	marshaller   marshalMObject
+	unMarshaller unMarshalMObject
 }
 
 func NewMObject() MObject {
@@ -12881,26 +13876,70 @@ func NewMObject() MObject {
 	return &obj
 }
 
-func (obj *mObject) Msg() *openapi.MObject {
+func (obj *mObject) msg() *openapi.MObject {
 	return obj.obj
 }
 
-func (obj *mObject) SetMsg(msg *openapi.MObject) MObject {
+func (obj *mObject) setMsg(msg *openapi.MObject) MObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *mObject) ToProto() (*openapi.MObject, error) {
-	err := obj.validateToAndFrom()
+type marshalmObject struct {
+	obj *mObject
+}
+
+type marshalMObject interface {
+	// ToProto marshals MObject to protobuf object *openapi.MObject
+	ToProto() (*openapi.MObject, error)
+	// ToPbText marshals MObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmObject struct {
+	obj *mObject
+}
+
+type unMarshalMObject interface {
+	// FromProto unmarshals MObject from protobuf object *openapi.MObject
+	FromProto(msg *openapi.MObject) (MObject, error)
+	// FromPbText unmarshals MObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *mObject) Marshal() marshalMObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *mObject) Unmarshal() unMarshalMObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmObject) ToProto() (*openapi.MObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *mObject) FromProto(msg *openapi.MObject) (MObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalmObject) FromProto(msg *openapi.MObject) (MObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -12908,33 +13947,33 @@ func (obj *mObject) FromProto(msg *openapi.MObject) (MObject, error) {
 	return newObj, nil
 }
 
-func (obj *mObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *mObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalmObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *mObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12943,7 +13982,7 @@ func (obj *mObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -12954,7 +13993,7 @@ func (obj *mObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *mObject) FromYaml(value string) error {
+func (m *unMarshalmObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -12966,21 +14005,21 @@ func (obj *mObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *mObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -12990,14 +14029,14 @@ func (obj *mObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *mObject) FromJson(value string) error {
+func (m *unMarshalmObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -13005,13 +14044,13 @@ func (obj *mObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -13024,14 +14063,14 @@ func (obj *mObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *mObject) Validate() error {
+func (obj *mObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *mObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -13039,16 +14078,16 @@ func (obj *mObject) String() string {
 }
 
 func (obj *mObject) Clone() (MObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewMObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -13058,30 +14097,18 @@ func (obj *mObject) Clone() (MObject, error) {
 // MObject is required format validation object
 type MObject interface {
 	Validation
-	// Msg marshals MObject to protobuf object *openapi.MObject
+	// msg marshals MObject to protobuf object *openapi.MObject
 	// and doesn't set defaults
-	Msg() *openapi.MObject
-	// SetMsg unmarshals MObject from protobuf object *openapi.MObject
+	msg() *openapi.MObject
+	// setMsg unmarshals MObject from protobuf object *openapi.MObject
 	// and doesn't set defaults
-	SetMsg(*openapi.MObject) MObject
-	// ToProto marshals MObject to protobuf object *openapi.MObject
-	ToProto() (*openapi.MObject, error)
-	// ToPbText marshals MObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals MObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals MObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals MObject from protobuf object *openapi.MObject
-	FromProto(msg *openapi.MObject) (MObject, error)
-	// FromPbText unmarshals MObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals MObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals MObject from JSON text
-	FromJson(value string) error
-	// Validate validates MObject
-	Validate() error
+	setMsg(*openapi.MObject) MObject
+	// provides marshal interface
+	Marshal() marshalMObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalMObject
+	// validate validates MObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -13346,7 +14373,9 @@ func (obj *mObject) setDefault() {
 // ***** PatternPrefixConfigHeaderChecksum *****
 type patternPrefixConfigHeaderChecksum struct {
 	validation
-	obj *openapi.PatternPrefixConfigHeaderChecksum
+	obj          *openapi.PatternPrefixConfigHeaderChecksum
+	marshaller   marshalPatternPrefixConfigHeaderChecksum
+	unMarshaller unMarshalPatternPrefixConfigHeaderChecksum
 }
 
 func NewPatternPrefixConfigHeaderChecksum() PatternPrefixConfigHeaderChecksum {
@@ -13355,26 +14384,70 @@ func NewPatternPrefixConfigHeaderChecksum() PatternPrefixConfigHeaderChecksum {
 	return &obj
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) Msg() *openapi.PatternPrefixConfigHeaderChecksum {
+func (obj *patternPrefixConfigHeaderChecksum) msg() *openapi.PatternPrefixConfigHeaderChecksum {
 	return obj.obj
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) SetMsg(msg *openapi.PatternPrefixConfigHeaderChecksum) PatternPrefixConfigHeaderChecksum {
+func (obj *patternPrefixConfigHeaderChecksum) setMsg(msg *openapi.PatternPrefixConfigHeaderChecksum) PatternPrefixConfigHeaderChecksum {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) ToProto() (*openapi.PatternPrefixConfigHeaderChecksum, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternPrefixConfigHeaderChecksum struct {
+	obj *patternPrefixConfigHeaderChecksum
+}
+
+type marshalPatternPrefixConfigHeaderChecksum interface {
+	// ToProto marshals PatternPrefixConfigHeaderChecksum to protobuf object *openapi.PatternPrefixConfigHeaderChecksum
+	ToProto() (*openapi.PatternPrefixConfigHeaderChecksum, error)
+	// ToPbText marshals PatternPrefixConfigHeaderChecksum to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternPrefixConfigHeaderChecksum to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternPrefixConfigHeaderChecksum to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternPrefixConfigHeaderChecksum struct {
+	obj *patternPrefixConfigHeaderChecksum
+}
+
+type unMarshalPatternPrefixConfigHeaderChecksum interface {
+	// FromProto unmarshals PatternPrefixConfigHeaderChecksum from protobuf object *openapi.PatternPrefixConfigHeaderChecksum
+	FromProto(msg *openapi.PatternPrefixConfigHeaderChecksum) (PatternPrefixConfigHeaderChecksum, error)
+	// FromPbText unmarshals PatternPrefixConfigHeaderChecksum from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternPrefixConfigHeaderChecksum from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternPrefixConfigHeaderChecksum from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternPrefixConfigHeaderChecksum) Marshal() marshalPatternPrefixConfigHeaderChecksum {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternPrefixConfigHeaderChecksum{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternPrefixConfigHeaderChecksum) Unmarshal() unMarshalPatternPrefixConfigHeaderChecksum {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternPrefixConfigHeaderChecksum{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternPrefixConfigHeaderChecksum) ToProto() (*openapi.PatternPrefixConfigHeaderChecksum, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) FromProto(msg *openapi.PatternPrefixConfigHeaderChecksum) (PatternPrefixConfigHeaderChecksum, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternPrefixConfigHeaderChecksum) FromProto(msg *openapi.PatternPrefixConfigHeaderChecksum) (PatternPrefixConfigHeaderChecksum, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -13382,33 +14455,33 @@ func (obj *patternPrefixConfigHeaderChecksum) FromProto(msg *openapi.PatternPref
 	return newObj, nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigHeaderChecksum) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternPrefixConfigHeaderChecksum) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigHeaderChecksum) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -13417,7 +14490,7 @@ func (obj *patternPrefixConfigHeaderChecksum) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -13428,7 +14501,7 @@ func (obj *patternPrefixConfigHeaderChecksum) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) FromYaml(value string) error {
+func (m *unMarshalpatternPrefixConfigHeaderChecksum) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -13440,21 +14513,21 @@ func (obj *patternPrefixConfigHeaderChecksum) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigHeaderChecksum) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -13464,14 +14537,14 @@ func (obj *patternPrefixConfigHeaderChecksum) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) FromJson(value string) error {
+func (m *unMarshalpatternPrefixConfigHeaderChecksum) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -13479,13 +14552,13 @@ func (obj *patternPrefixConfigHeaderChecksum) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -13498,14 +14571,14 @@ func (obj *patternPrefixConfigHeaderChecksum) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) Validate() error {
+func (obj *patternPrefixConfigHeaderChecksum) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternPrefixConfigHeaderChecksum) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -13513,16 +14586,16 @@ func (obj *patternPrefixConfigHeaderChecksum) String() string {
 }
 
 func (obj *patternPrefixConfigHeaderChecksum) Clone() (PatternPrefixConfigHeaderChecksum, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternPrefixConfigHeaderChecksum()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -13532,30 +14605,18 @@ func (obj *patternPrefixConfigHeaderChecksum) Clone() (PatternPrefixConfigHeader
 // PatternPrefixConfigHeaderChecksum is header checksum
 type PatternPrefixConfigHeaderChecksum interface {
 	Validation
-	// Msg marshals PatternPrefixConfigHeaderChecksum to protobuf object *openapi.PatternPrefixConfigHeaderChecksum
+	// msg marshals PatternPrefixConfigHeaderChecksum to protobuf object *openapi.PatternPrefixConfigHeaderChecksum
 	// and doesn't set defaults
-	Msg() *openapi.PatternPrefixConfigHeaderChecksum
-	// SetMsg unmarshals PatternPrefixConfigHeaderChecksum from protobuf object *openapi.PatternPrefixConfigHeaderChecksum
+	msg() *openapi.PatternPrefixConfigHeaderChecksum
+	// setMsg unmarshals PatternPrefixConfigHeaderChecksum from protobuf object *openapi.PatternPrefixConfigHeaderChecksum
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternPrefixConfigHeaderChecksum) PatternPrefixConfigHeaderChecksum
-	// ToProto marshals PatternPrefixConfigHeaderChecksum to protobuf object *openapi.PatternPrefixConfigHeaderChecksum
-	ToProto() (*openapi.PatternPrefixConfigHeaderChecksum, error)
-	// ToPbText marshals PatternPrefixConfigHeaderChecksum to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternPrefixConfigHeaderChecksum to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternPrefixConfigHeaderChecksum to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternPrefixConfigHeaderChecksum from protobuf object *openapi.PatternPrefixConfigHeaderChecksum
-	FromProto(msg *openapi.PatternPrefixConfigHeaderChecksum) (PatternPrefixConfigHeaderChecksum, error)
-	// FromPbText unmarshals PatternPrefixConfigHeaderChecksum from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternPrefixConfigHeaderChecksum from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternPrefixConfigHeaderChecksum from JSON text
-	FromJson(value string) error
-	// Validate validates PatternPrefixConfigHeaderChecksum
-	Validate() error
+	setMsg(*openapi.PatternPrefixConfigHeaderChecksum) PatternPrefixConfigHeaderChecksum
+	// provides marshal interface
+	Marshal() marshalPatternPrefixConfigHeaderChecksum
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternPrefixConfigHeaderChecksum
+	// validate validates PatternPrefixConfigHeaderChecksum
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -13565,8 +14626,8 @@ type PatternPrefixConfigHeaderChecksum interface {
 	setDefault()
 	// Choice returns PatternPrefixConfigHeaderChecksumChoiceEnum, set in PatternPrefixConfigHeaderChecksum
 	Choice() PatternPrefixConfigHeaderChecksumChoiceEnum
-	// SetChoice assigns PatternPrefixConfigHeaderChecksumChoiceEnum provided by user to PatternPrefixConfigHeaderChecksum
-	SetChoice(value PatternPrefixConfigHeaderChecksumChoiceEnum) PatternPrefixConfigHeaderChecksum
+	// setChoice assigns PatternPrefixConfigHeaderChecksumChoiceEnum provided by user to PatternPrefixConfigHeaderChecksum
+	setChoice(value PatternPrefixConfigHeaderChecksumChoiceEnum) PatternPrefixConfigHeaderChecksum
 	// HasChoice checks if Choice has been set in PatternPrefixConfigHeaderChecksum
 	HasChoice() bool
 	// Generated returns PatternPrefixConfigHeaderChecksumGeneratedEnum, set in PatternPrefixConfigHeaderChecksum
@@ -13604,7 +14665,7 @@ func (obj *patternPrefixConfigHeaderChecksum) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternPrefixConfigHeaderChecksum) SetChoice(value PatternPrefixConfigHeaderChecksumChoiceEnum) PatternPrefixConfigHeaderChecksum {
+func (obj *patternPrefixConfigHeaderChecksum) setChoice(value PatternPrefixConfigHeaderChecksumChoiceEnum) PatternPrefixConfigHeaderChecksum {
 	intValue, ok := openapi.PatternPrefixConfigHeaderChecksum_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -13657,7 +14718,7 @@ func (obj *patternPrefixConfigHeaderChecksum) SetGenerated(value PatternPrefixCo
 func (obj *patternPrefixConfigHeaderChecksum) Custom() uint32 {
 
 	if obj.obj.Custom == nil {
-		obj.SetChoice(PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
+		obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
 	}
 
 	return *obj.obj.Custom
@@ -13673,7 +14734,7 @@ func (obj *patternPrefixConfigHeaderChecksum) HasCustom() bool {
 // A custom checksum value
 // SetCustom sets the uint32 value in the PatternPrefixConfigHeaderChecksum object
 func (obj *patternPrefixConfigHeaderChecksum) SetCustom(value uint32) PatternPrefixConfigHeaderChecksum {
-	obj.SetChoice(PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
+	obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
 	obj.obj.Custom = &value
 	return obj
 }
@@ -13697,7 +14758,7 @@ func (obj *patternPrefixConfigHeaderChecksum) validateObj(vObj *validation, set_
 
 func (obj *patternPrefixConfigHeaderChecksum) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
+		obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
 		if obj.obj.Generated.Number() == 0 {
 			obj.SetGenerated(PatternPrefixConfigHeaderChecksumGenerated.GOOD)
 
@@ -13711,6 +14772,8 @@ func (obj *patternPrefixConfigHeaderChecksum) setDefault() {
 type patternPrefixConfigAutoFieldTest struct {
 	validation
 	obj             *openapi.PatternPrefixConfigAutoFieldTest
+	marshaller      marshalPatternPrefixConfigAutoFieldTest
+	unMarshaller    unMarshalPatternPrefixConfigAutoFieldTest
 	incrementHolder PatternPrefixConfigAutoFieldTestCounter
 	decrementHolder PatternPrefixConfigAutoFieldTestCounter
 }
@@ -13721,26 +14784,70 @@ func NewPatternPrefixConfigAutoFieldTest() PatternPrefixConfigAutoFieldTest {
 	return &obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) Msg() *openapi.PatternPrefixConfigAutoFieldTest {
+func (obj *patternPrefixConfigAutoFieldTest) msg() *openapi.PatternPrefixConfigAutoFieldTest {
 	return obj.obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) SetMsg(msg *openapi.PatternPrefixConfigAutoFieldTest) PatternPrefixConfigAutoFieldTest {
+func (obj *patternPrefixConfigAutoFieldTest) setMsg(msg *openapi.PatternPrefixConfigAutoFieldTest) PatternPrefixConfigAutoFieldTest {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) ToProto() (*openapi.PatternPrefixConfigAutoFieldTest, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternPrefixConfigAutoFieldTest struct {
+	obj *patternPrefixConfigAutoFieldTest
+}
+
+type marshalPatternPrefixConfigAutoFieldTest interface {
+	// ToProto marshals PatternPrefixConfigAutoFieldTest to protobuf object *openapi.PatternPrefixConfigAutoFieldTest
+	ToProto() (*openapi.PatternPrefixConfigAutoFieldTest, error)
+	// ToPbText marshals PatternPrefixConfigAutoFieldTest to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternPrefixConfigAutoFieldTest to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternPrefixConfigAutoFieldTest to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternPrefixConfigAutoFieldTest struct {
+	obj *patternPrefixConfigAutoFieldTest
+}
+
+type unMarshalPatternPrefixConfigAutoFieldTest interface {
+	// FromProto unmarshals PatternPrefixConfigAutoFieldTest from protobuf object *openapi.PatternPrefixConfigAutoFieldTest
+	FromProto(msg *openapi.PatternPrefixConfigAutoFieldTest) (PatternPrefixConfigAutoFieldTest, error)
+	// FromPbText unmarshals PatternPrefixConfigAutoFieldTest from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternPrefixConfigAutoFieldTest from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternPrefixConfigAutoFieldTest from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternPrefixConfigAutoFieldTest) Marshal() marshalPatternPrefixConfigAutoFieldTest {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternPrefixConfigAutoFieldTest{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternPrefixConfigAutoFieldTest) Unmarshal() unMarshalPatternPrefixConfigAutoFieldTest {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternPrefixConfigAutoFieldTest{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternPrefixConfigAutoFieldTest) ToProto() (*openapi.PatternPrefixConfigAutoFieldTest, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) FromProto(msg *openapi.PatternPrefixConfigAutoFieldTest) (PatternPrefixConfigAutoFieldTest, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternPrefixConfigAutoFieldTest) FromProto(msg *openapi.PatternPrefixConfigAutoFieldTest) (PatternPrefixConfigAutoFieldTest, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -13748,33 +14855,33 @@ func (obj *patternPrefixConfigAutoFieldTest) FromProto(msg *openapi.PatternPrefi
 	return newObj, nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTest) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternPrefixConfigAutoFieldTest) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTest) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -13783,7 +14890,7 @@ func (obj *patternPrefixConfigAutoFieldTest) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -13794,7 +14901,7 @@ func (obj *patternPrefixConfigAutoFieldTest) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) FromYaml(value string) error {
+func (m *unMarshalpatternPrefixConfigAutoFieldTest) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -13806,21 +14913,21 @@ func (obj *patternPrefixConfigAutoFieldTest) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTest) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -13830,14 +14937,14 @@ func (obj *patternPrefixConfigAutoFieldTest) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) FromJson(value string) error {
+func (m *unMarshalpatternPrefixConfigAutoFieldTest) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -13845,13 +14952,13 @@ func (obj *patternPrefixConfigAutoFieldTest) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -13864,14 +14971,14 @@ func (obj *patternPrefixConfigAutoFieldTest) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) Validate() error {
+func (obj *patternPrefixConfigAutoFieldTest) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternPrefixConfigAutoFieldTest) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -13879,16 +14986,16 @@ func (obj *patternPrefixConfigAutoFieldTest) String() string {
 }
 
 func (obj *patternPrefixConfigAutoFieldTest) Clone() (PatternPrefixConfigAutoFieldTest, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternPrefixConfigAutoFieldTest()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -13906,30 +15013,18 @@ func (obj *patternPrefixConfigAutoFieldTest) setNil() {
 // PatternPrefixConfigAutoFieldTest is tBD
 type PatternPrefixConfigAutoFieldTest interface {
 	Validation
-	// Msg marshals PatternPrefixConfigAutoFieldTest to protobuf object *openapi.PatternPrefixConfigAutoFieldTest
+	// msg marshals PatternPrefixConfigAutoFieldTest to protobuf object *openapi.PatternPrefixConfigAutoFieldTest
 	// and doesn't set defaults
-	Msg() *openapi.PatternPrefixConfigAutoFieldTest
-	// SetMsg unmarshals PatternPrefixConfigAutoFieldTest from protobuf object *openapi.PatternPrefixConfigAutoFieldTest
+	msg() *openapi.PatternPrefixConfigAutoFieldTest
+	// setMsg unmarshals PatternPrefixConfigAutoFieldTest from protobuf object *openapi.PatternPrefixConfigAutoFieldTest
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternPrefixConfigAutoFieldTest) PatternPrefixConfigAutoFieldTest
-	// ToProto marshals PatternPrefixConfigAutoFieldTest to protobuf object *openapi.PatternPrefixConfigAutoFieldTest
-	ToProto() (*openapi.PatternPrefixConfigAutoFieldTest, error)
-	// ToPbText marshals PatternPrefixConfigAutoFieldTest to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternPrefixConfigAutoFieldTest to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternPrefixConfigAutoFieldTest to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternPrefixConfigAutoFieldTest from protobuf object *openapi.PatternPrefixConfigAutoFieldTest
-	FromProto(msg *openapi.PatternPrefixConfigAutoFieldTest) (PatternPrefixConfigAutoFieldTest, error)
-	// FromPbText unmarshals PatternPrefixConfigAutoFieldTest from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternPrefixConfigAutoFieldTest from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternPrefixConfigAutoFieldTest from JSON text
-	FromJson(value string) error
-	// Validate validates PatternPrefixConfigAutoFieldTest
-	Validate() error
+	setMsg(*openapi.PatternPrefixConfigAutoFieldTest) PatternPrefixConfigAutoFieldTest
+	// provides marshal interface
+	Marshal() marshalPatternPrefixConfigAutoFieldTest
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternPrefixConfigAutoFieldTest
+	// validate validates PatternPrefixConfigAutoFieldTest
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -13939,8 +15034,8 @@ type PatternPrefixConfigAutoFieldTest interface {
 	setDefault()
 	// Choice returns PatternPrefixConfigAutoFieldTestChoiceEnum, set in PatternPrefixConfigAutoFieldTest
 	Choice() PatternPrefixConfigAutoFieldTestChoiceEnum
-	// SetChoice assigns PatternPrefixConfigAutoFieldTestChoiceEnum provided by user to PatternPrefixConfigAutoFieldTest
-	SetChoice(value PatternPrefixConfigAutoFieldTestChoiceEnum) PatternPrefixConfigAutoFieldTest
+	// setChoice assigns PatternPrefixConfigAutoFieldTestChoiceEnum provided by user to PatternPrefixConfigAutoFieldTest
+	setChoice(value PatternPrefixConfigAutoFieldTestChoiceEnum) PatternPrefixConfigAutoFieldTest
 	// HasChoice checks if Choice has been set in PatternPrefixConfigAutoFieldTest
 	HasChoice() bool
 	// Value returns uint32, set in PatternPrefixConfigAutoFieldTest.
@@ -14003,7 +15098,7 @@ func (obj *patternPrefixConfigAutoFieldTest) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTest) SetChoice(value PatternPrefixConfigAutoFieldTestChoiceEnum) PatternPrefixConfigAutoFieldTest {
+func (obj *patternPrefixConfigAutoFieldTest) setChoice(value PatternPrefixConfigAutoFieldTestChoiceEnum) PatternPrefixConfigAutoFieldTest {
 	intValue, ok := openapi.PatternPrefixConfigAutoFieldTest_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -14036,11 +15131,11 @@ func (obj *patternPrefixConfigAutoFieldTest) SetChoice(value PatternPrefixConfig
 	}
 
 	if value == PatternPrefixConfigAutoFieldTestChoice.INCREMENT {
-		obj.obj.Increment = NewPatternPrefixConfigAutoFieldTestCounter().Msg()
+		obj.obj.Increment = NewPatternPrefixConfigAutoFieldTestCounter().msg()
 	}
 
 	if value == PatternPrefixConfigAutoFieldTestChoice.DECREMENT {
-		obj.obj.Decrement = NewPatternPrefixConfigAutoFieldTestCounter().Msg()
+		obj.obj.Decrement = NewPatternPrefixConfigAutoFieldTestCounter().msg()
 	}
 
 	return obj
@@ -14051,7 +15146,7 @@ func (obj *patternPrefixConfigAutoFieldTest) SetChoice(value PatternPrefixConfig
 func (obj *patternPrefixConfigAutoFieldTest) Value() uint32 {
 
 	if obj.obj.Value == nil {
-		obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.VALUE)
+		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.VALUE)
 	}
 
 	return *obj.obj.Value
@@ -14067,7 +15162,7 @@ func (obj *patternPrefixConfigAutoFieldTest) HasValue() bool {
 // description is TBD
 // SetValue sets the uint32 value in the PatternPrefixConfigAutoFieldTest object
 func (obj *patternPrefixConfigAutoFieldTest) SetValue(value uint32) PatternPrefixConfigAutoFieldTest {
-	obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.VALUE)
+	obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.VALUE)
 	obj.obj.Value = &value
 	return obj
 }
@@ -14084,7 +15179,7 @@ func (obj *patternPrefixConfigAutoFieldTest) Values() []uint32 {
 // description is TBD
 // SetValues sets the []uint32 value in the PatternPrefixConfigAutoFieldTest object
 func (obj *patternPrefixConfigAutoFieldTest) SetValues(value []uint32) PatternPrefixConfigAutoFieldTest {
-	obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.VALUES)
+	obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.VALUES)
 	if obj.obj.Values == nil {
 		obj.obj.Values = make([]uint32, 0)
 	}
@@ -14100,7 +15195,7 @@ func (obj *patternPrefixConfigAutoFieldTest) SetValues(value []uint32) PatternPr
 func (obj *patternPrefixConfigAutoFieldTest) Auto() uint32 {
 
 	if obj.obj.Auto == nil {
-		obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
 	}
 
 	return *obj.obj.Auto
@@ -14119,7 +15214,7 @@ func (obj *patternPrefixConfigAutoFieldTest) HasAuto() bool {
 // Increment returns a PatternPrefixConfigAutoFieldTestCounter
 func (obj *patternPrefixConfigAutoFieldTest) Increment() PatternPrefixConfigAutoFieldTestCounter {
 	if obj.obj.Increment == nil {
-		obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.INCREMENT)
+		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.INCREMENT)
 	}
 	if obj.incrementHolder == nil {
 		obj.incrementHolder = &patternPrefixConfigAutoFieldTestCounter{obj: obj.obj.Increment}
@@ -14136,9 +15231,9 @@ func (obj *patternPrefixConfigAutoFieldTest) HasIncrement() bool {
 // description is TBD
 // SetIncrement sets the PatternPrefixConfigAutoFieldTestCounter value in the PatternPrefixConfigAutoFieldTest object
 func (obj *patternPrefixConfigAutoFieldTest) SetIncrement(value PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTest {
-	obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.INCREMENT)
+	obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.INCREMENT)
 	obj.incrementHolder = nil
-	obj.obj.Increment = value.Msg()
+	obj.obj.Increment = value.msg()
 
 	return obj
 }
@@ -14147,7 +15242,7 @@ func (obj *patternPrefixConfigAutoFieldTest) SetIncrement(value PatternPrefixCon
 // Decrement returns a PatternPrefixConfigAutoFieldTestCounter
 func (obj *patternPrefixConfigAutoFieldTest) Decrement() PatternPrefixConfigAutoFieldTestCounter {
 	if obj.obj.Decrement == nil {
-		obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.DECREMENT)
+		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.DECREMENT)
 	}
 	if obj.decrementHolder == nil {
 		obj.decrementHolder = &patternPrefixConfigAutoFieldTestCounter{obj: obj.obj.Decrement}
@@ -14164,9 +15259,9 @@ func (obj *patternPrefixConfigAutoFieldTest) HasDecrement() bool {
 // description is TBD
 // SetDecrement sets the PatternPrefixConfigAutoFieldTestCounter value in the PatternPrefixConfigAutoFieldTest object
 func (obj *patternPrefixConfigAutoFieldTest) SetDecrement(value PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTest {
-	obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.DECREMENT)
+	obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.DECREMENT)
 	obj.decrementHolder = nil
-	obj.obj.Decrement = value.Msg()
+	obj.obj.Decrement = value.msg()
 
 	return obj
 }
@@ -14223,7 +15318,7 @@ func (obj *patternPrefixConfigAutoFieldTest) validateObj(vObj *validation, set_d
 
 func (obj *patternPrefixConfigAutoFieldTest) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
 
 	}
 
@@ -14232,7 +15327,9 @@ func (obj *patternPrefixConfigAutoFieldTest) setDefault() {
 // ***** WObject *****
 type wObject struct {
 	validation
-	obj *openapi.WObject
+	obj          *openapi.WObject
+	marshaller   marshalWObject
+	unMarshaller unMarshalWObject
 }
 
 func NewWObject() WObject {
@@ -14241,26 +15338,70 @@ func NewWObject() WObject {
 	return &obj
 }
 
-func (obj *wObject) Msg() *openapi.WObject {
+func (obj *wObject) msg() *openapi.WObject {
 	return obj.obj
 }
 
-func (obj *wObject) SetMsg(msg *openapi.WObject) WObject {
+func (obj *wObject) setMsg(msg *openapi.WObject) WObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *wObject) ToProto() (*openapi.WObject, error) {
-	err := obj.validateToAndFrom()
+type marshalwObject struct {
+	obj *wObject
+}
+
+type marshalWObject interface {
+	// ToProto marshals WObject to protobuf object *openapi.WObject
+	ToProto() (*openapi.WObject, error)
+	// ToPbText marshals WObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals WObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals WObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalwObject struct {
+	obj *wObject
+}
+
+type unMarshalWObject interface {
+	// FromProto unmarshals WObject from protobuf object *openapi.WObject
+	FromProto(msg *openapi.WObject) (WObject, error)
+	// FromPbText unmarshals WObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals WObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals WObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *wObject) Marshal() marshalWObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalwObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *wObject) Unmarshal() unMarshalWObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalwObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalwObject) ToProto() (*openapi.WObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *wObject) FromProto(msg *openapi.WObject) (WObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalwObject) FromProto(msg *openapi.WObject) (WObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -14268,33 +15409,33 @@ func (obj *wObject) FromProto(msg *openapi.WObject) (WObject, error) {
 	return newObj, nil
 }
 
-func (obj *wObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *wObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalwObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *wObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14303,7 +15444,7 @@ func (obj *wObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -14314,7 +15455,7 @@ func (obj *wObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *wObject) FromYaml(value string) error {
+func (m *unMarshalwObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -14326,21 +15467,21 @@ func (obj *wObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *wObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14350,14 +15491,14 @@ func (obj *wObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *wObject) FromJson(value string) error {
+func (m *unMarshalwObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -14365,13 +15506,13 @@ func (obj *wObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -14384,14 +15525,14 @@ func (obj *wObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *wObject) Validate() error {
+func (obj *wObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *wObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -14399,16 +15540,16 @@ func (obj *wObject) String() string {
 }
 
 func (obj *wObject) Clone() (WObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewWObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -14418,30 +15559,18 @@ func (obj *wObject) Clone() (WObject, error) {
 // WObject is description is TBD
 type WObject interface {
 	Validation
-	// Msg marshals WObject to protobuf object *openapi.WObject
+	// msg marshals WObject to protobuf object *openapi.WObject
 	// and doesn't set defaults
-	Msg() *openapi.WObject
-	// SetMsg unmarshals WObject from protobuf object *openapi.WObject
+	msg() *openapi.WObject
+	// setMsg unmarshals WObject from protobuf object *openapi.WObject
 	// and doesn't set defaults
-	SetMsg(*openapi.WObject) WObject
-	// ToProto marshals WObject to protobuf object *openapi.WObject
-	ToProto() (*openapi.WObject, error)
-	// ToPbText marshals WObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals WObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals WObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals WObject from protobuf object *openapi.WObject
-	FromProto(msg *openapi.WObject) (WObject, error)
-	// FromPbText unmarshals WObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals WObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals WObject from JSON text
-	FromJson(value string) error
-	// Validate validates WObject
-	Validate() error
+	setMsg(*openapi.WObject) WObject
+	// provides marshal interface
+	Marshal() marshalWObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalWObject
+	// validate validates WObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -14489,7 +15618,9 @@ func (obj *wObject) setDefault() {
 // ***** ZObject *****
 type zObject struct {
 	validation
-	obj *openapi.ZObject
+	obj          *openapi.ZObject
+	marshaller   marshalZObject
+	unMarshaller unMarshalZObject
 }
 
 func NewZObject() ZObject {
@@ -14498,26 +15629,70 @@ func NewZObject() ZObject {
 	return &obj
 }
 
-func (obj *zObject) Msg() *openapi.ZObject {
+func (obj *zObject) msg() *openapi.ZObject {
 	return obj.obj
 }
 
-func (obj *zObject) SetMsg(msg *openapi.ZObject) ZObject {
+func (obj *zObject) setMsg(msg *openapi.ZObject) ZObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *zObject) ToProto() (*openapi.ZObject, error) {
-	err := obj.validateToAndFrom()
+type marshalzObject struct {
+	obj *zObject
+}
+
+type marshalZObject interface {
+	// ToProto marshals ZObject to protobuf object *openapi.ZObject
+	ToProto() (*openapi.ZObject, error)
+	// ToPbText marshals ZObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ZObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ZObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalzObject struct {
+	obj *zObject
+}
+
+type unMarshalZObject interface {
+	// FromProto unmarshals ZObject from protobuf object *openapi.ZObject
+	FromProto(msg *openapi.ZObject) (ZObject, error)
+	// FromPbText unmarshals ZObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ZObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ZObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *zObject) Marshal() marshalZObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalzObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *zObject) Unmarshal() unMarshalZObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalzObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalzObject) ToProto() (*openapi.ZObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *zObject) FromProto(msg *openapi.ZObject) (ZObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalzObject) FromProto(msg *openapi.ZObject) (ZObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -14525,33 +15700,33 @@ func (obj *zObject) FromProto(msg *openapi.ZObject) (ZObject, error) {
 	return newObj, nil
 }
 
-func (obj *zObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalzObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *zObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalzObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *zObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalzObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14560,7 +15735,7 @@ func (obj *zObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -14571,7 +15746,7 @@ func (obj *zObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *zObject) FromYaml(value string) error {
+func (m *unMarshalzObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -14583,21 +15758,21 @@ func (obj *zObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *zObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalzObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14607,14 +15782,14 @@ func (obj *zObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *zObject) FromJson(value string) error {
+func (m *unMarshalzObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -14622,13 +15797,13 @@ func (obj *zObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -14641,14 +15816,14 @@ func (obj *zObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *zObject) Validate() error {
+func (obj *zObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *zObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -14656,16 +15831,16 @@ func (obj *zObject) String() string {
 }
 
 func (obj *zObject) Clone() (ZObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewZObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -14675,30 +15850,18 @@ func (obj *zObject) Clone() (ZObject, error) {
 // ZObject is description is TBD
 type ZObject interface {
 	Validation
-	// Msg marshals ZObject to protobuf object *openapi.ZObject
+	// msg marshals ZObject to protobuf object *openapi.ZObject
 	// and doesn't set defaults
-	Msg() *openapi.ZObject
-	// SetMsg unmarshals ZObject from protobuf object *openapi.ZObject
+	msg() *openapi.ZObject
+	// setMsg unmarshals ZObject from protobuf object *openapi.ZObject
 	// and doesn't set defaults
-	SetMsg(*openapi.ZObject) ZObject
-	// ToProto marshals ZObject to protobuf object *openapi.ZObject
-	ToProto() (*openapi.ZObject, error)
-	// ToPbText marshals ZObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ZObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ZObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ZObject from protobuf object *openapi.ZObject
-	FromProto(msg *openapi.ZObject) (ZObject, error)
-	// FromPbText unmarshals ZObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ZObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ZObject from JSON text
-	FromJson(value string) error
-	// Validate validates ZObject
-	Validate() error
+	setMsg(*openapi.ZObject) ZObject
+	// provides marshal interface
+	Marshal() marshalZObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalZObject
+	// validate validates ZObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -14746,7 +15909,9 @@ func (obj *zObject) setDefault() {
 // ***** YObject *****
 type yObject struct {
 	validation
-	obj *openapi.YObject
+	obj          *openapi.YObject
+	marshaller   marshalYObject
+	unMarshaller unMarshalYObject
 }
 
 func NewYObject() YObject {
@@ -14755,26 +15920,70 @@ func NewYObject() YObject {
 	return &obj
 }
 
-func (obj *yObject) Msg() *openapi.YObject {
+func (obj *yObject) msg() *openapi.YObject {
 	return obj.obj
 }
 
-func (obj *yObject) SetMsg(msg *openapi.YObject) YObject {
+func (obj *yObject) setMsg(msg *openapi.YObject) YObject {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *yObject) ToProto() (*openapi.YObject, error) {
-	err := obj.validateToAndFrom()
+type marshalyObject struct {
+	obj *yObject
+}
+
+type marshalYObject interface {
+	// ToProto marshals YObject to protobuf object *openapi.YObject
+	ToProto() (*openapi.YObject, error)
+	// ToPbText marshals YObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals YObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals YObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalyObject struct {
+	obj *yObject
+}
+
+type unMarshalYObject interface {
+	// FromProto unmarshals YObject from protobuf object *openapi.YObject
+	FromProto(msg *openapi.YObject) (YObject, error)
+	// FromPbText unmarshals YObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals YObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals YObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *yObject) Marshal() marshalYObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalyObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *yObject) Unmarshal() unMarshalYObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalyObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalyObject) ToProto() (*openapi.YObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *yObject) FromProto(msg *openapi.YObject) (YObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalyObject) FromProto(msg *openapi.YObject) (YObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -14782,33 +15991,33 @@ func (obj *yObject) FromProto(msg *openapi.YObject) (YObject, error) {
 	return newObj, nil
 }
 
-func (obj *yObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalyObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *yObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalyObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *yObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalyObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14817,7 +16026,7 @@ func (obj *yObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -14828,7 +16037,7 @@ func (obj *yObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *yObject) FromYaml(value string) error {
+func (m *unMarshalyObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -14840,21 +16049,21 @@ func (obj *yObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *yObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalyObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -14864,14 +16073,14 @@ func (obj *yObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *yObject) FromJson(value string) error {
+func (m *unMarshalyObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -14879,13 +16088,13 @@ func (obj *yObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -14898,14 +16107,14 @@ func (obj *yObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *yObject) Validate() error {
+func (obj *yObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *yObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -14913,16 +16122,16 @@ func (obj *yObject) String() string {
 }
 
 func (obj *yObject) Clone() (YObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewYObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -14932,30 +16141,18 @@ func (obj *yObject) Clone() (YObject, error) {
 // YObject is description is TBD
 type YObject interface {
 	Validation
-	// Msg marshals YObject to protobuf object *openapi.YObject
+	// msg marshals YObject to protobuf object *openapi.YObject
 	// and doesn't set defaults
-	Msg() *openapi.YObject
-	// SetMsg unmarshals YObject from protobuf object *openapi.YObject
+	msg() *openapi.YObject
+	// setMsg unmarshals YObject from protobuf object *openapi.YObject
 	// and doesn't set defaults
-	SetMsg(*openapi.YObject) YObject
-	// ToProto marshals YObject to protobuf object *openapi.YObject
-	ToProto() (*openapi.YObject, error)
-	// ToPbText marshals YObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals YObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals YObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals YObject from protobuf object *openapi.YObject
-	FromProto(msg *openapi.YObject) (YObject, error)
-	// FromPbText unmarshals YObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals YObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals YObject from JSON text
-	FromJson(value string) error
-	// Validate validates YObject
-	Validate() error
+	setMsg(*openapi.YObject) YObject
+	// provides marshal interface
+	Marshal() marshalYObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalYObject
+	// validate validates YObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -15022,9 +16219,11 @@ func (obj *yObject) setDefault() {
 // ***** ChoiceObject *****
 type choiceObject struct {
 	validation
-	obj        *openapi.ChoiceObject
-	eObjHolder EObject
-	fObjHolder FObject
+	obj          *openapi.ChoiceObject
+	marshaller   marshalChoiceObject
+	unMarshaller unMarshalChoiceObject
+	eObjHolder   EObject
+	fObjHolder   FObject
 }
 
 func NewChoiceObject() ChoiceObject {
@@ -15033,26 +16232,70 @@ func NewChoiceObject() ChoiceObject {
 	return &obj
 }
 
-func (obj *choiceObject) Msg() *openapi.ChoiceObject {
+func (obj *choiceObject) msg() *openapi.ChoiceObject {
 	return obj.obj
 }
 
-func (obj *choiceObject) SetMsg(msg *openapi.ChoiceObject) ChoiceObject {
+func (obj *choiceObject) setMsg(msg *openapi.ChoiceObject) ChoiceObject {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *choiceObject) ToProto() (*openapi.ChoiceObject, error) {
-	err := obj.validateToAndFrom()
+type marshalchoiceObject struct {
+	obj *choiceObject
+}
+
+type marshalChoiceObject interface {
+	// ToProto marshals ChoiceObject to protobuf object *openapi.ChoiceObject
+	ToProto() (*openapi.ChoiceObject, error)
+	// ToPbText marshals ChoiceObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChoiceObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChoiceObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchoiceObject struct {
+	obj *choiceObject
+}
+
+type unMarshalChoiceObject interface {
+	// FromProto unmarshals ChoiceObject from protobuf object *openapi.ChoiceObject
+	FromProto(msg *openapi.ChoiceObject) (ChoiceObject, error)
+	// FromPbText unmarshals ChoiceObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChoiceObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChoiceObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *choiceObject) Marshal() marshalChoiceObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchoiceObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *choiceObject) Unmarshal() unMarshalChoiceObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchoiceObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchoiceObject) ToProto() (*openapi.ChoiceObject, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *choiceObject) FromProto(msg *openapi.ChoiceObject) (ChoiceObject, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalchoiceObject) FromProto(msg *openapi.ChoiceObject) (ChoiceObject, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -15060,33 +16303,33 @@ func (obj *choiceObject) FromProto(msg *openapi.ChoiceObject) (ChoiceObject, err
 	return newObj, nil
 }
 
-func (obj *choiceObject) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchoiceObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *choiceObject) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalchoiceObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *choiceObject) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchoiceObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15095,7 +16338,7 @@ func (obj *choiceObject) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -15106,7 +16349,7 @@ func (obj *choiceObject) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *choiceObject) FromYaml(value string) error {
+func (m *unMarshalchoiceObject) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -15118,21 +16361,21 @@ func (obj *choiceObject) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *choiceObject) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalchoiceObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15142,14 +16385,14 @@ func (obj *choiceObject) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *choiceObject) FromJson(value string) error {
+func (m *unMarshalchoiceObject) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -15157,13 +16400,13 @@ func (obj *choiceObject) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -15176,14 +16419,14 @@ func (obj *choiceObject) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *choiceObject) Validate() error {
+func (obj *choiceObject) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *choiceObject) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -15191,16 +16434,16 @@ func (obj *choiceObject) String() string {
 }
 
 func (obj *choiceObject) Clone() (ChoiceObject, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewChoiceObject()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -15218,30 +16461,18 @@ func (obj *choiceObject) setNil() {
 // ChoiceObject is description is TBD
 type ChoiceObject interface {
 	Validation
-	// Msg marshals ChoiceObject to protobuf object *openapi.ChoiceObject
+	// msg marshals ChoiceObject to protobuf object *openapi.ChoiceObject
 	// and doesn't set defaults
-	Msg() *openapi.ChoiceObject
-	// SetMsg unmarshals ChoiceObject from protobuf object *openapi.ChoiceObject
+	msg() *openapi.ChoiceObject
+	// setMsg unmarshals ChoiceObject from protobuf object *openapi.ChoiceObject
 	// and doesn't set defaults
-	SetMsg(*openapi.ChoiceObject) ChoiceObject
-	// ToProto marshals ChoiceObject to protobuf object *openapi.ChoiceObject
-	ToProto() (*openapi.ChoiceObject, error)
-	// ToPbText marshals ChoiceObject to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ChoiceObject to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ChoiceObject to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ChoiceObject from protobuf object *openapi.ChoiceObject
-	FromProto(msg *openapi.ChoiceObject) (ChoiceObject, error)
-	// FromPbText unmarshals ChoiceObject from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ChoiceObject from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ChoiceObject from JSON text
-	FromJson(value string) error
-	// Validate validates ChoiceObject
-	Validate() error
+	setMsg(*openapi.ChoiceObject) ChoiceObject
+	// provides marshal interface
+	Marshal() marshalChoiceObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalChoiceObject
+	// validate validates ChoiceObject
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -15251,10 +16482,12 @@ type ChoiceObject interface {
 	setDefault()
 	// Choice returns ChoiceObjectChoiceEnum, set in ChoiceObject
 	Choice() ChoiceObjectChoiceEnum
-	// SetChoice assigns ChoiceObjectChoiceEnum provided by user to ChoiceObject
-	SetChoice(value ChoiceObjectChoiceEnum) ChoiceObject
+	// setChoice assigns ChoiceObjectChoiceEnum provided by user to ChoiceObject
+	setChoice(value ChoiceObjectChoiceEnum) ChoiceObject
 	// HasChoice checks if Choice has been set in ChoiceObject
 	HasChoice() bool
+	// getter for NoObj to set choice.
+	NoObj()
 	// EObj returns EObject, set in ChoiceObject.
 	// EObject is description is TBD
 	EObj() EObject
@@ -15291,13 +16524,18 @@ func (obj *choiceObject) Choice() ChoiceObjectChoiceEnum {
 	return ChoiceObjectChoiceEnum(obj.obj.Choice.Enum().String())
 }
 
+// getter for NoObj to set choice
+func (obj *choiceObject) NoObj() {
+	obj.setChoice(ChoiceObjectChoice.NO_OBJ)
+}
+
 // description is TBD
 // Choice returns a string
 func (obj *choiceObject) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *choiceObject) SetChoice(value ChoiceObjectChoiceEnum) ChoiceObject {
+func (obj *choiceObject) setChoice(value ChoiceObjectChoiceEnum) ChoiceObject {
 	intValue, ok := openapi.ChoiceObject_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -15312,11 +16550,11 @@ func (obj *choiceObject) SetChoice(value ChoiceObjectChoiceEnum) ChoiceObject {
 	obj.eObjHolder = nil
 
 	if value == ChoiceObjectChoice.E_OBJ {
-		obj.obj.EObj = NewEObject().Msg()
+		obj.obj.EObj = NewEObject().msg()
 	}
 
 	if value == ChoiceObjectChoice.F_OBJ {
-		obj.obj.FObj = NewFObject().Msg()
+		obj.obj.FObj = NewFObject().msg()
 	}
 
 	return obj
@@ -15326,7 +16564,7 @@ func (obj *choiceObject) SetChoice(value ChoiceObjectChoiceEnum) ChoiceObject {
 // EObj returns a EObject
 func (obj *choiceObject) EObj() EObject {
 	if obj.obj.EObj == nil {
-		obj.SetChoice(ChoiceObjectChoice.E_OBJ)
+		obj.setChoice(ChoiceObjectChoice.E_OBJ)
 	}
 	if obj.eObjHolder == nil {
 		obj.eObjHolder = &eObject{obj: obj.obj.EObj}
@@ -15343,9 +16581,9 @@ func (obj *choiceObject) HasEObj() bool {
 // description is TBD
 // SetEObj sets the EObject value in the ChoiceObject object
 func (obj *choiceObject) SetEObj(value EObject) ChoiceObject {
-	obj.SetChoice(ChoiceObjectChoice.E_OBJ)
+	obj.setChoice(ChoiceObjectChoice.E_OBJ)
 	obj.eObjHolder = nil
-	obj.obj.EObj = value.Msg()
+	obj.obj.EObj = value.msg()
 
 	return obj
 }
@@ -15354,7 +16592,7 @@ func (obj *choiceObject) SetEObj(value EObject) ChoiceObject {
 // FObj returns a FObject
 func (obj *choiceObject) FObj() FObject {
 	if obj.obj.FObj == nil {
-		obj.SetChoice(ChoiceObjectChoice.F_OBJ)
+		obj.setChoice(ChoiceObjectChoice.F_OBJ)
 	}
 	if obj.fObjHolder == nil {
 		obj.fObjHolder = &fObject{obj: obj.obj.FObj}
@@ -15371,9 +16609,9 @@ func (obj *choiceObject) HasFObj() bool {
 // description is TBD
 // SetFObj sets the FObject value in the ChoiceObject object
 func (obj *choiceObject) SetFObj(value FObject) ChoiceObject {
-	obj.SetChoice(ChoiceObjectChoice.F_OBJ)
+	obj.setChoice(ChoiceObjectChoice.F_OBJ)
 	obj.fObjHolder = nil
-	obj.obj.FObj = value.Msg()
+	obj.obj.FObj = value.msg()
 
 	return obj
 }
@@ -15397,7 +16635,7 @@ func (obj *choiceObject) validateObj(vObj *validation, set_default bool) {
 
 func (obj *choiceObject) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(ChoiceObjectChoice.NO_OBJ)
+		obj.setChoice(ChoiceObjectChoice.NO_OBJ)
 
 	}
 
@@ -15407,6 +16645,8 @@ func (obj *choiceObject) setDefault() {
 type requiredChoiceParent struct {
 	validation
 	obj                   *openapi.RequiredChoiceParent
+	marshaller            marshalRequiredChoiceParent
+	unMarshaller          unMarshalRequiredChoiceParent
 	intermediateObjHolder RequiredChoiceIntermediate
 }
 
@@ -15416,26 +16656,70 @@ func NewRequiredChoiceParent() RequiredChoiceParent {
 	return &obj
 }
 
-func (obj *requiredChoiceParent) Msg() *openapi.RequiredChoiceParent {
+func (obj *requiredChoiceParent) msg() *openapi.RequiredChoiceParent {
 	return obj.obj
 }
 
-func (obj *requiredChoiceParent) SetMsg(msg *openapi.RequiredChoiceParent) RequiredChoiceParent {
+func (obj *requiredChoiceParent) setMsg(msg *openapi.RequiredChoiceParent) RequiredChoiceParent {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *requiredChoiceParent) ToProto() (*openapi.RequiredChoiceParent, error) {
-	err := obj.validateToAndFrom()
+type marshalrequiredChoiceParent struct {
+	obj *requiredChoiceParent
+}
+
+type marshalRequiredChoiceParent interface {
+	// ToProto marshals RequiredChoiceParent to protobuf object *openapi.RequiredChoiceParent
+	ToProto() (*openapi.RequiredChoiceParent, error)
+	// ToPbText marshals RequiredChoiceParent to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredChoiceParent to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredChoiceParent to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredChoiceParent struct {
+	obj *requiredChoiceParent
+}
+
+type unMarshalRequiredChoiceParent interface {
+	// FromProto unmarshals RequiredChoiceParent from protobuf object *openapi.RequiredChoiceParent
+	FromProto(msg *openapi.RequiredChoiceParent) (RequiredChoiceParent, error)
+	// FromPbText unmarshals RequiredChoiceParent from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredChoiceParent from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredChoiceParent from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredChoiceParent) Marshal() marshalRequiredChoiceParent {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredChoiceParent{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredChoiceParent) Unmarshal() unMarshalRequiredChoiceParent {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredChoiceParent{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredChoiceParent) ToProto() (*openapi.RequiredChoiceParent, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *requiredChoiceParent) FromProto(msg *openapi.RequiredChoiceParent) (RequiredChoiceParent, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalrequiredChoiceParent) FromProto(msg *openapi.RequiredChoiceParent) (RequiredChoiceParent, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -15443,33 +16727,33 @@ func (obj *requiredChoiceParent) FromProto(msg *openapi.RequiredChoiceParent) (R
 	return newObj, nil
 }
 
-func (obj *requiredChoiceParent) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceParent) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *requiredChoiceParent) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalrequiredChoiceParent) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *requiredChoiceParent) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceParent) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15478,7 +16762,7 @@ func (obj *requiredChoiceParent) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -15489,7 +16773,7 @@ func (obj *requiredChoiceParent) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *requiredChoiceParent) FromYaml(value string) error {
+func (m *unMarshalrequiredChoiceParent) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -15501,21 +16785,21 @@ func (obj *requiredChoiceParent) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *requiredChoiceParent) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceParent) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15525,14 +16809,14 @@ func (obj *requiredChoiceParent) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *requiredChoiceParent) FromJson(value string) error {
+func (m *unMarshalrequiredChoiceParent) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -15540,13 +16824,13 @@ func (obj *requiredChoiceParent) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -15559,14 +16843,14 @@ func (obj *requiredChoiceParent) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *requiredChoiceParent) Validate() error {
+func (obj *requiredChoiceParent) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *requiredChoiceParent) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -15574,16 +16858,16 @@ func (obj *requiredChoiceParent) String() string {
 }
 
 func (obj *requiredChoiceParent) Clone() (RequiredChoiceParent, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewRequiredChoiceParent()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -15600,30 +16884,18 @@ func (obj *requiredChoiceParent) setNil() {
 // RequiredChoiceParent is description is TBD
 type RequiredChoiceParent interface {
 	Validation
-	// Msg marshals RequiredChoiceParent to protobuf object *openapi.RequiredChoiceParent
+	// msg marshals RequiredChoiceParent to protobuf object *openapi.RequiredChoiceParent
 	// and doesn't set defaults
-	Msg() *openapi.RequiredChoiceParent
-	// SetMsg unmarshals RequiredChoiceParent from protobuf object *openapi.RequiredChoiceParent
+	msg() *openapi.RequiredChoiceParent
+	// setMsg unmarshals RequiredChoiceParent from protobuf object *openapi.RequiredChoiceParent
 	// and doesn't set defaults
-	SetMsg(*openapi.RequiredChoiceParent) RequiredChoiceParent
-	// ToProto marshals RequiredChoiceParent to protobuf object *openapi.RequiredChoiceParent
-	ToProto() (*openapi.RequiredChoiceParent, error)
-	// ToPbText marshals RequiredChoiceParent to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals RequiredChoiceParent to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals RequiredChoiceParent to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals RequiredChoiceParent from protobuf object *openapi.RequiredChoiceParent
-	FromProto(msg *openapi.RequiredChoiceParent) (RequiredChoiceParent, error)
-	// FromPbText unmarshals RequiredChoiceParent from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals RequiredChoiceParent from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals RequiredChoiceParent from JSON text
-	FromJson(value string) error
-	// Validate validates RequiredChoiceParent
-	Validate() error
+	setMsg(*openapi.RequiredChoiceParent) RequiredChoiceParent
+	// provides marshal interface
+	Marshal() marshalRequiredChoiceParent
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredChoiceParent
+	// validate validates RequiredChoiceParent
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -15633,8 +16905,10 @@ type RequiredChoiceParent interface {
 	setDefault()
 	// Choice returns RequiredChoiceParentChoiceEnum, set in RequiredChoiceParent
 	Choice() RequiredChoiceParentChoiceEnum
-	// SetChoice assigns RequiredChoiceParentChoiceEnum provided by user to RequiredChoiceParent
-	SetChoice(value RequiredChoiceParentChoiceEnum) RequiredChoiceParent
+	// setChoice assigns RequiredChoiceParentChoiceEnum provided by user to RequiredChoiceParent
+	setChoice(value RequiredChoiceParentChoiceEnum) RequiredChoiceParent
+	// getter for NoObj to set choice.
+	NoObj()
 	// IntermediateObj returns RequiredChoiceIntermediate, set in RequiredChoiceParent.
 	// RequiredChoiceIntermediate is description is TBD
 	IntermediateObj() RequiredChoiceIntermediate
@@ -15661,7 +16935,12 @@ func (obj *requiredChoiceParent) Choice() RequiredChoiceParentChoiceEnum {
 	return RequiredChoiceParentChoiceEnum(obj.obj.Choice.Enum().String())
 }
 
-func (obj *requiredChoiceParent) SetChoice(value RequiredChoiceParentChoiceEnum) RequiredChoiceParent {
+// getter for NoObj to set choice
+func (obj *requiredChoiceParent) NoObj() {
+	obj.setChoice(RequiredChoiceParentChoice.NO_OBJ)
+}
+
+func (obj *requiredChoiceParent) setChoice(value RequiredChoiceParentChoiceEnum) RequiredChoiceParent {
 	intValue, ok := openapi.RequiredChoiceParent_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -15674,7 +16953,7 @@ func (obj *requiredChoiceParent) SetChoice(value RequiredChoiceParentChoiceEnum)
 	obj.intermediateObjHolder = nil
 
 	if value == RequiredChoiceParentChoice.INTERMEDIATE_OBJ {
-		obj.obj.IntermediateObj = NewRequiredChoiceIntermediate().Msg()
+		obj.obj.IntermediateObj = NewRequiredChoiceIntermediate().msg()
 	}
 
 	return obj
@@ -15684,7 +16963,7 @@ func (obj *requiredChoiceParent) SetChoice(value RequiredChoiceParentChoiceEnum)
 // IntermediateObj returns a RequiredChoiceIntermediate
 func (obj *requiredChoiceParent) IntermediateObj() RequiredChoiceIntermediate {
 	if obj.obj.IntermediateObj == nil {
-		obj.SetChoice(RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+		obj.setChoice(RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
 	}
 	if obj.intermediateObjHolder == nil {
 		obj.intermediateObjHolder = &requiredChoiceIntermediate{obj: obj.obj.IntermediateObj}
@@ -15701,9 +16980,9 @@ func (obj *requiredChoiceParent) HasIntermediateObj() bool {
 // description is TBD
 // SetIntermediateObj sets the RequiredChoiceIntermediate value in the RequiredChoiceParent object
 func (obj *requiredChoiceParent) SetIntermediateObj(value RequiredChoiceIntermediate) RequiredChoiceParent {
-	obj.SetChoice(RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+	obj.setChoice(RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
 	obj.intermediateObjHolder = nil
-	obj.obj.IntermediateObj = value.Msg()
+	obj.obj.IntermediateObj = value.msg()
 
 	return obj
 }
@@ -15732,7 +17011,9 @@ func (obj *requiredChoiceParent) setDefault() {
 // ***** Error *****
 type _error struct {
 	validation
-	obj *openapi.Error
+	obj          *openapi.Error
+	marshaller   marshalError
+	unMarshaller unMarshalError
 }
 
 func NewError() Error {
@@ -15741,26 +17022,70 @@ func NewError() Error {
 	return &obj
 }
 
-func (obj *_error) Msg() *openapi.Error {
+func (obj *_error) msg() *openapi.Error {
 	return obj.obj
 }
 
-func (obj *_error) SetMsg(msg *openapi.Error) Error {
+func (obj *_error) setMsg(msg *openapi.Error) Error {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *_error) ToProto() (*openapi.Error, error) {
-	err := obj.validateToAndFrom()
+type marshal_error struct {
+	obj *_error
+}
+
+type marshalError interface {
+	// ToProto marshals Error to protobuf object *openapi.Error
+	ToProto() (*openapi.Error, error)
+	// ToPbText marshals Error to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Error to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Error to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshal_error struct {
+	obj *_error
+}
+
+type unMarshalError interface {
+	// FromProto unmarshals Error from protobuf object *openapi.Error
+	FromProto(msg *openapi.Error) (Error, error)
+	// FromPbText unmarshals Error from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Error from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Error from JSON text
+	FromJson(value string) error
+}
+
+func (obj *_error) Marshal() marshalError {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshal_error{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *_error) Unmarshal() unMarshalError {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshal_error{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshal_error) ToProto() (*openapi.Error, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *_error) FromProto(msg *openapi.Error) (Error, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshal_error) FromProto(msg *openapi.Error) (Error, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -15768,33 +17093,33 @@ func (obj *_error) FromProto(msg *openapi.Error) (Error, error) {
 	return newObj, nil
 }
 
-func (obj *_error) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshal_error) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *_error) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshal_error) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *_error) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshal_error) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15803,7 +17128,7 @@ func (obj *_error) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -15814,7 +17139,7 @@ func (obj *_error) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *_error) FromYaml(value string) error {
+func (m *unMarshal_error) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -15826,21 +17151,21 @@ func (obj *_error) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *_error) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshal_error) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -15850,14 +17175,14 @@ func (obj *_error) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *_error) FromJson(value string) error {
+func (m *unMarshal_error) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -15865,13 +17190,13 @@ func (obj *_error) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -15884,14 +17209,14 @@ func (obj *_error) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *_error) Validate() error {
+func (obj *_error) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *_error) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -15899,16 +17224,16 @@ func (obj *_error) String() string {
 }
 
 func (obj *_error) Clone() (Error, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewError()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -15918,30 +17243,18 @@ func (obj *_error) Clone() (Error, error) {
 // Error is error response generated while serving API request.
 type Error interface {
 	Validation
-	// Msg marshals Error to protobuf object *openapi.Error
+	// msg marshals Error to protobuf object *openapi.Error
 	// and doesn't set defaults
-	Msg() *openapi.Error
-	// SetMsg unmarshals Error from protobuf object *openapi.Error
+	msg() *openapi.Error
+	// setMsg unmarshals Error from protobuf object *openapi.Error
 	// and doesn't set defaults
-	SetMsg(*openapi.Error) Error
-	// ToProto marshals Error to protobuf object *openapi.Error
-	ToProto() (*openapi.Error, error)
-	// ToPbText marshals Error to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Error to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Error to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Error from protobuf object *openapi.Error
-	FromProto(msg *openapi.Error) (Error, error)
-	// FromPbText unmarshals Error from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Error from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Error from JSON text
-	FromJson(value string) error
-	// Validate validates Error
-	Validate() error
+	setMsg(*openapi.Error) Error
+	// provides marshal interface
+	Marshal() marshalError
+	// provides unmarshal interface
+	Unmarshal() unMarshalError
+	// validate validates Error
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -15968,7 +17281,7 @@ type Error interface {
 }
 
 func (obj *_error) Error() string {
-	json, err := obj.ToJson()
+	json, err := obj.Marshal().ToJson()
 	if err != nil {
 		return fmt.Sprintf("could not convert Error to JSON: %v", err)
 	}
@@ -16066,9 +17379,11 @@ func (obj *_error) setDefault() {
 // ***** Metrics *****
 type metrics struct {
 	validation
-	obj         *openapi.Metrics
-	portsHolder MetricsPortMetricIter
-	flowsHolder MetricsFlowMetricIter
+	obj          *openapi.Metrics
+	marshaller   marshalMetrics
+	unMarshaller unMarshalMetrics
+	portsHolder  MetricsPortMetricIter
+	flowsHolder  MetricsFlowMetricIter
 }
 
 func NewMetrics() Metrics {
@@ -16077,26 +17392,70 @@ func NewMetrics() Metrics {
 	return &obj
 }
 
-func (obj *metrics) Msg() *openapi.Metrics {
+func (obj *metrics) msg() *openapi.Metrics {
 	return obj.obj
 }
 
-func (obj *metrics) SetMsg(msg *openapi.Metrics) Metrics {
+func (obj *metrics) setMsg(msg *openapi.Metrics) Metrics {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *metrics) ToProto() (*openapi.Metrics, error) {
-	err := obj.validateToAndFrom()
+type marshalmetrics struct {
+	obj *metrics
+}
+
+type marshalMetrics interface {
+	// ToProto marshals Metrics to protobuf object *openapi.Metrics
+	ToProto() (*openapi.Metrics, error)
+	// ToPbText marshals Metrics to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Metrics to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Metrics to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmetrics struct {
+	obj *metrics
+}
+
+type unMarshalMetrics interface {
+	// FromProto unmarshals Metrics from protobuf object *openapi.Metrics
+	FromProto(msg *openapi.Metrics) (Metrics, error)
+	// FromPbText unmarshals Metrics from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Metrics from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Metrics from JSON text
+	FromJson(value string) error
+}
+
+func (obj *metrics) Marshal() marshalMetrics {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmetrics{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *metrics) Unmarshal() unMarshalMetrics {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmetrics{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmetrics) ToProto() (*openapi.Metrics, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *metrics) FromProto(msg *openapi.Metrics) (Metrics, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalmetrics) FromProto(msg *openapi.Metrics) (Metrics, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -16104,33 +17463,33 @@ func (obj *metrics) FromProto(msg *openapi.Metrics) (Metrics, error) {
 	return newObj, nil
 }
 
-func (obj *metrics) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetrics) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *metrics) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalmetrics) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *metrics) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetrics) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16139,7 +17498,7 @@ func (obj *metrics) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -16150,7 +17509,7 @@ func (obj *metrics) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *metrics) FromYaml(value string) error {
+func (m *unMarshalmetrics) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -16162,21 +17521,21 @@ func (obj *metrics) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *metrics) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalmetrics) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16186,14 +17545,14 @@ func (obj *metrics) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *metrics) FromJson(value string) error {
+func (m *unMarshalmetrics) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -16201,13 +17560,13 @@ func (obj *metrics) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -16220,14 +17579,14 @@ func (obj *metrics) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *metrics) Validate() error {
+func (obj *metrics) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *metrics) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -16235,16 +17594,16 @@ func (obj *metrics) String() string {
 }
 
 func (obj *metrics) Clone() (Metrics, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewMetrics()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -16262,30 +17621,18 @@ func (obj *metrics) setNil() {
 // Metrics is description is TBD
 type Metrics interface {
 	Validation
-	// Msg marshals Metrics to protobuf object *openapi.Metrics
+	// msg marshals Metrics to protobuf object *openapi.Metrics
 	// and doesn't set defaults
-	Msg() *openapi.Metrics
-	// SetMsg unmarshals Metrics from protobuf object *openapi.Metrics
+	msg() *openapi.Metrics
+	// setMsg unmarshals Metrics from protobuf object *openapi.Metrics
 	// and doesn't set defaults
-	SetMsg(*openapi.Metrics) Metrics
-	// ToProto marshals Metrics to protobuf object *openapi.Metrics
-	ToProto() (*openapi.Metrics, error)
-	// ToPbText marshals Metrics to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Metrics to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Metrics to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Metrics from protobuf object *openapi.Metrics
-	FromProto(msg *openapi.Metrics) (Metrics, error)
-	// FromPbText unmarshals Metrics from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Metrics from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Metrics from JSON text
-	FromJson(value string) error
-	// Validate validates Metrics
-	Validate() error
+	setMsg(*openapi.Metrics) Metrics
+	// provides marshal interface
+	Marshal() marshalMetrics
+	// provides unmarshal interface
+	Unmarshal() unMarshalMetrics
+	// validate validates Metrics
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -16295,8 +17642,8 @@ type Metrics interface {
 	setDefault()
 	// Choice returns MetricsChoiceEnum, set in Metrics
 	Choice() MetricsChoiceEnum
-	// SetChoice assigns MetricsChoiceEnum provided by user to Metrics
-	SetChoice(value MetricsChoiceEnum) Metrics
+	// setChoice assigns MetricsChoiceEnum provided by user to Metrics
+	setChoice(value MetricsChoiceEnum) Metrics
 	// HasChoice checks if Choice has been set in Metrics
 	HasChoice() bool
 	// Ports returns MetricsPortMetricIterIter, set in Metrics
@@ -16327,7 +17674,7 @@ func (obj *metrics) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *metrics) SetChoice(value MetricsChoiceEnum) Metrics {
+func (obj *metrics) setChoice(value MetricsChoiceEnum) Metrics {
 	intValue, ok := openapi.Metrics_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -16356,7 +17703,7 @@ func (obj *metrics) SetChoice(value MetricsChoiceEnum) Metrics {
 // Ports returns a []PortMetric
 func (obj *metrics) Ports() MetricsPortMetricIter {
 	if len(obj.obj.Ports) == 0 {
-		obj.SetChoice(MetricsChoice.PORTS)
+		obj.setChoice(MetricsChoice.PORTS)
 	}
 	if obj.portsHolder == nil {
 		obj.portsHolder = newMetricsPortMetricIter(&obj.obj.Ports).setMsg(obj)
@@ -16409,7 +17756,7 @@ func (obj *metricsPortMetricIter) Add() PortMetric {
 
 func (obj *metricsPortMetricIter) Append(items ...PortMetric) MetricsPortMetricIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.portMetricSlice = append(obj.portMetricSlice, item)
 	}
@@ -16417,7 +17764,7 @@ func (obj *metricsPortMetricIter) Append(items ...PortMetric) MetricsPortMetricI
 }
 
 func (obj *metricsPortMetricIter) Set(index int, newObj PortMetric) MetricsPortMetricIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.portMetricSlice[index] = newObj
 	return obj
 }
@@ -16443,7 +17790,7 @@ func (obj *metricsPortMetricIter) appendHolderSlice(item PortMetric) MetricsPort
 // Flows returns a []FlowMetric
 func (obj *metrics) Flows() MetricsFlowMetricIter {
 	if len(obj.obj.Flows) == 0 {
-		obj.SetChoice(MetricsChoice.FLOWS)
+		obj.setChoice(MetricsChoice.FLOWS)
 	}
 	if obj.flowsHolder == nil {
 		obj.flowsHolder = newMetricsFlowMetricIter(&obj.obj.Flows).setMsg(obj)
@@ -16496,7 +17843,7 @@ func (obj *metricsFlowMetricIter) Add() FlowMetric {
 
 func (obj *metricsFlowMetricIter) Append(items ...FlowMetric) MetricsFlowMetricIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.flowMetricSlice = append(obj.flowMetricSlice, item)
 	}
@@ -16504,7 +17851,7 @@ func (obj *metricsFlowMetricIter) Append(items ...FlowMetric) MetricsFlowMetricI
 }
 
 func (obj *metricsFlowMetricIter) Set(index int, newObj FlowMetric) MetricsFlowMetricIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.flowMetricSlice[index] = newObj
 	return obj
 }
@@ -16563,7 +17910,7 @@ func (obj *metrics) validateObj(vObj *validation, set_default bool) {
 
 func (obj *metrics) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(MetricsChoice.PORTS)
+		obj.setChoice(MetricsChoice.PORTS)
 
 	}
 
@@ -16572,7 +17919,9 @@ func (obj *metrics) setDefault() {
 // ***** WarningDetails *****
 type warningDetails struct {
 	validation
-	obj *openapi.WarningDetails
+	obj          *openapi.WarningDetails
+	marshaller   marshalWarningDetails
+	unMarshaller unMarshalWarningDetails
 }
 
 func NewWarningDetails() WarningDetails {
@@ -16581,26 +17930,70 @@ func NewWarningDetails() WarningDetails {
 	return &obj
 }
 
-func (obj *warningDetails) Msg() *openapi.WarningDetails {
+func (obj *warningDetails) msg() *openapi.WarningDetails {
 	return obj.obj
 }
 
-func (obj *warningDetails) SetMsg(msg *openapi.WarningDetails) WarningDetails {
+func (obj *warningDetails) setMsg(msg *openapi.WarningDetails) WarningDetails {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *warningDetails) ToProto() (*openapi.WarningDetails, error) {
-	err := obj.validateToAndFrom()
+type marshalwarningDetails struct {
+	obj *warningDetails
+}
+
+type marshalWarningDetails interface {
+	// ToProto marshals WarningDetails to protobuf object *openapi.WarningDetails
+	ToProto() (*openapi.WarningDetails, error)
+	// ToPbText marshals WarningDetails to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals WarningDetails to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals WarningDetails to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalwarningDetails struct {
+	obj *warningDetails
+}
+
+type unMarshalWarningDetails interface {
+	// FromProto unmarshals WarningDetails from protobuf object *openapi.WarningDetails
+	FromProto(msg *openapi.WarningDetails) (WarningDetails, error)
+	// FromPbText unmarshals WarningDetails from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals WarningDetails from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals WarningDetails from JSON text
+	FromJson(value string) error
+}
+
+func (obj *warningDetails) Marshal() marshalWarningDetails {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalwarningDetails{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *warningDetails) Unmarshal() unMarshalWarningDetails {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalwarningDetails{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalwarningDetails) ToProto() (*openapi.WarningDetails, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *warningDetails) FromProto(msg *openapi.WarningDetails) (WarningDetails, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalwarningDetails) FromProto(msg *openapi.WarningDetails) (WarningDetails, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -16608,33 +18001,33 @@ func (obj *warningDetails) FromProto(msg *openapi.WarningDetails) (WarningDetail
 	return newObj, nil
 }
 
-func (obj *warningDetails) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwarningDetails) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *warningDetails) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalwarningDetails) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *warningDetails) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwarningDetails) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16643,7 +18036,7 @@ func (obj *warningDetails) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -16654,7 +18047,7 @@ func (obj *warningDetails) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *warningDetails) FromYaml(value string) error {
+func (m *unMarshalwarningDetails) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -16666,21 +18059,21 @@ func (obj *warningDetails) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *warningDetails) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalwarningDetails) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16690,14 +18083,14 @@ func (obj *warningDetails) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *warningDetails) FromJson(value string) error {
+func (m *unMarshalwarningDetails) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -16705,13 +18098,13 @@ func (obj *warningDetails) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -16724,14 +18117,14 @@ func (obj *warningDetails) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *warningDetails) Validate() error {
+func (obj *warningDetails) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *warningDetails) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -16739,16 +18132,16 @@ func (obj *warningDetails) String() string {
 }
 
 func (obj *warningDetails) Clone() (WarningDetails, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewWarningDetails()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -16758,30 +18151,18 @@ func (obj *warningDetails) Clone() (WarningDetails, error) {
 // WarningDetails is description is TBD
 type WarningDetails interface {
 	Validation
-	// Msg marshals WarningDetails to protobuf object *openapi.WarningDetails
+	// msg marshals WarningDetails to protobuf object *openapi.WarningDetails
 	// and doesn't set defaults
-	Msg() *openapi.WarningDetails
-	// SetMsg unmarshals WarningDetails from protobuf object *openapi.WarningDetails
+	msg() *openapi.WarningDetails
+	// setMsg unmarshals WarningDetails from protobuf object *openapi.WarningDetails
 	// and doesn't set defaults
-	SetMsg(*openapi.WarningDetails) WarningDetails
-	// ToProto marshals WarningDetails to protobuf object *openapi.WarningDetails
-	ToProto() (*openapi.WarningDetails, error)
-	// ToPbText marshals WarningDetails to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals WarningDetails to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals WarningDetails to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals WarningDetails from protobuf object *openapi.WarningDetails
-	FromProto(msg *openapi.WarningDetails) (WarningDetails, error)
-	// FromPbText unmarshals WarningDetails from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals WarningDetails from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals WarningDetails from JSON text
-	FromJson(value string) error
-	// Validate validates WarningDetails
-	Validate() error
+	setMsg(*openapi.WarningDetails) WarningDetails
+	// provides marshal interface
+	Marshal() marshalWarningDetails
+	// provides unmarshal interface
+	Unmarshal() unMarshalWarningDetails
+	// validate validates WarningDetails
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -16830,7 +18211,9 @@ func (obj *warningDetails) setDefault() {
 // ***** CommonResponseSuccess *****
 type commonResponseSuccess struct {
 	validation
-	obj *openapi.CommonResponseSuccess
+	obj          *openapi.CommonResponseSuccess
+	marshaller   marshalCommonResponseSuccess
+	unMarshaller unMarshalCommonResponseSuccess
 }
 
 func NewCommonResponseSuccess() CommonResponseSuccess {
@@ -16839,26 +18222,70 @@ func NewCommonResponseSuccess() CommonResponseSuccess {
 	return &obj
 }
 
-func (obj *commonResponseSuccess) Msg() *openapi.CommonResponseSuccess {
+func (obj *commonResponseSuccess) msg() *openapi.CommonResponseSuccess {
 	return obj.obj
 }
 
-func (obj *commonResponseSuccess) SetMsg(msg *openapi.CommonResponseSuccess) CommonResponseSuccess {
+func (obj *commonResponseSuccess) setMsg(msg *openapi.CommonResponseSuccess) CommonResponseSuccess {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *commonResponseSuccess) ToProto() (*openapi.CommonResponseSuccess, error) {
-	err := obj.validateToAndFrom()
+type marshalcommonResponseSuccess struct {
+	obj *commonResponseSuccess
+}
+
+type marshalCommonResponseSuccess interface {
+	// ToProto marshals CommonResponseSuccess to protobuf object *openapi.CommonResponseSuccess
+	ToProto() (*openapi.CommonResponseSuccess, error)
+	// ToPbText marshals CommonResponseSuccess to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals CommonResponseSuccess to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals CommonResponseSuccess to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalcommonResponseSuccess struct {
+	obj *commonResponseSuccess
+}
+
+type unMarshalCommonResponseSuccess interface {
+	// FromProto unmarshals CommonResponseSuccess from protobuf object *openapi.CommonResponseSuccess
+	FromProto(msg *openapi.CommonResponseSuccess) (CommonResponseSuccess, error)
+	// FromPbText unmarshals CommonResponseSuccess from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals CommonResponseSuccess from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals CommonResponseSuccess from JSON text
+	FromJson(value string) error
+}
+
+func (obj *commonResponseSuccess) Marshal() marshalCommonResponseSuccess {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalcommonResponseSuccess{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *commonResponseSuccess) Unmarshal() unMarshalCommonResponseSuccess {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalcommonResponseSuccess{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalcommonResponseSuccess) ToProto() (*openapi.CommonResponseSuccess, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *commonResponseSuccess) FromProto(msg *openapi.CommonResponseSuccess) (CommonResponseSuccess, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalcommonResponseSuccess) FromProto(msg *openapi.CommonResponseSuccess) (CommonResponseSuccess, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -16866,33 +18293,33 @@ func (obj *commonResponseSuccess) FromProto(msg *openapi.CommonResponseSuccess) 
 	return newObj, nil
 }
 
-func (obj *commonResponseSuccess) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalcommonResponseSuccess) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *commonResponseSuccess) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalcommonResponseSuccess) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *commonResponseSuccess) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalcommonResponseSuccess) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16901,7 +18328,7 @@ func (obj *commonResponseSuccess) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -16912,7 +18339,7 @@ func (obj *commonResponseSuccess) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *commonResponseSuccess) FromYaml(value string) error {
+func (m *unMarshalcommonResponseSuccess) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -16924,21 +18351,21 @@ func (obj *commonResponseSuccess) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *commonResponseSuccess) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalcommonResponseSuccess) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -16948,14 +18375,14 @@ func (obj *commonResponseSuccess) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *commonResponseSuccess) FromJson(value string) error {
+func (m *unMarshalcommonResponseSuccess) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -16963,13 +18390,13 @@ func (obj *commonResponseSuccess) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -16982,14 +18409,14 @@ func (obj *commonResponseSuccess) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *commonResponseSuccess) Validate() error {
+func (obj *commonResponseSuccess) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *commonResponseSuccess) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -16997,16 +18424,16 @@ func (obj *commonResponseSuccess) String() string {
 }
 
 func (obj *commonResponseSuccess) Clone() (CommonResponseSuccess, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewCommonResponseSuccess()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -17016,30 +18443,18 @@ func (obj *commonResponseSuccess) Clone() (CommonResponseSuccess, error) {
 // CommonResponseSuccess is description is TBD
 type CommonResponseSuccess interface {
 	Validation
-	// Msg marshals CommonResponseSuccess to protobuf object *openapi.CommonResponseSuccess
+	// msg marshals CommonResponseSuccess to protobuf object *openapi.CommonResponseSuccess
 	// and doesn't set defaults
-	Msg() *openapi.CommonResponseSuccess
-	// SetMsg unmarshals CommonResponseSuccess from protobuf object *openapi.CommonResponseSuccess
+	msg() *openapi.CommonResponseSuccess
+	// setMsg unmarshals CommonResponseSuccess from protobuf object *openapi.CommonResponseSuccess
 	// and doesn't set defaults
-	SetMsg(*openapi.CommonResponseSuccess) CommonResponseSuccess
-	// ToProto marshals CommonResponseSuccess to protobuf object *openapi.CommonResponseSuccess
-	ToProto() (*openapi.CommonResponseSuccess, error)
-	// ToPbText marshals CommonResponseSuccess to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals CommonResponseSuccess to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals CommonResponseSuccess to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals CommonResponseSuccess from protobuf object *openapi.CommonResponseSuccess
-	FromProto(msg *openapi.CommonResponseSuccess) (CommonResponseSuccess, error)
-	// FromPbText unmarshals CommonResponseSuccess from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals CommonResponseSuccess from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals CommonResponseSuccess from JSON text
-	FromJson(value string) error
-	// Validate validates CommonResponseSuccess
-	Validate() error
+	setMsg(*openapi.CommonResponseSuccess) CommonResponseSuccess
+	// provides marshal interface
+	Marshal() marshalCommonResponseSuccess
+	// provides unmarshal interface
+	Unmarshal() unMarshalCommonResponseSuccess
+	// validate validates CommonResponseSuccess
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -17091,8 +18506,10 @@ func (obj *commonResponseSuccess) setDefault() {
 // ***** ServiceAbcItemList *****
 type serviceAbcItemList struct {
 	validation
-	obj         *openapi.ServiceAbcItemList
-	itemsHolder ServiceAbcItemListServiceAbcItemIter
+	obj          *openapi.ServiceAbcItemList
+	marshaller   marshalServiceAbcItemList
+	unMarshaller unMarshalServiceAbcItemList
+	itemsHolder  ServiceAbcItemListServiceAbcItemIter
 }
 
 func NewServiceAbcItemList() ServiceAbcItemList {
@@ -17101,26 +18518,70 @@ func NewServiceAbcItemList() ServiceAbcItemList {
 	return &obj
 }
 
-func (obj *serviceAbcItemList) Msg() *openapi.ServiceAbcItemList {
+func (obj *serviceAbcItemList) msg() *openapi.ServiceAbcItemList {
 	return obj.obj
 }
 
-func (obj *serviceAbcItemList) SetMsg(msg *openapi.ServiceAbcItemList) ServiceAbcItemList {
+func (obj *serviceAbcItemList) setMsg(msg *openapi.ServiceAbcItemList) ServiceAbcItemList {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *serviceAbcItemList) ToProto() (*openapi.ServiceAbcItemList, error) {
-	err := obj.validateToAndFrom()
+type marshalserviceAbcItemList struct {
+	obj *serviceAbcItemList
+}
+
+type marshalServiceAbcItemList interface {
+	// ToProto marshals ServiceAbcItemList to protobuf object *openapi.ServiceAbcItemList
+	ToProto() (*openapi.ServiceAbcItemList, error)
+	// ToPbText marshals ServiceAbcItemList to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ServiceAbcItemList to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ServiceAbcItemList to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalserviceAbcItemList struct {
+	obj *serviceAbcItemList
+}
+
+type unMarshalServiceAbcItemList interface {
+	// FromProto unmarshals ServiceAbcItemList from protobuf object *openapi.ServiceAbcItemList
+	FromProto(msg *openapi.ServiceAbcItemList) (ServiceAbcItemList, error)
+	// FromPbText unmarshals ServiceAbcItemList from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ServiceAbcItemList from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ServiceAbcItemList from JSON text
+	FromJson(value string) error
+}
+
+func (obj *serviceAbcItemList) Marshal() marshalServiceAbcItemList {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalserviceAbcItemList{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *serviceAbcItemList) Unmarshal() unMarshalServiceAbcItemList {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalserviceAbcItemList{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalserviceAbcItemList) ToProto() (*openapi.ServiceAbcItemList, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *serviceAbcItemList) FromProto(msg *openapi.ServiceAbcItemList) (ServiceAbcItemList, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalserviceAbcItemList) FromProto(msg *openapi.ServiceAbcItemList) (ServiceAbcItemList, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -17128,33 +18589,33 @@ func (obj *serviceAbcItemList) FromProto(msg *openapi.ServiceAbcItemList) (Servi
 	return newObj, nil
 }
 
-func (obj *serviceAbcItemList) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItemList) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *serviceAbcItemList) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalserviceAbcItemList) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *serviceAbcItemList) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItemList) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17163,7 +18624,7 @@ func (obj *serviceAbcItemList) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -17174,7 +18635,7 @@ func (obj *serviceAbcItemList) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *serviceAbcItemList) FromYaml(value string) error {
+func (m *unMarshalserviceAbcItemList) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -17186,21 +18647,21 @@ func (obj *serviceAbcItemList) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *serviceAbcItemList) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItemList) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17210,14 +18671,14 @@ func (obj *serviceAbcItemList) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *serviceAbcItemList) FromJson(value string) error {
+func (m *unMarshalserviceAbcItemList) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -17225,13 +18686,13 @@ func (obj *serviceAbcItemList) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -17244,14 +18705,14 @@ func (obj *serviceAbcItemList) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *serviceAbcItemList) Validate() error {
+func (obj *serviceAbcItemList) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *serviceAbcItemList) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -17259,16 +18720,16 @@ func (obj *serviceAbcItemList) String() string {
 }
 
 func (obj *serviceAbcItemList) Clone() (ServiceAbcItemList, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewServiceAbcItemList()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -17285,30 +18746,18 @@ func (obj *serviceAbcItemList) setNil() {
 // ServiceAbcItemList is description is TBD
 type ServiceAbcItemList interface {
 	Validation
-	// Msg marshals ServiceAbcItemList to protobuf object *openapi.ServiceAbcItemList
+	// msg marshals ServiceAbcItemList to protobuf object *openapi.ServiceAbcItemList
 	// and doesn't set defaults
-	Msg() *openapi.ServiceAbcItemList
-	// SetMsg unmarshals ServiceAbcItemList from protobuf object *openapi.ServiceAbcItemList
+	msg() *openapi.ServiceAbcItemList
+	// setMsg unmarshals ServiceAbcItemList from protobuf object *openapi.ServiceAbcItemList
 	// and doesn't set defaults
-	SetMsg(*openapi.ServiceAbcItemList) ServiceAbcItemList
-	// ToProto marshals ServiceAbcItemList to protobuf object *openapi.ServiceAbcItemList
-	ToProto() (*openapi.ServiceAbcItemList, error)
-	// ToPbText marshals ServiceAbcItemList to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ServiceAbcItemList to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ServiceAbcItemList to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ServiceAbcItemList from protobuf object *openapi.ServiceAbcItemList
-	FromProto(msg *openapi.ServiceAbcItemList) (ServiceAbcItemList, error)
-	// FromPbText unmarshals ServiceAbcItemList from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ServiceAbcItemList from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ServiceAbcItemList from JSON text
-	FromJson(value string) error
-	// Validate validates ServiceAbcItemList
-	Validate() error
+	setMsg(*openapi.ServiceAbcItemList) ServiceAbcItemList
+	// provides marshal interface
+	Marshal() marshalServiceAbcItemList
+	// provides unmarshal interface
+	Unmarshal() unMarshalServiceAbcItemList
+	// validate validates ServiceAbcItemList
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -17378,7 +18827,7 @@ func (obj *serviceAbcItemListServiceAbcItemIter) Add() ServiceAbcItem {
 
 func (obj *serviceAbcItemListServiceAbcItemIter) Append(items ...ServiceAbcItem) ServiceAbcItemListServiceAbcItemIter {
 	for _, item := range items {
-		newObj := item.Msg()
+		newObj := item.msg()
 		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
 		obj.serviceAbcItemSlice = append(obj.serviceAbcItemSlice, item)
 	}
@@ -17386,7 +18835,7 @@ func (obj *serviceAbcItemListServiceAbcItemIter) Append(items ...ServiceAbcItem)
 }
 
 func (obj *serviceAbcItemListServiceAbcItemIter) Set(index int, newObj ServiceAbcItem) ServiceAbcItemListServiceAbcItemIter {
-	(*obj.fieldPtr)[index] = newObj.Msg()
+	(*obj.fieldPtr)[index] = newObj.msg()
 	obj.serviceAbcItemSlice[index] = newObj
 	return obj
 }
@@ -17436,7 +18885,9 @@ func (obj *serviceAbcItemList) setDefault() {
 // ***** ServiceAbcItem *****
 type serviceAbcItem struct {
 	validation
-	obj *openapi.ServiceAbcItem
+	obj          *openapi.ServiceAbcItem
+	marshaller   marshalServiceAbcItem
+	unMarshaller unMarshalServiceAbcItem
 }
 
 func NewServiceAbcItem() ServiceAbcItem {
@@ -17445,26 +18896,70 @@ func NewServiceAbcItem() ServiceAbcItem {
 	return &obj
 }
 
-func (obj *serviceAbcItem) Msg() *openapi.ServiceAbcItem {
+func (obj *serviceAbcItem) msg() *openapi.ServiceAbcItem {
 	return obj.obj
 }
 
-func (obj *serviceAbcItem) SetMsg(msg *openapi.ServiceAbcItem) ServiceAbcItem {
+func (obj *serviceAbcItem) setMsg(msg *openapi.ServiceAbcItem) ServiceAbcItem {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *serviceAbcItem) ToProto() (*openapi.ServiceAbcItem, error) {
-	err := obj.validateToAndFrom()
+type marshalserviceAbcItem struct {
+	obj *serviceAbcItem
+}
+
+type marshalServiceAbcItem interface {
+	// ToProto marshals ServiceAbcItem to protobuf object *openapi.ServiceAbcItem
+	ToProto() (*openapi.ServiceAbcItem, error)
+	// ToPbText marshals ServiceAbcItem to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ServiceAbcItem to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ServiceAbcItem to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalserviceAbcItem struct {
+	obj *serviceAbcItem
+}
+
+type unMarshalServiceAbcItem interface {
+	// FromProto unmarshals ServiceAbcItem from protobuf object *openapi.ServiceAbcItem
+	FromProto(msg *openapi.ServiceAbcItem) (ServiceAbcItem, error)
+	// FromPbText unmarshals ServiceAbcItem from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ServiceAbcItem from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ServiceAbcItem from JSON text
+	FromJson(value string) error
+}
+
+func (obj *serviceAbcItem) Marshal() marshalServiceAbcItem {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalserviceAbcItem{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *serviceAbcItem) Unmarshal() unMarshalServiceAbcItem {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalserviceAbcItem{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalserviceAbcItem) ToProto() (*openapi.ServiceAbcItem, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *serviceAbcItem) FromProto(msg *openapi.ServiceAbcItem) (ServiceAbcItem, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalserviceAbcItem) FromProto(msg *openapi.ServiceAbcItem) (ServiceAbcItem, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -17472,33 +18967,33 @@ func (obj *serviceAbcItem) FromProto(msg *openapi.ServiceAbcItem) (ServiceAbcIte
 	return newObj, nil
 }
 
-func (obj *serviceAbcItem) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItem) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *serviceAbcItem) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalserviceAbcItem) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *serviceAbcItem) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItem) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17507,7 +19002,7 @@ func (obj *serviceAbcItem) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -17518,7 +19013,7 @@ func (obj *serviceAbcItem) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *serviceAbcItem) FromYaml(value string) error {
+func (m *unMarshalserviceAbcItem) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -17530,21 +19025,21 @@ func (obj *serviceAbcItem) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *serviceAbcItem) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalserviceAbcItem) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17554,14 +19049,14 @@ func (obj *serviceAbcItem) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *serviceAbcItem) FromJson(value string) error {
+func (m *unMarshalserviceAbcItem) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -17569,13 +19064,13 @@ func (obj *serviceAbcItem) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -17588,14 +19083,14 @@ func (obj *serviceAbcItem) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *serviceAbcItem) Validate() error {
+func (obj *serviceAbcItem) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *serviceAbcItem) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -17603,16 +19098,16 @@ func (obj *serviceAbcItem) String() string {
 }
 
 func (obj *serviceAbcItem) Clone() (ServiceAbcItem, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewServiceAbcItem()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -17622,30 +19117,18 @@ func (obj *serviceAbcItem) Clone() (ServiceAbcItem, error) {
 // ServiceAbcItem is description is TBD
 type ServiceAbcItem interface {
 	Validation
-	// Msg marshals ServiceAbcItem to protobuf object *openapi.ServiceAbcItem
+	// msg marshals ServiceAbcItem to protobuf object *openapi.ServiceAbcItem
 	// and doesn't set defaults
-	Msg() *openapi.ServiceAbcItem
-	// SetMsg unmarshals ServiceAbcItem from protobuf object *openapi.ServiceAbcItem
+	msg() *openapi.ServiceAbcItem
+	// setMsg unmarshals ServiceAbcItem from protobuf object *openapi.ServiceAbcItem
 	// and doesn't set defaults
-	SetMsg(*openapi.ServiceAbcItem) ServiceAbcItem
-	// ToProto marshals ServiceAbcItem to protobuf object *openapi.ServiceAbcItem
-	ToProto() (*openapi.ServiceAbcItem, error)
-	// ToPbText marshals ServiceAbcItem to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals ServiceAbcItem to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals ServiceAbcItem to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals ServiceAbcItem from protobuf object *openapi.ServiceAbcItem
-	FromProto(msg *openapi.ServiceAbcItem) (ServiceAbcItem, error)
-	// FromPbText unmarshals ServiceAbcItem from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals ServiceAbcItem from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals ServiceAbcItem from JSON text
-	FromJson(value string) error
-	// Validate validates ServiceAbcItem
-	Validate() error
+	setMsg(*openapi.ServiceAbcItem) ServiceAbcItem
+	// provides marshal interface
+	Marshal() marshalServiceAbcItem
+	// provides unmarshal interface
+	Unmarshal() unMarshalServiceAbcItem
+	// validate validates ServiceAbcItem
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -17781,7 +19264,9 @@ func (obj *serviceAbcItem) setDefault() {
 // ***** Version *****
 type version struct {
 	validation
-	obj *openapi.Version
+	obj          *openapi.Version
+	marshaller   marshalVersion
+	unMarshaller unMarshalVersion
 }
 
 func NewVersion() Version {
@@ -17790,26 +19275,70 @@ func NewVersion() Version {
 	return &obj
 }
 
-func (obj *version) Msg() *openapi.Version {
+func (obj *version) msg() *openapi.Version {
 	return obj.obj
 }
 
-func (obj *version) SetMsg(msg *openapi.Version) Version {
+func (obj *version) setMsg(msg *openapi.Version) Version {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *version) ToProto() (*openapi.Version, error) {
-	err := obj.validateToAndFrom()
+type marshalversion struct {
+	obj *version
+}
+
+type marshalVersion interface {
+	// ToProto marshals Version to protobuf object *openapi.Version
+	ToProto() (*openapi.Version, error)
+	// ToPbText marshals Version to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Version to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Version to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalversion struct {
+	obj *version
+}
+
+type unMarshalVersion interface {
+	// FromProto unmarshals Version from protobuf object *openapi.Version
+	FromProto(msg *openapi.Version) (Version, error)
+	// FromPbText unmarshals Version from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Version from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Version from JSON text
+	FromJson(value string) error
+}
+
+func (obj *version) Marshal() marshalVersion {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalversion{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *version) Unmarshal() unMarshalVersion {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalversion{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalversion) ToProto() (*openapi.Version, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *version) FromProto(msg *openapi.Version) (Version, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalversion) FromProto(msg *openapi.Version) (Version, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -17817,33 +19346,33 @@ func (obj *version) FromProto(msg *openapi.Version) (Version, error) {
 	return newObj, nil
 }
 
-func (obj *version) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalversion) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *version) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalversion) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *version) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalversion) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17852,7 +19381,7 @@ func (obj *version) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -17863,7 +19392,7 @@ func (obj *version) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *version) FromYaml(value string) error {
+func (m *unMarshalversion) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -17875,21 +19404,21 @@ func (obj *version) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *version) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalversion) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -17899,14 +19428,14 @@ func (obj *version) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *version) FromJson(value string) error {
+func (m *unMarshalversion) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -17914,13 +19443,13 @@ func (obj *version) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -17933,14 +19462,14 @@ func (obj *version) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *version) Validate() error {
+func (obj *version) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *version) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -17948,16 +19477,16 @@ func (obj *version) String() string {
 }
 
 func (obj *version) Clone() (Version, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewVersion()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -17967,30 +19496,18 @@ func (obj *version) Clone() (Version, error) {
 // Version is version details
 type Version interface {
 	Validation
-	// Msg marshals Version to protobuf object *openapi.Version
+	// msg marshals Version to protobuf object *openapi.Version
 	// and doesn't set defaults
-	Msg() *openapi.Version
-	// SetMsg unmarshals Version from protobuf object *openapi.Version
+	msg() *openapi.Version
+	// setMsg unmarshals Version from protobuf object *openapi.Version
 	// and doesn't set defaults
-	SetMsg(*openapi.Version) Version
-	// ToProto marshals Version to protobuf object *openapi.Version
-	ToProto() (*openapi.Version, error)
-	// ToPbText marshals Version to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals Version to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals Version to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals Version from protobuf object *openapi.Version
-	FromProto(msg *openapi.Version) (Version, error)
-	// FromPbText unmarshals Version from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals Version from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals Version from JSON text
-	FromJson(value string) error
-	// Validate validates Version
-	Validate() error
+	setMsg(*openapi.Version) Version
+	// provides marshal interface
+	Marshal() marshalVersion
+	// provides unmarshal interface
+	Unmarshal() unMarshalVersion
+	// validate validates Version
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -18107,8 +19624,10 @@ func (obj *version) setDefault() {
 // ***** LevelTwo *****
 type levelTwo struct {
 	validation
-	obj        *openapi.LevelTwo
-	l2P1Holder LevelThree
+	obj          *openapi.LevelTwo
+	marshaller   marshalLevelTwo
+	unMarshaller unMarshalLevelTwo
+	l2P1Holder   LevelThree
 }
 
 func NewLevelTwo() LevelTwo {
@@ -18117,26 +19636,70 @@ func NewLevelTwo() LevelTwo {
 	return &obj
 }
 
-func (obj *levelTwo) Msg() *openapi.LevelTwo {
+func (obj *levelTwo) msg() *openapi.LevelTwo {
 	return obj.obj
 }
 
-func (obj *levelTwo) SetMsg(msg *openapi.LevelTwo) LevelTwo {
+func (obj *levelTwo) setMsg(msg *openapi.LevelTwo) LevelTwo {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *levelTwo) ToProto() (*openapi.LevelTwo, error) {
-	err := obj.validateToAndFrom()
+type marshallevelTwo struct {
+	obj *levelTwo
+}
+
+type marshalLevelTwo interface {
+	// ToProto marshals LevelTwo to protobuf object *openapi.LevelTwo
+	ToProto() (*openapi.LevelTwo, error)
+	// ToPbText marshals LevelTwo to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LevelTwo to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LevelTwo to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallevelTwo struct {
+	obj *levelTwo
+}
+
+type unMarshalLevelTwo interface {
+	// FromProto unmarshals LevelTwo from protobuf object *openapi.LevelTwo
+	FromProto(msg *openapi.LevelTwo) (LevelTwo, error)
+	// FromPbText unmarshals LevelTwo from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LevelTwo from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LevelTwo from JSON text
+	FromJson(value string) error
+}
+
+func (obj *levelTwo) Marshal() marshalLevelTwo {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallevelTwo{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *levelTwo) Unmarshal() unMarshalLevelTwo {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallevelTwo{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallevelTwo) ToProto() (*openapi.LevelTwo, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *levelTwo) FromProto(msg *openapi.LevelTwo) (LevelTwo, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallevelTwo) FromProto(msg *openapi.LevelTwo) (LevelTwo, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -18144,33 +19707,33 @@ func (obj *levelTwo) FromProto(msg *openapi.LevelTwo) (LevelTwo, error) {
 	return newObj, nil
 }
 
-func (obj *levelTwo) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelTwo) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *levelTwo) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallevelTwo) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *levelTwo) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelTwo) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18179,7 +19742,7 @@ func (obj *levelTwo) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -18190,7 +19753,7 @@ func (obj *levelTwo) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *levelTwo) FromYaml(value string) error {
+func (m *unMarshallevelTwo) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -18202,21 +19765,21 @@ func (obj *levelTwo) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *levelTwo) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelTwo) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18226,14 +19789,14 @@ func (obj *levelTwo) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *levelTwo) FromJson(value string) error {
+func (m *unMarshallevelTwo) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -18241,13 +19804,13 @@ func (obj *levelTwo) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -18260,14 +19823,14 @@ func (obj *levelTwo) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *levelTwo) Validate() error {
+func (obj *levelTwo) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *levelTwo) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -18275,16 +19838,16 @@ func (obj *levelTwo) String() string {
 }
 
 func (obj *levelTwo) Clone() (LevelTwo, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLevelTwo()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -18301,30 +19864,18 @@ func (obj *levelTwo) setNil() {
 // LevelTwo is test Level 2
 type LevelTwo interface {
 	Validation
-	// Msg marshals LevelTwo to protobuf object *openapi.LevelTwo
+	// msg marshals LevelTwo to protobuf object *openapi.LevelTwo
 	// and doesn't set defaults
-	Msg() *openapi.LevelTwo
-	// SetMsg unmarshals LevelTwo from protobuf object *openapi.LevelTwo
+	msg() *openapi.LevelTwo
+	// setMsg unmarshals LevelTwo from protobuf object *openapi.LevelTwo
 	// and doesn't set defaults
-	SetMsg(*openapi.LevelTwo) LevelTwo
-	// ToProto marshals LevelTwo to protobuf object *openapi.LevelTwo
-	ToProto() (*openapi.LevelTwo, error)
-	// ToPbText marshals LevelTwo to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals LevelTwo to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals LevelTwo to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals LevelTwo from protobuf object *openapi.LevelTwo
-	FromProto(msg *openapi.LevelTwo) (LevelTwo, error)
-	// FromPbText unmarshals LevelTwo from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals LevelTwo from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals LevelTwo from JSON text
-	FromJson(value string) error
-	// Validate validates LevelTwo
-	Validate() error
+	setMsg(*openapi.LevelTwo) LevelTwo
+	// provides marshal interface
+	Marshal() marshalLevelTwo
+	// provides unmarshal interface
+	Unmarshal() unMarshalLevelTwo
+	// validate validates LevelTwo
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -18347,7 +19898,7 @@ type LevelTwo interface {
 // L2P1 returns a LevelThree
 func (obj *levelTwo) L2P1() LevelThree {
 	if obj.obj.L2P1 == nil {
-		obj.obj.L2P1 = NewLevelThree().Msg()
+		obj.obj.L2P1 = NewLevelThree().msg()
 	}
 	if obj.l2P1Holder == nil {
 		obj.l2P1Holder = &levelThree{obj: obj.obj.L2P1}
@@ -18366,7 +19917,7 @@ func (obj *levelTwo) HasL2P1() bool {
 func (obj *levelTwo) SetL2P1(value LevelThree) LevelTwo {
 
 	obj.l2P1Holder = nil
-	obj.obj.L2P1 = value.Msg()
+	obj.obj.L2P1 = value.msg()
 
 	return obj
 }
@@ -18390,8 +19941,10 @@ func (obj *levelTwo) setDefault() {
 // ***** LevelFour *****
 type levelFour struct {
 	validation
-	obj        *openapi.LevelFour
-	l4P1Holder LevelOne
+	obj          *openapi.LevelFour
+	marshaller   marshalLevelFour
+	unMarshaller unMarshalLevelFour
+	l4P1Holder   LevelOne
 }
 
 func NewLevelFour() LevelFour {
@@ -18400,26 +19953,70 @@ func NewLevelFour() LevelFour {
 	return &obj
 }
 
-func (obj *levelFour) Msg() *openapi.LevelFour {
+func (obj *levelFour) msg() *openapi.LevelFour {
 	return obj.obj
 }
 
-func (obj *levelFour) SetMsg(msg *openapi.LevelFour) LevelFour {
+func (obj *levelFour) setMsg(msg *openapi.LevelFour) LevelFour {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *levelFour) ToProto() (*openapi.LevelFour, error) {
-	err := obj.validateToAndFrom()
+type marshallevelFour struct {
+	obj *levelFour
+}
+
+type marshalLevelFour interface {
+	// ToProto marshals LevelFour to protobuf object *openapi.LevelFour
+	ToProto() (*openapi.LevelFour, error)
+	// ToPbText marshals LevelFour to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LevelFour to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LevelFour to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallevelFour struct {
+	obj *levelFour
+}
+
+type unMarshalLevelFour interface {
+	// FromProto unmarshals LevelFour from protobuf object *openapi.LevelFour
+	FromProto(msg *openapi.LevelFour) (LevelFour, error)
+	// FromPbText unmarshals LevelFour from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LevelFour from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LevelFour from JSON text
+	FromJson(value string) error
+}
+
+func (obj *levelFour) Marshal() marshalLevelFour {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallevelFour{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *levelFour) Unmarshal() unMarshalLevelFour {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallevelFour{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallevelFour) ToProto() (*openapi.LevelFour, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *levelFour) FromProto(msg *openapi.LevelFour) (LevelFour, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallevelFour) FromProto(msg *openapi.LevelFour) (LevelFour, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -18427,33 +20024,33 @@ func (obj *levelFour) FromProto(msg *openapi.LevelFour) (LevelFour, error) {
 	return newObj, nil
 }
 
-func (obj *levelFour) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelFour) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *levelFour) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallevelFour) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *levelFour) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelFour) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18462,7 +20059,7 @@ func (obj *levelFour) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -18473,7 +20070,7 @@ func (obj *levelFour) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *levelFour) FromYaml(value string) error {
+func (m *unMarshallevelFour) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -18485,21 +20082,21 @@ func (obj *levelFour) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *levelFour) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelFour) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18509,14 +20106,14 @@ func (obj *levelFour) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *levelFour) FromJson(value string) error {
+func (m *unMarshallevelFour) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -18524,13 +20121,13 @@ func (obj *levelFour) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -18543,14 +20140,14 @@ func (obj *levelFour) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *levelFour) Validate() error {
+func (obj *levelFour) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *levelFour) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -18558,16 +20155,16 @@ func (obj *levelFour) String() string {
 }
 
 func (obj *levelFour) Clone() (LevelFour, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLevelFour()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -18584,30 +20181,18 @@ func (obj *levelFour) setNil() {
 // LevelFour is test level4 redundant junk testing
 type LevelFour interface {
 	Validation
-	// Msg marshals LevelFour to protobuf object *openapi.LevelFour
+	// msg marshals LevelFour to protobuf object *openapi.LevelFour
 	// and doesn't set defaults
-	Msg() *openapi.LevelFour
-	// SetMsg unmarshals LevelFour from protobuf object *openapi.LevelFour
+	msg() *openapi.LevelFour
+	// setMsg unmarshals LevelFour from protobuf object *openapi.LevelFour
 	// and doesn't set defaults
-	SetMsg(*openapi.LevelFour) LevelFour
-	// ToProto marshals LevelFour to protobuf object *openapi.LevelFour
-	ToProto() (*openapi.LevelFour, error)
-	// ToPbText marshals LevelFour to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals LevelFour to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals LevelFour to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals LevelFour from protobuf object *openapi.LevelFour
-	FromProto(msg *openapi.LevelFour) (LevelFour, error)
-	// FromPbText unmarshals LevelFour from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals LevelFour from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals LevelFour from JSON text
-	FromJson(value string) error
-	// Validate validates LevelFour
-	Validate() error
+	setMsg(*openapi.LevelFour) LevelFour
+	// provides marshal interface
+	Marshal() marshalLevelFour
+	// provides unmarshal interface
+	Unmarshal() unMarshalLevelFour
+	// validate validates LevelFour
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -18630,7 +20215,7 @@ type LevelFour interface {
 // L4P1 returns a LevelOne
 func (obj *levelFour) L4P1() LevelOne {
 	if obj.obj.L4P1 == nil {
-		obj.obj.L4P1 = NewLevelOne().Msg()
+		obj.obj.L4P1 = NewLevelOne().msg()
 	}
 	if obj.l4P1Holder == nil {
 		obj.l4P1Holder = &levelOne{obj: obj.obj.L4P1}
@@ -18649,7 +20234,7 @@ func (obj *levelFour) HasL4P1() bool {
 func (obj *levelFour) SetL4P1(value LevelOne) LevelFour {
 
 	obj.l4P1Holder = nil
-	obj.obj.L4P1 = value.Msg()
+	obj.obj.L4P1 = value.msg()
 
 	return obj
 }
@@ -18674,6 +20259,8 @@ func (obj *levelFour) setDefault() {
 type patternIpv4PatternIpv4 struct {
 	validation
 	obj             *openapi.PatternIpv4PatternIpv4
+	marshaller      marshalPatternIpv4PatternIpv4
+	unMarshaller    unMarshalPatternIpv4PatternIpv4
 	incrementHolder PatternIpv4PatternIpv4Counter
 	decrementHolder PatternIpv4PatternIpv4Counter
 }
@@ -18684,26 +20271,70 @@ func NewPatternIpv4PatternIpv4() PatternIpv4PatternIpv4 {
 	return &obj
 }
 
-func (obj *patternIpv4PatternIpv4) Msg() *openapi.PatternIpv4PatternIpv4 {
+func (obj *patternIpv4PatternIpv4) msg() *openapi.PatternIpv4PatternIpv4 {
 	return obj.obj
 }
 
-func (obj *patternIpv4PatternIpv4) SetMsg(msg *openapi.PatternIpv4PatternIpv4) PatternIpv4PatternIpv4 {
+func (obj *patternIpv4PatternIpv4) setMsg(msg *openapi.PatternIpv4PatternIpv4) PatternIpv4PatternIpv4 {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIpv4PatternIpv4) ToProto() (*openapi.PatternIpv4PatternIpv4, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIpv4PatternIpv4 struct {
+	obj *patternIpv4PatternIpv4
+}
+
+type marshalPatternIpv4PatternIpv4 interface {
+	// ToProto marshals PatternIpv4PatternIpv4 to protobuf object *openapi.PatternIpv4PatternIpv4
+	ToProto() (*openapi.PatternIpv4PatternIpv4, error)
+	// ToPbText marshals PatternIpv4PatternIpv4 to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv4PatternIpv4 to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv4PatternIpv4 to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv4PatternIpv4 struct {
+	obj *patternIpv4PatternIpv4
+}
+
+type unMarshalPatternIpv4PatternIpv4 interface {
+	// FromProto unmarshals PatternIpv4PatternIpv4 from protobuf object *openapi.PatternIpv4PatternIpv4
+	FromProto(msg *openapi.PatternIpv4PatternIpv4) (PatternIpv4PatternIpv4, error)
+	// FromPbText unmarshals PatternIpv4PatternIpv4 from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv4PatternIpv4 from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv4PatternIpv4 from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv4PatternIpv4) Marshal() marshalPatternIpv4PatternIpv4 {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv4PatternIpv4{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv4PatternIpv4) Unmarshal() unMarshalPatternIpv4PatternIpv4 {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv4PatternIpv4{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv4PatternIpv4) ToProto() (*openapi.PatternIpv4PatternIpv4, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIpv4PatternIpv4) FromProto(msg *openapi.PatternIpv4PatternIpv4) (PatternIpv4PatternIpv4, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIpv4PatternIpv4) FromProto(msg *openapi.PatternIpv4PatternIpv4) (PatternIpv4PatternIpv4, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -18711,33 +20342,33 @@ func (obj *patternIpv4PatternIpv4) FromProto(msg *openapi.PatternIpv4PatternIpv4
 	return newObj, nil
 }
 
-func (obj *patternIpv4PatternIpv4) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIpv4PatternIpv4) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIpv4PatternIpv4) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIpv4PatternIpv4) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18746,7 +20377,7 @@ func (obj *patternIpv4PatternIpv4) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -18757,7 +20388,7 @@ func (obj *patternIpv4PatternIpv4) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIpv4PatternIpv4) FromYaml(value string) error {
+func (m *unMarshalpatternIpv4PatternIpv4) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -18769,21 +20400,21 @@ func (obj *patternIpv4PatternIpv4) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIpv4PatternIpv4) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -18793,14 +20424,14 @@ func (obj *patternIpv4PatternIpv4) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIpv4PatternIpv4) FromJson(value string) error {
+func (m *unMarshalpatternIpv4PatternIpv4) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -18808,13 +20439,13 @@ func (obj *patternIpv4PatternIpv4) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -18827,14 +20458,14 @@ func (obj *patternIpv4PatternIpv4) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIpv4PatternIpv4) Validate() error {
+func (obj *patternIpv4PatternIpv4) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIpv4PatternIpv4) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -18842,16 +20473,16 @@ func (obj *patternIpv4PatternIpv4) String() string {
 }
 
 func (obj *patternIpv4PatternIpv4) Clone() (PatternIpv4PatternIpv4, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIpv4PatternIpv4()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -18869,30 +20500,18 @@ func (obj *patternIpv4PatternIpv4) setNil() {
 // PatternIpv4PatternIpv4 is tBD
 type PatternIpv4PatternIpv4 interface {
 	Validation
-	// Msg marshals PatternIpv4PatternIpv4 to protobuf object *openapi.PatternIpv4PatternIpv4
+	// msg marshals PatternIpv4PatternIpv4 to protobuf object *openapi.PatternIpv4PatternIpv4
 	// and doesn't set defaults
-	Msg() *openapi.PatternIpv4PatternIpv4
-	// SetMsg unmarshals PatternIpv4PatternIpv4 from protobuf object *openapi.PatternIpv4PatternIpv4
+	msg() *openapi.PatternIpv4PatternIpv4
+	// setMsg unmarshals PatternIpv4PatternIpv4 from protobuf object *openapi.PatternIpv4PatternIpv4
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIpv4PatternIpv4) PatternIpv4PatternIpv4
-	// ToProto marshals PatternIpv4PatternIpv4 to protobuf object *openapi.PatternIpv4PatternIpv4
-	ToProto() (*openapi.PatternIpv4PatternIpv4, error)
-	// ToPbText marshals PatternIpv4PatternIpv4 to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIpv4PatternIpv4 to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIpv4PatternIpv4 to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIpv4PatternIpv4 from protobuf object *openapi.PatternIpv4PatternIpv4
-	FromProto(msg *openapi.PatternIpv4PatternIpv4) (PatternIpv4PatternIpv4, error)
-	// FromPbText unmarshals PatternIpv4PatternIpv4 from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIpv4PatternIpv4 from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIpv4PatternIpv4 from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIpv4PatternIpv4
-	Validate() error
+	setMsg(*openapi.PatternIpv4PatternIpv4) PatternIpv4PatternIpv4
+	// provides marshal interface
+	Marshal() marshalPatternIpv4PatternIpv4
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv4PatternIpv4
+	// validate validates PatternIpv4PatternIpv4
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -18902,8 +20521,8 @@ type PatternIpv4PatternIpv4 interface {
 	setDefault()
 	// Choice returns PatternIpv4PatternIpv4ChoiceEnum, set in PatternIpv4PatternIpv4
 	Choice() PatternIpv4PatternIpv4ChoiceEnum
-	// SetChoice assigns PatternIpv4PatternIpv4ChoiceEnum provided by user to PatternIpv4PatternIpv4
-	SetChoice(value PatternIpv4PatternIpv4ChoiceEnum) PatternIpv4PatternIpv4
+	// setChoice assigns PatternIpv4PatternIpv4ChoiceEnum provided by user to PatternIpv4PatternIpv4
+	setChoice(value PatternIpv4PatternIpv4ChoiceEnum) PatternIpv4PatternIpv4
 	// HasChoice checks if Choice has been set in PatternIpv4PatternIpv4
 	HasChoice() bool
 	// Value returns string, set in PatternIpv4PatternIpv4.
@@ -18960,7 +20579,7 @@ func (obj *patternIpv4PatternIpv4) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternIpv4PatternIpv4) SetChoice(value PatternIpv4PatternIpv4ChoiceEnum) PatternIpv4PatternIpv4 {
+func (obj *patternIpv4PatternIpv4) setChoice(value PatternIpv4PatternIpv4ChoiceEnum) PatternIpv4PatternIpv4 {
 	intValue, ok := openapi.PatternIpv4PatternIpv4_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -18987,11 +20606,11 @@ func (obj *patternIpv4PatternIpv4) SetChoice(value PatternIpv4PatternIpv4ChoiceE
 	}
 
 	if value == PatternIpv4PatternIpv4Choice.INCREMENT {
-		obj.obj.Increment = NewPatternIpv4PatternIpv4Counter().Msg()
+		obj.obj.Increment = NewPatternIpv4PatternIpv4Counter().msg()
 	}
 
 	if value == PatternIpv4PatternIpv4Choice.DECREMENT {
-		obj.obj.Decrement = NewPatternIpv4PatternIpv4Counter().Msg()
+		obj.obj.Decrement = NewPatternIpv4PatternIpv4Counter().msg()
 	}
 
 	return obj
@@ -19002,7 +20621,7 @@ func (obj *patternIpv4PatternIpv4) SetChoice(value PatternIpv4PatternIpv4ChoiceE
 func (obj *patternIpv4PatternIpv4) Value() string {
 
 	if obj.obj.Value == nil {
-		obj.SetChoice(PatternIpv4PatternIpv4Choice.VALUE)
+		obj.setChoice(PatternIpv4PatternIpv4Choice.VALUE)
 	}
 
 	return *obj.obj.Value
@@ -19018,7 +20637,7 @@ func (obj *patternIpv4PatternIpv4) HasValue() bool {
 // description is TBD
 // SetValue sets the string value in the PatternIpv4PatternIpv4 object
 func (obj *patternIpv4PatternIpv4) SetValue(value string) PatternIpv4PatternIpv4 {
-	obj.SetChoice(PatternIpv4PatternIpv4Choice.VALUE)
+	obj.setChoice(PatternIpv4PatternIpv4Choice.VALUE)
 	obj.obj.Value = &value
 	return obj
 }
@@ -19035,7 +20654,7 @@ func (obj *patternIpv4PatternIpv4) Values() []string {
 // description is TBD
 // SetValues sets the []string value in the PatternIpv4PatternIpv4 object
 func (obj *patternIpv4PatternIpv4) SetValues(value []string) PatternIpv4PatternIpv4 {
-	obj.SetChoice(PatternIpv4PatternIpv4Choice.VALUES)
+	obj.setChoice(PatternIpv4PatternIpv4Choice.VALUES)
 	if obj.obj.Values == nil {
 		obj.obj.Values = make([]string, 0)
 	}
@@ -19048,7 +20667,7 @@ func (obj *patternIpv4PatternIpv4) SetValues(value []string) PatternIpv4PatternI
 // Increment returns a PatternIpv4PatternIpv4Counter
 func (obj *patternIpv4PatternIpv4) Increment() PatternIpv4PatternIpv4Counter {
 	if obj.obj.Increment == nil {
-		obj.SetChoice(PatternIpv4PatternIpv4Choice.INCREMENT)
+		obj.setChoice(PatternIpv4PatternIpv4Choice.INCREMENT)
 	}
 	if obj.incrementHolder == nil {
 		obj.incrementHolder = &patternIpv4PatternIpv4Counter{obj: obj.obj.Increment}
@@ -19065,9 +20684,9 @@ func (obj *patternIpv4PatternIpv4) HasIncrement() bool {
 // description is TBD
 // SetIncrement sets the PatternIpv4PatternIpv4Counter value in the PatternIpv4PatternIpv4 object
 func (obj *patternIpv4PatternIpv4) SetIncrement(value PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4 {
-	obj.SetChoice(PatternIpv4PatternIpv4Choice.INCREMENT)
+	obj.setChoice(PatternIpv4PatternIpv4Choice.INCREMENT)
 	obj.incrementHolder = nil
-	obj.obj.Increment = value.Msg()
+	obj.obj.Increment = value.msg()
 
 	return obj
 }
@@ -19076,7 +20695,7 @@ func (obj *patternIpv4PatternIpv4) SetIncrement(value PatternIpv4PatternIpv4Coun
 // Decrement returns a PatternIpv4PatternIpv4Counter
 func (obj *patternIpv4PatternIpv4) Decrement() PatternIpv4PatternIpv4Counter {
 	if obj.obj.Decrement == nil {
-		obj.SetChoice(PatternIpv4PatternIpv4Choice.DECREMENT)
+		obj.setChoice(PatternIpv4PatternIpv4Choice.DECREMENT)
 	}
 	if obj.decrementHolder == nil {
 		obj.decrementHolder = &patternIpv4PatternIpv4Counter{obj: obj.obj.Decrement}
@@ -19093,9 +20712,9 @@ func (obj *patternIpv4PatternIpv4) HasDecrement() bool {
 // description is TBD
 // SetDecrement sets the PatternIpv4PatternIpv4Counter value in the PatternIpv4PatternIpv4 object
 func (obj *patternIpv4PatternIpv4) SetDecrement(value PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4 {
-	obj.SetChoice(PatternIpv4PatternIpv4Choice.DECREMENT)
+	obj.setChoice(PatternIpv4PatternIpv4Choice.DECREMENT)
 	obj.decrementHolder = nil
-	obj.obj.Decrement = value.Msg()
+	obj.obj.Decrement = value.msg()
 
 	return obj
 }
@@ -19137,7 +20756,7 @@ func (obj *patternIpv4PatternIpv4) validateObj(vObj *validation, set_default boo
 
 func (obj *patternIpv4PatternIpv4) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternIpv4PatternIpv4Choice.VALUE)
+		obj.setChoice(PatternIpv4PatternIpv4Choice.VALUE)
 
 	}
 
@@ -19147,6 +20766,8 @@ func (obj *patternIpv4PatternIpv4) setDefault() {
 type patternIpv6PatternIpv6 struct {
 	validation
 	obj             *openapi.PatternIpv6PatternIpv6
+	marshaller      marshalPatternIpv6PatternIpv6
+	unMarshaller    unMarshalPatternIpv6PatternIpv6
 	incrementHolder PatternIpv6PatternIpv6Counter
 	decrementHolder PatternIpv6PatternIpv6Counter
 }
@@ -19157,26 +20778,70 @@ func NewPatternIpv6PatternIpv6() PatternIpv6PatternIpv6 {
 	return &obj
 }
 
-func (obj *patternIpv6PatternIpv6) Msg() *openapi.PatternIpv6PatternIpv6 {
+func (obj *patternIpv6PatternIpv6) msg() *openapi.PatternIpv6PatternIpv6 {
 	return obj.obj
 }
 
-func (obj *patternIpv6PatternIpv6) SetMsg(msg *openapi.PatternIpv6PatternIpv6) PatternIpv6PatternIpv6 {
+func (obj *patternIpv6PatternIpv6) setMsg(msg *openapi.PatternIpv6PatternIpv6) PatternIpv6PatternIpv6 {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIpv6PatternIpv6) ToProto() (*openapi.PatternIpv6PatternIpv6, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIpv6PatternIpv6 struct {
+	obj *patternIpv6PatternIpv6
+}
+
+type marshalPatternIpv6PatternIpv6 interface {
+	// ToProto marshals PatternIpv6PatternIpv6 to protobuf object *openapi.PatternIpv6PatternIpv6
+	ToProto() (*openapi.PatternIpv6PatternIpv6, error)
+	// ToPbText marshals PatternIpv6PatternIpv6 to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv6PatternIpv6 to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv6PatternIpv6 to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv6PatternIpv6 struct {
+	obj *patternIpv6PatternIpv6
+}
+
+type unMarshalPatternIpv6PatternIpv6 interface {
+	// FromProto unmarshals PatternIpv6PatternIpv6 from protobuf object *openapi.PatternIpv6PatternIpv6
+	FromProto(msg *openapi.PatternIpv6PatternIpv6) (PatternIpv6PatternIpv6, error)
+	// FromPbText unmarshals PatternIpv6PatternIpv6 from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv6PatternIpv6 from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv6PatternIpv6 from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv6PatternIpv6) Marshal() marshalPatternIpv6PatternIpv6 {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv6PatternIpv6{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv6PatternIpv6) Unmarshal() unMarshalPatternIpv6PatternIpv6 {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv6PatternIpv6{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv6PatternIpv6) ToProto() (*openapi.PatternIpv6PatternIpv6, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIpv6PatternIpv6) FromProto(msg *openapi.PatternIpv6PatternIpv6) (PatternIpv6PatternIpv6, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIpv6PatternIpv6) FromProto(msg *openapi.PatternIpv6PatternIpv6) (PatternIpv6PatternIpv6, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -19184,33 +20849,33 @@ func (obj *patternIpv6PatternIpv6) FromProto(msg *openapi.PatternIpv6PatternIpv6
 	return newObj, nil
 }
 
-func (obj *patternIpv6PatternIpv6) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIpv6PatternIpv6) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIpv6PatternIpv6) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIpv6PatternIpv6) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -19219,7 +20884,7 @@ func (obj *patternIpv6PatternIpv6) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -19230,7 +20895,7 @@ func (obj *patternIpv6PatternIpv6) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIpv6PatternIpv6) FromYaml(value string) error {
+func (m *unMarshalpatternIpv6PatternIpv6) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -19242,21 +20907,21 @@ func (obj *patternIpv6PatternIpv6) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIpv6PatternIpv6) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -19266,14 +20931,14 @@ func (obj *patternIpv6PatternIpv6) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIpv6PatternIpv6) FromJson(value string) error {
+func (m *unMarshalpatternIpv6PatternIpv6) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -19281,13 +20946,13 @@ func (obj *patternIpv6PatternIpv6) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -19300,14 +20965,14 @@ func (obj *patternIpv6PatternIpv6) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIpv6PatternIpv6) Validate() error {
+func (obj *patternIpv6PatternIpv6) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIpv6PatternIpv6) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -19315,16 +20980,16 @@ func (obj *patternIpv6PatternIpv6) String() string {
 }
 
 func (obj *patternIpv6PatternIpv6) Clone() (PatternIpv6PatternIpv6, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIpv6PatternIpv6()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -19342,30 +21007,18 @@ func (obj *patternIpv6PatternIpv6) setNil() {
 // PatternIpv6PatternIpv6 is tBD
 type PatternIpv6PatternIpv6 interface {
 	Validation
-	// Msg marshals PatternIpv6PatternIpv6 to protobuf object *openapi.PatternIpv6PatternIpv6
+	// msg marshals PatternIpv6PatternIpv6 to protobuf object *openapi.PatternIpv6PatternIpv6
 	// and doesn't set defaults
-	Msg() *openapi.PatternIpv6PatternIpv6
-	// SetMsg unmarshals PatternIpv6PatternIpv6 from protobuf object *openapi.PatternIpv6PatternIpv6
+	msg() *openapi.PatternIpv6PatternIpv6
+	// setMsg unmarshals PatternIpv6PatternIpv6 from protobuf object *openapi.PatternIpv6PatternIpv6
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIpv6PatternIpv6) PatternIpv6PatternIpv6
-	// ToProto marshals PatternIpv6PatternIpv6 to protobuf object *openapi.PatternIpv6PatternIpv6
-	ToProto() (*openapi.PatternIpv6PatternIpv6, error)
-	// ToPbText marshals PatternIpv6PatternIpv6 to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIpv6PatternIpv6 to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIpv6PatternIpv6 to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIpv6PatternIpv6 from protobuf object *openapi.PatternIpv6PatternIpv6
-	FromProto(msg *openapi.PatternIpv6PatternIpv6) (PatternIpv6PatternIpv6, error)
-	// FromPbText unmarshals PatternIpv6PatternIpv6 from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIpv6PatternIpv6 from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIpv6PatternIpv6 from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIpv6PatternIpv6
-	Validate() error
+	setMsg(*openapi.PatternIpv6PatternIpv6) PatternIpv6PatternIpv6
+	// provides marshal interface
+	Marshal() marshalPatternIpv6PatternIpv6
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv6PatternIpv6
+	// validate validates PatternIpv6PatternIpv6
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -19375,8 +21028,8 @@ type PatternIpv6PatternIpv6 interface {
 	setDefault()
 	// Choice returns PatternIpv6PatternIpv6ChoiceEnum, set in PatternIpv6PatternIpv6
 	Choice() PatternIpv6PatternIpv6ChoiceEnum
-	// SetChoice assigns PatternIpv6PatternIpv6ChoiceEnum provided by user to PatternIpv6PatternIpv6
-	SetChoice(value PatternIpv6PatternIpv6ChoiceEnum) PatternIpv6PatternIpv6
+	// setChoice assigns PatternIpv6PatternIpv6ChoiceEnum provided by user to PatternIpv6PatternIpv6
+	setChoice(value PatternIpv6PatternIpv6ChoiceEnum) PatternIpv6PatternIpv6
 	// HasChoice checks if Choice has been set in PatternIpv6PatternIpv6
 	HasChoice() bool
 	// Value returns string, set in PatternIpv6PatternIpv6.
@@ -19433,7 +21086,7 @@ func (obj *patternIpv6PatternIpv6) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternIpv6PatternIpv6) SetChoice(value PatternIpv6PatternIpv6ChoiceEnum) PatternIpv6PatternIpv6 {
+func (obj *patternIpv6PatternIpv6) setChoice(value PatternIpv6PatternIpv6ChoiceEnum) PatternIpv6PatternIpv6 {
 	intValue, ok := openapi.PatternIpv6PatternIpv6_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -19460,11 +21113,11 @@ func (obj *patternIpv6PatternIpv6) SetChoice(value PatternIpv6PatternIpv6ChoiceE
 	}
 
 	if value == PatternIpv6PatternIpv6Choice.INCREMENT {
-		obj.obj.Increment = NewPatternIpv6PatternIpv6Counter().Msg()
+		obj.obj.Increment = NewPatternIpv6PatternIpv6Counter().msg()
 	}
 
 	if value == PatternIpv6PatternIpv6Choice.DECREMENT {
-		obj.obj.Decrement = NewPatternIpv6PatternIpv6Counter().Msg()
+		obj.obj.Decrement = NewPatternIpv6PatternIpv6Counter().msg()
 	}
 
 	return obj
@@ -19475,7 +21128,7 @@ func (obj *patternIpv6PatternIpv6) SetChoice(value PatternIpv6PatternIpv6ChoiceE
 func (obj *patternIpv6PatternIpv6) Value() string {
 
 	if obj.obj.Value == nil {
-		obj.SetChoice(PatternIpv6PatternIpv6Choice.VALUE)
+		obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
 	}
 
 	return *obj.obj.Value
@@ -19491,7 +21144,7 @@ func (obj *patternIpv6PatternIpv6) HasValue() bool {
 // description is TBD
 // SetValue sets the string value in the PatternIpv6PatternIpv6 object
 func (obj *patternIpv6PatternIpv6) SetValue(value string) PatternIpv6PatternIpv6 {
-	obj.SetChoice(PatternIpv6PatternIpv6Choice.VALUE)
+	obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
 	obj.obj.Value = &value
 	return obj
 }
@@ -19508,7 +21161,7 @@ func (obj *patternIpv6PatternIpv6) Values() []string {
 // description is TBD
 // SetValues sets the []string value in the PatternIpv6PatternIpv6 object
 func (obj *patternIpv6PatternIpv6) SetValues(value []string) PatternIpv6PatternIpv6 {
-	obj.SetChoice(PatternIpv6PatternIpv6Choice.VALUES)
+	obj.setChoice(PatternIpv6PatternIpv6Choice.VALUES)
 	if obj.obj.Values == nil {
 		obj.obj.Values = make([]string, 0)
 	}
@@ -19521,7 +21174,7 @@ func (obj *patternIpv6PatternIpv6) SetValues(value []string) PatternIpv6PatternI
 // Increment returns a PatternIpv6PatternIpv6Counter
 func (obj *patternIpv6PatternIpv6) Increment() PatternIpv6PatternIpv6Counter {
 	if obj.obj.Increment == nil {
-		obj.SetChoice(PatternIpv6PatternIpv6Choice.INCREMENT)
+		obj.setChoice(PatternIpv6PatternIpv6Choice.INCREMENT)
 	}
 	if obj.incrementHolder == nil {
 		obj.incrementHolder = &patternIpv6PatternIpv6Counter{obj: obj.obj.Increment}
@@ -19538,9 +21191,9 @@ func (obj *patternIpv6PatternIpv6) HasIncrement() bool {
 // description is TBD
 // SetIncrement sets the PatternIpv6PatternIpv6Counter value in the PatternIpv6PatternIpv6 object
 func (obj *patternIpv6PatternIpv6) SetIncrement(value PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6 {
-	obj.SetChoice(PatternIpv6PatternIpv6Choice.INCREMENT)
+	obj.setChoice(PatternIpv6PatternIpv6Choice.INCREMENT)
 	obj.incrementHolder = nil
-	obj.obj.Increment = value.Msg()
+	obj.obj.Increment = value.msg()
 
 	return obj
 }
@@ -19549,7 +21202,7 @@ func (obj *patternIpv6PatternIpv6) SetIncrement(value PatternIpv6PatternIpv6Coun
 // Decrement returns a PatternIpv6PatternIpv6Counter
 func (obj *patternIpv6PatternIpv6) Decrement() PatternIpv6PatternIpv6Counter {
 	if obj.obj.Decrement == nil {
-		obj.SetChoice(PatternIpv6PatternIpv6Choice.DECREMENT)
+		obj.setChoice(PatternIpv6PatternIpv6Choice.DECREMENT)
 	}
 	if obj.decrementHolder == nil {
 		obj.decrementHolder = &patternIpv6PatternIpv6Counter{obj: obj.obj.Decrement}
@@ -19566,9 +21219,9 @@ func (obj *patternIpv6PatternIpv6) HasDecrement() bool {
 // description is TBD
 // SetDecrement sets the PatternIpv6PatternIpv6Counter value in the PatternIpv6PatternIpv6 object
 func (obj *patternIpv6PatternIpv6) SetDecrement(value PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6 {
-	obj.SetChoice(PatternIpv6PatternIpv6Choice.DECREMENT)
+	obj.setChoice(PatternIpv6PatternIpv6Choice.DECREMENT)
 	obj.decrementHolder = nil
-	obj.obj.Decrement = value.Msg()
+	obj.obj.Decrement = value.msg()
 
 	return obj
 }
@@ -19610,7 +21263,7 @@ func (obj *patternIpv6PatternIpv6) validateObj(vObj *validation, set_default boo
 
 func (obj *patternIpv6PatternIpv6) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternIpv6PatternIpv6Choice.VALUE)
+		obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
 
 	}
 
@@ -19620,6 +21273,8 @@ func (obj *patternIpv6PatternIpv6) setDefault() {
 type patternMacPatternMac struct {
 	validation
 	obj             *openapi.PatternMacPatternMac
+	marshaller      marshalPatternMacPatternMac
+	unMarshaller    unMarshalPatternMacPatternMac
 	incrementHolder PatternMacPatternMacCounter
 	decrementHolder PatternMacPatternMacCounter
 }
@@ -19630,26 +21285,70 @@ func NewPatternMacPatternMac() PatternMacPatternMac {
 	return &obj
 }
 
-func (obj *patternMacPatternMac) Msg() *openapi.PatternMacPatternMac {
+func (obj *patternMacPatternMac) msg() *openapi.PatternMacPatternMac {
 	return obj.obj
 }
 
-func (obj *patternMacPatternMac) SetMsg(msg *openapi.PatternMacPatternMac) PatternMacPatternMac {
+func (obj *patternMacPatternMac) setMsg(msg *openapi.PatternMacPatternMac) PatternMacPatternMac {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternMacPatternMac) ToProto() (*openapi.PatternMacPatternMac, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternMacPatternMac struct {
+	obj *patternMacPatternMac
+}
+
+type marshalPatternMacPatternMac interface {
+	// ToProto marshals PatternMacPatternMac to protobuf object *openapi.PatternMacPatternMac
+	ToProto() (*openapi.PatternMacPatternMac, error)
+	// ToPbText marshals PatternMacPatternMac to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternMacPatternMac to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternMacPatternMac to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternMacPatternMac struct {
+	obj *patternMacPatternMac
+}
+
+type unMarshalPatternMacPatternMac interface {
+	// FromProto unmarshals PatternMacPatternMac from protobuf object *openapi.PatternMacPatternMac
+	FromProto(msg *openapi.PatternMacPatternMac) (PatternMacPatternMac, error)
+	// FromPbText unmarshals PatternMacPatternMac from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternMacPatternMac from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternMacPatternMac from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternMacPatternMac) Marshal() marshalPatternMacPatternMac {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternMacPatternMac{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternMacPatternMac) Unmarshal() unMarshalPatternMacPatternMac {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternMacPatternMac{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternMacPatternMac) ToProto() (*openapi.PatternMacPatternMac, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternMacPatternMac) FromProto(msg *openapi.PatternMacPatternMac) (PatternMacPatternMac, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternMacPatternMac) FromProto(msg *openapi.PatternMacPatternMac) (PatternMacPatternMac, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -19657,33 +21356,33 @@ func (obj *patternMacPatternMac) FromProto(msg *openapi.PatternMacPatternMac) (P
 	return newObj, nil
 }
 
-func (obj *patternMacPatternMac) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMac) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternMacPatternMac) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternMacPatternMac) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternMacPatternMac) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMac) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -19692,7 +21391,7 @@ func (obj *patternMacPatternMac) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -19703,7 +21402,7 @@ func (obj *patternMacPatternMac) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternMacPatternMac) FromYaml(value string) error {
+func (m *unMarshalpatternMacPatternMac) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -19715,21 +21414,21 @@ func (obj *patternMacPatternMac) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternMacPatternMac) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMac) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -19739,14 +21438,14 @@ func (obj *patternMacPatternMac) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternMacPatternMac) FromJson(value string) error {
+func (m *unMarshalpatternMacPatternMac) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -19754,13 +21453,13 @@ func (obj *patternMacPatternMac) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -19773,14 +21472,14 @@ func (obj *patternMacPatternMac) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternMacPatternMac) Validate() error {
+func (obj *patternMacPatternMac) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternMacPatternMac) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -19788,16 +21487,16 @@ func (obj *patternMacPatternMac) String() string {
 }
 
 func (obj *patternMacPatternMac) Clone() (PatternMacPatternMac, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternMacPatternMac()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -19815,30 +21514,18 @@ func (obj *patternMacPatternMac) setNil() {
 // PatternMacPatternMac is tBD
 type PatternMacPatternMac interface {
 	Validation
-	// Msg marshals PatternMacPatternMac to protobuf object *openapi.PatternMacPatternMac
+	// msg marshals PatternMacPatternMac to protobuf object *openapi.PatternMacPatternMac
 	// and doesn't set defaults
-	Msg() *openapi.PatternMacPatternMac
-	// SetMsg unmarshals PatternMacPatternMac from protobuf object *openapi.PatternMacPatternMac
+	msg() *openapi.PatternMacPatternMac
+	// setMsg unmarshals PatternMacPatternMac from protobuf object *openapi.PatternMacPatternMac
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternMacPatternMac) PatternMacPatternMac
-	// ToProto marshals PatternMacPatternMac to protobuf object *openapi.PatternMacPatternMac
-	ToProto() (*openapi.PatternMacPatternMac, error)
-	// ToPbText marshals PatternMacPatternMac to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternMacPatternMac to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternMacPatternMac to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternMacPatternMac from protobuf object *openapi.PatternMacPatternMac
-	FromProto(msg *openapi.PatternMacPatternMac) (PatternMacPatternMac, error)
-	// FromPbText unmarshals PatternMacPatternMac from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternMacPatternMac from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternMacPatternMac from JSON text
-	FromJson(value string) error
-	// Validate validates PatternMacPatternMac
-	Validate() error
+	setMsg(*openapi.PatternMacPatternMac) PatternMacPatternMac
+	// provides marshal interface
+	Marshal() marshalPatternMacPatternMac
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternMacPatternMac
+	// validate validates PatternMacPatternMac
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -19848,8 +21535,8 @@ type PatternMacPatternMac interface {
 	setDefault()
 	// Choice returns PatternMacPatternMacChoiceEnum, set in PatternMacPatternMac
 	Choice() PatternMacPatternMacChoiceEnum
-	// SetChoice assigns PatternMacPatternMacChoiceEnum provided by user to PatternMacPatternMac
-	SetChoice(value PatternMacPatternMacChoiceEnum) PatternMacPatternMac
+	// setChoice assigns PatternMacPatternMacChoiceEnum provided by user to PatternMacPatternMac
+	setChoice(value PatternMacPatternMacChoiceEnum) PatternMacPatternMac
 	// HasChoice checks if Choice has been set in PatternMacPatternMac
 	HasChoice() bool
 	// Value returns string, set in PatternMacPatternMac.
@@ -19912,7 +21599,7 @@ func (obj *patternMacPatternMac) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternMacPatternMac) SetChoice(value PatternMacPatternMacChoiceEnum) PatternMacPatternMac {
+func (obj *patternMacPatternMac) setChoice(value PatternMacPatternMacChoiceEnum) PatternMacPatternMac {
 	intValue, ok := openapi.PatternMacPatternMac_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -19945,11 +21632,11 @@ func (obj *patternMacPatternMac) SetChoice(value PatternMacPatternMacChoiceEnum)
 	}
 
 	if value == PatternMacPatternMacChoice.INCREMENT {
-		obj.obj.Increment = NewPatternMacPatternMacCounter().Msg()
+		obj.obj.Increment = NewPatternMacPatternMacCounter().msg()
 	}
 
 	if value == PatternMacPatternMacChoice.DECREMENT {
-		obj.obj.Decrement = NewPatternMacPatternMacCounter().Msg()
+		obj.obj.Decrement = NewPatternMacPatternMacCounter().msg()
 	}
 
 	return obj
@@ -19960,7 +21647,7 @@ func (obj *patternMacPatternMac) SetChoice(value PatternMacPatternMacChoiceEnum)
 func (obj *patternMacPatternMac) Value() string {
 
 	if obj.obj.Value == nil {
-		obj.SetChoice(PatternMacPatternMacChoice.VALUE)
+		obj.setChoice(PatternMacPatternMacChoice.VALUE)
 	}
 
 	return *obj.obj.Value
@@ -19976,7 +21663,7 @@ func (obj *patternMacPatternMac) HasValue() bool {
 // description is TBD
 // SetValue sets the string value in the PatternMacPatternMac object
 func (obj *patternMacPatternMac) SetValue(value string) PatternMacPatternMac {
-	obj.SetChoice(PatternMacPatternMacChoice.VALUE)
+	obj.setChoice(PatternMacPatternMacChoice.VALUE)
 	obj.obj.Value = &value
 	return obj
 }
@@ -19993,7 +21680,7 @@ func (obj *patternMacPatternMac) Values() []string {
 // description is TBD
 // SetValues sets the []string value in the PatternMacPatternMac object
 func (obj *patternMacPatternMac) SetValues(value []string) PatternMacPatternMac {
-	obj.SetChoice(PatternMacPatternMacChoice.VALUES)
+	obj.setChoice(PatternMacPatternMacChoice.VALUES)
 	if obj.obj.Values == nil {
 		obj.obj.Values = make([]string, 0)
 	}
@@ -20009,7 +21696,7 @@ func (obj *patternMacPatternMac) SetValues(value []string) PatternMacPatternMac 
 func (obj *patternMacPatternMac) Auto() string {
 
 	if obj.obj.Auto == nil {
-		obj.SetChoice(PatternMacPatternMacChoice.AUTO)
+		obj.setChoice(PatternMacPatternMacChoice.AUTO)
 	}
 
 	return *obj.obj.Auto
@@ -20028,7 +21715,7 @@ func (obj *patternMacPatternMac) HasAuto() bool {
 // Increment returns a PatternMacPatternMacCounter
 func (obj *patternMacPatternMac) Increment() PatternMacPatternMacCounter {
 	if obj.obj.Increment == nil {
-		obj.SetChoice(PatternMacPatternMacChoice.INCREMENT)
+		obj.setChoice(PatternMacPatternMacChoice.INCREMENT)
 	}
 	if obj.incrementHolder == nil {
 		obj.incrementHolder = &patternMacPatternMacCounter{obj: obj.obj.Increment}
@@ -20045,9 +21732,9 @@ func (obj *patternMacPatternMac) HasIncrement() bool {
 // description is TBD
 // SetIncrement sets the PatternMacPatternMacCounter value in the PatternMacPatternMac object
 func (obj *patternMacPatternMac) SetIncrement(value PatternMacPatternMacCounter) PatternMacPatternMac {
-	obj.SetChoice(PatternMacPatternMacChoice.INCREMENT)
+	obj.setChoice(PatternMacPatternMacChoice.INCREMENT)
 	obj.incrementHolder = nil
-	obj.obj.Increment = value.Msg()
+	obj.obj.Increment = value.msg()
 
 	return obj
 }
@@ -20056,7 +21743,7 @@ func (obj *patternMacPatternMac) SetIncrement(value PatternMacPatternMacCounter)
 // Decrement returns a PatternMacPatternMacCounter
 func (obj *patternMacPatternMac) Decrement() PatternMacPatternMacCounter {
 	if obj.obj.Decrement == nil {
-		obj.SetChoice(PatternMacPatternMacChoice.DECREMENT)
+		obj.setChoice(PatternMacPatternMacChoice.DECREMENT)
 	}
 	if obj.decrementHolder == nil {
 		obj.decrementHolder = &patternMacPatternMacCounter{obj: obj.obj.Decrement}
@@ -20073,9 +21760,9 @@ func (obj *patternMacPatternMac) HasDecrement() bool {
 // description is TBD
 // SetDecrement sets the PatternMacPatternMacCounter value in the PatternMacPatternMac object
 func (obj *patternMacPatternMac) SetDecrement(value PatternMacPatternMacCounter) PatternMacPatternMac {
-	obj.SetChoice(PatternMacPatternMacChoice.DECREMENT)
+	obj.setChoice(PatternMacPatternMacChoice.DECREMENT)
 	obj.decrementHolder = nil
-	obj.obj.Decrement = value.Msg()
+	obj.obj.Decrement = value.msg()
 
 	return obj
 }
@@ -20126,7 +21813,7 @@ func (obj *patternMacPatternMac) validateObj(vObj *validation, set_default bool)
 
 func (obj *patternMacPatternMac) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternMacPatternMacChoice.AUTO)
+		obj.setChoice(PatternMacPatternMacChoice.AUTO)
 
 	}
 
@@ -20136,6 +21823,8 @@ func (obj *patternMacPatternMac) setDefault() {
 type patternIntegerPatternInteger struct {
 	validation
 	obj             *openapi.PatternIntegerPatternInteger
+	marshaller      marshalPatternIntegerPatternInteger
+	unMarshaller    unMarshalPatternIntegerPatternInteger
 	incrementHolder PatternIntegerPatternIntegerCounter
 	decrementHolder PatternIntegerPatternIntegerCounter
 }
@@ -20146,26 +21835,70 @@ func NewPatternIntegerPatternInteger() PatternIntegerPatternInteger {
 	return &obj
 }
 
-func (obj *patternIntegerPatternInteger) Msg() *openapi.PatternIntegerPatternInteger {
+func (obj *patternIntegerPatternInteger) msg() *openapi.PatternIntegerPatternInteger {
 	return obj.obj
 }
 
-func (obj *patternIntegerPatternInteger) SetMsg(msg *openapi.PatternIntegerPatternInteger) PatternIntegerPatternInteger {
+func (obj *patternIntegerPatternInteger) setMsg(msg *openapi.PatternIntegerPatternInteger) PatternIntegerPatternInteger {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIntegerPatternInteger) ToProto() (*openapi.PatternIntegerPatternInteger, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIntegerPatternInteger struct {
+	obj *patternIntegerPatternInteger
+}
+
+type marshalPatternIntegerPatternInteger interface {
+	// ToProto marshals PatternIntegerPatternInteger to protobuf object *openapi.PatternIntegerPatternInteger
+	ToProto() (*openapi.PatternIntegerPatternInteger, error)
+	// ToPbText marshals PatternIntegerPatternInteger to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIntegerPatternInteger to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIntegerPatternInteger to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIntegerPatternInteger struct {
+	obj *patternIntegerPatternInteger
+}
+
+type unMarshalPatternIntegerPatternInteger interface {
+	// FromProto unmarshals PatternIntegerPatternInteger from protobuf object *openapi.PatternIntegerPatternInteger
+	FromProto(msg *openapi.PatternIntegerPatternInteger) (PatternIntegerPatternInteger, error)
+	// FromPbText unmarshals PatternIntegerPatternInteger from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIntegerPatternInteger from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIntegerPatternInteger from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIntegerPatternInteger) Marshal() marshalPatternIntegerPatternInteger {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIntegerPatternInteger{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIntegerPatternInteger) Unmarshal() unMarshalPatternIntegerPatternInteger {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIntegerPatternInteger{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIntegerPatternInteger) ToProto() (*openapi.PatternIntegerPatternInteger, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIntegerPatternInteger) FromProto(msg *openapi.PatternIntegerPatternInteger) (PatternIntegerPatternInteger, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIntegerPatternInteger) FromProto(msg *openapi.PatternIntegerPatternInteger) (PatternIntegerPatternInteger, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -20173,33 +21906,33 @@ func (obj *patternIntegerPatternInteger) FromProto(msg *openapi.PatternIntegerPa
 	return newObj, nil
 }
 
-func (obj *patternIntegerPatternInteger) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternInteger) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIntegerPatternInteger) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIntegerPatternInteger) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIntegerPatternInteger) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternInteger) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -20208,7 +21941,7 @@ func (obj *patternIntegerPatternInteger) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -20219,7 +21952,7 @@ func (obj *patternIntegerPatternInteger) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIntegerPatternInteger) FromYaml(value string) error {
+func (m *unMarshalpatternIntegerPatternInteger) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -20231,21 +21964,21 @@ func (obj *patternIntegerPatternInteger) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIntegerPatternInteger) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternInteger) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -20255,14 +21988,14 @@ func (obj *patternIntegerPatternInteger) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIntegerPatternInteger) FromJson(value string) error {
+func (m *unMarshalpatternIntegerPatternInteger) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -20270,13 +22003,13 @@ func (obj *patternIntegerPatternInteger) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -20289,14 +22022,14 @@ func (obj *patternIntegerPatternInteger) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIntegerPatternInteger) Validate() error {
+func (obj *patternIntegerPatternInteger) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIntegerPatternInteger) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -20304,16 +22037,16 @@ func (obj *patternIntegerPatternInteger) String() string {
 }
 
 func (obj *patternIntegerPatternInteger) Clone() (PatternIntegerPatternInteger, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIntegerPatternInteger()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -20331,30 +22064,18 @@ func (obj *patternIntegerPatternInteger) setNil() {
 // PatternIntegerPatternInteger is tBD
 type PatternIntegerPatternInteger interface {
 	Validation
-	// Msg marshals PatternIntegerPatternInteger to protobuf object *openapi.PatternIntegerPatternInteger
+	// msg marshals PatternIntegerPatternInteger to protobuf object *openapi.PatternIntegerPatternInteger
 	// and doesn't set defaults
-	Msg() *openapi.PatternIntegerPatternInteger
-	// SetMsg unmarshals PatternIntegerPatternInteger from protobuf object *openapi.PatternIntegerPatternInteger
+	msg() *openapi.PatternIntegerPatternInteger
+	// setMsg unmarshals PatternIntegerPatternInteger from protobuf object *openapi.PatternIntegerPatternInteger
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIntegerPatternInteger) PatternIntegerPatternInteger
-	// ToProto marshals PatternIntegerPatternInteger to protobuf object *openapi.PatternIntegerPatternInteger
-	ToProto() (*openapi.PatternIntegerPatternInteger, error)
-	// ToPbText marshals PatternIntegerPatternInteger to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIntegerPatternInteger to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIntegerPatternInteger to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIntegerPatternInteger from protobuf object *openapi.PatternIntegerPatternInteger
-	FromProto(msg *openapi.PatternIntegerPatternInteger) (PatternIntegerPatternInteger, error)
-	// FromPbText unmarshals PatternIntegerPatternInteger from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIntegerPatternInteger from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIntegerPatternInteger from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIntegerPatternInteger
-	Validate() error
+	setMsg(*openapi.PatternIntegerPatternInteger) PatternIntegerPatternInteger
+	// provides marshal interface
+	Marshal() marshalPatternIntegerPatternInteger
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIntegerPatternInteger
+	// validate validates PatternIntegerPatternInteger
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -20364,8 +22085,8 @@ type PatternIntegerPatternInteger interface {
 	setDefault()
 	// Choice returns PatternIntegerPatternIntegerChoiceEnum, set in PatternIntegerPatternInteger
 	Choice() PatternIntegerPatternIntegerChoiceEnum
-	// SetChoice assigns PatternIntegerPatternIntegerChoiceEnum provided by user to PatternIntegerPatternInteger
-	SetChoice(value PatternIntegerPatternIntegerChoiceEnum) PatternIntegerPatternInteger
+	// setChoice assigns PatternIntegerPatternIntegerChoiceEnum provided by user to PatternIntegerPatternInteger
+	setChoice(value PatternIntegerPatternIntegerChoiceEnum) PatternIntegerPatternInteger
 	// HasChoice checks if Choice has been set in PatternIntegerPatternInteger
 	HasChoice() bool
 	// Value returns uint32, set in PatternIntegerPatternInteger.
@@ -20422,7 +22143,7 @@ func (obj *patternIntegerPatternInteger) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternIntegerPatternInteger) SetChoice(value PatternIntegerPatternIntegerChoiceEnum) PatternIntegerPatternInteger {
+func (obj *patternIntegerPatternInteger) setChoice(value PatternIntegerPatternIntegerChoiceEnum) PatternIntegerPatternInteger {
 	intValue, ok := openapi.PatternIntegerPatternInteger_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -20449,11 +22170,11 @@ func (obj *patternIntegerPatternInteger) SetChoice(value PatternIntegerPatternIn
 	}
 
 	if value == PatternIntegerPatternIntegerChoice.INCREMENT {
-		obj.obj.Increment = NewPatternIntegerPatternIntegerCounter().Msg()
+		obj.obj.Increment = NewPatternIntegerPatternIntegerCounter().msg()
 	}
 
 	if value == PatternIntegerPatternIntegerChoice.DECREMENT {
-		obj.obj.Decrement = NewPatternIntegerPatternIntegerCounter().Msg()
+		obj.obj.Decrement = NewPatternIntegerPatternIntegerCounter().msg()
 	}
 
 	return obj
@@ -20464,7 +22185,7 @@ func (obj *patternIntegerPatternInteger) SetChoice(value PatternIntegerPatternIn
 func (obj *patternIntegerPatternInteger) Value() uint32 {
 
 	if obj.obj.Value == nil {
-		obj.SetChoice(PatternIntegerPatternIntegerChoice.VALUE)
+		obj.setChoice(PatternIntegerPatternIntegerChoice.VALUE)
 	}
 
 	return *obj.obj.Value
@@ -20480,7 +22201,7 @@ func (obj *patternIntegerPatternInteger) HasValue() bool {
 // description is TBD
 // SetValue sets the uint32 value in the PatternIntegerPatternInteger object
 func (obj *patternIntegerPatternInteger) SetValue(value uint32) PatternIntegerPatternInteger {
-	obj.SetChoice(PatternIntegerPatternIntegerChoice.VALUE)
+	obj.setChoice(PatternIntegerPatternIntegerChoice.VALUE)
 	obj.obj.Value = &value
 	return obj
 }
@@ -20497,7 +22218,7 @@ func (obj *patternIntegerPatternInteger) Values() []uint32 {
 // description is TBD
 // SetValues sets the []uint32 value in the PatternIntegerPatternInteger object
 func (obj *patternIntegerPatternInteger) SetValues(value []uint32) PatternIntegerPatternInteger {
-	obj.SetChoice(PatternIntegerPatternIntegerChoice.VALUES)
+	obj.setChoice(PatternIntegerPatternIntegerChoice.VALUES)
 	if obj.obj.Values == nil {
 		obj.obj.Values = make([]uint32, 0)
 	}
@@ -20510,7 +22231,7 @@ func (obj *patternIntegerPatternInteger) SetValues(value []uint32) PatternIntege
 // Increment returns a PatternIntegerPatternIntegerCounter
 func (obj *patternIntegerPatternInteger) Increment() PatternIntegerPatternIntegerCounter {
 	if obj.obj.Increment == nil {
-		obj.SetChoice(PatternIntegerPatternIntegerChoice.INCREMENT)
+		obj.setChoice(PatternIntegerPatternIntegerChoice.INCREMENT)
 	}
 	if obj.incrementHolder == nil {
 		obj.incrementHolder = &patternIntegerPatternIntegerCounter{obj: obj.obj.Increment}
@@ -20527,9 +22248,9 @@ func (obj *patternIntegerPatternInteger) HasIncrement() bool {
 // description is TBD
 // SetIncrement sets the PatternIntegerPatternIntegerCounter value in the PatternIntegerPatternInteger object
 func (obj *patternIntegerPatternInteger) SetIncrement(value PatternIntegerPatternIntegerCounter) PatternIntegerPatternInteger {
-	obj.SetChoice(PatternIntegerPatternIntegerChoice.INCREMENT)
+	obj.setChoice(PatternIntegerPatternIntegerChoice.INCREMENT)
 	obj.incrementHolder = nil
-	obj.obj.Increment = value.Msg()
+	obj.obj.Increment = value.msg()
 
 	return obj
 }
@@ -20538,7 +22259,7 @@ func (obj *patternIntegerPatternInteger) SetIncrement(value PatternIntegerPatter
 // Decrement returns a PatternIntegerPatternIntegerCounter
 func (obj *patternIntegerPatternInteger) Decrement() PatternIntegerPatternIntegerCounter {
 	if obj.obj.Decrement == nil {
-		obj.SetChoice(PatternIntegerPatternIntegerChoice.DECREMENT)
+		obj.setChoice(PatternIntegerPatternIntegerChoice.DECREMENT)
 	}
 	if obj.decrementHolder == nil {
 		obj.decrementHolder = &patternIntegerPatternIntegerCounter{obj: obj.obj.Decrement}
@@ -20555,9 +22276,9 @@ func (obj *patternIntegerPatternInteger) HasDecrement() bool {
 // description is TBD
 // SetDecrement sets the PatternIntegerPatternIntegerCounter value in the PatternIntegerPatternInteger object
 func (obj *patternIntegerPatternInteger) SetDecrement(value PatternIntegerPatternIntegerCounter) PatternIntegerPatternInteger {
-	obj.SetChoice(PatternIntegerPatternIntegerChoice.DECREMENT)
+	obj.setChoice(PatternIntegerPatternIntegerChoice.DECREMENT)
 	obj.decrementHolder = nil
-	obj.obj.Decrement = value.Msg()
+	obj.obj.Decrement = value.msg()
 
 	return obj
 }
@@ -20604,7 +22325,7 @@ func (obj *patternIntegerPatternInteger) validateObj(vObj *validation, set_defau
 
 func (obj *patternIntegerPatternInteger) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternIntegerPatternIntegerChoice.VALUE)
+		obj.setChoice(PatternIntegerPatternIntegerChoice.VALUE)
 
 	}
 
@@ -20613,7 +22334,9 @@ func (obj *patternIntegerPatternInteger) setDefault() {
 // ***** PatternChecksumPatternChecksum *****
 type patternChecksumPatternChecksum struct {
 	validation
-	obj *openapi.PatternChecksumPatternChecksum
+	obj          *openapi.PatternChecksumPatternChecksum
+	marshaller   marshalPatternChecksumPatternChecksum
+	unMarshaller unMarshalPatternChecksumPatternChecksum
 }
 
 func NewPatternChecksumPatternChecksum() PatternChecksumPatternChecksum {
@@ -20622,26 +22345,70 @@ func NewPatternChecksumPatternChecksum() PatternChecksumPatternChecksum {
 	return &obj
 }
 
-func (obj *patternChecksumPatternChecksum) Msg() *openapi.PatternChecksumPatternChecksum {
+func (obj *patternChecksumPatternChecksum) msg() *openapi.PatternChecksumPatternChecksum {
 	return obj.obj
 }
 
-func (obj *patternChecksumPatternChecksum) SetMsg(msg *openapi.PatternChecksumPatternChecksum) PatternChecksumPatternChecksum {
+func (obj *patternChecksumPatternChecksum) setMsg(msg *openapi.PatternChecksumPatternChecksum) PatternChecksumPatternChecksum {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternChecksumPatternChecksum) ToProto() (*openapi.PatternChecksumPatternChecksum, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternChecksumPatternChecksum struct {
+	obj *patternChecksumPatternChecksum
+}
+
+type marshalPatternChecksumPatternChecksum interface {
+	// ToProto marshals PatternChecksumPatternChecksum to protobuf object *openapi.PatternChecksumPatternChecksum
+	ToProto() (*openapi.PatternChecksumPatternChecksum, error)
+	// ToPbText marshals PatternChecksumPatternChecksum to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternChecksumPatternChecksum to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternChecksumPatternChecksum to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternChecksumPatternChecksum struct {
+	obj *patternChecksumPatternChecksum
+}
+
+type unMarshalPatternChecksumPatternChecksum interface {
+	// FromProto unmarshals PatternChecksumPatternChecksum from protobuf object *openapi.PatternChecksumPatternChecksum
+	FromProto(msg *openapi.PatternChecksumPatternChecksum) (PatternChecksumPatternChecksum, error)
+	// FromPbText unmarshals PatternChecksumPatternChecksum from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternChecksumPatternChecksum from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternChecksumPatternChecksum from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternChecksumPatternChecksum) Marshal() marshalPatternChecksumPatternChecksum {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternChecksumPatternChecksum{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternChecksumPatternChecksum) Unmarshal() unMarshalPatternChecksumPatternChecksum {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternChecksumPatternChecksum{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternChecksumPatternChecksum) ToProto() (*openapi.PatternChecksumPatternChecksum, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternChecksumPatternChecksum) FromProto(msg *openapi.PatternChecksumPatternChecksum) (PatternChecksumPatternChecksum, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternChecksumPatternChecksum) FromProto(msg *openapi.PatternChecksumPatternChecksum) (PatternChecksumPatternChecksum, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -20649,33 +22416,33 @@ func (obj *patternChecksumPatternChecksum) FromProto(msg *openapi.PatternChecksu
 	return newObj, nil
 }
 
-func (obj *patternChecksumPatternChecksum) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternChecksumPatternChecksum) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternChecksumPatternChecksum) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternChecksumPatternChecksum) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternChecksumPatternChecksum) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternChecksumPatternChecksum) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -20684,7 +22451,7 @@ func (obj *patternChecksumPatternChecksum) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -20695,7 +22462,7 @@ func (obj *patternChecksumPatternChecksum) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternChecksumPatternChecksum) FromYaml(value string) error {
+func (m *unMarshalpatternChecksumPatternChecksum) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -20707,21 +22474,21 @@ func (obj *patternChecksumPatternChecksum) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternChecksumPatternChecksum) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternChecksumPatternChecksum) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -20731,14 +22498,14 @@ func (obj *patternChecksumPatternChecksum) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternChecksumPatternChecksum) FromJson(value string) error {
+func (m *unMarshalpatternChecksumPatternChecksum) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -20746,13 +22513,13 @@ func (obj *patternChecksumPatternChecksum) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -20765,14 +22532,14 @@ func (obj *patternChecksumPatternChecksum) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternChecksumPatternChecksum) Validate() error {
+func (obj *patternChecksumPatternChecksum) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternChecksumPatternChecksum) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -20780,16 +22547,16 @@ func (obj *patternChecksumPatternChecksum) String() string {
 }
 
 func (obj *patternChecksumPatternChecksum) Clone() (PatternChecksumPatternChecksum, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternChecksumPatternChecksum()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -20799,30 +22566,18 @@ func (obj *patternChecksumPatternChecksum) Clone() (PatternChecksumPatternChecks
 // PatternChecksumPatternChecksum is tBD
 type PatternChecksumPatternChecksum interface {
 	Validation
-	// Msg marshals PatternChecksumPatternChecksum to protobuf object *openapi.PatternChecksumPatternChecksum
+	// msg marshals PatternChecksumPatternChecksum to protobuf object *openapi.PatternChecksumPatternChecksum
 	// and doesn't set defaults
-	Msg() *openapi.PatternChecksumPatternChecksum
-	// SetMsg unmarshals PatternChecksumPatternChecksum from protobuf object *openapi.PatternChecksumPatternChecksum
+	msg() *openapi.PatternChecksumPatternChecksum
+	// setMsg unmarshals PatternChecksumPatternChecksum from protobuf object *openapi.PatternChecksumPatternChecksum
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternChecksumPatternChecksum) PatternChecksumPatternChecksum
-	// ToProto marshals PatternChecksumPatternChecksum to protobuf object *openapi.PatternChecksumPatternChecksum
-	ToProto() (*openapi.PatternChecksumPatternChecksum, error)
-	// ToPbText marshals PatternChecksumPatternChecksum to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternChecksumPatternChecksum to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternChecksumPatternChecksum to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternChecksumPatternChecksum from protobuf object *openapi.PatternChecksumPatternChecksum
-	FromProto(msg *openapi.PatternChecksumPatternChecksum) (PatternChecksumPatternChecksum, error)
-	// FromPbText unmarshals PatternChecksumPatternChecksum from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternChecksumPatternChecksum from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternChecksumPatternChecksum from JSON text
-	FromJson(value string) error
-	// Validate validates PatternChecksumPatternChecksum
-	Validate() error
+	setMsg(*openapi.PatternChecksumPatternChecksum) PatternChecksumPatternChecksum
+	// provides marshal interface
+	Marshal() marshalPatternChecksumPatternChecksum
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternChecksumPatternChecksum
+	// validate validates PatternChecksumPatternChecksum
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -20832,8 +22587,8 @@ type PatternChecksumPatternChecksum interface {
 	setDefault()
 	// Choice returns PatternChecksumPatternChecksumChoiceEnum, set in PatternChecksumPatternChecksum
 	Choice() PatternChecksumPatternChecksumChoiceEnum
-	// SetChoice assigns PatternChecksumPatternChecksumChoiceEnum provided by user to PatternChecksumPatternChecksum
-	SetChoice(value PatternChecksumPatternChecksumChoiceEnum) PatternChecksumPatternChecksum
+	// setChoice assigns PatternChecksumPatternChecksumChoiceEnum provided by user to PatternChecksumPatternChecksum
+	setChoice(value PatternChecksumPatternChecksumChoiceEnum) PatternChecksumPatternChecksum
 	// HasChoice checks if Choice has been set in PatternChecksumPatternChecksum
 	HasChoice() bool
 	// Generated returns PatternChecksumPatternChecksumGeneratedEnum, set in PatternChecksumPatternChecksum
@@ -20871,7 +22626,7 @@ func (obj *patternChecksumPatternChecksum) HasChoice() bool {
 	return obj.obj.Choice != nil
 }
 
-func (obj *patternChecksumPatternChecksum) SetChoice(value PatternChecksumPatternChecksumChoiceEnum) PatternChecksumPatternChecksum {
+func (obj *patternChecksumPatternChecksum) setChoice(value PatternChecksumPatternChecksumChoiceEnum) PatternChecksumPatternChecksum {
 	intValue, ok := openapi.PatternChecksumPatternChecksum_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -20924,7 +22679,7 @@ func (obj *patternChecksumPatternChecksum) SetGenerated(value PatternChecksumPat
 func (obj *patternChecksumPatternChecksum) Custom() uint32 {
 
 	if obj.obj.Custom == nil {
-		obj.SetChoice(PatternChecksumPatternChecksumChoice.CUSTOM)
+		obj.setChoice(PatternChecksumPatternChecksumChoice.CUSTOM)
 	}
 
 	return *obj.obj.Custom
@@ -20940,7 +22695,7 @@ func (obj *patternChecksumPatternChecksum) HasCustom() bool {
 // A custom checksum value
 // SetCustom sets the uint32 value in the PatternChecksumPatternChecksum object
 func (obj *patternChecksumPatternChecksum) SetCustom(value uint32) PatternChecksumPatternChecksum {
-	obj.SetChoice(PatternChecksumPatternChecksumChoice.CUSTOM)
+	obj.setChoice(PatternChecksumPatternChecksumChoice.CUSTOM)
 	obj.obj.Custom = &value
 	return obj
 }
@@ -20964,7 +22719,7 @@ func (obj *patternChecksumPatternChecksum) validateObj(vObj *validation, set_def
 
 func (obj *patternChecksumPatternChecksum) setDefault() {
 	if obj.obj.Choice == nil {
-		obj.SetChoice(PatternChecksumPatternChecksumChoice.GENERATED)
+		obj.setChoice(PatternChecksumPatternChecksumChoice.GENERATED)
 		if obj.obj.Generated.Number() == 0 {
 			obj.SetGenerated(PatternChecksumPatternChecksumGenerated.GOOD)
 
@@ -20977,7 +22732,9 @@ func (obj *patternChecksumPatternChecksum) setDefault() {
 // ***** PatternPrefixConfigAutoFieldTestCounter *****
 type patternPrefixConfigAutoFieldTestCounter struct {
 	validation
-	obj *openapi.PatternPrefixConfigAutoFieldTestCounter
+	obj          *openapi.PatternPrefixConfigAutoFieldTestCounter
+	marshaller   marshalPatternPrefixConfigAutoFieldTestCounter
+	unMarshaller unMarshalPatternPrefixConfigAutoFieldTestCounter
 }
 
 func NewPatternPrefixConfigAutoFieldTestCounter() PatternPrefixConfigAutoFieldTestCounter {
@@ -20986,26 +22743,70 @@ func NewPatternPrefixConfigAutoFieldTestCounter() PatternPrefixConfigAutoFieldTe
 	return &obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) Msg() *openapi.PatternPrefixConfigAutoFieldTestCounter {
+func (obj *patternPrefixConfigAutoFieldTestCounter) msg() *openapi.PatternPrefixConfigAutoFieldTestCounter {
 	return obj.obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) SetMsg(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTestCounter {
+func (obj *patternPrefixConfigAutoFieldTestCounter) setMsg(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTestCounter {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) ToProto() (*openapi.PatternPrefixConfigAutoFieldTestCounter, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternPrefixConfigAutoFieldTestCounter struct {
+	obj *patternPrefixConfigAutoFieldTestCounter
+}
+
+type marshalPatternPrefixConfigAutoFieldTestCounter interface {
+	// ToProto marshals PatternPrefixConfigAutoFieldTestCounter to protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
+	ToProto() (*openapi.PatternPrefixConfigAutoFieldTestCounter, error)
+	// ToPbText marshals PatternPrefixConfigAutoFieldTestCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternPrefixConfigAutoFieldTestCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternPrefixConfigAutoFieldTestCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternPrefixConfigAutoFieldTestCounter struct {
+	obj *patternPrefixConfigAutoFieldTestCounter
+}
+
+type unMarshalPatternPrefixConfigAutoFieldTestCounter interface {
+	// FromProto unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
+	FromProto(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) (PatternPrefixConfigAutoFieldTestCounter, error)
+	// FromPbText unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternPrefixConfigAutoFieldTestCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternPrefixConfigAutoFieldTestCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternPrefixConfigAutoFieldTestCounter) Marshal() marshalPatternPrefixConfigAutoFieldTestCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternPrefixConfigAutoFieldTestCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternPrefixConfigAutoFieldTestCounter) Unmarshal() unMarshalPatternPrefixConfigAutoFieldTestCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternPrefixConfigAutoFieldTestCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternPrefixConfigAutoFieldTestCounter) ToProto() (*openapi.PatternPrefixConfigAutoFieldTestCounter, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) FromProto(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) (PatternPrefixConfigAutoFieldTestCounter, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternPrefixConfigAutoFieldTestCounter) FromProto(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) (PatternPrefixConfigAutoFieldTestCounter, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -21013,33 +22814,33 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) FromProto(msg *openapi.Patte
 	return newObj, nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTestCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternPrefixConfigAutoFieldTestCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTestCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21048,7 +22849,7 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -21059,7 +22860,7 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) FromYaml(value string) error {
+func (m *unMarshalpatternPrefixConfigAutoFieldTestCounter) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -21071,21 +22872,21 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) FromYaml(value string) error
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternPrefixConfigAutoFieldTestCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21095,14 +22896,14 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) FromJson(value string) error {
+func (m *unMarshalpatternPrefixConfigAutoFieldTestCounter) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -21110,13 +22911,13 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) FromJson(value string) error
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -21129,14 +22930,14 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternPrefixConfigAutoFieldTestCounter) Validate() error {
+func (obj *patternPrefixConfigAutoFieldTestCounter) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternPrefixConfigAutoFieldTestCounter) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -21144,16 +22945,16 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) String() string {
 }
 
 func (obj *patternPrefixConfigAutoFieldTestCounter) Clone() (PatternPrefixConfigAutoFieldTestCounter, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternPrefixConfigAutoFieldTestCounter()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -21163,30 +22964,18 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) Clone() (PatternPrefixConfig
 // PatternPrefixConfigAutoFieldTestCounter is integer counter pattern
 type PatternPrefixConfigAutoFieldTestCounter interface {
 	Validation
-	// Msg marshals PatternPrefixConfigAutoFieldTestCounter to protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
+	// msg marshals PatternPrefixConfigAutoFieldTestCounter to protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
 	// and doesn't set defaults
-	Msg() *openapi.PatternPrefixConfigAutoFieldTestCounter
-	// SetMsg unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
+	msg() *openapi.PatternPrefixConfigAutoFieldTestCounter
+	// setMsg unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTestCounter
-	// ToProto marshals PatternPrefixConfigAutoFieldTestCounter to protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
-	ToProto() (*openapi.PatternPrefixConfigAutoFieldTestCounter, error)
-	// ToPbText marshals PatternPrefixConfigAutoFieldTestCounter to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternPrefixConfigAutoFieldTestCounter to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternPrefixConfigAutoFieldTestCounter to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf object *openapi.PatternPrefixConfigAutoFieldTestCounter
-	FromProto(msg *openapi.PatternPrefixConfigAutoFieldTestCounter) (PatternPrefixConfigAutoFieldTestCounter, error)
-	// FromPbText unmarshals PatternPrefixConfigAutoFieldTestCounter from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternPrefixConfigAutoFieldTestCounter from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternPrefixConfigAutoFieldTestCounter from JSON text
-	FromJson(value string) error
-	// Validate validates PatternPrefixConfigAutoFieldTestCounter
-	Validate() error
+	setMsg(*openapi.PatternPrefixConfigAutoFieldTestCounter) PatternPrefixConfigAutoFieldTestCounter
+	// provides marshal interface
+	Marshal() marshalPatternPrefixConfigAutoFieldTestCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternPrefixConfigAutoFieldTestCounter
+	// validate validates PatternPrefixConfigAutoFieldTestCounter
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -21333,8 +23122,10 @@ func (obj *patternPrefixConfigAutoFieldTestCounter) setDefault() {
 // ***** RequiredChoiceIntermediate *****
 type requiredChoiceIntermediate struct {
 	validation
-	obj        *openapi.RequiredChoiceIntermediate
-	leafHolder RequiredChoiceIntermeLeaf
+	obj          *openapi.RequiredChoiceIntermediate
+	marshaller   marshalRequiredChoiceIntermediate
+	unMarshaller unMarshalRequiredChoiceIntermediate
+	leafHolder   RequiredChoiceIntermeLeaf
 }
 
 func NewRequiredChoiceIntermediate() RequiredChoiceIntermediate {
@@ -21343,26 +23134,70 @@ func NewRequiredChoiceIntermediate() RequiredChoiceIntermediate {
 	return &obj
 }
 
-func (obj *requiredChoiceIntermediate) Msg() *openapi.RequiredChoiceIntermediate {
+func (obj *requiredChoiceIntermediate) msg() *openapi.RequiredChoiceIntermediate {
 	return obj.obj
 }
 
-func (obj *requiredChoiceIntermediate) SetMsg(msg *openapi.RequiredChoiceIntermediate) RequiredChoiceIntermediate {
+func (obj *requiredChoiceIntermediate) setMsg(msg *openapi.RequiredChoiceIntermediate) RequiredChoiceIntermediate {
 	obj.setNil()
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *requiredChoiceIntermediate) ToProto() (*openapi.RequiredChoiceIntermediate, error) {
-	err := obj.validateToAndFrom()
+type marshalrequiredChoiceIntermediate struct {
+	obj *requiredChoiceIntermediate
+}
+
+type marshalRequiredChoiceIntermediate interface {
+	// ToProto marshals RequiredChoiceIntermediate to protobuf object *openapi.RequiredChoiceIntermediate
+	ToProto() (*openapi.RequiredChoiceIntermediate, error)
+	// ToPbText marshals RequiredChoiceIntermediate to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredChoiceIntermediate to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredChoiceIntermediate to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredChoiceIntermediate struct {
+	obj *requiredChoiceIntermediate
+}
+
+type unMarshalRequiredChoiceIntermediate interface {
+	// FromProto unmarshals RequiredChoiceIntermediate from protobuf object *openapi.RequiredChoiceIntermediate
+	FromProto(msg *openapi.RequiredChoiceIntermediate) (RequiredChoiceIntermediate, error)
+	// FromPbText unmarshals RequiredChoiceIntermediate from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredChoiceIntermediate from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredChoiceIntermediate from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredChoiceIntermediate) Marshal() marshalRequiredChoiceIntermediate {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredChoiceIntermediate{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredChoiceIntermediate) Unmarshal() unMarshalRequiredChoiceIntermediate {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredChoiceIntermediate{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredChoiceIntermediate) ToProto() (*openapi.RequiredChoiceIntermediate, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *requiredChoiceIntermediate) FromProto(msg *openapi.RequiredChoiceIntermediate) (RequiredChoiceIntermediate, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalrequiredChoiceIntermediate) FromProto(msg *openapi.RequiredChoiceIntermediate) (RequiredChoiceIntermediate, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -21370,33 +23205,33 @@ func (obj *requiredChoiceIntermediate) FromProto(msg *openapi.RequiredChoiceInte
 	return newObj, nil
 }
 
-func (obj *requiredChoiceIntermediate) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermediate) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *requiredChoiceIntermediate) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalrequiredChoiceIntermediate) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *requiredChoiceIntermediate) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermediate) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21405,7 +23240,7 @@ func (obj *requiredChoiceIntermediate) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -21416,7 +23251,7 @@ func (obj *requiredChoiceIntermediate) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *requiredChoiceIntermediate) FromYaml(value string) error {
+func (m *unMarshalrequiredChoiceIntermediate) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -21428,21 +23263,21 @@ func (obj *requiredChoiceIntermediate) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	vErr := obj.validateToAndFrom()
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *requiredChoiceIntermediate) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermediate) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21452,14 +23287,14 @@ func (obj *requiredChoiceIntermediate) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *requiredChoiceIntermediate) FromJson(value string) error {
+func (m *unMarshalrequiredChoiceIntermediate) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -21467,13 +23302,13 @@ func (obj *requiredChoiceIntermediate) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
-	obj.setNil()
-	err := obj.validateToAndFrom()
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -21486,14 +23321,14 @@ func (obj *requiredChoiceIntermediate) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *requiredChoiceIntermediate) Validate() error {
+func (obj *requiredChoiceIntermediate) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *requiredChoiceIntermediate) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -21501,16 +23336,16 @@ func (obj *requiredChoiceIntermediate) String() string {
 }
 
 func (obj *requiredChoiceIntermediate) Clone() (RequiredChoiceIntermediate, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewRequiredChoiceIntermediate()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -21527,30 +23362,18 @@ func (obj *requiredChoiceIntermediate) setNil() {
 // RequiredChoiceIntermediate is description is TBD
 type RequiredChoiceIntermediate interface {
 	Validation
-	// Msg marshals RequiredChoiceIntermediate to protobuf object *openapi.RequiredChoiceIntermediate
+	// msg marshals RequiredChoiceIntermediate to protobuf object *openapi.RequiredChoiceIntermediate
 	// and doesn't set defaults
-	Msg() *openapi.RequiredChoiceIntermediate
-	// SetMsg unmarshals RequiredChoiceIntermediate from protobuf object *openapi.RequiredChoiceIntermediate
+	msg() *openapi.RequiredChoiceIntermediate
+	// setMsg unmarshals RequiredChoiceIntermediate from protobuf object *openapi.RequiredChoiceIntermediate
 	// and doesn't set defaults
-	SetMsg(*openapi.RequiredChoiceIntermediate) RequiredChoiceIntermediate
-	// ToProto marshals RequiredChoiceIntermediate to protobuf object *openapi.RequiredChoiceIntermediate
-	ToProto() (*openapi.RequiredChoiceIntermediate, error)
-	// ToPbText marshals RequiredChoiceIntermediate to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals RequiredChoiceIntermediate to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals RequiredChoiceIntermediate to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals RequiredChoiceIntermediate from protobuf object *openapi.RequiredChoiceIntermediate
-	FromProto(msg *openapi.RequiredChoiceIntermediate) (RequiredChoiceIntermediate, error)
-	// FromPbText unmarshals RequiredChoiceIntermediate from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals RequiredChoiceIntermediate from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals RequiredChoiceIntermediate from JSON text
-	FromJson(value string) error
-	// Validate validates RequiredChoiceIntermediate
-	Validate() error
+	setMsg(*openapi.RequiredChoiceIntermediate) RequiredChoiceIntermediate
+	// provides marshal interface
+	Marshal() marshalRequiredChoiceIntermediate
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredChoiceIntermediate
+	// validate validates RequiredChoiceIntermediate
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -21560,8 +23383,8 @@ type RequiredChoiceIntermediate interface {
 	setDefault()
 	// Choice returns RequiredChoiceIntermediateChoiceEnum, set in RequiredChoiceIntermediate
 	Choice() RequiredChoiceIntermediateChoiceEnum
-	// SetChoice assigns RequiredChoiceIntermediateChoiceEnum provided by user to RequiredChoiceIntermediate
-	SetChoice(value RequiredChoiceIntermediateChoiceEnum) RequiredChoiceIntermediate
+	// setChoice assigns RequiredChoiceIntermediateChoiceEnum provided by user to RequiredChoiceIntermediate
+	setChoice(value RequiredChoiceIntermediateChoiceEnum) RequiredChoiceIntermediate
 	// FA returns string, set in RequiredChoiceIntermediate.
 	FA() string
 	// SetFA assigns string provided by user to RequiredChoiceIntermediate
@@ -21594,7 +23417,7 @@ func (obj *requiredChoiceIntermediate) Choice() RequiredChoiceIntermediateChoice
 	return RequiredChoiceIntermediateChoiceEnum(obj.obj.Choice.Enum().String())
 }
 
-func (obj *requiredChoiceIntermediate) SetChoice(value RequiredChoiceIntermediateChoiceEnum) RequiredChoiceIntermediate {
+func (obj *requiredChoiceIntermediate) setChoice(value RequiredChoiceIntermediateChoiceEnum) RequiredChoiceIntermediate {
 	intValue, ok := openapi.RequiredChoiceIntermediate_Choice_Enum_value[string(value)]
 	if !ok {
 		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
@@ -21613,7 +23436,7 @@ func (obj *requiredChoiceIntermediate) SetChoice(value RequiredChoiceIntermediat
 	}
 
 	if value == RequiredChoiceIntermediateChoice.LEAF {
-		obj.obj.Leaf = NewRequiredChoiceIntermeLeaf().Msg()
+		obj.obj.Leaf = NewRequiredChoiceIntermeLeaf().msg()
 	}
 
 	return obj
@@ -21624,7 +23447,7 @@ func (obj *requiredChoiceIntermediate) SetChoice(value RequiredChoiceIntermediat
 func (obj *requiredChoiceIntermediate) FA() string {
 
 	if obj.obj.FA == nil {
-		obj.SetChoice(RequiredChoiceIntermediateChoice.F_A)
+		obj.setChoice(RequiredChoiceIntermediateChoice.F_A)
 	}
 
 	return *obj.obj.FA
@@ -21640,7 +23463,7 @@ func (obj *requiredChoiceIntermediate) HasFA() bool {
 // description is TBD
 // SetFA sets the string value in the RequiredChoiceIntermediate object
 func (obj *requiredChoiceIntermediate) SetFA(value string) RequiredChoiceIntermediate {
-	obj.SetChoice(RequiredChoiceIntermediateChoice.F_A)
+	obj.setChoice(RequiredChoiceIntermediateChoice.F_A)
 	obj.obj.FA = &value
 	return obj
 }
@@ -21649,7 +23472,7 @@ func (obj *requiredChoiceIntermediate) SetFA(value string) RequiredChoiceInterme
 // Leaf returns a RequiredChoiceIntermeLeaf
 func (obj *requiredChoiceIntermediate) Leaf() RequiredChoiceIntermeLeaf {
 	if obj.obj.Leaf == nil {
-		obj.SetChoice(RequiredChoiceIntermediateChoice.LEAF)
+		obj.setChoice(RequiredChoiceIntermediateChoice.LEAF)
 	}
 	if obj.leafHolder == nil {
 		obj.leafHolder = &requiredChoiceIntermeLeaf{obj: obj.obj.Leaf}
@@ -21666,9 +23489,9 @@ func (obj *requiredChoiceIntermediate) HasLeaf() bool {
 // description is TBD
 // SetLeaf sets the RequiredChoiceIntermeLeaf value in the RequiredChoiceIntermediate object
 func (obj *requiredChoiceIntermediate) SetLeaf(value RequiredChoiceIntermeLeaf) RequiredChoiceIntermediate {
-	obj.SetChoice(RequiredChoiceIntermediateChoice.LEAF)
+	obj.setChoice(RequiredChoiceIntermediateChoice.LEAF)
 	obj.leafHolder = nil
-	obj.obj.Leaf = value.Msg()
+	obj.obj.Leaf = value.msg()
 
 	return obj
 }
@@ -21700,7 +23523,9 @@ func (obj *requiredChoiceIntermediate) setDefault() {
 // ***** PortMetric *****
 type portMetric struct {
 	validation
-	obj *openapi.PortMetric
+	obj          *openapi.PortMetric
+	marshaller   marshalPortMetric
+	unMarshaller unMarshalPortMetric
 }
 
 func NewPortMetric() PortMetric {
@@ -21709,26 +23534,70 @@ func NewPortMetric() PortMetric {
 	return &obj
 }
 
-func (obj *portMetric) Msg() *openapi.PortMetric {
+func (obj *portMetric) msg() *openapi.PortMetric {
 	return obj.obj
 }
 
-func (obj *portMetric) SetMsg(msg *openapi.PortMetric) PortMetric {
+func (obj *portMetric) setMsg(msg *openapi.PortMetric) PortMetric {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *portMetric) ToProto() (*openapi.PortMetric, error) {
-	err := obj.validateToAndFrom()
+type marshalportMetric struct {
+	obj *portMetric
+}
+
+type marshalPortMetric interface {
+	// ToProto marshals PortMetric to protobuf object *openapi.PortMetric
+	ToProto() (*openapi.PortMetric, error)
+	// ToPbText marshals PortMetric to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PortMetric to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PortMetric to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalportMetric struct {
+	obj *portMetric
+}
+
+type unMarshalPortMetric interface {
+	// FromProto unmarshals PortMetric from protobuf object *openapi.PortMetric
+	FromProto(msg *openapi.PortMetric) (PortMetric, error)
+	// FromPbText unmarshals PortMetric from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PortMetric from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PortMetric from JSON text
+	FromJson(value string) error
+}
+
+func (obj *portMetric) Marshal() marshalPortMetric {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalportMetric{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *portMetric) Unmarshal() unMarshalPortMetric {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalportMetric{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalportMetric) ToProto() (*openapi.PortMetric, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *portMetric) FromProto(msg *openapi.PortMetric) (PortMetric, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalportMetric) FromProto(msg *openapi.PortMetric) (PortMetric, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -21736,33 +23605,33 @@ func (obj *portMetric) FromProto(msg *openapi.PortMetric) (PortMetric, error) {
 	return newObj, nil
 }
 
-func (obj *portMetric) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalportMetric) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *portMetric) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalportMetric) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *portMetric) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalportMetric) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21771,7 +23640,7 @@ func (obj *portMetric) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -21782,7 +23651,7 @@ func (obj *portMetric) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *portMetric) FromYaml(value string) error {
+func (m *unMarshalportMetric) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -21794,21 +23663,21 @@ func (obj *portMetric) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *portMetric) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalportMetric) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -21818,14 +23687,14 @@ func (obj *portMetric) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *portMetric) FromJson(value string) error {
+func (m *unMarshalportMetric) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -21833,13 +23702,13 @@ func (obj *portMetric) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -21852,14 +23721,14 @@ func (obj *portMetric) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *portMetric) Validate() error {
+func (obj *portMetric) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *portMetric) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -21867,16 +23736,16 @@ func (obj *portMetric) String() string {
 }
 
 func (obj *portMetric) Clone() (PortMetric, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPortMetric()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -21886,30 +23755,18 @@ func (obj *portMetric) Clone() (PortMetric, error) {
 // PortMetric is description is TBD
 type PortMetric interface {
 	Validation
-	// Msg marshals PortMetric to protobuf object *openapi.PortMetric
+	// msg marshals PortMetric to protobuf object *openapi.PortMetric
 	// and doesn't set defaults
-	Msg() *openapi.PortMetric
-	// SetMsg unmarshals PortMetric from protobuf object *openapi.PortMetric
+	msg() *openapi.PortMetric
+	// setMsg unmarshals PortMetric from protobuf object *openapi.PortMetric
 	// and doesn't set defaults
-	SetMsg(*openapi.PortMetric) PortMetric
-	// ToProto marshals PortMetric to protobuf object *openapi.PortMetric
-	ToProto() (*openapi.PortMetric, error)
-	// ToPbText marshals PortMetric to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PortMetric to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PortMetric to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PortMetric from protobuf object *openapi.PortMetric
-	FromProto(msg *openapi.PortMetric) (PortMetric, error)
-	// FromPbText unmarshals PortMetric from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PortMetric from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PortMetric from JSON text
-	FromJson(value string) error
-	// Validate validates PortMetric
-	Validate() error
+	setMsg(*openapi.PortMetric) PortMetric
+	// provides marshal interface
+	Marshal() marshalPortMetric
+	// provides unmarshal interface
+	Unmarshal() unMarshalPortMetric
+	// validate validates PortMetric
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -22007,7 +23864,9 @@ func (obj *portMetric) setDefault() {
 // ***** FlowMetric *****
 type flowMetric struct {
 	validation
-	obj *openapi.FlowMetric
+	obj          *openapi.FlowMetric
+	marshaller   marshalFlowMetric
+	unMarshaller unMarshalFlowMetric
 }
 
 func NewFlowMetric() FlowMetric {
@@ -22016,26 +23875,70 @@ func NewFlowMetric() FlowMetric {
 	return &obj
 }
 
-func (obj *flowMetric) Msg() *openapi.FlowMetric {
+func (obj *flowMetric) msg() *openapi.FlowMetric {
 	return obj.obj
 }
 
-func (obj *flowMetric) SetMsg(msg *openapi.FlowMetric) FlowMetric {
+func (obj *flowMetric) setMsg(msg *openapi.FlowMetric) FlowMetric {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *flowMetric) ToProto() (*openapi.FlowMetric, error) {
-	err := obj.validateToAndFrom()
+type marshalflowMetric struct {
+	obj *flowMetric
+}
+
+type marshalFlowMetric interface {
+	// ToProto marshals FlowMetric to protobuf object *openapi.FlowMetric
+	ToProto() (*openapi.FlowMetric, error)
+	// ToPbText marshals FlowMetric to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals FlowMetric to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals FlowMetric to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalflowMetric struct {
+	obj *flowMetric
+}
+
+type unMarshalFlowMetric interface {
+	// FromProto unmarshals FlowMetric from protobuf object *openapi.FlowMetric
+	FromProto(msg *openapi.FlowMetric) (FlowMetric, error)
+	// FromPbText unmarshals FlowMetric from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals FlowMetric from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals FlowMetric from JSON text
+	FromJson(value string) error
+}
+
+func (obj *flowMetric) Marshal() marshalFlowMetric {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalflowMetric{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *flowMetric) Unmarshal() unMarshalFlowMetric {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalflowMetric{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalflowMetric) ToProto() (*openapi.FlowMetric, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *flowMetric) FromProto(msg *openapi.FlowMetric) (FlowMetric, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalflowMetric) FromProto(msg *openapi.FlowMetric) (FlowMetric, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -22043,33 +23946,33 @@ func (obj *flowMetric) FromProto(msg *openapi.FlowMetric) (FlowMetric, error) {
 	return newObj, nil
 }
 
-func (obj *flowMetric) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalflowMetric) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *flowMetric) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalflowMetric) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *flowMetric) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalflowMetric) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22078,7 +23981,7 @@ func (obj *flowMetric) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -22089,7 +23992,7 @@ func (obj *flowMetric) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *flowMetric) FromYaml(value string) error {
+func (m *unMarshalflowMetric) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -22101,21 +24004,21 @@ func (obj *flowMetric) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *flowMetric) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalflowMetric) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22125,14 +24028,14 @@ func (obj *flowMetric) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *flowMetric) FromJson(value string) error {
+func (m *unMarshalflowMetric) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -22140,13 +24043,13 @@ func (obj *flowMetric) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -22159,14 +24062,14 @@ func (obj *flowMetric) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *flowMetric) Validate() error {
+func (obj *flowMetric) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *flowMetric) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -22174,16 +24077,16 @@ func (obj *flowMetric) String() string {
 }
 
 func (obj *flowMetric) Clone() (FlowMetric, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewFlowMetric()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -22193,30 +24096,18 @@ func (obj *flowMetric) Clone() (FlowMetric, error) {
 // FlowMetric is description is TBD
 type FlowMetric interface {
 	Validation
-	// Msg marshals FlowMetric to protobuf object *openapi.FlowMetric
+	// msg marshals FlowMetric to protobuf object *openapi.FlowMetric
 	// and doesn't set defaults
-	Msg() *openapi.FlowMetric
-	// SetMsg unmarshals FlowMetric from protobuf object *openapi.FlowMetric
+	msg() *openapi.FlowMetric
+	// setMsg unmarshals FlowMetric from protobuf object *openapi.FlowMetric
 	// and doesn't set defaults
-	SetMsg(*openapi.FlowMetric) FlowMetric
-	// ToProto marshals FlowMetric to protobuf object *openapi.FlowMetric
-	ToProto() (*openapi.FlowMetric, error)
-	// ToPbText marshals FlowMetric to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals FlowMetric to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals FlowMetric to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals FlowMetric from protobuf object *openapi.FlowMetric
-	FromProto(msg *openapi.FlowMetric) (FlowMetric, error)
-	// FromPbText unmarshals FlowMetric from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals FlowMetric from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals FlowMetric from JSON text
-	FromJson(value string) error
-	// Validate validates FlowMetric
-	Validate() error
+	setMsg(*openapi.FlowMetric) FlowMetric
+	// provides marshal interface
+	Marshal() marshalFlowMetric
+	// provides unmarshal interface
+	Unmarshal() unMarshalFlowMetric
+	// validate validates FlowMetric
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -22314,7 +24205,9 @@ func (obj *flowMetric) setDefault() {
 // ***** LevelThree *****
 type levelThree struct {
 	validation
-	obj *openapi.LevelThree
+	obj          *openapi.LevelThree
+	marshaller   marshalLevelThree
+	unMarshaller unMarshalLevelThree
 }
 
 func NewLevelThree() LevelThree {
@@ -22323,26 +24216,70 @@ func NewLevelThree() LevelThree {
 	return &obj
 }
 
-func (obj *levelThree) Msg() *openapi.LevelThree {
+func (obj *levelThree) msg() *openapi.LevelThree {
 	return obj.obj
 }
 
-func (obj *levelThree) SetMsg(msg *openapi.LevelThree) LevelThree {
+func (obj *levelThree) setMsg(msg *openapi.LevelThree) LevelThree {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *levelThree) ToProto() (*openapi.LevelThree, error) {
-	err := obj.validateToAndFrom()
+type marshallevelThree struct {
+	obj *levelThree
+}
+
+type marshalLevelThree interface {
+	// ToProto marshals LevelThree to protobuf object *openapi.LevelThree
+	ToProto() (*openapi.LevelThree, error)
+	// ToPbText marshals LevelThree to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LevelThree to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LevelThree to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshallevelThree struct {
+	obj *levelThree
+}
+
+type unMarshalLevelThree interface {
+	// FromProto unmarshals LevelThree from protobuf object *openapi.LevelThree
+	FromProto(msg *openapi.LevelThree) (LevelThree, error)
+	// FromPbText unmarshals LevelThree from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LevelThree from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LevelThree from JSON text
+	FromJson(value string) error
+}
+
+func (obj *levelThree) Marshal() marshalLevelThree {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshallevelThree{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *levelThree) Unmarshal() unMarshalLevelThree {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshallevelThree{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshallevelThree) ToProto() (*openapi.LevelThree, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *levelThree) FromProto(msg *openapi.LevelThree) (LevelThree, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshallevelThree) FromProto(msg *openapi.LevelThree) (LevelThree, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -22350,33 +24287,33 @@ func (obj *levelThree) FromProto(msg *openapi.LevelThree) (LevelThree, error) {
 	return newObj, nil
 }
 
-func (obj *levelThree) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelThree) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *levelThree) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshallevelThree) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *levelThree) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelThree) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22385,7 +24322,7 @@ func (obj *levelThree) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -22396,7 +24333,7 @@ func (obj *levelThree) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *levelThree) FromYaml(value string) error {
+func (m *unMarshallevelThree) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -22408,21 +24345,21 @@ func (obj *levelThree) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *levelThree) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshallevelThree) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22432,14 +24369,14 @@ func (obj *levelThree) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *levelThree) FromJson(value string) error {
+func (m *unMarshallevelThree) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -22447,13 +24384,13 @@ func (obj *levelThree) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -22466,14 +24403,14 @@ func (obj *levelThree) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *levelThree) Validate() error {
+func (obj *levelThree) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *levelThree) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -22481,16 +24418,16 @@ func (obj *levelThree) String() string {
 }
 
 func (obj *levelThree) Clone() (LevelThree, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewLevelThree()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -22500,30 +24437,18 @@ func (obj *levelThree) Clone() (LevelThree, error) {
 // LevelThree is test Level3
 type LevelThree interface {
 	Validation
-	// Msg marshals LevelThree to protobuf object *openapi.LevelThree
+	// msg marshals LevelThree to protobuf object *openapi.LevelThree
 	// and doesn't set defaults
-	Msg() *openapi.LevelThree
-	// SetMsg unmarshals LevelThree from protobuf object *openapi.LevelThree
+	msg() *openapi.LevelThree
+	// setMsg unmarshals LevelThree from protobuf object *openapi.LevelThree
 	// and doesn't set defaults
-	SetMsg(*openapi.LevelThree) LevelThree
-	// ToProto marshals LevelThree to protobuf object *openapi.LevelThree
-	ToProto() (*openapi.LevelThree, error)
-	// ToPbText marshals LevelThree to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals LevelThree to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals LevelThree to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals LevelThree from protobuf object *openapi.LevelThree
-	FromProto(msg *openapi.LevelThree) (LevelThree, error)
-	// FromPbText unmarshals LevelThree from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals LevelThree from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals LevelThree from JSON text
-	FromJson(value string) error
-	// Validate validates LevelThree
-	Validate() error
+	setMsg(*openapi.LevelThree) LevelThree
+	// provides marshal interface
+	Marshal() marshalLevelThree
+	// provides unmarshal interface
+	Unmarshal() unMarshalLevelThree
+	// validate validates LevelThree
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -22575,7 +24500,9 @@ func (obj *levelThree) setDefault() {
 // ***** PatternIpv4PatternIpv4Counter *****
 type patternIpv4PatternIpv4Counter struct {
 	validation
-	obj *openapi.PatternIpv4PatternIpv4Counter
+	obj          *openapi.PatternIpv4PatternIpv4Counter
+	marshaller   marshalPatternIpv4PatternIpv4Counter
+	unMarshaller unMarshalPatternIpv4PatternIpv4Counter
 }
 
 func NewPatternIpv4PatternIpv4Counter() PatternIpv4PatternIpv4Counter {
@@ -22584,26 +24511,70 @@ func NewPatternIpv4PatternIpv4Counter() PatternIpv4PatternIpv4Counter {
 	return &obj
 }
 
-func (obj *patternIpv4PatternIpv4Counter) Msg() *openapi.PatternIpv4PatternIpv4Counter {
+func (obj *patternIpv4PatternIpv4Counter) msg() *openapi.PatternIpv4PatternIpv4Counter {
 	return obj.obj
 }
 
-func (obj *patternIpv4PatternIpv4Counter) SetMsg(msg *openapi.PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4Counter {
+func (obj *patternIpv4PatternIpv4Counter) setMsg(msg *openapi.PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4Counter {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIpv4PatternIpv4Counter) ToProto() (*openapi.PatternIpv4PatternIpv4Counter, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIpv4PatternIpv4Counter struct {
+	obj *patternIpv4PatternIpv4Counter
+}
+
+type marshalPatternIpv4PatternIpv4Counter interface {
+	// ToProto marshals PatternIpv4PatternIpv4Counter to protobuf object *openapi.PatternIpv4PatternIpv4Counter
+	ToProto() (*openapi.PatternIpv4PatternIpv4Counter, error)
+	// ToPbText marshals PatternIpv4PatternIpv4Counter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv4PatternIpv4Counter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv4PatternIpv4Counter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv4PatternIpv4Counter struct {
+	obj *patternIpv4PatternIpv4Counter
+}
+
+type unMarshalPatternIpv4PatternIpv4Counter interface {
+	// FromProto unmarshals PatternIpv4PatternIpv4Counter from protobuf object *openapi.PatternIpv4PatternIpv4Counter
+	FromProto(msg *openapi.PatternIpv4PatternIpv4Counter) (PatternIpv4PatternIpv4Counter, error)
+	// FromPbText unmarshals PatternIpv4PatternIpv4Counter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv4PatternIpv4Counter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv4PatternIpv4Counter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv4PatternIpv4Counter) Marshal() marshalPatternIpv4PatternIpv4Counter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv4PatternIpv4Counter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv4PatternIpv4Counter) Unmarshal() unMarshalPatternIpv4PatternIpv4Counter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv4PatternIpv4Counter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv4PatternIpv4Counter) ToProto() (*openapi.PatternIpv4PatternIpv4Counter, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) FromProto(msg *openapi.PatternIpv4PatternIpv4Counter) (PatternIpv4PatternIpv4Counter, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIpv4PatternIpv4Counter) FromProto(msg *openapi.PatternIpv4PatternIpv4Counter) (PatternIpv4PatternIpv4Counter, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -22611,33 +24582,33 @@ func (obj *patternIpv4PatternIpv4Counter) FromProto(msg *openapi.PatternIpv4Patt
 	return newObj, nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4Counter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIpv4PatternIpv4Counter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIpv4PatternIpv4Counter) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4Counter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22646,7 +24617,7 @@ func (obj *patternIpv4PatternIpv4Counter) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -22657,7 +24628,7 @@ func (obj *patternIpv4PatternIpv4Counter) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) FromYaml(value string) error {
+func (m *unMarshalpatternIpv4PatternIpv4Counter) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -22669,21 +24640,21 @@ func (obj *patternIpv4PatternIpv4Counter) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv4PatternIpv4Counter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22693,14 +24664,14 @@ func (obj *patternIpv4PatternIpv4Counter) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIpv4PatternIpv4Counter) FromJson(value string) error {
+func (m *unMarshalpatternIpv4PatternIpv4Counter) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -22708,13 +24679,13 @@ func (obj *patternIpv4PatternIpv4Counter) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -22727,14 +24698,14 @@ func (obj *patternIpv4PatternIpv4Counter) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIpv4PatternIpv4Counter) Validate() error {
+func (obj *patternIpv4PatternIpv4Counter) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIpv4PatternIpv4Counter) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -22742,16 +24713,16 @@ func (obj *patternIpv4PatternIpv4Counter) String() string {
 }
 
 func (obj *patternIpv4PatternIpv4Counter) Clone() (PatternIpv4PatternIpv4Counter, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIpv4PatternIpv4Counter()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -22761,30 +24732,18 @@ func (obj *patternIpv4PatternIpv4Counter) Clone() (PatternIpv4PatternIpv4Counter
 // PatternIpv4PatternIpv4Counter is ipv4 counter pattern
 type PatternIpv4PatternIpv4Counter interface {
 	Validation
-	// Msg marshals PatternIpv4PatternIpv4Counter to protobuf object *openapi.PatternIpv4PatternIpv4Counter
+	// msg marshals PatternIpv4PatternIpv4Counter to protobuf object *openapi.PatternIpv4PatternIpv4Counter
 	// and doesn't set defaults
-	Msg() *openapi.PatternIpv4PatternIpv4Counter
-	// SetMsg unmarshals PatternIpv4PatternIpv4Counter from protobuf object *openapi.PatternIpv4PatternIpv4Counter
+	msg() *openapi.PatternIpv4PatternIpv4Counter
+	// setMsg unmarshals PatternIpv4PatternIpv4Counter from protobuf object *openapi.PatternIpv4PatternIpv4Counter
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4Counter
-	// ToProto marshals PatternIpv4PatternIpv4Counter to protobuf object *openapi.PatternIpv4PatternIpv4Counter
-	ToProto() (*openapi.PatternIpv4PatternIpv4Counter, error)
-	// ToPbText marshals PatternIpv4PatternIpv4Counter to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIpv4PatternIpv4Counter to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIpv4PatternIpv4Counter to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIpv4PatternIpv4Counter from protobuf object *openapi.PatternIpv4PatternIpv4Counter
-	FromProto(msg *openapi.PatternIpv4PatternIpv4Counter) (PatternIpv4PatternIpv4Counter, error)
-	// FromPbText unmarshals PatternIpv4PatternIpv4Counter from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIpv4PatternIpv4Counter from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIpv4PatternIpv4Counter from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIpv4PatternIpv4Counter
-	Validate() error
+	setMsg(*openapi.PatternIpv4PatternIpv4Counter) PatternIpv4PatternIpv4Counter
+	// provides marshal interface
+	Marshal() marshalPatternIpv4PatternIpv4Counter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv4PatternIpv4Counter
+	// validate validates PatternIpv4PatternIpv4Counter
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -22919,7 +24878,9 @@ func (obj *patternIpv4PatternIpv4Counter) setDefault() {
 // ***** PatternIpv6PatternIpv6Counter *****
 type patternIpv6PatternIpv6Counter struct {
 	validation
-	obj *openapi.PatternIpv6PatternIpv6Counter
+	obj          *openapi.PatternIpv6PatternIpv6Counter
+	marshaller   marshalPatternIpv6PatternIpv6Counter
+	unMarshaller unMarshalPatternIpv6PatternIpv6Counter
 }
 
 func NewPatternIpv6PatternIpv6Counter() PatternIpv6PatternIpv6Counter {
@@ -22928,26 +24889,70 @@ func NewPatternIpv6PatternIpv6Counter() PatternIpv6PatternIpv6Counter {
 	return &obj
 }
 
-func (obj *patternIpv6PatternIpv6Counter) Msg() *openapi.PatternIpv6PatternIpv6Counter {
+func (obj *patternIpv6PatternIpv6Counter) msg() *openapi.PatternIpv6PatternIpv6Counter {
 	return obj.obj
 }
 
-func (obj *patternIpv6PatternIpv6Counter) SetMsg(msg *openapi.PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6Counter {
+func (obj *patternIpv6PatternIpv6Counter) setMsg(msg *openapi.PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6Counter {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIpv6PatternIpv6Counter) ToProto() (*openapi.PatternIpv6PatternIpv6Counter, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIpv6PatternIpv6Counter struct {
+	obj *patternIpv6PatternIpv6Counter
+}
+
+type marshalPatternIpv6PatternIpv6Counter interface {
+	// ToProto marshals PatternIpv6PatternIpv6Counter to protobuf object *openapi.PatternIpv6PatternIpv6Counter
+	ToProto() (*openapi.PatternIpv6PatternIpv6Counter, error)
+	// ToPbText marshals PatternIpv6PatternIpv6Counter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv6PatternIpv6Counter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv6PatternIpv6Counter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv6PatternIpv6Counter struct {
+	obj *patternIpv6PatternIpv6Counter
+}
+
+type unMarshalPatternIpv6PatternIpv6Counter interface {
+	// FromProto unmarshals PatternIpv6PatternIpv6Counter from protobuf object *openapi.PatternIpv6PatternIpv6Counter
+	FromProto(msg *openapi.PatternIpv6PatternIpv6Counter) (PatternIpv6PatternIpv6Counter, error)
+	// FromPbText unmarshals PatternIpv6PatternIpv6Counter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv6PatternIpv6Counter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv6PatternIpv6Counter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv6PatternIpv6Counter) Marshal() marshalPatternIpv6PatternIpv6Counter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv6PatternIpv6Counter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv6PatternIpv6Counter) Unmarshal() unMarshalPatternIpv6PatternIpv6Counter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv6PatternIpv6Counter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv6PatternIpv6Counter) ToProto() (*openapi.PatternIpv6PatternIpv6Counter, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) FromProto(msg *openapi.PatternIpv6PatternIpv6Counter) (PatternIpv6PatternIpv6Counter, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIpv6PatternIpv6Counter) FromProto(msg *openapi.PatternIpv6PatternIpv6Counter) (PatternIpv6PatternIpv6Counter, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -22955,33 +24960,33 @@ func (obj *patternIpv6PatternIpv6Counter) FromProto(msg *openapi.PatternIpv6Patt
 	return newObj, nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6Counter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIpv6PatternIpv6Counter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIpv6PatternIpv6Counter) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6Counter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -22990,7 +24995,7 @@ func (obj *patternIpv6PatternIpv6Counter) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -23001,7 +25006,7 @@ func (obj *patternIpv6PatternIpv6Counter) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) FromYaml(value string) error {
+func (m *unMarshalpatternIpv6PatternIpv6Counter) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -23013,21 +25018,21 @@ func (obj *patternIpv6PatternIpv6Counter) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIpv6PatternIpv6Counter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -23037,14 +25042,14 @@ func (obj *patternIpv6PatternIpv6Counter) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIpv6PatternIpv6Counter) FromJson(value string) error {
+func (m *unMarshalpatternIpv6PatternIpv6Counter) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -23052,13 +25057,13 @@ func (obj *patternIpv6PatternIpv6Counter) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -23071,14 +25076,14 @@ func (obj *patternIpv6PatternIpv6Counter) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIpv6PatternIpv6Counter) Validate() error {
+func (obj *patternIpv6PatternIpv6Counter) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIpv6PatternIpv6Counter) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -23086,16 +25091,16 @@ func (obj *patternIpv6PatternIpv6Counter) String() string {
 }
 
 func (obj *patternIpv6PatternIpv6Counter) Clone() (PatternIpv6PatternIpv6Counter, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIpv6PatternIpv6Counter()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -23105,30 +25110,18 @@ func (obj *patternIpv6PatternIpv6Counter) Clone() (PatternIpv6PatternIpv6Counter
 // PatternIpv6PatternIpv6Counter is ipv6 counter pattern
 type PatternIpv6PatternIpv6Counter interface {
 	Validation
-	// Msg marshals PatternIpv6PatternIpv6Counter to protobuf object *openapi.PatternIpv6PatternIpv6Counter
+	// msg marshals PatternIpv6PatternIpv6Counter to protobuf object *openapi.PatternIpv6PatternIpv6Counter
 	// and doesn't set defaults
-	Msg() *openapi.PatternIpv6PatternIpv6Counter
-	// SetMsg unmarshals PatternIpv6PatternIpv6Counter from protobuf object *openapi.PatternIpv6PatternIpv6Counter
+	msg() *openapi.PatternIpv6PatternIpv6Counter
+	// setMsg unmarshals PatternIpv6PatternIpv6Counter from protobuf object *openapi.PatternIpv6PatternIpv6Counter
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6Counter
-	// ToProto marshals PatternIpv6PatternIpv6Counter to protobuf object *openapi.PatternIpv6PatternIpv6Counter
-	ToProto() (*openapi.PatternIpv6PatternIpv6Counter, error)
-	// ToPbText marshals PatternIpv6PatternIpv6Counter to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIpv6PatternIpv6Counter to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIpv6PatternIpv6Counter to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIpv6PatternIpv6Counter from protobuf object *openapi.PatternIpv6PatternIpv6Counter
-	FromProto(msg *openapi.PatternIpv6PatternIpv6Counter) (PatternIpv6PatternIpv6Counter, error)
-	// FromPbText unmarshals PatternIpv6PatternIpv6Counter from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIpv6PatternIpv6Counter from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIpv6PatternIpv6Counter from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIpv6PatternIpv6Counter
-	Validate() error
+	setMsg(*openapi.PatternIpv6PatternIpv6Counter) PatternIpv6PatternIpv6Counter
+	// provides marshal interface
+	Marshal() marshalPatternIpv6PatternIpv6Counter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv6PatternIpv6Counter
+	// validate validates PatternIpv6PatternIpv6Counter
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -23263,7 +25256,9 @@ func (obj *patternIpv6PatternIpv6Counter) setDefault() {
 // ***** PatternMacPatternMacCounter *****
 type patternMacPatternMacCounter struct {
 	validation
-	obj *openapi.PatternMacPatternMacCounter
+	obj          *openapi.PatternMacPatternMacCounter
+	marshaller   marshalPatternMacPatternMacCounter
+	unMarshaller unMarshalPatternMacPatternMacCounter
 }
 
 func NewPatternMacPatternMacCounter() PatternMacPatternMacCounter {
@@ -23272,26 +25267,70 @@ func NewPatternMacPatternMacCounter() PatternMacPatternMacCounter {
 	return &obj
 }
 
-func (obj *patternMacPatternMacCounter) Msg() *openapi.PatternMacPatternMacCounter {
+func (obj *patternMacPatternMacCounter) msg() *openapi.PatternMacPatternMacCounter {
 	return obj.obj
 }
 
-func (obj *patternMacPatternMacCounter) SetMsg(msg *openapi.PatternMacPatternMacCounter) PatternMacPatternMacCounter {
+func (obj *patternMacPatternMacCounter) setMsg(msg *openapi.PatternMacPatternMacCounter) PatternMacPatternMacCounter {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternMacPatternMacCounter) ToProto() (*openapi.PatternMacPatternMacCounter, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternMacPatternMacCounter struct {
+	obj *patternMacPatternMacCounter
+}
+
+type marshalPatternMacPatternMacCounter interface {
+	// ToProto marshals PatternMacPatternMacCounter to protobuf object *openapi.PatternMacPatternMacCounter
+	ToProto() (*openapi.PatternMacPatternMacCounter, error)
+	// ToPbText marshals PatternMacPatternMacCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternMacPatternMacCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternMacPatternMacCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternMacPatternMacCounter struct {
+	obj *patternMacPatternMacCounter
+}
+
+type unMarshalPatternMacPatternMacCounter interface {
+	// FromProto unmarshals PatternMacPatternMacCounter from protobuf object *openapi.PatternMacPatternMacCounter
+	FromProto(msg *openapi.PatternMacPatternMacCounter) (PatternMacPatternMacCounter, error)
+	// FromPbText unmarshals PatternMacPatternMacCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternMacPatternMacCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternMacPatternMacCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternMacPatternMacCounter) Marshal() marshalPatternMacPatternMacCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternMacPatternMacCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternMacPatternMacCounter) Unmarshal() unMarshalPatternMacPatternMacCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternMacPatternMacCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternMacPatternMacCounter) ToProto() (*openapi.PatternMacPatternMacCounter, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternMacPatternMacCounter) FromProto(msg *openapi.PatternMacPatternMacCounter) (PatternMacPatternMacCounter, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternMacPatternMacCounter) FromProto(msg *openapi.PatternMacPatternMacCounter) (PatternMacPatternMacCounter, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -23299,33 +25338,33 @@ func (obj *patternMacPatternMacCounter) FromProto(msg *openapi.PatternMacPattern
 	return newObj, nil
 }
 
-func (obj *patternMacPatternMacCounter) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMacCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternMacPatternMacCounter) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternMacPatternMacCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternMacPatternMacCounter) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMacCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -23334,7 +25373,7 @@ func (obj *patternMacPatternMacCounter) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -23345,7 +25384,7 @@ func (obj *patternMacPatternMacCounter) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternMacPatternMacCounter) FromYaml(value string) error {
+func (m *unMarshalpatternMacPatternMacCounter) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -23357,21 +25396,21 @@ func (obj *patternMacPatternMacCounter) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternMacPatternMacCounter) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternMacPatternMacCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -23381,14 +25420,14 @@ func (obj *patternMacPatternMacCounter) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternMacPatternMacCounter) FromJson(value string) error {
+func (m *unMarshalpatternMacPatternMacCounter) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -23396,13 +25435,13 @@ func (obj *patternMacPatternMacCounter) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -23415,14 +25454,14 @@ func (obj *patternMacPatternMacCounter) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternMacPatternMacCounter) Validate() error {
+func (obj *patternMacPatternMacCounter) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternMacPatternMacCounter) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -23430,16 +25469,16 @@ func (obj *patternMacPatternMacCounter) String() string {
 }
 
 func (obj *patternMacPatternMacCounter) Clone() (PatternMacPatternMacCounter, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternMacPatternMacCounter()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -23449,30 +25488,18 @@ func (obj *patternMacPatternMacCounter) Clone() (PatternMacPatternMacCounter, er
 // PatternMacPatternMacCounter is mac counter pattern
 type PatternMacPatternMacCounter interface {
 	Validation
-	// Msg marshals PatternMacPatternMacCounter to protobuf object *openapi.PatternMacPatternMacCounter
+	// msg marshals PatternMacPatternMacCounter to protobuf object *openapi.PatternMacPatternMacCounter
 	// and doesn't set defaults
-	Msg() *openapi.PatternMacPatternMacCounter
-	// SetMsg unmarshals PatternMacPatternMacCounter from protobuf object *openapi.PatternMacPatternMacCounter
+	msg() *openapi.PatternMacPatternMacCounter
+	// setMsg unmarshals PatternMacPatternMacCounter from protobuf object *openapi.PatternMacPatternMacCounter
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternMacPatternMacCounter) PatternMacPatternMacCounter
-	// ToProto marshals PatternMacPatternMacCounter to protobuf object *openapi.PatternMacPatternMacCounter
-	ToProto() (*openapi.PatternMacPatternMacCounter, error)
-	// ToPbText marshals PatternMacPatternMacCounter to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternMacPatternMacCounter to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternMacPatternMacCounter to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternMacPatternMacCounter from protobuf object *openapi.PatternMacPatternMacCounter
-	FromProto(msg *openapi.PatternMacPatternMacCounter) (PatternMacPatternMacCounter, error)
-	// FromPbText unmarshals PatternMacPatternMacCounter from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternMacPatternMacCounter from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternMacPatternMacCounter from JSON text
-	FromJson(value string) error
-	// Validate validates PatternMacPatternMacCounter
-	Validate() error
+	setMsg(*openapi.PatternMacPatternMacCounter) PatternMacPatternMacCounter
+	// provides marshal interface
+	Marshal() marshalPatternMacPatternMacCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternMacPatternMacCounter
+	// validate validates PatternMacPatternMacCounter
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -23607,7 +25634,9 @@ func (obj *patternMacPatternMacCounter) setDefault() {
 // ***** PatternIntegerPatternIntegerCounter *****
 type patternIntegerPatternIntegerCounter struct {
 	validation
-	obj *openapi.PatternIntegerPatternIntegerCounter
+	obj          *openapi.PatternIntegerPatternIntegerCounter
+	marshaller   marshalPatternIntegerPatternIntegerCounter
+	unMarshaller unMarshalPatternIntegerPatternIntegerCounter
 }
 
 func NewPatternIntegerPatternIntegerCounter() PatternIntegerPatternIntegerCounter {
@@ -23616,26 +25645,70 @@ func NewPatternIntegerPatternIntegerCounter() PatternIntegerPatternIntegerCounte
 	return &obj
 }
 
-func (obj *patternIntegerPatternIntegerCounter) Msg() *openapi.PatternIntegerPatternIntegerCounter {
+func (obj *patternIntegerPatternIntegerCounter) msg() *openapi.PatternIntegerPatternIntegerCounter {
 	return obj.obj
 }
 
-func (obj *patternIntegerPatternIntegerCounter) SetMsg(msg *openapi.PatternIntegerPatternIntegerCounter) PatternIntegerPatternIntegerCounter {
+func (obj *patternIntegerPatternIntegerCounter) setMsg(msg *openapi.PatternIntegerPatternIntegerCounter) PatternIntegerPatternIntegerCounter {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *patternIntegerPatternIntegerCounter) ToProto() (*openapi.PatternIntegerPatternIntegerCounter, error) {
-	err := obj.validateToAndFrom()
+type marshalpatternIntegerPatternIntegerCounter struct {
+	obj *patternIntegerPatternIntegerCounter
+}
+
+type marshalPatternIntegerPatternIntegerCounter interface {
+	// ToProto marshals PatternIntegerPatternIntegerCounter to protobuf object *openapi.PatternIntegerPatternIntegerCounter
+	ToProto() (*openapi.PatternIntegerPatternIntegerCounter, error)
+	// ToPbText marshals PatternIntegerPatternIntegerCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIntegerPatternIntegerCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIntegerPatternIntegerCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIntegerPatternIntegerCounter struct {
+	obj *patternIntegerPatternIntegerCounter
+}
+
+type unMarshalPatternIntegerPatternIntegerCounter interface {
+	// FromProto unmarshals PatternIntegerPatternIntegerCounter from protobuf object *openapi.PatternIntegerPatternIntegerCounter
+	FromProto(msg *openapi.PatternIntegerPatternIntegerCounter) (PatternIntegerPatternIntegerCounter, error)
+	// FromPbText unmarshals PatternIntegerPatternIntegerCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIntegerPatternIntegerCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIntegerPatternIntegerCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIntegerPatternIntegerCounter) Marshal() marshalPatternIntegerPatternIntegerCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIntegerPatternIntegerCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIntegerPatternIntegerCounter) Unmarshal() unMarshalPatternIntegerPatternIntegerCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIntegerPatternIntegerCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIntegerPatternIntegerCounter) ToProto() (*openapi.PatternIntegerPatternIntegerCounter, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) FromProto(msg *openapi.PatternIntegerPatternIntegerCounter) (PatternIntegerPatternIntegerCounter, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalpatternIntegerPatternIntegerCounter) FromProto(msg *openapi.PatternIntegerPatternIntegerCounter) (PatternIntegerPatternIntegerCounter, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -23643,33 +25716,33 @@ func (obj *patternIntegerPatternIntegerCounter) FromProto(msg *openapi.PatternIn
 	return newObj, nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternIntegerCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalpatternIntegerPatternIntegerCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *patternIntegerPatternIntegerCounter) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternIntegerCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -23678,7 +25751,7 @@ func (obj *patternIntegerPatternIntegerCounter) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -23689,7 +25762,7 @@ func (obj *patternIntegerPatternIntegerCounter) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) FromYaml(value string) error {
+func (m *unMarshalpatternIntegerPatternIntegerCounter) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -23701,21 +25774,21 @@ func (obj *patternIntegerPatternIntegerCounter) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalpatternIntegerPatternIntegerCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -23725,14 +25798,14 @@ func (obj *patternIntegerPatternIntegerCounter) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *patternIntegerPatternIntegerCounter) FromJson(value string) error {
+func (m *unMarshalpatternIntegerPatternIntegerCounter) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -23740,13 +25813,13 @@ func (obj *patternIntegerPatternIntegerCounter) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -23759,14 +25832,14 @@ func (obj *patternIntegerPatternIntegerCounter) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *patternIntegerPatternIntegerCounter) Validate() error {
+func (obj *patternIntegerPatternIntegerCounter) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *patternIntegerPatternIntegerCounter) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -23774,16 +25847,16 @@ func (obj *patternIntegerPatternIntegerCounter) String() string {
 }
 
 func (obj *patternIntegerPatternIntegerCounter) Clone() (PatternIntegerPatternIntegerCounter, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewPatternIntegerPatternIntegerCounter()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -23793,30 +25866,18 @@ func (obj *patternIntegerPatternIntegerCounter) Clone() (PatternIntegerPatternIn
 // PatternIntegerPatternIntegerCounter is integer counter pattern
 type PatternIntegerPatternIntegerCounter interface {
 	Validation
-	// Msg marshals PatternIntegerPatternIntegerCounter to protobuf object *openapi.PatternIntegerPatternIntegerCounter
+	// msg marshals PatternIntegerPatternIntegerCounter to protobuf object *openapi.PatternIntegerPatternIntegerCounter
 	// and doesn't set defaults
-	Msg() *openapi.PatternIntegerPatternIntegerCounter
-	// SetMsg unmarshals PatternIntegerPatternIntegerCounter from protobuf object *openapi.PatternIntegerPatternIntegerCounter
+	msg() *openapi.PatternIntegerPatternIntegerCounter
+	// setMsg unmarshals PatternIntegerPatternIntegerCounter from protobuf object *openapi.PatternIntegerPatternIntegerCounter
 	// and doesn't set defaults
-	SetMsg(*openapi.PatternIntegerPatternIntegerCounter) PatternIntegerPatternIntegerCounter
-	// ToProto marshals PatternIntegerPatternIntegerCounter to protobuf object *openapi.PatternIntegerPatternIntegerCounter
-	ToProto() (*openapi.PatternIntegerPatternIntegerCounter, error)
-	// ToPbText marshals PatternIntegerPatternIntegerCounter to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals PatternIntegerPatternIntegerCounter to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals PatternIntegerPatternIntegerCounter to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals PatternIntegerPatternIntegerCounter from protobuf object *openapi.PatternIntegerPatternIntegerCounter
-	FromProto(msg *openapi.PatternIntegerPatternIntegerCounter) (PatternIntegerPatternIntegerCounter, error)
-	// FromPbText unmarshals PatternIntegerPatternIntegerCounter from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals PatternIntegerPatternIntegerCounter from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals PatternIntegerPatternIntegerCounter from JSON text
-	FromJson(value string) error
-	// Validate validates PatternIntegerPatternIntegerCounter
-	Validate() error
+	setMsg(*openapi.PatternIntegerPatternIntegerCounter) PatternIntegerPatternIntegerCounter
+	// provides marshal interface
+	Marshal() marshalPatternIntegerPatternIntegerCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIntegerPatternIntegerCounter
+	// validate validates PatternIntegerPatternIntegerCounter
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object
@@ -23963,7 +26024,9 @@ func (obj *patternIntegerPatternIntegerCounter) setDefault() {
 // ***** RequiredChoiceIntermeLeaf *****
 type requiredChoiceIntermeLeaf struct {
 	validation
-	obj *openapi.RequiredChoiceIntermeLeaf
+	obj          *openapi.RequiredChoiceIntermeLeaf
+	marshaller   marshalRequiredChoiceIntermeLeaf
+	unMarshaller unMarshalRequiredChoiceIntermeLeaf
 }
 
 func NewRequiredChoiceIntermeLeaf() RequiredChoiceIntermeLeaf {
@@ -23972,26 +26035,70 @@ func NewRequiredChoiceIntermeLeaf() RequiredChoiceIntermeLeaf {
 	return &obj
 }
 
-func (obj *requiredChoiceIntermeLeaf) Msg() *openapi.RequiredChoiceIntermeLeaf {
+func (obj *requiredChoiceIntermeLeaf) msg() *openapi.RequiredChoiceIntermeLeaf {
 	return obj.obj
 }
 
-func (obj *requiredChoiceIntermeLeaf) SetMsg(msg *openapi.RequiredChoiceIntermeLeaf) RequiredChoiceIntermeLeaf {
+func (obj *requiredChoiceIntermeLeaf) setMsg(msg *openapi.RequiredChoiceIntermeLeaf) RequiredChoiceIntermeLeaf {
 
 	proto.Merge(obj.obj, msg)
 	return obj
 }
 
-func (obj *requiredChoiceIntermeLeaf) ToProto() (*openapi.RequiredChoiceIntermeLeaf, error) {
-	err := obj.validateToAndFrom()
+type marshalrequiredChoiceIntermeLeaf struct {
+	obj *requiredChoiceIntermeLeaf
+}
+
+type marshalRequiredChoiceIntermeLeaf interface {
+	// ToProto marshals RequiredChoiceIntermeLeaf to protobuf object *openapi.RequiredChoiceIntermeLeaf
+	ToProto() (*openapi.RequiredChoiceIntermeLeaf, error)
+	// ToPbText marshals RequiredChoiceIntermeLeaf to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredChoiceIntermeLeaf to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredChoiceIntermeLeaf to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredChoiceIntermeLeaf struct {
+	obj *requiredChoiceIntermeLeaf
+}
+
+type unMarshalRequiredChoiceIntermeLeaf interface {
+	// FromProto unmarshals RequiredChoiceIntermeLeaf from protobuf object *openapi.RequiredChoiceIntermeLeaf
+	FromProto(msg *openapi.RequiredChoiceIntermeLeaf) (RequiredChoiceIntermeLeaf, error)
+	// FromPbText unmarshals RequiredChoiceIntermeLeaf from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredChoiceIntermeLeaf from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredChoiceIntermeLeaf from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredChoiceIntermeLeaf) Marshal() marshalRequiredChoiceIntermeLeaf {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredChoiceIntermeLeaf{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredChoiceIntermeLeaf) Unmarshal() unMarshalRequiredChoiceIntermeLeaf {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredChoiceIntermeLeaf{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredChoiceIntermeLeaf) ToProto() (*openapi.RequiredChoiceIntermeLeaf, error) {
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return nil, err
 	}
-	return obj.Msg(), nil
+	return m.obj.msg(), nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) FromProto(msg *openapi.RequiredChoiceIntermeLeaf) (RequiredChoiceIntermeLeaf, error) {
-	newObj := obj.SetMsg(msg)
+func (m *unMarshalrequiredChoiceIntermeLeaf) FromProto(msg *openapi.RequiredChoiceIntermeLeaf) (RequiredChoiceIntermeLeaf, error) {
+	newObj := m.obj.setMsg(msg)
 	err := newObj.validateToAndFrom()
 	if err != nil {
 		return nil, err
@@ -23999,33 +26106,33 @@ func (obj *requiredChoiceIntermeLeaf) FromProto(msg *openapi.RequiredChoiceInter
 	return newObj, nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) ToPbText() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermeLeaf) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
-	protoMarshal, err := proto.Marshal(obj.Msg())
+	protoMarshal, err := proto.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(protoMarshal), nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) FromPbText(value string) error {
-	retObj := proto.Unmarshal([]byte(value), obj.Msg())
+func (m *unMarshalrequiredChoiceIntermeLeaf) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
 	if retObj != nil {
 		return retObj
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return retObj
 }
 
-func (obj *requiredChoiceIntermeLeaf) ToYaml() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermeLeaf) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -24034,7 +26141,7 @@ func (obj *requiredChoiceIntermeLeaf) ToYaml() (string, error) {
 		AllowPartial:    true,
 		EmitUnpopulated: false,
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
@@ -24045,7 +26152,7 @@ func (obj *requiredChoiceIntermeLeaf) ToYaml() (string, error) {
 	return string(data), nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) FromYaml(value string) error {
+func (m *unMarshalrequiredChoiceIntermeLeaf) FromYaml(value string) error {
 	if value == "" {
 		value = "{}"
 	}
@@ -24057,21 +26164,21 @@ func (obj *requiredChoiceIntermeLeaf) FromYaml(value string) error {
 		AllowPartial:   true,
 		DiscardUnknown: false,
 	}
-	uError := opts.Unmarshal([]byte(data), obj.Msg())
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	vErr := obj.validateToAndFrom()
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return vErr
 	}
 	return nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) ToJson() (string, error) {
-	vErr := obj.validateToAndFrom()
+func (m *marshalrequiredChoiceIntermeLeaf) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
 	if vErr != nil {
 		return "", vErr
 	}
@@ -24081,14 +26188,14 @@ func (obj *requiredChoiceIntermeLeaf) ToJson() (string, error) {
 		EmitUnpopulated: false,
 		Indent:          "  ",
 	}
-	data, err := opts.Marshal(obj.Msg())
+	data, err := opts.Marshal(m.obj.msg())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
-func (obj *requiredChoiceIntermeLeaf) FromJson(value string) error {
+func (m *unMarshalrequiredChoiceIntermeLeaf) FromJson(value string) error {
 	opts := protojson.UnmarshalOptions{
 		AllowPartial:   true,
 		DiscardUnknown: false,
@@ -24096,13 +26203,13 @@ func (obj *requiredChoiceIntermeLeaf) FromJson(value string) error {
 	if value == "" {
 		value = "{}"
 	}
-	uError := opts.Unmarshal([]byte(value), obj.Msg())
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
 	if uError != nil {
 		return fmt.Errorf("unmarshal error %s", strings.Replace(
 			uError.Error(), "\u00a0", " ", -1)[7:])
 	}
 
-	err := obj.validateToAndFrom()
+	err := m.obj.validateToAndFrom()
 	if err != nil {
 		return err
 	}
@@ -24115,14 +26222,14 @@ func (obj *requiredChoiceIntermeLeaf) validateToAndFrom() error {
 	return obj.validationResult()
 }
 
-func (obj *requiredChoiceIntermeLeaf) Validate() error {
+func (obj *requiredChoiceIntermeLeaf) validate() error {
 	// emptyVars()
 	obj.validateObj(&obj.validation, false)
 	return obj.validationResult()
 }
 
 func (obj *requiredChoiceIntermeLeaf) String() string {
-	str, err := obj.ToYaml()
+	str, err := obj.Marshal().ToYaml()
 	if err != nil {
 		return err.Error()
 	}
@@ -24130,16 +26237,16 @@ func (obj *requiredChoiceIntermeLeaf) String() string {
 }
 
 func (obj *requiredChoiceIntermeLeaf) Clone() (RequiredChoiceIntermeLeaf, error) {
-	vErr := obj.Validate()
+	vErr := obj.validate()
 	if vErr != nil {
 		return nil, vErr
 	}
 	newObj := NewRequiredChoiceIntermeLeaf()
-	data, err := proto.Marshal(obj.Msg())
+	data, err := proto.Marshal(obj.msg())
 	if err != nil {
 		return nil, err
 	}
-	pbErr := proto.Unmarshal(data, newObj.Msg())
+	pbErr := proto.Unmarshal(data, newObj.msg())
 	if pbErr != nil {
 		return nil, pbErr
 	}
@@ -24149,30 +26256,18 @@ func (obj *requiredChoiceIntermeLeaf) Clone() (RequiredChoiceIntermeLeaf, error)
 // RequiredChoiceIntermeLeaf is description is TBD
 type RequiredChoiceIntermeLeaf interface {
 	Validation
-	// Msg marshals RequiredChoiceIntermeLeaf to protobuf object *openapi.RequiredChoiceIntermeLeaf
+	// msg marshals RequiredChoiceIntermeLeaf to protobuf object *openapi.RequiredChoiceIntermeLeaf
 	// and doesn't set defaults
-	Msg() *openapi.RequiredChoiceIntermeLeaf
-	// SetMsg unmarshals RequiredChoiceIntermeLeaf from protobuf object *openapi.RequiredChoiceIntermeLeaf
+	msg() *openapi.RequiredChoiceIntermeLeaf
+	// setMsg unmarshals RequiredChoiceIntermeLeaf from protobuf object *openapi.RequiredChoiceIntermeLeaf
 	// and doesn't set defaults
-	SetMsg(*openapi.RequiredChoiceIntermeLeaf) RequiredChoiceIntermeLeaf
-	// ToProto marshals RequiredChoiceIntermeLeaf to protobuf object *openapi.RequiredChoiceIntermeLeaf
-	ToProto() (*openapi.RequiredChoiceIntermeLeaf, error)
-	// ToPbText marshals RequiredChoiceIntermeLeaf to protobuf text
-	ToPbText() (string, error)
-	// ToYaml marshals RequiredChoiceIntermeLeaf to YAML text
-	ToYaml() (string, error)
-	// ToJson marshals RequiredChoiceIntermeLeaf to JSON text
-	ToJson() (string, error)
-	// FromProto unmarshals RequiredChoiceIntermeLeaf from protobuf object *openapi.RequiredChoiceIntermeLeaf
-	FromProto(msg *openapi.RequiredChoiceIntermeLeaf) (RequiredChoiceIntermeLeaf, error)
-	// FromPbText unmarshals RequiredChoiceIntermeLeaf from protobuf text
-	FromPbText(value string) error
-	// FromYaml unmarshals RequiredChoiceIntermeLeaf from YAML text
-	FromYaml(value string) error
-	// FromJson unmarshals RequiredChoiceIntermeLeaf from JSON text
-	FromJson(value string) error
-	// Validate validates RequiredChoiceIntermeLeaf
-	Validate() error
+	setMsg(*openapi.RequiredChoiceIntermeLeaf) RequiredChoiceIntermeLeaf
+	// provides marshal interface
+	Marshal() marshalRequiredChoiceIntermeLeaf
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredChoiceIntermeLeaf
+	// validate validates RequiredChoiceIntermeLeaf
+	validate() error
 	// A stringer function
 	String() string
 	// Clones the object

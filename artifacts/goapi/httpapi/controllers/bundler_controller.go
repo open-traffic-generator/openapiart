@@ -38,7 +38,7 @@ func (ctrl *bundlerController) SetConfig(w http.ResponseWriter, r *http.Request)
 		body, readError := io.ReadAll(r.Body)
 		if body != nil {
 			item = openapi.NewPrefixConfig()
-			err := item.FromJson(string(body))
+			err := item.Unmarshal().FromJson(string(body))
 			if err != nil {
 				ctrl.responseSetConfigError(w, "validation", err)
 				return
@@ -80,18 +80,18 @@ func (ctrl *bundlerController) responseSetConfigError(w http.ResponseWriter, err
 		result = rErr
 	} else {
 		result = openapi.NewError()
-		err := result.FromJson(rsp_err.Error())
+		err := result.Unmarshal().FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = &statusCode
+			_ = result.SetCode(statusCode)
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
 			}
-			result.Msg().Errors = []string{rsp_err.Error()}
+			_ = result.SetErrors([]string{rsp_err.Error()})
 		}
 	}
 
-	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {
+	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshal()); err != nil {
 		log.Print(err.Error())
 	}
 }
@@ -108,7 +108,7 @@ func (ctrl *bundlerController) UpdateConfiguration(w http.ResponseWriter, r *htt
 		body, readError := io.ReadAll(r.Body)
 		if body != nil {
 			item = openapi.NewUpdateConfig()
-			err := item.FromJson(string(body))
+			err := item.Unmarshal().FromJson(string(body))
 			if err != nil {
 				ctrl.responseUpdateConfigurationError(w, "validation", err)
 				return
@@ -129,7 +129,7 @@ func (ctrl *bundlerController) UpdateConfiguration(w http.ResponseWriter, r *htt
 	}
 
 	if result.HasPrefixConfig() {
-		if _, err := httpapi.WriteJSONResponse(w, 200, result.PrefixConfig()); err != nil {
+		if _, err := httpapi.WriteJSONResponse(w, 200, result.PrefixConfig().Marshal()); err != nil {
 			log.Print(err.Error())
 		}
 		return
@@ -150,18 +150,18 @@ func (ctrl *bundlerController) responseUpdateConfigurationError(w http.ResponseW
 		result = rErr
 	} else {
 		result = openapi.NewError()
-		err := result.FromJson(rsp_err.Error())
+		err := result.Unmarshal().FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = &statusCode
+			_ = result.SetCode(statusCode)
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
 			}
-			result.Msg().Errors = []string{rsp_err.Error()}
+			_ = result.SetErrors([]string{rsp_err.Error()})
 		}
 	}
 
-	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {
+	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshal()); err != nil {
 		log.Print(err.Error())
 	}
 }
@@ -178,7 +178,7 @@ func (ctrl *bundlerController) GetConfig(w http.ResponseWriter, r *http.Request)
 	}
 
 	if result.HasPrefixConfig() {
-		if _, err := httpapi.WriteJSONResponse(w, 200, result.PrefixConfig()); err != nil {
+		if _, err := httpapi.WriteJSONResponse(w, 200, result.PrefixConfig().Marshal()); err != nil {
 			log.Print(err.Error())
 		}
 		return
@@ -199,18 +199,18 @@ func (ctrl *bundlerController) responseGetConfigError(w http.ResponseWriter, err
 		result = rErr
 	} else {
 		result = openapi.NewError()
-		err := result.FromJson(rsp_err.Error())
+		err := result.Unmarshal().FromJson(rsp_err.Error())
 		if err != nil {
-			result.Msg().Code = &statusCode
+			_ = result.SetCode(statusCode)
 			err = result.SetKind(errorKind)
 			if err != nil {
 				log.Print(err.Error())
 			}
-			result.Msg().Errors = []string{rsp_err.Error()}
+			_ = result.SetErrors([]string{rsp_err.Error()})
 		}
 	}
 
-	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {
+	if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshal()); err != nil {
 		log.Print(err.Error())
 	}
 }
