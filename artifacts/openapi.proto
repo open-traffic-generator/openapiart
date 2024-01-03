@@ -699,6 +699,463 @@ message ChecksumPattern {
   PatternChecksumPatternChecksum checksum = 1;
 }
 
+// Under Review: the whole schema is being reviewed
+// 
+// Description TBD
+message TestConfig {
+
+  // Description missing in models
+  NativeFeatures native_features = 1;
+
+  // Description missing in models
+  ExtendedFeatures extended_features = 2;
+}
+
+// Description missing in models
+message NativeFeatures {
+
+  // Description missing in models
+  RequiredVal required_val = 1;
+
+  // Description missing in models
+  OptionalVal optional_val = 2;
+
+  // Description missing in models
+  BoundaryVal boundary_val = 3;
+
+  // Description missing in models
+  RequiredValArray required_val_array = 4;
+
+  // Description missing in models
+  OptionalValArray optional_val_array = 5;
+
+  // Description missing in models
+  BoundaryValArray boundary_val_array = 6;
+
+  // Description missing in models
+  NestedRefObject nested_ref_object = 7;
+
+  // Description missing in models
+  MixedObject mixed_object = 8;
+
+  // Description missing in models
+  NumberTypeObject number_type_object = 9;
+
+  // Description missing in models
+  repeated MixedObject iter_object = 10;
+}
+
+// Description missing in models
+message ExtendedFeatures {
+
+  // Description missing in models
+  ChoiceVal choice_val = 1;
+
+  // Description missing in models
+  ChoiceValWithNoProperties choice_val_no_properties = 2;
+
+  // Under Review: test under_review
+  // 
+  // Description TBD
+  XStatusObject x_status_object = 3;
+
+  // Description missing in models
+  XEnumObject x_enum_object = 4;
+
+  // Description missing in models
+  XFieldPatternObject x_field_pattern_object = 5;
+}
+
+// Description missing in models
+message RequiredVal {
+
+  // Description missing in models
+  // required = true
+  optional int32 int_val = 1;
+
+  // Description missing in models
+  // required = true
+  optional float num_val = 2;
+
+  // Description missing in models
+  // required = true
+  optional string str_val = 3;
+
+  // Description missing in models
+  // required = true
+  optional bool bool_val = 4;
+}
+
+// Description missing in models
+message OptionalVal {
+
+  // Description missing in models
+  // default = 50
+  optional int32 int_val = 1;
+
+  // Description missing in models
+  // default = 50.05
+  optional float num_val = 2;
+
+  // Description missing in models
+  // default = default_str_val
+  optional string str_val = 3;
+
+  // Description missing in models
+  // default = True
+  optional bool bool_val = 4;
+}
+
+// Description missing in models
+message BoundaryVal {
+
+  // Description missing in models
+  // default = 50
+  optional int32 int_val = 1;
+
+  // Description missing in models
+  // default = 50.05
+  optional float num_val = 2;
+}
+
+// Description missing in models
+message RequiredValArray {
+
+  // Description missing in models
+  repeated int32 int_vals = 1;
+
+  // Description missing in models
+  repeated float num_vals = 2;
+
+  // Description missing in models
+  repeated string str_vals = 3;
+
+  // Description missing in models
+  repeated bool bool_vals = 4;
+}
+
+// Description missing in models
+message OptionalValArray {
+
+  // Description missing in models
+  // default = [10, 20]
+  repeated int32 int_vals = 1;
+
+  // Description missing in models
+  // default = [10.01, 20.02]
+  repeated float num_vals = 2;
+
+  // Description missing in models
+  // default = ['first_str', 'second_str']
+  repeated string str_vals = 3;
+
+  // Description missing in models
+  repeated bool bool_vals = 4;
+}
+
+// Description missing in models
+message BoundaryValArray {
+
+  // Description missing in models
+  repeated int32 int_vals = 1;
+
+  // Description missing in models
+  repeated float num_vals = 2;
+}
+
+// Format validation object
+message MixedObject {
+
+  // Description missing in models
+  // default = asdf
+  optional string string_param = 1;
+
+  // Description missing in models
+  // default = 88
+  optional int32 integer = 2;
+
+  // Description missing in models
+  // default = 22.2
+  optional float float = 3;
+
+  // Description missing in models
+  // default = 2342.22
+  optional double double = 4;
+
+  // Description missing in models
+  // default = 00:00:fa:ce:fa:ce
+  optional string mac = 5;
+
+  // Description missing in models
+  // default = 1.1.1.1
+  optional string ipv4 = 6;
+
+  // Description missing in models
+  // default = ::02
+  optional string ipv6 = 7;
+
+  // Description missing in models
+  // default = 0102030405060708090a0b0c0d0e0f
+  optional string hex = 8;
+
+  // Under Review: Information TBD
+  // 
+  // Description TBD
+  optional string str_len = 9;
+
+  // int64 type
+  optional int64 integer64_1 = 10;
+
+  // Description missing in models
+  optional int64 integer64_2 = 11;
+
+  // int64 type list
+  repeated int64 integer64_list = 12;
+}
+
+// Description missing in models
+message NumberTypeObject {
+
+  // Description missing in models
+  optional uint32 validate_uint32_1 = 43;
+
+  // Description missing in models
+  optional uint32 validate_uint32_2 = 44;
+
+  // Description missing in models
+  optional uint64 validate_uint64_1 = 45;
+
+  // Description missing in models
+  optional uint64 validate_uint64_2 = 46;
+
+  // Description missing in models
+  optional int32 validate_int32_1 = 47;
+
+  // Description missing in models
+  optional int32 validate_int32_2 = 48;
+
+  // Description missing in models
+  optional int64 validate_int64_1 = 49;
+
+  // Description missing in models
+  optional int64 validate_int64_2 = 50;
+}
+
+// Description missing in models
+message ChoiceVal {
+
+  // Description missing in models
+  MixedVal mixed_val = 1;
+}
+
+// Description missing in models
+message ChoiceValWithNoProperties {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      intermediate_obj = 1;
+      no_obj = 2;
+    }
+  }
+  // Description missing in models
+  // required = true
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  RequiredChoice intermediate_obj = 2;
+}
+
+// Description missing in models
+message RequiredChoice {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      str_val = 1;
+      leaf = 2;
+    }
+  }
+  // Description missing in models
+  // required = true
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = some string
+  optional string str_val = 2;
+
+  // Description missing in models
+  LeafVal leaf = 3;
+}
+
+// Description missing in models
+message MixedVal {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      int_val = 1;
+      num_val = 2;
+      str_val = 3;
+      bool_val = 4;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.int_val
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 50
+  optional int32 int_val = 2;
+
+  // Description missing in models
+  // default = 50.05
+  optional float num_val = 3;
+
+  // Description missing in models
+  // default = default_str_val
+  optional string str_val = 4;
+
+  // Description missing in models
+  // default = True
+  optional bool bool_val = 5;
+}
+
+// Description missing in models
+message NestedRefObject {
+
+  // Description missing in models
+  optional string name = 1;
+
+  // Description missing in models
+  IntermediateRefObject intermediate_node = 2;
+}
+
+// Description missing in models
+message IntermediateRefObject {
+
+  // Description missing in models
+  optional string name = 1;
+
+  // Description missing in models
+  LeafVal leaf_node = 2;
+}
+
+// Description missing in models
+message LeafVal {
+
+  // Description missing in models
+  optional string name = 1;
+
+  // Description missing in models
+  optional int32 value = 2;
+}
+
+// Description missing in models
+message XEnumObject {
+
+  message XEnumVal {
+    enum Enum {
+      unspecified = 0;
+      first_val = 1;
+      second_val = 2;
+      third_val = 3;
+      fourth_val = 4;
+    }
+  }
+  // A property to showcase x-enum feature
+  // default = XEnumVal.Enum.third_val
+  optional XEnumVal.Enum x_enum_val = 1;
+}
+
+// Description missing in models
+message XStatusObject {
+
+  message EnumProperty {
+    enum Enum {
+      unspecified = 0;
+      decprecated_property_1 = 1;
+      under_review_property_1 = 2;
+      basic = 3;
+    }
+  }
+  // Description missing in models
+  optional EnumProperty.Enum enum_property = 1;
+
+  // Description missing in models
+  optional string decprecated_property_1 = 2;
+
+  // Deprecated: test deprecated
+  // 
+  // Description TBD
+  optional int32 decprecated_property_2 = 3;
+
+  // Description missing in models
+  optional string under_review_property_1 = 4;
+
+  // Under Review: test under_review
+  // 
+  // Description TBD
+  optional int32 under_review_property_2 = 5;
+
+  // Description missing in models
+  optional string basic = 6;
+}
+
+// Description missing in models
+message XFieldPatternObject {
+
+  // Description missing in models
+  Ipv4PatternObject ipv4_pattern = 1;
+
+  // Description missing in models
+  Ipv6PatternObject ipv6_pattern = 2;
+
+  // Description missing in models
+  MacPatternObject mac_pattern = 3;
+
+  // Description missing in models
+  IntegerPatternObject integer_pattern = 4;
+
+  // Description missing in models
+  ChecksumPatternObject checksum_pattern = 5;
+}
+
+// Test ipv4 pattern
+message Ipv4PatternObject {
+
+  // Description missing in models
+  PatternIpv4PatternObjectIpv4 ipv4 = 1;
+}
+
+// Test ipv6 pattern
+message Ipv6PatternObject {
+
+  // Description missing in models
+  PatternIpv6PatternObjectIpv6 ipv6 = 1;
+}
+
+// Test mac pattern
+message MacPatternObject {
+
+  // Description missing in models
+  PatternMacPatternObjectMac mac = 1;
+}
+
+// Test integer pattern
+message IntegerPatternObject {
+
+  // Description missing in models
+  PatternIntegerPatternObjectInteger integer = 1;
+}
+
+// Test checksum pattern
+message ChecksumPatternObject {
+
+  // Description missing in models
+  PatternChecksumPatternObjectChecksum checksum = 1;
+}
+
 // Description missing in models
 message CommonResponseSuccess {
 
@@ -1043,6 +1500,230 @@ message PatternChecksumPatternChecksum {
   optional uint32 custom = 3;
 }
 
+// ipv4 counter pattern
+message PatternIpv4PatternObjectIpv4Counter {
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string start = 1;
+
+  // Description missing in models
+  // default = 0.0.0.1
+  optional string step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternIpv4PatternObjectIpv4 {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['0.0.0.0']
+  repeated string values = 3;
+
+  // Description missing in models
+  PatternIpv4PatternObjectIpv4Counter increment = 5;
+
+  // Description missing in models
+  PatternIpv4PatternObjectIpv4Counter decrement = 6;
+}
+
+// ipv6 counter pattern
+message PatternIpv6PatternObjectIpv6Counter {
+
+  // Description missing in models
+  // default = ::
+  optional string start = 1;
+
+  // Description missing in models
+  // default = ::1
+  optional string step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternIpv6PatternObjectIpv6 {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = ::
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['::']
+  repeated string values = 3;
+
+  // Description missing in models
+  PatternIpv6PatternObjectIpv6Counter increment = 5;
+
+  // Description missing in models
+  PatternIpv6PatternObjectIpv6Counter decrement = 6;
+}
+
+// mac counter pattern
+message PatternMacPatternObjectMacCounter {
+
+  // Description missing in models
+  // default = 00:00:00:00:00:00
+  optional string start = 1;
+
+  // Description missing in models
+  // default = 00:00:00:00:00:01
+  optional string step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternMacPatternObjectMac {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      auto = 1;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.auto
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 00:00:00:00:00:00
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['00:00:00:00:00:00']
+  repeated string values = 3;
+
+  // The OTG implementation can provide a system generated
+  // value for this property. If the OTG is unable to generate a value
+  // the default value must be used.
+  // default = 00:00:00:00:00:00
+  optional string auto = 4;
+
+  // Description missing in models
+  PatternMacPatternObjectMacCounter increment = 6;
+
+  // Description missing in models
+  PatternMacPatternObjectMacCounter decrement = 7;
+}
+
+// integer counter pattern
+message PatternIntegerPatternObjectIntegerCounter {
+
+  // Description missing in models
+  // default = 0
+  optional uint32 start = 1;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternIntegerPatternObjectInteger {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0
+  optional uint32 value = 2;
+
+  // Description missing in models
+  // default = [0]
+  repeated uint32 values = 3;
+
+  // Description missing in models
+  PatternIntegerPatternObjectIntegerCounter increment = 5;
+
+  // Description missing in models
+  PatternIntegerPatternObjectIntegerCounter decrement = 6;
+}
+
+// TBD
+message PatternChecksumPatternObjectChecksum {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      generated = 1;
+      custom = 2;
+    }
+  }
+  // The type of checksum
+  // default = Choice.Enum.generated
+  optional Choice.Enum choice = 1;
+
+  message Generated {
+    enum Enum {
+      unspecified = 0;
+      good = 1;
+      bad = 2;
+    }
+  }
+  // A system generated checksum value
+  // default = Generated.Enum.good
+  optional Generated.Enum generated = 2;
+
+  // A custom checksum value
+  optional uint32 custom = 3;
+}
+
 // Version details
 message Version {
 
@@ -1100,6 +1781,18 @@ message ClearWarningsResponse {
 }
 
 
+message SetTestConfigRequest {
+  TestConfig test_config = 1;
+}
+message GetTestConfigResponse {
+  TestConfig test_config = 1;
+}
+
+message SetTestConfigResponse {
+  bytes response_bytes = 1;
+}
+
+
 message PostRootResponseRequest {
   ApiTestInputBody api_test_input_body = 1;
 }
@@ -1154,6 +1847,10 @@ service Openapi {
   rpc GetWarnings(google.protobuf.Empty) returns (GetWarningsResponse);
   // Clears warnings.
   rpc ClearWarnings(google.protobuf.Empty) returns (ClearWarningsResponse);
+  // Get the new restructured unit test config.
+  rpc GetTestConfig(google.protobuf.Empty) returns (GetTestConfigResponse);
+  // Sets the new restructured unit test configuration.
+  rpc SetTestConfig(SetTestConfigRequest) returns (SetTestConfigResponse);
   // simple GET api with single return type
   rpc GetRootResponse(google.protobuf.Empty) returns (GetRootResponseResponse);
   // Description missing in models

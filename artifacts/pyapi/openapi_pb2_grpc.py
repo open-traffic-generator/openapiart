@@ -54,6 +54,16 @@ class OpenapiStub(object):
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
                 response_deserializer=openapi__pb2.ClearWarningsResponse.FromString,
                 )
+        self.GetTestConfig = channel.unary_unary(
+                '/openapi.Openapi/GetTestConfig',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=openapi__pb2.GetTestConfigResponse.FromString,
+                )
+        self.SetTestConfig = channel.unary_unary(
+                '/openapi.Openapi/SetTestConfig',
+                request_serializer=openapi__pb2.SetTestConfigRequest.SerializeToString,
+                response_deserializer=openapi__pb2.SetTestConfigResponse.FromString,
+                )
         self.GetRootResponse = channel.unary_unary(
                 '/openapi.Openapi/GetRootResponse',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -144,6 +154,20 @@ class OpenapiServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetTestConfig(self, request, context):
+        """Get the new restructured unit test config.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetTestConfig(self, request, context):
+        """Sets the new restructured unit test configuration.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetRootResponse(self, request, context):
         """simple GET api with single return type
         """
@@ -225,6 +249,16 @@ def add_OpenapiServicer_to_server(servicer, server):
                     servicer.ClearWarnings,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                     response_serializer=openapi__pb2.ClearWarningsResponse.SerializeToString,
+            ),
+            'GetTestConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTestConfig,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=openapi__pb2.GetTestConfigResponse.SerializeToString,
+            ),
+            'SetTestConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetTestConfig,
+                    request_deserializer=openapi__pb2.SetTestConfigRequest.FromString,
+                    response_serializer=openapi__pb2.SetTestConfigResponse.SerializeToString,
             ),
             'GetRootResponse': grpc.unary_unary_rpc_method_handler(
                     servicer.GetRootResponse,
@@ -376,6 +410,40 @@ class Openapi(object):
         return grpc.experimental.unary_unary(request, target, '/openapi.Openapi/ClearWarnings',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             openapi__pb2.ClearWarningsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetTestConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/openapi.Openapi/GetTestConfig',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            openapi__pb2.GetTestConfigResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SetTestConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/openapi.Openapi/SetTestConfig',
+            openapi__pb2.SetTestConfigRequest.SerializeToString,
+            openapi__pb2.SetTestConfigResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

@@ -6971,6 +6971,3961 @@ class WarningDetails(OpenApiObject):
         self._set_property("warnings", value)
 
 
+class TestConfig(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "native_features": {"type": "NativeFeatures"},
+        "extended_features": {"type": "ExtendedFeatures"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {
+        "self": "TestConfig is under_review, the whole schema is being reviewed",
+    }  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(TestConfig, self).__init__()
+        self._parent = parent
+
+    @property
+    def native_features(self):
+        # type: () -> NativeFeatures
+        """native_features getter
+
+
+
+        Returns: NativeFeatures
+        """
+        return self._get_property("native_features", NativeFeatures)
+
+    @property
+    def extended_features(self):
+        # type: () -> ExtendedFeatures
+        """extended_features getter
+
+
+
+        Returns: ExtendedFeatures
+        """
+        return self._get_property("extended_features", ExtendedFeatures)
+
+
+class NativeFeatures(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "required_val": {"type": "RequiredVal"},
+        "optional_val": {"type": "OptionalVal"},
+        "boundary_val": {"type": "BoundaryVal"},
+        "required_val_array": {"type": "RequiredValArray"},
+        "optional_val_array": {"type": "OptionalValArray"},
+        "boundary_val_array": {"type": "BoundaryValArray"},
+        "nested_ref_object": {"type": "NestedRefObject"},
+        "mixed_object": {"type": "MixedObject"},
+        "number_type_object": {"type": "NumberTypeObject"},
+        "iter_object": {"type": "MixedObjectIter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(NativeFeatures, self).__init__()
+        self._parent = parent
+
+    @property
+    def required_val(self):
+        # type: () -> RequiredVal
+        """required_val getter
+
+
+
+        Returns: RequiredVal
+        """
+        return self._get_property("required_val", RequiredVal)
+
+    @property
+    def optional_val(self):
+        # type: () -> OptionalVal
+        """optional_val getter
+
+
+
+        Returns: OptionalVal
+        """
+        return self._get_property("optional_val", OptionalVal)
+
+    @property
+    def boundary_val(self):
+        # type: () -> BoundaryVal
+        """boundary_val getter
+
+
+
+        Returns: BoundaryVal
+        """
+        return self._get_property("boundary_val", BoundaryVal)
+
+    @property
+    def required_val_array(self):
+        # type: () -> RequiredValArray
+        """required_val_array getter
+
+
+
+        Returns: RequiredValArray
+        """
+        return self._get_property("required_val_array", RequiredValArray)
+
+    @property
+    def optional_val_array(self):
+        # type: () -> OptionalValArray
+        """optional_val_array getter
+
+
+
+        Returns: OptionalValArray
+        """
+        return self._get_property("optional_val_array", OptionalValArray)
+
+    @property
+    def boundary_val_array(self):
+        # type: () -> BoundaryValArray
+        """boundary_val_array getter
+
+
+
+        Returns: BoundaryValArray
+        """
+        return self._get_property("boundary_val_array", BoundaryValArray)
+
+    @property
+    def nested_ref_object(self):
+        # type: () -> NestedRefObject
+        """nested_ref_object getter
+
+
+
+        Returns: NestedRefObject
+        """
+        return self._get_property("nested_ref_object", NestedRefObject)
+
+    @property
+    def mixed_object(self):
+        # type: () -> MixedObject
+        """mixed_object getter
+
+        Format validation objectFormat validation objectFormat validation object
+
+        Returns: MixedObject
+        """
+        return self._get_property("mixed_object", MixedObject)
+
+    @property
+    def number_type_object(self):
+        # type: () -> NumberTypeObject
+        """number_type_object getter
+
+
+
+        Returns: NumberTypeObject
+        """
+        return self._get_property("number_type_object", NumberTypeObject)
+
+    @property
+    def iter_object(self):
+        # type: () -> MixedObjectIter
+        """iter_object getter
+
+        TBD
+
+        Returns: MixedObjectIter
+        """
+        return self._get_property(
+            "iter_object", MixedObjectIter, self._parent, self._choice
+        )
+
+
+class RequiredVal(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_val": {
+            "type": int,
+            "format": "int32",
+        },
+        "num_val": {"type": float},
+        "str_val": {"type": str},
+        "bool_val": {"type": bool},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = (
+        "int_val",
+        "num_val",
+        "str_val",
+        "bool_val",
+    )  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        int_val=None,
+        num_val=None,
+        str_val=None,
+        bool_val=None,
+    ):
+        super(RequiredVal, self).__init__()
+        self._parent = parent
+        self._set_property("int_val", int_val)
+        self._set_property("num_val", num_val)
+        self._set_property("str_val", str_val)
+        self._set_property("bool_val", bool_val)
+
+    def set(self, int_val=None, num_val=None, str_val=None, bool_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_val(self):
+        # type: () -> int
+        """int_val getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("int_val")
+
+    @int_val.setter
+    def int_val(self, value):
+        """int_val setter
+
+        TBD
+
+        value: int
+        """
+        if value is None:
+            raise TypeError("Cannot set required property int_val as None")
+        self._set_property("int_val", value)
+
+    @property
+    def num_val(self):
+        # type: () -> float
+        """num_val getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("num_val")
+
+    @num_val.setter
+    def num_val(self, value):
+        """num_val setter
+
+        TBD
+
+        value: float
+        """
+        if value is None:
+            raise TypeError("Cannot set required property num_val as None")
+        self._set_property("num_val", value)
+
+    @property
+    def str_val(self):
+        # type: () -> str
+        """str_val getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("str_val")
+
+    @str_val.setter
+    def str_val(self, value):
+        """str_val setter
+
+        TBD
+
+        value: str
+        """
+        if value is None:
+            raise TypeError("Cannot set required property str_val as None")
+        self._set_property("str_val", value)
+
+    @property
+    def bool_val(self):
+        # type: () -> bool
+        """bool_val getter
+
+        TBD
+
+        Returns: bool
+        """
+        return self._get_property("bool_val")
+
+    @bool_val.setter
+    def bool_val(self, value):
+        """bool_val setter
+
+        TBD
+
+        value: bool
+        """
+        if value is None:
+            raise TypeError("Cannot set required property bool_val as None")
+        self._set_property("bool_val", value)
+
+
+class OptionalVal(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_val": {
+            "type": int,
+            "format": "int32",
+        },
+        "num_val": {"type": float},
+        "str_val": {"type": str},
+        "bool_val": {"type": bool},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "int_val": 50,
+        "num_val": 50.05,
+        "str_val": "default_str_val",
+        "bool_val": True,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        int_val=50,
+        num_val=50.05,
+        str_val="default_str_val",
+        bool_val=True,
+    ):
+        super(OptionalVal, self).__init__()
+        self._parent = parent
+        self._set_property("int_val", int_val)
+        self._set_property("num_val", num_val)
+        self._set_property("str_val", str_val)
+        self._set_property("bool_val", bool_val)
+
+    def set(self, int_val=None, num_val=None, str_val=None, bool_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_val(self):
+        # type: () -> int
+        """int_val getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("int_val")
+
+    @int_val.setter
+    def int_val(self, value):
+        """int_val setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("int_val", value)
+
+    @property
+    def num_val(self):
+        # type: () -> float
+        """num_val getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("num_val")
+
+    @num_val.setter
+    def num_val(self, value):
+        """num_val setter
+
+        TBD
+
+        value: float
+        """
+        self._set_property("num_val", value)
+
+    @property
+    def str_val(self):
+        # type: () -> str
+        """str_val getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("str_val")
+
+    @str_val.setter
+    def str_val(self, value):
+        """str_val setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("str_val", value)
+
+    @property
+    def bool_val(self):
+        # type: () -> bool
+        """bool_val getter
+
+        TBD
+
+        Returns: bool
+        """
+        return self._get_property("bool_val")
+
+    @bool_val.setter
+    def bool_val(self, value):
+        """bool_val setter
+
+        TBD
+
+        value: bool
+        """
+        self._set_property("bool_val", value)
+
+
+class BoundaryVal(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_val": {
+            "type": int,
+            "format": "int32",
+            "minimum": 5,
+            "maximum": 100,
+        },
+        "num_val": {
+            "type": float,
+            "minimum": 5.0,
+            "maximum": 100.0,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "int_val": 50,
+        "num_val": 50.05,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, int_val=50, num_val=50.05):
+        super(BoundaryVal, self).__init__()
+        self._parent = parent
+        self._set_property("int_val", int_val)
+        self._set_property("num_val", num_val)
+
+    def set(self, int_val=None, num_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_val(self):
+        # type: () -> int
+        """int_val getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("int_val")
+
+    @int_val.setter
+    def int_val(self, value):
+        """int_val setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("int_val", value)
+
+    @property
+    def num_val(self):
+        # type: () -> float
+        """num_val getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("num_val")
+
+    @num_val.setter
+    def num_val(self, value):
+        """num_val setter
+
+        TBD
+
+        value: float
+        """
+        self._set_property("num_val", value)
+
+
+class RequiredValArray(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_vals": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "int32",
+        },
+        "num_vals": {
+            "type": list,
+            "itemtype": float,
+        },
+        "str_vals": {
+            "type": list,
+            "itemtype": str,
+        },
+        "bool_vals": {
+            "type": list,
+            "itemtype": bool,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = (
+        "int_vals",
+        "num_vals",
+        "str_vals",
+        "bool_vals",
+    )  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        int_vals=None,
+        num_vals=None,
+        str_vals=None,
+        bool_vals=None,
+    ):
+        super(RequiredValArray, self).__init__()
+        self._parent = parent
+        self._set_property("int_vals", int_vals)
+        self._set_property("num_vals", num_vals)
+        self._set_property("str_vals", str_vals)
+        self._set_property("bool_vals", bool_vals)
+
+    def set(self, int_vals=None, num_vals=None, str_vals=None, bool_vals=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_vals(self):
+        # type: () -> List[int]
+        """int_vals getter
+
+        TBD
+
+        Returns: List[int]
+        """
+        return self._get_property("int_vals")
+
+    @int_vals.setter
+    def int_vals(self, value):
+        """int_vals setter
+
+        TBD
+
+        value: List[int]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property int_vals as None")
+        self._set_property("int_vals", value)
+
+    @property
+    def num_vals(self):
+        # type: () -> List[float]
+        """num_vals getter
+
+        TBD
+
+        Returns: List[float]
+        """
+        return self._get_property("num_vals")
+
+    @num_vals.setter
+    def num_vals(self, value):
+        """num_vals setter
+
+        TBD
+
+        value: List[float]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property num_vals as None")
+        self._set_property("num_vals", value)
+
+    @property
+    def str_vals(self):
+        # type: () -> List[str]
+        """str_vals getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("str_vals")
+
+    @str_vals.setter
+    def str_vals(self, value):
+        """str_vals setter
+
+        TBD
+
+        value: List[str]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property str_vals as None")
+        self._set_property("str_vals", value)
+
+    @property
+    def bool_vals(self):
+        # type: () -> List[bool]
+        """bool_vals getter
+
+        TBD
+
+        Returns: List[bool]
+        """
+        return self._get_property("bool_vals")
+
+    @bool_vals.setter
+    def bool_vals(self, value):
+        """bool_vals setter
+
+        TBD
+
+        value: List[bool]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property bool_vals as None")
+        self._set_property("bool_vals", value)
+
+
+class OptionalValArray(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_vals": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "int32",
+        },
+        "num_vals": {
+            "type": list,
+            "itemtype": float,
+        },
+        "str_vals": {
+            "type": list,
+            "itemtype": str,
+        },
+        "bool_vals": {
+            "type": list,
+            "itemtype": bool,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "int_vals": [10, 20],
+        "num_vals": [10.01, 20.02],
+        "str_vals": ["first_str", "second_str"],
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        int_vals=[10, 20],
+        num_vals=[10.01, 20.02],
+        str_vals=["first_str", "second_str"],
+        bool_vals=None,
+    ):
+        super(OptionalValArray, self).__init__()
+        self._parent = parent
+        self._set_property("int_vals", int_vals)
+        self._set_property("num_vals", num_vals)
+        self._set_property("str_vals", str_vals)
+        self._set_property("bool_vals", bool_vals)
+
+    def set(self, int_vals=None, num_vals=None, str_vals=None, bool_vals=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_vals(self):
+        # type: () -> List[int]
+        """int_vals getter
+
+        TBD
+
+        Returns: List[int]
+        """
+        return self._get_property("int_vals")
+
+    @int_vals.setter
+    def int_vals(self, value):
+        """int_vals setter
+
+        TBD
+
+        value: List[int]
+        """
+        self._set_property("int_vals", value)
+
+    @property
+    def num_vals(self):
+        # type: () -> List[float]
+        """num_vals getter
+
+        TBD
+
+        Returns: List[float]
+        """
+        return self._get_property("num_vals")
+
+    @num_vals.setter
+    def num_vals(self, value):
+        """num_vals setter
+
+        TBD
+
+        value: List[float]
+        """
+        self._set_property("num_vals", value)
+
+    @property
+    def str_vals(self):
+        # type: () -> List[str]
+        """str_vals getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("str_vals")
+
+    @str_vals.setter
+    def str_vals(self, value):
+        """str_vals setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("str_vals", value)
+
+    @property
+    def bool_vals(self):
+        # type: () -> List[bool]
+        """bool_vals getter
+
+        TBD
+
+        Returns: List[bool]
+        """
+        return self._get_property("bool_vals")
+
+    @bool_vals.setter
+    def bool_vals(self, value):
+        """bool_vals setter
+
+        TBD
+
+        value: List[bool]
+        """
+        self._set_property("bool_vals", value)
+
+
+class BoundaryValArray(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "int_vals": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "int32",
+            "minimum": 5,
+            "maximum": 100,
+        },
+        "num_vals": {
+            "type": list,
+            "itemtype": float,
+            "minimum": 5.0,
+            "maximum": 100.0,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, int_vals=None, num_vals=None):
+        super(BoundaryValArray, self).__init__()
+        self._parent = parent
+        self._set_property("int_vals", int_vals)
+        self._set_property("num_vals", num_vals)
+
+    def set(self, int_vals=None, num_vals=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def int_vals(self):
+        # type: () -> List[int]
+        """int_vals getter
+
+        TBD
+
+        Returns: List[int]
+        """
+        return self._get_property("int_vals")
+
+    @int_vals.setter
+    def int_vals(self, value):
+        """int_vals setter
+
+        TBD
+
+        value: List[int]
+        """
+        self._set_property("int_vals", value)
+
+    @property
+    def num_vals(self):
+        # type: () -> List[float]
+        """num_vals getter
+
+        TBD
+
+        Returns: List[float]
+        """
+        return self._get_property("num_vals")
+
+    @num_vals.setter
+    def num_vals(self, value):
+        """num_vals setter
+
+        TBD
+
+        value: List[float]
+        """
+        self._set_property("num_vals", value)
+
+
+class NestedRefObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "name": {"type": str},
+        "intermediate_node": {"type": "IntermediateRefObject"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, name=None):
+        super(NestedRefObject, self).__init__()
+        self._parent = parent
+        self._set_property("name", name)
+
+    def set(self, name=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def name(self):
+        # type: () -> str
+        """name getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("name")
+
+    @name.setter
+    def name(self, value):
+        """name setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("name", value)
+
+    @property
+    def intermediate_node(self):
+        # type: () -> IntermediateRefObject
+        """intermediate_node getter
+
+
+
+        Returns: IntermediateRefObject
+        """
+        return self._get_property("intermediate_node", IntermediateRefObject)
+
+
+class IntermediateRefObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "name": {"type": str},
+        "leaf_node": {"type": "LeafVal"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, name=None):
+        super(IntermediateRefObject, self).__init__()
+        self._parent = parent
+        self._set_property("name", name)
+
+    def set(self, name=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def name(self):
+        # type: () -> str
+        """name getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("name")
+
+    @name.setter
+    def name(self, value):
+        """name setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("name", value)
+
+    @property
+    def leaf_node(self):
+        # type: () -> LeafVal
+        """leaf_node getter
+
+
+
+        Returns: LeafVal
+        """
+        return self._get_property("leaf_node", LeafVal)
+
+
+class LeafVal(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "name": {"type": str},
+        "value": {
+            "type": int,
+            "format": "int32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, name=None, value=None):
+        super(LeafVal, self).__init__()
+        self._parent = parent
+        self._set_property("name", name)
+        self._set_property("value", value)
+
+    def set(self, name=None, value=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def name(self):
+        # type: () -> str
+        """name getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("name")
+
+    @name.setter
+    def name(self, value):
+        """name setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("name", value)
+
+    @property
+    def value(self):
+        # type: () -> int
+        """value getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("value", value)
+
+
+class MixedObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "string_param": {"type": str},
+        "integer": {
+            "type": int,
+            "format": "int32",
+            "minimum": 10,
+            "maximum": 90,
+        },
+        "float": {
+            "type": float,
+            "format": "float",
+        },
+        "double": {
+            "type": float,
+            "format": "double",
+        },
+        "mac": {
+            "type": str,
+            "format": "mac",
+        },
+        "ipv4": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "ipv6": {
+            "type": str,
+            "format": "ipv6",
+        },
+        "hex": {
+            "type": str,
+            "format": "hex",
+        },
+        "str_len": {
+            "type": str,
+            "minLength": 3,
+            "maxLength": 6,
+        },
+        "integer64_1": {
+            "type": int,
+            "format": "int64",
+        },
+        "integer64_2": {
+            "type": int,
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 4261412864,
+        },
+        "integer64_list": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "int64",
+            "minimum": 0,
+            "maximum": 4261412864,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "string_param": "asdf",
+        "integer": 88,
+        "float": 22.2,
+        "double": 2342.22,
+        "mac": "00:00:fa:ce:fa:ce",
+        "ipv4": "1.1.1.1",
+        "ipv6": "::02",
+        "hex": "0102030405060708090a0b0c0d0e0f",
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {
+        "str_len": "str_len property in schema MixedObject is under_review, Information TBD",
+    }  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        string_param="asdf",
+        integer=88,
+        float=22.2,
+        double=2342.22,
+        mac="00:00:fa:ce:fa:ce",
+        ipv4="1.1.1.1",
+        ipv6="::02",
+        hex="0102030405060708090a0b0c0d0e0f",
+        str_len=None,
+        integer64_1=None,
+        integer64_2=None,
+        integer64_list=None,
+    ):
+        super(MixedObject, self).__init__()
+        self._parent = parent
+        self._set_property("string_param", string_param)
+        self._set_property("integer", integer)
+        self._set_property("float", float)
+        self._set_property("double", double)
+        self._set_property("mac", mac)
+        self._set_property("ipv4", ipv4)
+        self._set_property("ipv6", ipv6)
+        self._set_property("hex", hex)
+        self._set_property("str_len", str_len)
+        self._set_property("integer64_1", integer64_1)
+        self._set_property("integer64_2", integer64_2)
+        self._set_property("integer64_list", integer64_list)
+
+    def set(
+        self,
+        string_param=None,
+        integer=None,
+        float=None,
+        double=None,
+        mac=None,
+        ipv4=None,
+        ipv6=None,
+        hex=None,
+        str_len=None,
+        integer64_1=None,
+        integer64_2=None,
+        integer64_list=None,
+    ):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def string_param(self):
+        # type: () -> str
+        """string_param getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("string_param")
+
+    @string_param.setter
+    def string_param(self, value):
+        """string_param setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("string_param", value)
+
+    @property
+    def integer(self):
+        # type: () -> int
+        """integer getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("integer")
+
+    @integer.setter
+    def integer(self, value):
+        """integer setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("integer", value)
+
+    @property
+    def float(self):
+        # type: () -> float
+        """float getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("float")
+
+    @float.setter
+    def float(self, value):
+        """float setter
+
+        TBD
+
+        value: float
+        """
+        self._set_property("float", value)
+
+    @property
+    def double(self):
+        # type: () -> float
+        """double getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("double")
+
+    @double.setter
+    def double(self, value):
+        """double setter
+
+        TBD
+
+        value: float
+        """
+        self._set_property("double", value)
+
+    @property
+    def mac(self):
+        # type: () -> str
+        """mac getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("mac")
+
+    @mac.setter
+    def mac(self, value):
+        """mac setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("mac", value)
+
+    @property
+    def ipv4(self):
+        # type: () -> str
+        """ipv4 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("ipv4")
+
+    @ipv4.setter
+    def ipv4(self, value):
+        """ipv4 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("ipv4", value)
+
+    @property
+    def ipv6(self):
+        # type: () -> str
+        """ipv6 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("ipv6")
+
+    @ipv6.setter
+    def ipv6(self, value):
+        """ipv6 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("ipv6", value)
+
+    @property
+    def hex(self):
+        # type: () -> str
+        """hex getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("hex")
+
+    @hex.setter
+    def hex(self, value):
+        """hex setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("hex", value)
+
+    @property
+    def str_len(self):
+        # type: () -> str
+        """str_len getter
+
+        Under Review: Information TBD. Description TBD
+
+        Returns: str
+        """
+        return self._get_property("str_len")
+
+    @str_len.setter
+    def str_len(self, value):
+        """str_len setter
+
+        Under Review: Information TBD. Description TBD
+
+        value: str
+        """
+        self._set_property("str_len", value)
+
+    @property
+    def integer64_1(self):
+        # type: () -> int
+        """integer64_1 getter
+
+        int64 type
+
+        Returns: int
+        """
+        return self._get_property("integer64_1")
+
+    @integer64_1.setter
+    def integer64_1(self, value):
+        """integer64_1 setter
+
+        int64 type
+
+        value: int
+        """
+        self._set_property("integer64_1", value)
+
+    @property
+    def integer64_2(self):
+        # type: () -> int
+        """integer64_2 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("integer64_2")
+
+    @integer64_2.setter
+    def integer64_2(self, value):
+        """integer64_2 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("integer64_2", value)
+
+    @property
+    def integer64_list(self):
+        # type: () -> List[int]
+        """integer64_list getter
+
+        int64 type list
+
+        Returns: List[int]
+        """
+        return self._get_property("integer64_list")
+
+    @integer64_list.setter
+    def integer64_list(self, value):
+        """integer64_list setter
+
+        int64 type list
+
+        value: List[int]
+        """
+        self._set_property("integer64_list", value)
+
+
+class NumberTypeObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "validate_uint32_1": {
+            "type": int,
+            "format": "uint32",
+            "minimum": 0,
+            "maximum": 4294967295,
+        },
+        "validate_uint32_2": {
+            "type": int,
+            "format": "uint32",
+        },
+        "validate_uint64_1": {
+            "type": int,
+            "format": "uint64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+        },
+        "validate_uint64_2": {
+            "type": int,
+            "format": "uint64",
+        },
+        "validate_int32_1": {
+            "type": int,
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 2147483646,
+        },
+        "validate_int32_2": {
+            "type": int,
+            "format": "int32",
+        },
+        "validate_int64_1": {
+            "type": int,
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 9223372036854775807,
+        },
+        "validate_int64_2": {
+            "type": int,
+            "format": "int64",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        validate_uint32_1=None,
+        validate_uint32_2=None,
+        validate_uint64_1=None,
+        validate_uint64_2=None,
+        validate_int32_1=None,
+        validate_int32_2=None,
+        validate_int64_1=None,
+        validate_int64_2=None,
+    ):
+        super(NumberTypeObject, self).__init__()
+        self._parent = parent
+        self._set_property("validate_uint32_1", validate_uint32_1)
+        self._set_property("validate_uint32_2", validate_uint32_2)
+        self._set_property("validate_uint64_1", validate_uint64_1)
+        self._set_property("validate_uint64_2", validate_uint64_2)
+        self._set_property("validate_int32_1", validate_int32_1)
+        self._set_property("validate_int32_2", validate_int32_2)
+        self._set_property("validate_int64_1", validate_int64_1)
+        self._set_property("validate_int64_2", validate_int64_2)
+
+    def set(
+        self,
+        validate_uint32_1=None,
+        validate_uint32_2=None,
+        validate_uint64_1=None,
+        validate_uint64_2=None,
+        validate_int32_1=None,
+        validate_int32_2=None,
+        validate_int64_1=None,
+        validate_int64_2=None,
+    ):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def validate_uint32_1(self):
+        # type: () -> int
+        """validate_uint32_1 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_uint32_1")
+
+    @validate_uint32_1.setter
+    def validate_uint32_1(self, value):
+        """validate_uint32_1 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_uint32_1", value)
+
+    @property
+    def validate_uint32_2(self):
+        # type: () -> int
+        """validate_uint32_2 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_uint32_2")
+
+    @validate_uint32_2.setter
+    def validate_uint32_2(self, value):
+        """validate_uint32_2 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_uint32_2", value)
+
+    @property
+    def validate_uint64_1(self):
+        # type: () -> int
+        """validate_uint64_1 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_uint64_1")
+
+    @validate_uint64_1.setter
+    def validate_uint64_1(self, value):
+        """validate_uint64_1 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_uint64_1", value)
+
+    @property
+    def validate_uint64_2(self):
+        # type: () -> int
+        """validate_uint64_2 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_uint64_2")
+
+    @validate_uint64_2.setter
+    def validate_uint64_2(self, value):
+        """validate_uint64_2 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_uint64_2", value)
+
+    @property
+    def validate_int32_1(self):
+        # type: () -> int
+        """validate_int32_1 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_int32_1")
+
+    @validate_int32_1.setter
+    def validate_int32_1(self, value):
+        """validate_int32_1 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_int32_1", value)
+
+    @property
+    def validate_int32_2(self):
+        # type: () -> int
+        """validate_int32_2 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_int32_2")
+
+    @validate_int32_2.setter
+    def validate_int32_2(self, value):
+        """validate_int32_2 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_int32_2", value)
+
+    @property
+    def validate_int64_1(self):
+        # type: () -> int
+        """validate_int64_1 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_int64_1")
+
+    @validate_int64_1.setter
+    def validate_int64_1(self, value):
+        """validate_int64_1 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_int64_1", value)
+
+    @property
+    def validate_int64_2(self):
+        # type: () -> int
+        """validate_int64_2 getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("validate_int64_2")
+
+    @validate_int64_2.setter
+    def validate_int64_2(self, value):
+        """validate_int64_2 setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("validate_int64_2", value)
+
+
+class MixedObjectIter(OpenApiIter):
+    __slots__ = ("_parent", "_choice")
+
+    _GETITEM_RETURNS_CHOICE_OBJECT = False
+
+    def __init__(self, parent=None, choice=None):
+        super(MixedObjectIter, self).__init__()
+        self._parent = parent
+        self._choice = choice
+
+    def __getitem__(self, key):
+        # type: (str) -> Union[MixedObject]
+        return self._getitem(key)
+
+    def __iter__(self):
+        # type: () -> MixedObjectIter
+        return self._iter()
+
+    def __next__(self):
+        # type: () -> MixedObject
+        return self._next()
+
+    def next(self):
+        # type: () -> MixedObject
+        return self._next()
+
+    def _instanceOf(self, item):
+        if not isinstance(item, MixedObject):
+            raise Exception("Item is not an instance of MixedObject")
+
+    def mixedobject(
+        self,
+        string_param="asdf",
+        integer=88,
+        float=22.2,
+        double=2342.22,
+        mac="00:00:fa:ce:fa:ce",
+        ipv4="1.1.1.1",
+        ipv6="::02",
+        hex="0102030405060708090a0b0c0d0e0f",
+        str_len=None,
+        integer64_1=None,
+        integer64_2=None,
+        integer64_list=None,
+    ):
+        # type: (str,int,float,float,str,str,str,str,str,int,int,List[int]) -> MixedObjectIter
+        """Factory method that creates an instance of the MixedObject class
+
+        Format validation object
+
+        Returns: MixedObjectIter
+        """
+        item = MixedObject(
+            parent=self._parent,
+            string_param=string_param,
+            integer=integer,
+            float=float,
+            double=double,
+            mac=mac,
+            ipv4=ipv4,
+            ipv6=ipv6,
+            hex=hex,
+            str_len=str_len,
+            integer64_1=integer64_1,
+            integer64_2=integer64_2,
+            integer64_list=integer64_list,
+        )
+        self._add(item)
+        return self
+
+    def add(
+        self,
+        string_param="asdf",
+        integer=88,
+        float=22.2,
+        double=2342.22,
+        mac="00:00:fa:ce:fa:ce",
+        ipv4="1.1.1.1",
+        ipv6="::02",
+        hex="0102030405060708090a0b0c0d0e0f",
+        str_len=None,
+        integer64_1=None,
+        integer64_2=None,
+        integer64_list=None,
+    ):
+        # type: (str,int,float,float,str,str,str,str,str,int,int,List[int]) -> MixedObject
+        """Add method that creates and returns an instance of the MixedObject class
+
+        Format validation object
+
+        Returns: MixedObject
+        """
+        item = MixedObject(
+            parent=self._parent,
+            string_param=string_param,
+            integer=integer,
+            float=float,
+            double=double,
+            mac=mac,
+            ipv4=ipv4,
+            ipv6=ipv6,
+            hex=hex,
+            str_len=str_len,
+            integer64_1=integer64_1,
+            integer64_2=integer64_2,
+            integer64_list=integer64_list,
+        )
+        self._add(item)
+        return item
+
+
+class ExtendedFeatures(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "choice_val": {"type": "ChoiceVal"},
+        "choice_val_no_properties": {"type": "ChoiceValWithNoProperties"},
+        "x_status_object": {"type": "XStatusObject"},
+        "x_enum_object": {"type": "XEnumObject"},
+        "x_field_pattern_object": {"type": "XFieldPatternObject"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {
+        "x_status_object": "x_status_object property in schema ExtendedFeatures is under_review, test under_review",
+    }  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(ExtendedFeatures, self).__init__()
+        self._parent = parent
+
+    @property
+    def choice_val(self):
+        # type: () -> ChoiceVal
+        """choice_val getter
+
+
+
+        Returns: ChoiceVal
+        """
+        return self._get_property("choice_val", ChoiceVal)
+
+    @property
+    def choice_val_no_properties(self):
+        # type: () -> ChoiceValWithNoProperties
+        """choice_val_no_properties getter
+
+
+
+        Returns: ChoiceValWithNoProperties
+        """
+        return self._get_property(
+            "choice_val_no_properties", ChoiceValWithNoProperties
+        )
+
+    @property
+    def x_status_object(self):
+        # type: () -> XStatusObject
+        """x_status_object getter
+
+        Under Review: test under_review. Description TBD
+
+        Returns: XStatusObject
+        """
+        return self._get_property("x_status_object", XStatusObject)
+
+    @property
+    def x_enum_object(self):
+        # type: () -> XEnumObject
+        """x_enum_object getter
+
+
+
+        Returns: XEnumObject
+        """
+        return self._get_property("x_enum_object", XEnumObject)
+
+    @property
+    def x_field_pattern_object(self):
+        # type: () -> XFieldPatternObject
+        """x_field_pattern_object getter
+
+
+
+        Returns: XFieldPatternObject
+        """
+        return self._get_property(
+            "x_field_pattern_object", XFieldPatternObject
+        )
+
+
+class ChoiceVal(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "mixed_val": {"type": "MixedVal"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(ChoiceVal, self).__init__()
+        self._parent = parent
+
+    @property
+    def mixed_val(self):
+        # type: () -> MixedVal
+        """mixed_val getter
+
+
+
+        Returns: MixedVal
+        """
+        return self._get_property("mixed_val", MixedVal)
+
+
+class MixedVal(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "int_val",
+                "num_val",
+                "str_val",
+                "bool_val",
+            ],
+        },
+        "int_val": {
+            "type": int,
+            "format": "int32",
+        },
+        "num_val": {"type": float},
+        "str_val": {"type": str},
+        "bool_val": {"type": bool},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "int_val",
+        "int_val": 50,
+        "num_val": 50.05,
+        "str_val": "default_str_val",
+        "bool_val": True,
+    }  # type: Dict[str, Union(type)]
+
+    INT_VAL = "int_val"  # type: str
+    NUM_VAL = "num_val"  # type: str
+    STR_VAL = "str_val"  # type: str
+    BOOL_VAL = "bool_val"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        choice=None,
+        int_val=50,
+        num_val=50.05,
+        str_val="default_str_val",
+        bool_val=True,
+    ):
+        super(MixedVal, self).__init__()
+        self._parent = parent
+        self._set_property("int_val", int_val)
+        self._set_property("num_val", num_val)
+        self._set_property("str_val", str_val)
+        self._set_property("bool_val", bool_val)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, int_val=None, num_val=None, str_val=None, bool_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["bool_val"], Literal["int_val"], Literal["num_val"], Literal["str_val"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["bool_val"], Literal["int_val"], Literal["num_val"], Literal["str_val"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["bool_val"], Literal["int_val"], Literal["num_val"], Literal["str_val"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def int_val(self):
+        # type: () -> int
+        """int_val getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("int_val")
+
+    @int_val.setter
+    def int_val(self, value):
+        """int_val setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("int_val", value, "int_val")
+
+    @property
+    def num_val(self):
+        # type: () -> float
+        """num_val getter
+
+        TBD
+
+        Returns: float
+        """
+        return self._get_property("num_val")
+
+    @num_val.setter
+    def num_val(self, value):
+        """num_val setter
+
+        TBD
+
+        value: float
+        """
+        self._set_property("num_val", value, "num_val")
+
+    @property
+    def str_val(self):
+        # type: () -> str
+        """str_val getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("str_val")
+
+    @str_val.setter
+    def str_val(self, value):
+        """str_val setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("str_val", value, "str_val")
+
+    @property
+    def bool_val(self):
+        # type: () -> bool
+        """bool_val getter
+
+        TBD
+
+        Returns: bool
+        """
+        return self._get_property("bool_val")
+
+    @bool_val.setter
+    def bool_val(self, value):
+        """bool_val setter
+
+        TBD
+
+        value: bool
+        """
+        self._set_property("bool_val", value, "bool_val")
+
+
+class ChoiceValWithNoProperties(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "intermediate_obj",
+                "no_obj",
+            ],
+        },
+        "intermediate_obj": {"type": "RequiredChoice"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ("choice",)  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    INTERMEDIATE_OBJ = "intermediate_obj"  # type: str
+    NO_OBJ = "no_obj"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None):
+        super(ChoiceValWithNoProperties, self).__init__()
+        self._parent = parent
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    @property
+    def intermediate_obj(self):
+        # type: () -> RequiredChoice
+        """Factory property that returns an instance of the RequiredChoice class
+
+        TBD
+
+        Returns: RequiredChoice
+        """
+        return self._get_property(
+            "intermediate_obj", RequiredChoice, self, "intermediate_obj"
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["intermediate_obj"], Literal["no_obj"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["intermediate_obj"], Literal["no_obj"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["intermediate_obj"], Literal["no_obj"]]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property choice as None")
+        self._set_property("choice", value)
+
+
+class RequiredChoice(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "str_val",
+                "leaf",
+            ],
+        },
+        "str_val": {"type": str},
+        "leaf": {"type": "LeafVal"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ("choice",)  # type: tuple(str)
+
+    _DEFAULTS = {
+        "str_val": "some string",
+    }  # type: Dict[str, Union(type)]
+
+    STR_VAL = "str_val"  # type: str
+    LEAF = "leaf"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, str_val="some string"):
+        super(RequiredChoice, self).__init__()
+        self._parent = parent
+        self._set_property("str_val", str_val)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, str_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def leaf(self):
+        # type: () -> LeafVal
+        """Factory property that returns an instance of the LeafVal class
+
+        TBD
+
+        Returns: LeafVal
+        """
+        return self._get_property("leaf", LeafVal, self, "leaf")
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["leaf"], Literal["str_val"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["leaf"], Literal["str_val"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["leaf"], Literal["str_val"]]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property choice as None")
+        self._set_property("choice", value)
+
+    @property
+    def str_val(self):
+        # type: () -> str
+        """str_val getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("str_val")
+
+    @str_val.setter
+    def str_val(self, value):
+        """str_val setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("str_val", value, "str_val")
+
+
+class XStatusObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "enum_property": {
+            "type": str,
+            "enum": [
+                "decprecated_property_1",
+                "under_review_property_1",
+                "basic",
+            ],
+        },
+        "decprecated_property_1": {"type": str},
+        "decprecated_property_2": {
+            "type": int,
+            "format": "int32",
+        },
+        "under_review_property_1": {"type": str},
+        "under_review_property_2": {
+            "type": int,
+            "format": "int32",
+        },
+        "basic": {"type": str},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    DECPRECATED_PROPERTY_1 = "decprecated_property_1"  # type: str
+    UNDER_REVIEW_PROPERTY_1 = "under_review_property_1"  # type: str
+    BASIC = "basic"  # type: str
+
+    _STATUS = {
+        "enum_property.decprecated_property_1": "DECPRECATED_PROPERTY_1 enum in property enum_property is deprecated, test deprecated",
+        "enum_property.under_review_property_1": "UNDER_REVIEW_PROPERTY_1 enum in property enum_property is under_review, test under_review",
+        "decprecated_property_2": "decprecated_property_2 property in schema XStatusObject is deprecated, test deprecated",
+        "under_review_property_2": "under_review_property_2 property in schema XStatusObject is under_review, test under_review",
+    }  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        enum_property=None,
+        decprecated_property_1=None,
+        decprecated_property_2=None,
+        under_review_property_1=None,
+        under_review_property_2=None,
+        basic=None,
+    ):
+        super(XStatusObject, self).__init__()
+        self._parent = parent
+        self._set_property("enum_property", enum_property)
+        self._set_property("decprecated_property_1", decprecated_property_1)
+        self._set_property("decprecated_property_2", decprecated_property_2)
+        self._set_property("under_review_property_1", under_review_property_1)
+        self._set_property("under_review_property_2", under_review_property_2)
+        self._set_property("basic", basic)
+
+    def set(
+        self,
+        enum_property=None,
+        decprecated_property_1=None,
+        decprecated_property_2=None,
+        under_review_property_1=None,
+        under_review_property_2=None,
+        basic=None,
+    ):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def enum_property(self):
+        # type: () -> Union[Literal["basic"], Literal["decprecated_property_1"], Literal["under_review_property_1"]]
+        """enum_property getter
+
+        TBD
+
+        Returns: Union[Literal["basic"], Literal["decprecated_property_1"], Literal["under_review_property_1"]]
+        """
+        return self._get_property("enum_property")
+
+    @enum_property.setter
+    def enum_property(self, value):
+        """enum_property setter
+
+        TBD
+
+        value: Union[Literal["basic"], Literal["decprecated_property_1"], Literal["under_review_property_1"]]
+        """
+        self._set_property("enum_property", value)
+
+    @property
+    def decprecated_property_1(self):
+        # type: () -> str
+        """decprecated_property_1 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("decprecated_property_1")
+
+    @decprecated_property_1.setter
+    def decprecated_property_1(self, value):
+        """decprecated_property_1 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("decprecated_property_1", value)
+
+    @property
+    def decprecated_property_2(self):
+        # type: () -> int
+        """decprecated_property_2 getter
+
+        Deprecated: test deprecated. Description TBD
+
+        Returns: int
+        """
+        return self._get_property("decprecated_property_2")
+
+    @decprecated_property_2.setter
+    def decprecated_property_2(self, value):
+        """decprecated_property_2 setter
+
+        Deprecated: test deprecated. Description TBD
+
+        value: int
+        """
+        self._set_property("decprecated_property_2", value)
+
+    @property
+    def under_review_property_1(self):
+        # type: () -> str
+        """under_review_property_1 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("under_review_property_1")
+
+    @under_review_property_1.setter
+    def under_review_property_1(self, value):
+        """under_review_property_1 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("under_review_property_1", value)
+
+    @property
+    def under_review_property_2(self):
+        # type: () -> int
+        """under_review_property_2 getter
+
+        Under Review: test under_review. Description TBD
+
+        Returns: int
+        """
+        return self._get_property("under_review_property_2")
+
+    @under_review_property_2.setter
+    def under_review_property_2(self, value):
+        """under_review_property_2 setter
+
+        Under Review: test under_review. Description TBD
+
+        value: int
+        """
+        self._set_property("under_review_property_2", value)
+
+    @property
+    def basic(self):
+        # type: () -> str
+        """basic getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("basic")
+
+    @basic.setter
+    def basic(self, value):
+        """basic setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("basic", value)
+
+
+class XEnumObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "x_enum_val": {
+            "type": str,
+            "enum": [
+                "first_val",
+                "second_val",
+                "third_val",
+                "fourth_val",
+            ],
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "x_enum_val": "third_val",
+    }  # type: Dict[str, Union(type)]
+
+    FIRST_VAL = "first_val"  # type: str
+    SECOND_VAL = "second_val"  # type: str
+    THIRD_VAL = "third_val"  # type: str
+    FOURTH_VAL = "fourth_val"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, x_enum_val="third_val"):
+        super(XEnumObject, self).__init__()
+        self._parent = parent
+        self._set_property("x_enum_val", x_enum_val)
+
+    def set(self, x_enum_val=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def x_enum_val(self):
+        # type: () -> Union[Literal["first_val"], Literal["fourth_val"], Literal["second_val"], Literal["third_val"]]
+        """x_enum_val getter
+
+        A property to showcase x-enum feature
+
+        Returns: Union[Literal["first_val"], Literal["fourth_val"], Literal["second_val"], Literal["third_val"]]
+        """
+        return self._get_property("x_enum_val")
+
+    @x_enum_val.setter
+    def x_enum_val(self, value):
+        """x_enum_val setter
+
+        A property to showcase x-enum feature
+
+        value: Union[Literal["first_val"], Literal["fourth_val"], Literal["second_val"], Literal["third_val"]]
+        """
+        self._set_property("x_enum_val", value)
+
+
+class XFieldPatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "ipv4_pattern": {"type": "Ipv4PatternObject"},
+        "ipv6_pattern": {"type": "Ipv6PatternObject"},
+        "mac_pattern": {"type": "MacPatternObject"},
+        "integer_pattern": {"type": "IntegerPatternObject"},
+        "checksum_pattern": {"type": "ChecksumPatternObject"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(XFieldPatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def ipv4_pattern(self):
+        # type: () -> Ipv4PatternObject
+        """ipv4_pattern getter
+
+        Test ipv4 patternTest ipv4 patternTest ipv4 pattern
+
+        Returns: Ipv4PatternObject
+        """
+        return self._get_property("ipv4_pattern", Ipv4PatternObject)
+
+    @property
+    def ipv6_pattern(self):
+        # type: () -> Ipv6PatternObject
+        """ipv6_pattern getter
+
+        Test ipv6 patternTest ipv6 patternTest ipv6 pattern
+
+        Returns: Ipv6PatternObject
+        """
+        return self._get_property("ipv6_pattern", Ipv6PatternObject)
+
+    @property
+    def mac_pattern(self):
+        # type: () -> MacPatternObject
+        """mac_pattern getter
+
+        Test mac patternTest mac patternTest mac pattern
+
+        Returns: MacPatternObject
+        """
+        return self._get_property("mac_pattern", MacPatternObject)
+
+    @property
+    def integer_pattern(self):
+        # type: () -> IntegerPatternObject
+        """integer_pattern getter
+
+        Test integer patternTest integer patternTest integer pattern
+
+        Returns: IntegerPatternObject
+        """
+        return self._get_property("integer_pattern", IntegerPatternObject)
+
+    @property
+    def checksum_pattern(self):
+        # type: () -> ChecksumPatternObject
+        """checksum_pattern getter
+
+        Test checksum patternTest checksum patternTest checksum pattern
+
+        Returns: ChecksumPatternObject
+        """
+        return self._get_property("checksum_pattern", ChecksumPatternObject)
+
+
+class Ipv4PatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "ipv4": {"type": "PatternIpv4PatternObjectIpv4"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(Ipv4PatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def ipv4(self):
+        # type: () -> PatternIpv4PatternObjectIpv4
+        """ipv4 getter
+
+        TBDTBDTBD
+
+        Returns: PatternIpv4PatternObjectIpv4
+        """
+        return self._get_property("ipv4", PatternIpv4PatternObjectIpv4)
+
+
+class PatternIpv4PatternObjectIpv4(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "ipv4",
+        },
+        "increment": {"type": "PatternIpv4PatternObjectIpv4Counter"},
+        "decrement": {"type": "PatternIpv4PatternObjectIpv4Counter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": "0.0.0.0",
+        "values": ["0.0.0.0"],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self, parent=None, choice=None, value="0.0.0.0", values=["0.0.0.0"]
+    ):
+        super(PatternIpv4PatternObjectIpv4, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def increment(self):
+        # type: () -> PatternIpv4PatternObjectIpv4Counter
+        """Factory property that returns an instance of the PatternIpv4PatternObjectIpv4Counter class
+
+        ipv4 counter pattern
+
+        Returns: PatternIpv4PatternObjectIpv4Counter
+        """
+        return self._get_property(
+            "increment", PatternIpv4PatternObjectIpv4Counter, self, "increment"
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternIpv4PatternObjectIpv4Counter
+        """Factory property that returns an instance of the PatternIpv4PatternObjectIpv4Counter class
+
+        ipv4 counter pattern
+
+        Returns: PatternIpv4PatternObjectIpv4Counter
+        """
+        return self._get_property(
+            "decrement", PatternIpv4PatternObjectIpv4Counter, self, "decrement"
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
+
+
+class PatternIpv4PatternObjectIpv4Counter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "step": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": "0.0.0.0",
+        "step": "0.0.0.1",
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start="0.0.0.0", step="0.0.0.1", count=1):
+        super(PatternIpv4PatternObjectIpv4Counter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> str
+        """start getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> str
+        """step getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class Ipv6PatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "ipv6": {"type": "PatternIpv6PatternObjectIpv6"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(Ipv6PatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def ipv6(self):
+        # type: () -> PatternIpv6PatternObjectIpv6
+        """ipv6 getter
+
+        TBDTBDTBD
+
+        Returns: PatternIpv6PatternObjectIpv6
+        """
+        return self._get_property("ipv6", PatternIpv6PatternObjectIpv6)
+
+
+class PatternIpv6PatternObjectIpv6(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "ipv6",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "ipv6",
+        },
+        "increment": {"type": "PatternIpv6PatternObjectIpv6Counter"},
+        "decrement": {"type": "PatternIpv6PatternObjectIpv6Counter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": "::",
+        "values": ["::"],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, value="::", values=["::"]):
+        super(PatternIpv6PatternObjectIpv6, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def increment(self):
+        # type: () -> PatternIpv6PatternObjectIpv6Counter
+        """Factory property that returns an instance of the PatternIpv6PatternObjectIpv6Counter class
+
+        ipv6 counter pattern
+
+        Returns: PatternIpv6PatternObjectIpv6Counter
+        """
+        return self._get_property(
+            "increment", PatternIpv6PatternObjectIpv6Counter, self, "increment"
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternIpv6PatternObjectIpv6Counter
+        """Factory property that returns an instance of the PatternIpv6PatternObjectIpv6Counter class
+
+        ipv6 counter pattern
+
+        Returns: PatternIpv6PatternObjectIpv6Counter
+        """
+        return self._get_property(
+            "decrement", PatternIpv6PatternObjectIpv6Counter, self, "decrement"
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
+
+
+class PatternIpv6PatternObjectIpv6Counter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": str,
+            "format": "ipv6",
+        },
+        "step": {
+            "type": str,
+            "format": "ipv6",
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": "::",
+        "step": "::1",
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start="::", step="::1", count=1):
+        super(PatternIpv6PatternObjectIpv6Counter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> str
+        """start getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> str
+        """step getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class MacPatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "mac": {"type": "PatternMacPatternObjectMac"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(MacPatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def mac(self):
+        # type: () -> PatternMacPatternObjectMac
+        """mac getter
+
+        TBDTBDTBD
+
+        Returns: PatternMacPatternObjectMac
+        """
+        return self._get_property("mac", PatternMacPatternObjectMac)
+
+
+class PatternMacPatternObjectMac(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "auto",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "mac",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "mac",
+        },
+        "auto": {
+            "type": str,
+            "format": "mac",
+        },
+        "increment": {"type": "PatternMacPatternObjectMacCounter"},
+        "decrement": {"type": "PatternMacPatternObjectMacCounter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "auto",
+        "value": "00:00:00:00:00:00",
+        "values": ["00:00:00:00:00:00"],
+        "auto": "00:00:00:00:00:00",
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    AUTO = "auto"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        choice=None,
+        value="00:00:00:00:00:00",
+        values=["00:00:00:00:00:00"],
+        auto="00:00:00:00:00:00",
+    ):
+        super(PatternMacPatternObjectMac, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        self._set_property("auto", auto)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None, auto=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def increment(self):
+        # type: () -> PatternMacPatternObjectMacCounter
+        """Factory property that returns an instance of the PatternMacPatternObjectMacCounter class
+
+        mac counter pattern
+
+        Returns: PatternMacPatternObjectMacCounter
+        """
+        return self._get_property(
+            "increment", PatternMacPatternObjectMacCounter, self, "increment"
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternMacPatternObjectMacCounter
+        """Factory property that returns an instance of the PatternMacPatternObjectMacCounter class
+
+        mac counter pattern
+
+        Returns: PatternMacPatternObjectMacCounter
+        """
+        return self._get_property(
+            "decrement", PatternMacPatternObjectMacCounter, self, "decrement"
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
+
+    @property
+    def auto(self):
+        # type: () -> str
+        """auto getter
+
+        The OTG implementation can provide system generated. value for this property. If the OTG is unable to generate value. the default value must be used.
+
+        Returns: str
+        """
+        return self._get_property("auto")
+
+
+class PatternMacPatternObjectMacCounter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": str,
+            "format": "mac",
+        },
+        "step": {
+            "type": str,
+            "format": "mac",
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": "00:00:00:00:00:00",
+        "step": "00:00:00:00:00:01",
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self,
+        parent=None,
+        start="00:00:00:00:00:00",
+        step="00:00:00:00:00:01",
+        count=1,
+    ):
+        super(PatternMacPatternObjectMacCounter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> str
+        """start getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> str
+        """step getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class IntegerPatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "integer": {"type": "PatternIntegerPatternObjectInteger"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(IntegerPatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def integer(self):
+        # type: () -> PatternIntegerPatternObjectInteger
+        """integer getter
+
+        TBDTBDTBD
+
+        Returns: PatternIntegerPatternObjectInteger
+        """
+        return self._get_property(
+            "integer", PatternIntegerPatternObjectInteger
+        )
+
+
+class PatternIntegerPatternObjectInteger(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": int,
+            "format": "uint32",
+            "maximum": 255,
+        },
+        "values": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "uint32",
+            "maximum": 255,
+        },
+        "increment": {"type": "PatternIntegerPatternObjectIntegerCounter"},
+        "decrement": {"type": "PatternIntegerPatternObjectIntegerCounter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": 0,
+        "values": [0],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, value=0, values=[0]):
+        super(PatternIntegerPatternObjectInteger, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def increment(self):
+        # type: () -> PatternIntegerPatternObjectIntegerCounter
+        """Factory property that returns an instance of the PatternIntegerPatternObjectIntegerCounter class
+
+        integer counter pattern
+
+        Returns: PatternIntegerPatternObjectIntegerCounter
+        """
+        return self._get_property(
+            "increment",
+            PatternIntegerPatternObjectIntegerCounter,
+            self,
+            "increment",
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternIntegerPatternObjectIntegerCounter
+        """Factory property that returns an instance of the PatternIntegerPatternObjectIntegerCounter class
+
+        integer counter pattern
+
+        Returns: PatternIntegerPatternObjectIntegerCounter
+        """
+        return self._get_property(
+            "decrement",
+            PatternIntegerPatternObjectIntegerCounter,
+            self,
+            "decrement",
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> int
+        """value getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[int]
+        """values getter
+
+        TBD
+
+        Returns: List[int]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[int]
+        """
+        self._set_property("values", value, "values")
+
+
+class PatternIntegerPatternObjectIntegerCounter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": int,
+            "format": "uint32",
+            "maximum": 255,
+        },
+        "step": {
+            "type": int,
+            "format": "uint32",
+            "maximum": 255,
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+            "maximum": 255,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": 0,
+        "step": 1,
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start=0, step=1, count=1):
+        super(PatternIntegerPatternObjectIntegerCounter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> int
+        """start getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> int
+        """step getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class ChecksumPatternObject(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "checksum": {"type": "PatternChecksumPatternObjectChecksum"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(ChecksumPatternObject, self).__init__()
+        self._parent = parent
+
+    @property
+    def checksum(self):
+        # type: () -> PatternChecksumPatternObjectChecksum
+        """checksum getter
+
+        TBDTBDTBD
+
+        Returns: PatternChecksumPatternObjectChecksum
+        """
+        return self._get_property(
+            "checksum", PatternChecksumPatternObjectChecksum
+        )
+
+
+class PatternChecksumPatternObjectChecksum(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "generated",
+                "custom",
+            ],
+        },
+        "generated": {
+            "type": str,
+            "enum": [
+                "good",
+                "bad",
+            ],
+        },
+        "custom": {
+            "type": int,
+            "format": "uint32",
+            "maximum": 255,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "generated",
+        "generated": "good",
+    }  # type: Dict[str, Union(type)]
+
+    GENERATED = "generated"  # type: str
+    CUSTOM = "custom"  # type: str
+
+    GOOD = "good"  # type: str
+    BAD = "bad"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self, parent=None, choice=None, generated="good", custom=None
+    ):
+        super(PatternChecksumPatternObjectChecksum, self).__init__()
+        self._parent = parent
+        self._set_property("generated", generated)
+        self._set_property("custom", custom)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, generated=None, custom=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["custom"], Literal["generated"]]
+        """choice getter
+
+        The type of checksum
+
+        Returns: Union[Literal["custom"], Literal["generated"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        The type of checksum
+
+        value: Union[Literal["custom"], Literal["generated"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def generated(self):
+        # type: () -> Union[Literal["bad"], Literal["good"]]
+        """generated getter
+
+        A system generated checksum value
+
+        Returns: Union[Literal["bad"], Literal["good"]]
+        """
+        return self._get_property("generated")
+
+    @generated.setter
+    def generated(self, value):
+        """generated setter
+
+        A system generated checksum value
+
+        value: Union[Literal["bad"], Literal["good"]]
+        """
+        self._set_property("generated", value, "generated")
+
+    @property
+    def custom(self):
+        # type: () -> int
+        """custom getter
+
+        A custom checksum value
+
+        Returns: int
+        """
+        return self._get_property("custom")
+
+    @custom.setter
+    def custom(self, value):
+        """custom setter
+
+        A custom checksum value
+
+        value: int
+        """
+        self._set_property("custom", value, "custom")
+
+
 class CommonResponseSuccess(OpenApiObject):
     __slots__ = "_parent"
 
@@ -7478,6 +11433,24 @@ class Api(object):
         """
         raise NotImplementedError("clear_warnings")
 
+    def get_test_config(self):
+        """GET /api/test
+
+        Get the new restructured unit test config.
+
+        Return: test_config
+        """
+        raise NotImplementedError("get_test_config")
+
+    def set_test_config(self, payload):
+        """POST /api/test
+
+        Sets the new restructured unit test configuration.
+
+        Return: None
+        """
+        raise NotImplementedError("set_test_config")
+
     def getrootresponse(self):
         """GET /api/apitest
 
@@ -7582,6 +11555,13 @@ class Api(object):
         Return: WarningDetails
         """
         return WarningDetails()
+
+    def test_config(self):
+        """Factory method that creates an instance of TestConfig
+
+        Return: TestConfig
+        """
+        return TestConfig()
 
     def common_responsesuccess(self):
         """Factory method that creates an instance of CommonResponseSuccess
@@ -7809,6 +11789,37 @@ class HttpApi(Api):
             "/api/warnings",
             payload=None,
             return_object=None,
+        )
+
+    def get_test_config(self):
+        """GET /api/test
+
+        Get the new restructured unit test config.
+
+        Return: test_config
+        """
+        self._do_version_check_once()
+        return self._transport.send_recv(
+            "get",
+            "/api/test",
+            payload=None,
+            return_object=self.test_config(),
+        )
+
+    def set_test_config(self, payload):
+        """POST /api/test
+
+        Sets the new restructured unit test configuration.
+
+        Return: None
+        """
+        self._do_version_check_once()
+        return self._transport.send_recv(
+            "post",
+            "/api/test",
+            payload=payload,
+            return_object=None,
+            request_class=TestConfig,
         )
 
     def getrootresponse(self):
@@ -8123,6 +12134,37 @@ class GrpcApi(Api):
         resp_str = response.get("string")
         if resp_str is not None:
             return response.get("string")
+
+    def get_test_config(self):
+        stub = self._get_stub()
+        empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()
+        res_obj = stub.GetTestConfig(empty, timeout=self._request_timeout)
+        response = json_format.MessageToDict(
+            res_obj, preserving_proto_field_name=True
+        )
+        result = response.get("test_config")
+        if result is not None:
+            return self.test_config().deserialize(result)
+
+    def set_test_config(self, payload):
+        pb_obj = json_format.Parse(
+            self._serialize_payload(payload), pb2.TestConfig()
+        )
+        self._do_version_check_once()
+        req_obj = pb2.SetTestConfigRequest(test_config=pb_obj)
+        stub = self._get_stub()
+        try:
+            res_obj = stub.SetTestConfig(
+                req_obj, timeout=self._request_timeout
+            )
+        except grpc.RpcError as grpc_error:
+            self._raise_exception(grpc_error)
+        response = json_format.MessageToDict(
+            res_obj, preserving_proto_field_name=True
+        )
+        bytes = response.get("response_bytes")
+        if bytes is not None:
+            return io.BytesIO(res_obj.response_bytes)
 
     def getrootresponse(self):
         stub = self._get_stub()

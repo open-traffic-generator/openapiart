@@ -242,6 +242,81 @@
                 }
             }
         },
+        "/test": {
+            "get": {
+                "tags": [
+                    "UnitTest"
+                ],
+                "operationId": "get_test_config",
+                "description": "Get the new restructured unit test config.",
+                "responses": {
+                    "200": {
+                        "description": "returns the unit test config",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Test.Config"
+                                }
+                            }
+                        },
+                        "x-field-uid": 1
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "UnitTest"
+                ],
+                "operationId": "set_test_config",
+                "description": "Sets the new restructured unit test configuration.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Test.Config"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "x-field-uid": 1,
+                        "description": "Standard success binary payload",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "x-field-uid": 2,
+                        "description": "The request did not succeed and server has responded with error details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/apitest": {
             "get": {
                 "tags": [
@@ -1674,6 +1749,757 @@
                     }
                 }
             },
+            "Test.Config": {
+                "type": "object",
+                "x-status": {
+                    "status": "under_review",
+                    "information": "the whole schema is being reviewed"
+                },
+                "properties": {
+                    "native_features": {
+                        "$ref": "#/components/schemas/NativeFeatures",
+                        "x-field-uid": 1
+                    },
+                    "extended_features": {
+                        "$ref": "#/components/schemas/ExtendedFeatures",
+                        "x-field-uid": 2
+                    }
+                },
+                "description": "Under Review: the whole schema is being reviewed\n\nDescription TBD"
+            },
+            "NativeFeatures": {
+                "type": "object",
+                "properties": {
+                    "required_val": {
+                        "$ref": "#/components/schemas/RequiredVal",
+                        "x-field-uid": 1
+                    },
+                    "optional_val": {
+                        "$ref": "#/components/schemas/OptionalVal",
+                        "x-field-uid": 2
+                    },
+                    "boundary_val": {
+                        "$ref": "#/components/schemas/BoundaryVal",
+                        "x-field-uid": 3
+                    },
+                    "required_val_array": {
+                        "$ref": "#/components/schemas/RequiredValArray",
+                        "x-field-uid": 4
+                    },
+                    "optional_val_array": {
+                        "$ref": "#/components/schemas/OptionalValArray",
+                        "x-field-uid": 5
+                    },
+                    "boundary_val_array": {
+                        "$ref": "#/components/schemas/BoundaryValArray",
+                        "x-field-uid": 6
+                    },
+                    "nested_ref_object": {
+                        "$ref": "#/components/schemas/NestedRefObject",
+                        "x-field-uid": 7
+                    },
+                    "mixed_object": {
+                        "$ref": "#/components/schemas/MixedObject",
+                        "x-field-uid": 8
+                    },
+                    "number_type_object": {
+                        "$ref": "#/components/schemas/NumberTypeObject",
+                        "x-field-uid": 9
+                    },
+                    "iter_object": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixedObject"
+                        },
+                        "x-field-uid": 10
+                    }
+                }
+            },
+            "ExtendedFeatures": {
+                "type": "object",
+                "properties": {
+                    "choice_val": {
+                        "$ref": "#/components/schemas/ChoiceVal",
+                        "x-field-uid": 1
+                    },
+                    "choice_val_no_properties": {
+                        "$ref": "#/components/schemas/ChoiceValWithNoProperties",
+                        "x-field-uid": 2
+                    },
+                    "x_status_object": {
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "test under_review"
+                        },
+                        "$ref": "#/components/schemas/XStatusObject",
+                        "x-field-uid": 3,
+                        "description": "Under Review: test under_review\n\nDescription TBD"
+                    },
+                    "x_enum_object": {
+                        "$ref": "#/components/schemas/XEnumObject",
+                        "x-field-uid": 4
+                    },
+                    "x_field_pattern_object": {
+                        "$ref": "#/components/schemas/XFieldPatternObject",
+                        "x-field-uid": 5
+                    }
+                }
+            },
+            "RequiredVal": {
+                "type": "object",
+                "required": [
+                    "int_val",
+                    "num_val",
+                    "str_val",
+                    "bool_val"
+                ],
+                "properties": {
+                    "int_val": {
+                        "type": "integer",
+                        "x-field-uid": 1
+                    },
+                    "num_val": {
+                        "type": "number",
+                        "x-field-uid": 2
+                    },
+                    "str_val": {
+                        "type": "string",
+                        "x-field-uid": 3
+                    },
+                    "bool_val": {
+                        "type": "boolean",
+                        "x-field-uid": 4
+                    }
+                }
+            },
+            "OptionalVal": {
+                "type": "object",
+                "properties": {
+                    "int_val": {
+                        "type": "integer",
+                        "default": 50,
+                        "x-field-uid": 1
+                    },
+                    "num_val": {
+                        "type": "number",
+                        "default": 50.05,
+                        "x-field-uid": 2
+                    },
+                    "str_val": {
+                        "type": "string",
+                        "default": "default_str_val",
+                        "x-field-uid": 3
+                    },
+                    "bool_val": {
+                        "type": "boolean",
+                        "default": true,
+                        "x-field-uid": 4
+                    }
+                }
+            },
+            "BoundaryVal": {
+                "type": "object",
+                "properties": {
+                    "int_val": {
+                        "type": "integer",
+                        "default": 50,
+                        "minimum": 5,
+                        "maximum": 100,
+                        "x-field-uid": 1
+                    },
+                    "num_val": {
+                        "type": "number",
+                        "default": 50.05,
+                        "minimum": 5.0,
+                        "maximum": 100.0,
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "RequiredValArray": {
+                "type": "object",
+                "required": [
+                    "int_vals",
+                    "num_vals",
+                    "str_vals",
+                    "bool_vals"
+                ],
+                "properties": {
+                    "int_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "x-field-uid": 1
+                    },
+                    "num_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "x-field-uid": 2
+                    },
+                    "str_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "x-field-uid": 3
+                    },
+                    "bool_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "boolean"
+                        },
+                        "x-field-uid": 4
+                    }
+                }
+            },
+            "OptionalValArray": {
+                "type": "object",
+                "properties": {
+                    "int_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "default": [
+                            10,
+                            20
+                        ],
+                        "x-field-uid": 1
+                    },
+                    "num_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "default": [
+                            10.01,
+                            20.02
+                        ],
+                        "x-field-uid": 2
+                    },
+                    "str_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": [
+                            "first_str",
+                            "second_str"
+                        ],
+                        "x-field-uid": 3
+                    },
+                    "bool_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "boolean"
+                        },
+                        "x-field-uid": 4
+                    }
+                }
+            },
+            "BoundaryValArray": {
+                "type": "object",
+                "properties": {
+                    "int_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "default": [
+                                50
+                            ],
+                            "minimum": 5,
+                            "maximum": 100
+                        },
+                        "x-field-uid": 1
+                    },
+                    "num_vals": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "default": [
+                                50.05
+                            ],
+                            "minimum": 5.0,
+                            "maximum": 100.0
+                        },
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "MixedObject": {
+                "description": "Format validation object",
+                "type": "object",
+                "properties": {
+                    "string_param": {
+                        "type": "string",
+                        "default": "asdf",
+                        "x-field-uid": 1
+                    },
+                    "integer": {
+                        "type": "integer",
+                        "default": 88,
+                        "minimum": 10,
+                        "maximum": 90,
+                        "x-field-uid": 2
+                    },
+                    "float": {
+                        "type": "number",
+                        "format": "float",
+                        "default": 22.2,
+                        "x-field-uid": 3
+                    },
+                    "double": {
+                        "type": "number",
+                        "format": "double",
+                        "default": 2342.22,
+                        "x-field-uid": 4
+                    },
+                    "mac": {
+                        "type": "string",
+                        "format": "mac",
+                        "default": "00:00:fa:ce:fa:ce",
+                        "x-field-uid": 5
+                    },
+                    "ipv4": {
+                        "type": "string",
+                        "format": "ipv4",
+                        "default": "1.1.1.1",
+                        "x-field-uid": 6
+                    },
+                    "ipv6": {
+                        "type": "string",
+                        "format": "ipv6",
+                        "default": "::02",
+                        "x-field-uid": 7
+                    },
+                    "hex": {
+                        "type": "string",
+                        "format": "hex",
+                        "default": "0102030405060708090a0b0c0d0e0f",
+                        "x-field-uid": 8
+                    },
+                    "str_len": {
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "Information TBD"
+                        },
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 6,
+                        "x-field-uid": 9,
+                        "description": "Under Review: Information TBD\n\nDescription TBD"
+                    },
+                    "integer64_1": {
+                        "description": "int64 type",
+                        "type": "integer",
+                        "format": "int64",
+                        "x-field-uid": 10
+                    },
+                    "integer64_2": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4261412864,
+                        "format": "int64",
+                        "x-field-uid": 11
+                    },
+                    "integer64_list": {
+                        "description": "int64 type list",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "minimum": 0,
+                        "maximum": 4261412864,
+                        "x-field-uid": 12
+                    }
+                }
+            },
+            "NumberTypeObject": {
+                "type": "object",
+                "properties": {
+                    "validate_uint32_1": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4294967295,
+                        "format": "uint32",
+                        "x-field-uid": 43
+                    },
+                    "validate_uint32_2": {
+                        "type": "integer",
+                        "format": "uint32",
+                        "x-field-uid": 44
+                    },
+                    "validate_uint64_1": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9223372036854775807,
+                        "format": "uint64",
+                        "x-field-uid": 45
+                    },
+                    "validate_uint64_2": {
+                        "type": "integer",
+                        "format": "uint64",
+                        "x-field-uid": 46
+                    },
+                    "validate_int32_1": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2147483646,
+                        "x-field-uid": 47
+                    },
+                    "validate_int32_2": {
+                        "type": "integer",
+                        "format": "int32",
+                        "x-field-uid": 48
+                    },
+                    "validate_int64_1": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9223372036854775807,
+                        "format": "int64",
+                        "x-field-uid": 49
+                    },
+                    "validate_int64_2": {
+                        "type": "integer",
+                        "format": "int64",
+                        "x-field-uid": 50
+                    }
+                }
+            },
+            "ChoiceVal": {
+                "type": "object",
+                "properties": {
+                    "mixed_val": {
+                        "$ref": "#/components/schemas/MixedVal",
+                        "x-field-uid": 1
+                    }
+                }
+            },
+            "ChoiceValWithNoProperties": {
+                "type": "object",
+                "required": [
+                    "choice"
+                ],
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "intermediate_obj": {
+                                "x-field-uid": 1
+                            },
+                            "no_obj": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "intermediate_obj",
+                            "no_obj"
+                        ]
+                    },
+                    "intermediate_obj": {
+                        "$ref": "#/components/schemas/RequiredChoice",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "RequiredChoice": {
+                "type": "object",
+                "required": [
+                    "choice"
+                ],
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "str_val": {
+                                "x-field-uid": 1
+                            },
+                            "leaf": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "str_val",
+                            "leaf"
+                        ]
+                    },
+                    "str_val": {
+                        "type": "string",
+                        "default": "some string",
+                        "x-field-uid": 2
+                    },
+                    "leaf": {
+                        "$ref": "#/components/schemas/LeafVal",
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "MixedVal": {
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "int_val",
+                        "x-enum": {
+                            "int_val": {
+                                "x-field-uid": 1
+                            },
+                            "num_val": {
+                                "x-field-uid": 2
+                            },
+                            "str_val": {
+                                "x-field-uid": 3
+                            },
+                            "bool_val": {
+                                "x-field-uid": 4
+                            }
+                        },
+                        "x-field-uid": 1,
+                        "enum": [
+                            "int_val",
+                            "num_val",
+                            "str_val",
+                            "bool_val"
+                        ]
+                    },
+                    "int_val": {
+                        "type": "integer",
+                        "default": 50,
+                        "x-field-uid": 2
+                    },
+                    "num_val": {
+                        "type": "number",
+                        "default": 50.05,
+                        "x-field-uid": 3
+                    },
+                    "str_val": {
+                        "type": "string",
+                        "default": "default_str_val",
+                        "x-field-uid": 4
+                    },
+                    "bool_val": {
+                        "type": "boolean",
+                        "default": true,
+                        "x-field-uid": 5
+                    }
+                }
+            },
+            "NestedRefObject": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "intermediate_node": {
+                        "$ref": "#/components/schemas/IntermediateRefObject",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "IntermediateRefObject": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "leaf_node": {
+                        "$ref": "#/components/schemas/LeafVal",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "LeafVal": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "x-field-uid": 1
+                    },
+                    "value": {
+                        "type": "integer",
+                        "x-field-uid": 2
+                    }
+                }
+            },
+            "XEnumObject": {
+                "type": "object",
+                "properties": {
+                    "x_enum_val": {
+                        "description": "A property to showcase x-enum feature",
+                        "type": "string",
+                        "default": "third_val",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "first_val": {
+                                "x-field-uid": 1
+                            },
+                            "second_val": {
+                                "x-field-uid": 2
+                            },
+                            "third_val": {
+                                "x-field-uid": 3
+                            },
+                            "fourth_val": {
+                                "x-field-uid": 4
+                            }
+                        },
+                        "enum": [
+                            "first_val",
+                            "second_val",
+                            "third_val",
+                            "fourth_val"
+                        ]
+                    }
+                }
+            },
+            "XStatusObject": {
+                "type": "object",
+                "properties": {
+                    "enum_property": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "decprecated_property_1": {
+                                "x-status": {
+                                    "status": "deprecated",
+                                    "information": "test deprecated"
+                                },
+                                "x-field-uid": 1,
+                                "description": "Deprecated: test deprecated\n\nDescription TBD"
+                            },
+                            "under_review_property_1": {
+                                "x-status": {
+                                    "status": "under_review",
+                                    "information": "test under_review"
+                                },
+                                "x-field-uid": 2,
+                                "description": "Under Review: test under_review\n\nDescription TBD"
+                            },
+                            "basic": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "enum": [
+                            "decprecated_property_1",
+                            "under_review_property_1",
+                            "basic"
+                        ]
+                    },
+                    "decprecated_property_1": {
+                        "type": "string",
+                        "x-field-uid": 2
+                    },
+                    "decprecated_property_2": {
+                        "type": "integer",
+                        "x-status": {
+                            "status": "deprecated",
+                            "information": "test deprecated"
+                        },
+                        "x-field-uid": 3,
+                        "description": "Deprecated: test deprecated\n\nDescription TBD"
+                    },
+                    "under_review_property_1": {
+                        "type": "string",
+                        "x-field-uid": 4
+                    },
+                    "under_review_property_2": {
+                        "type": "integer",
+                        "x-status": {
+                            "status": "under_review",
+                            "information": "test under_review"
+                        },
+                        "x-field-uid": 5,
+                        "description": "Under Review: test under_review\n\nDescription TBD"
+                    },
+                    "basic": {
+                        "type": "string",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "XFieldPatternObject": {
+                "type": "object",
+                "properties": {
+                    "ipv4_pattern": {
+                        "$ref": "#/components/schemas/Ipv4PatternObject",
+                        "x-field-uid": 1
+                    },
+                    "ipv6_pattern": {
+                        "$ref": "#/components/schemas/Ipv6PatternObject",
+                        "x-field-uid": 2
+                    },
+                    "mac_pattern": {
+                        "$ref": "#/components/schemas/MacPatternObject",
+                        "x-field-uid": 3
+                    },
+                    "integer_pattern": {
+                        "$ref": "#/components/schemas/IntegerPatternObject",
+                        "x-field-uid": 4
+                    },
+                    "checksum_pattern": {
+                        "$ref": "#/components/schemas/ChecksumPatternObject",
+                        "x-field-uid": 5
+                    }
+                }
+            },
+            "Ipv4PatternObject": {
+                "description": "Test ipv4 pattern",
+                "type": "object",
+                "properties": {
+                    "ipv4": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.Ipv4PatternObject.Ipv4"
+                    }
+                }
+            },
+            "Ipv6PatternObject": {
+                "description": "Test ipv6 pattern",
+                "type": "object",
+                "properties": {
+                    "ipv6": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.Ipv6PatternObject.Ipv6"
+                    }
+                }
+            },
+            "MacPatternObject": {
+                "description": "Test mac pattern",
+                "type": "object",
+                "properties": {
+                    "mac": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.MacPatternObject.Mac"
+                    }
+                }
+            },
+            "IntegerPatternObject": {
+                "description": "Test integer pattern",
+                "type": "object",
+                "properties": {
+                    "integer": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.IntegerPatternObject.Integer"
+                    }
+                }
+            },
+            "ChecksumPatternObject": {
+                "description": "Test checksum pattern",
+                "type": "object",
+                "properties": {
+                    "checksum": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.ChecksumPatternObject.Checksum"
+                    }
+                }
+            },
             "Common.ResponseSuccess": {
                 "type": "object",
                 "properties": {
@@ -2208,6 +3034,391 @@
                 }
             },
             "Pattern.ChecksumPattern.Checksum": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "description": "The type of checksum",
+                        "type": "string",
+                        "x-enum": {
+                            "generated": {
+                                "x-field-uid": 1
+                            },
+                            "custom": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "generated",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "generated",
+                            "custom"
+                        ]
+                    },
+                    "generated": {
+                        "description": "A system generated checksum value",
+                        "type": "string",
+                        "x-enum": {
+                            "good": {
+                                "x-field-uid": 1
+                            },
+                            "bad": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "default": "good",
+                        "x-field-uid": 2,
+                        "enum": [
+                            "good",
+                            "bad"
+                        ]
+                    },
+                    "custom": {
+                        "description": "A custom checksum value",
+                        "type": "integer",
+                        "format": "uint32",
+                        "maximum": 255,
+                        "x-field-uid": 3
+                    }
+                }
+            },
+            "Pattern.Ipv4PatternObject.Ipv4.Counter": {
+                "description": "ipv4 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.1",
+                        "format": "ipv4"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.Ipv4PatternObject.Ipv4": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv4"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "0.0.0.0"
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.Ipv4PatternObject.Ipv4.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.Ipv4PatternObject.Ipv4.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.Ipv6PatternObject.Ipv6.Counter": {
+                "description": "ipv6 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "::",
+                        "format": "ipv6"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "::1",
+                        "format": "ipv6"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.Ipv6PatternObject.Ipv6": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "::",
+                        "format": "ipv6"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv6"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "::"
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.Ipv6PatternObject.Ipv6.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.Ipv6PatternObject.Ipv6.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.MacPatternObject.Mac.Counter": {
+                "description": "mac counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "00:00:00:00:00:01",
+                        "format": "mac"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.MacPatternObject.Mac": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "auto": {
+                                "x-field-uid": 1
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "auto",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "auto",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "mac"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "00:00:00:00:00:00"
+                        ]
+                    },
+                    "auto": {
+                        "description": "The OTG implementation can provide a system generated\nvalue for this property. If the OTG is unable to generate a value\nthe default value must be used.",
+                        "type": "string",
+                        "x-field-uid": 4,
+                        "default": "00:00:00:00:00:00",
+                        "format": "mac"
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.MacPatternObject.Mac.Counter",
+                        "x-field-uid": 6
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.MacPatternObject.Mac.Counter",
+                        "x-field-uid": 7
+                    }
+                }
+            },
+            "Pattern.IntegerPatternObject.Integer.Counter": {
+                "description": "integer counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "x-field-uid": 1,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "step": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32",
+                        "maximum": 255
+                    }
+                }
+            },
+            "Pattern.IntegerPatternObject.Integer": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 0,
+                        "format": "uint32",
+                        "maximum": 255
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "uint32",
+                            "maximum": 255
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            0
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.IntegerPatternObject.Integer.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.IntegerPatternObject.Integer.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.ChecksumPatternObject.Checksum": {
                 "description": "TBD",
                 "type": "object",
                 "properties": {

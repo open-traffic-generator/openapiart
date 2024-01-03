@@ -38,6 +38,10 @@ type OpenapiClient interface {
 	GetWarnings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetWarningsResponse, error)
 	// Clears warnings.
 	ClearWarnings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClearWarningsResponse, error)
+	// Get the new restructured unit test config.
+	GetTestConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetTestConfigResponse, error)
+	// Sets the new restructured unit test configuration.
+	SetTestConfig(ctx context.Context, in *SetTestConfigRequest, opts ...grpc.CallOption) (*SetTestConfigResponse, error)
 	// simple GET api with single return type
 	GetRootResponse(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetRootResponseResponse, error)
 	// Description missing in models
@@ -110,6 +114,24 @@ func (c *openapiClient) GetWarnings(ctx context.Context, in *emptypb.Empty, opts
 func (c *openapiClient) ClearWarnings(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ClearWarningsResponse, error) {
 	out := new(ClearWarningsResponse)
 	err := c.cc.Invoke(ctx, "/openapi.Openapi/ClearWarnings", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openapiClient) GetTestConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetTestConfigResponse, error) {
+	out := new(GetTestConfigResponse)
+	err := c.cc.Invoke(ctx, "/openapi.Openapi/GetTestConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openapiClient) SetTestConfig(ctx context.Context, in *SetTestConfigRequest, opts ...grpc.CallOption) (*SetTestConfigResponse, error) {
+	out := new(SetTestConfigResponse)
+	err := c.cc.Invoke(ctx, "/openapi.Openapi/SetTestConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +219,10 @@ type OpenapiServer interface {
 	GetWarnings(context.Context, *emptypb.Empty) (*GetWarningsResponse, error)
 	// Clears warnings.
 	ClearWarnings(context.Context, *emptypb.Empty) (*ClearWarningsResponse, error)
+	// Get the new restructured unit test config.
+	GetTestConfig(context.Context, *emptypb.Empty) (*GetTestConfigResponse, error)
+	// Sets the new restructured unit test configuration.
+	SetTestConfig(context.Context, *SetTestConfigRequest) (*SetTestConfigResponse, error)
 	// simple GET api with single return type
 	GetRootResponse(context.Context, *emptypb.Empty) (*GetRootResponseResponse, error)
 	// Description missing in models
@@ -235,6 +261,12 @@ func (UnimplementedOpenapiServer) GetWarnings(context.Context, *emptypb.Empty) (
 }
 func (UnimplementedOpenapiServer) ClearWarnings(context.Context, *emptypb.Empty) (*ClearWarningsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ClearWarnings not implemented")
+}
+func (UnimplementedOpenapiServer) GetTestConfig(context.Context, *emptypb.Empty) (*GetTestConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTestConfig not implemented")
+}
+func (UnimplementedOpenapiServer) SetTestConfig(context.Context, *SetTestConfigRequest) (*SetTestConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetTestConfig not implemented")
 }
 func (UnimplementedOpenapiServer) GetRootResponse(context.Context, *emptypb.Empty) (*GetRootResponseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRootResponse not implemented")
@@ -374,6 +406,42 @@ func _Openapi_ClearWarnings_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OpenapiServer).ClearWarnings(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Openapi_GetTestConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenapiServer).GetTestConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openapi.Openapi/GetTestConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenapiServer).GetTestConfig(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Openapi_SetTestConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTestConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenapiServer).SetTestConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openapi.Openapi/SetTestConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenapiServer).SetTestConfig(ctx, req.(*SetTestConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -534,6 +602,14 @@ var Openapi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ClearWarnings",
 			Handler:    _Openapi_ClearWarnings_Handler,
+		},
+		{
+			MethodName: "GetTestConfig",
+			Handler:    _Openapi_GetTestConfig_Handler,
+		},
+		{
+			MethodName: "SetTestConfig",
+			Handler:    _Openapi_SetTestConfig_Handler,
 		},
 		{
 			MethodName: "GetRootResponse",

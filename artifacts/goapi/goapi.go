@@ -219,6 +219,10 @@ type Api interface {
 	GetWarnings() (WarningDetails, error)
 	// ClearWarnings clears warnings.
 	ClearWarnings() (*string, error)
+	// GetTestConfig get the new restructured unit test config.
+	GetTestConfig() (TestConfig, error)
+	// SetTestConfig sets the new restructured unit test configuration.
+	SetTestConfig(testConfig TestConfig) ([]byte, error)
 	// GetRootResponse simple GET api with single return type
 	GetRootResponse() (CommonResponseSuccess, error)
 	// DummyResponseTest description is TBD
@@ -503,6 +507,66 @@ func (api *goapiApi) ClearWarnings() (*string, error) {
 	if resp.GetString_() != "" {
 		status_code_value := resp.GetString_()
 		return &status_code_value, nil
+	}
+	return nil, nil
+}
+
+func (api *goapiApi) GetTestConfig() (TestConfig, error) {
+
+	if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
+		return nil, err
+	}
+	if api.hasHttpTransport() {
+		return api.httpGetTestConfig()
+	}
+	if err := api.grpcConnect(); err != nil {
+		return nil, err
+	}
+	request := emptypb.Empty{}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+	defer cancelFunc()
+	resp, err := api.grpcClient.GetTestConfig(ctx, &request)
+	if err != nil {
+		if er, ok := fromGrpcError(err); ok {
+			return nil, er
+		}
+		return nil, err
+	}
+	ret := NewTestConfig()
+	if resp.GetTestConfig() != nil {
+		return ret.setMsg(resp.GetTestConfig()), nil
+	}
+
+	return ret, nil
+}
+
+func (api *goapiApi) SetTestConfig(testConfig TestConfig) ([]byte, error) {
+
+	if err := testConfig.validate(); err != nil {
+		return nil, err
+	}
+
+	if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
+		return nil, err
+	}
+	if api.hasHttpTransport() {
+		return api.httpSetTestConfig(testConfig)
+	}
+	if err := api.grpcConnect(); err != nil {
+		return nil, err
+	}
+	request := openapi.SetTestConfigRequest{TestConfig: testConfig.msg()}
+	ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+	defer cancelFunc()
+	resp, err := api.grpcClient.SetTestConfig(ctx, &request)
+	if err != nil {
+		if er, ok := fromGrpcError(err); ok {
+			return nil, er
+		}
+		return nil, err
+	}
+	if resp.ResponseBytes != nil {
+		return resp.ResponseBytes, nil
 	}
 	return nil, nil
 }
@@ -839,6 +903,49 @@ func (api *goapiApi) httpClearWarnings() (*string, error) {
 	if resp.StatusCode == 200 {
 		bodyString := string(bodyBytes)
 		return &bodyString, nil
+	} else {
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
+	}
+}
+
+func (api *goapiApi) httpGetTestConfig() (TestConfig, error) {
+	resp, err := api.httpSendRecv("api/test", "", "GET")
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode == 200 {
+		obj := NewGetTestConfigResponse().TestConfig()
+		if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {
+			return nil, err
+		}
+		return obj, nil
+	} else {
+		return nil, fromHttpError(resp.StatusCode, bodyBytes)
+	}
+}
+
+func (api *goapiApi) httpSetTestConfig(testConfig TestConfig) ([]byte, error) {
+	testConfigJson, err := testConfig.Marshal().ToJson()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := api.httpSendRecv("api/test", testConfigJson, "POST")
+
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode == 200 {
+		return bodyBytes, nil
 	} else {
 		return nil, fromHttpError(resp.StatusCode, bodyBytes)
 	}
@@ -4306,6 +4413,370 @@ func (obj *metricsRequest) setDefault() {
 
 }
 
+// ***** TestConfig *****
+type testConfig struct {
+	validation
+	obj                    *openapi.TestConfig
+	marshaller             marshalTestConfig
+	unMarshaller           unMarshalTestConfig
+	nativeFeaturesHolder   NativeFeatures
+	extendedFeaturesHolder ExtendedFeatures
+}
+
+func NewTestConfig() TestConfig {
+	obj := testConfig{obj: &openapi.TestConfig{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *testConfig) msg() *openapi.TestConfig {
+	return obj.obj
+}
+
+func (obj *testConfig) setMsg(msg *openapi.TestConfig) TestConfig {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshaltestConfig struct {
+	obj *testConfig
+}
+
+type marshalTestConfig interface {
+	// ToProto marshals TestConfig to protobuf object *openapi.TestConfig
+	ToProto() (*openapi.TestConfig, error)
+	// ToPbText marshals TestConfig to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals TestConfig to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals TestConfig to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaltestConfig struct {
+	obj *testConfig
+}
+
+type unMarshalTestConfig interface {
+	// FromProto unmarshals TestConfig from protobuf object *openapi.TestConfig
+	FromProto(msg *openapi.TestConfig) (TestConfig, error)
+	// FromPbText unmarshals TestConfig from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals TestConfig from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals TestConfig from JSON text
+	FromJson(value string) error
+}
+
+func (obj *testConfig) Marshal() marshalTestConfig {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaltestConfig{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *testConfig) Unmarshal() unMarshalTestConfig {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaltestConfig{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaltestConfig) ToProto() (*openapi.TestConfig, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshaltestConfig) FromProto(msg *openapi.TestConfig) (TestConfig, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshaltestConfig) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshaltestConfig) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshaltestConfig) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaltestConfig) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshaltestConfig) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaltestConfig) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *testConfig) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *testConfig) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *testConfig) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *testConfig) Clone() (TestConfig, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewTestConfig()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *testConfig) setNil() {
+	obj.nativeFeaturesHolder = nil
+	obj.extendedFeaturesHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// TestConfig is under Review: the whole schema is being reviewed
+//
+// Description TBD
+type TestConfig interface {
+	Validation
+	// msg marshals TestConfig to protobuf object *openapi.TestConfig
+	// and doesn't set defaults
+	msg() *openapi.TestConfig
+	// setMsg unmarshals TestConfig from protobuf object *openapi.TestConfig
+	// and doesn't set defaults
+	setMsg(*openapi.TestConfig) TestConfig
+	// provides marshal interface
+	Marshal() marshalTestConfig
+	// provides unmarshal interface
+	Unmarshal() unMarshalTestConfig
+	// validate validates TestConfig
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (TestConfig, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// NativeFeatures returns NativeFeatures, set in TestConfig.
+	// NativeFeatures is description is TBD
+	NativeFeatures() NativeFeatures
+	// SetNativeFeatures assigns NativeFeatures provided by user to TestConfig.
+	// NativeFeatures is description is TBD
+	SetNativeFeatures(value NativeFeatures) TestConfig
+	// HasNativeFeatures checks if NativeFeatures has been set in TestConfig
+	HasNativeFeatures() bool
+	// ExtendedFeatures returns ExtendedFeatures, set in TestConfig.
+	// ExtendedFeatures is description is TBD
+	ExtendedFeatures() ExtendedFeatures
+	// SetExtendedFeatures assigns ExtendedFeatures provided by user to TestConfig.
+	// ExtendedFeatures is description is TBD
+	SetExtendedFeatures(value ExtendedFeatures) TestConfig
+	// HasExtendedFeatures checks if ExtendedFeatures has been set in TestConfig
+	HasExtendedFeatures() bool
+	setNil()
+}
+
+// description is TBD
+// NativeFeatures returns a NativeFeatures
+func (obj *testConfig) NativeFeatures() NativeFeatures {
+	if obj.obj.NativeFeatures == nil {
+		obj.obj.NativeFeatures = NewNativeFeatures().msg()
+	}
+	if obj.nativeFeaturesHolder == nil {
+		obj.nativeFeaturesHolder = &nativeFeatures{obj: obj.obj.NativeFeatures}
+	}
+	return obj.nativeFeaturesHolder
+}
+
+// description is TBD
+// NativeFeatures returns a NativeFeatures
+func (obj *testConfig) HasNativeFeatures() bool {
+	return obj.obj.NativeFeatures != nil
+}
+
+// description is TBD
+// SetNativeFeatures sets the NativeFeatures value in the TestConfig object
+func (obj *testConfig) SetNativeFeatures(value NativeFeatures) TestConfig {
+
+	obj.nativeFeaturesHolder = nil
+	obj.obj.NativeFeatures = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ExtendedFeatures returns a ExtendedFeatures
+func (obj *testConfig) ExtendedFeatures() ExtendedFeatures {
+	if obj.obj.ExtendedFeatures == nil {
+		obj.obj.ExtendedFeatures = NewExtendedFeatures().msg()
+	}
+	if obj.extendedFeaturesHolder == nil {
+		obj.extendedFeaturesHolder = &extendedFeatures{obj: obj.obj.ExtendedFeatures}
+	}
+	return obj.extendedFeaturesHolder
+}
+
+// description is TBD
+// ExtendedFeatures returns a ExtendedFeatures
+func (obj *testConfig) HasExtendedFeatures() bool {
+	return obj.obj.ExtendedFeatures != nil
+}
+
+// description is TBD
+// SetExtendedFeatures sets the ExtendedFeatures value in the TestConfig object
+func (obj *testConfig) SetExtendedFeatures(value ExtendedFeatures) TestConfig {
+
+	obj.extendedFeaturesHolder = nil
+	obj.obj.ExtendedFeatures = value.msg()
+
+	return obj
+}
+
+func (obj *testConfig) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	obj.addWarnings("TestConfig is under review, the whole schema is being reviewed")
+
+	if obj.obj.NativeFeatures != nil {
+
+		obj.NativeFeatures().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ExtendedFeatures != nil {
+
+		obj.ExtendedFeatures().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *testConfig) setDefault() {
+
+}
+
 // ***** ApiTestInputBody *****
 type apiTestInputBody struct {
 	validation
@@ -6452,6 +6923,621 @@ func (obj *clearWarningsResponse) validateObj(vObj *validation, set_default bool
 }
 
 func (obj *clearWarningsResponse) setDefault() {
+
+}
+
+// ***** GetTestConfigResponse *****
+type getTestConfigResponse struct {
+	validation
+	obj              *openapi.GetTestConfigResponse
+	marshaller       marshalGetTestConfigResponse
+	unMarshaller     unMarshalGetTestConfigResponse
+	testConfigHolder TestConfig
+}
+
+func NewGetTestConfigResponse() GetTestConfigResponse {
+	obj := getTestConfigResponse{obj: &openapi.GetTestConfigResponse{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *getTestConfigResponse) msg() *openapi.GetTestConfigResponse {
+	return obj.obj
+}
+
+func (obj *getTestConfigResponse) setMsg(msg *openapi.GetTestConfigResponse) GetTestConfigResponse {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalgetTestConfigResponse struct {
+	obj *getTestConfigResponse
+}
+
+type marshalGetTestConfigResponse interface {
+	// ToProto marshals GetTestConfigResponse to protobuf object *openapi.GetTestConfigResponse
+	ToProto() (*openapi.GetTestConfigResponse, error)
+	// ToPbText marshals GetTestConfigResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals GetTestConfigResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals GetTestConfigResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalgetTestConfigResponse struct {
+	obj *getTestConfigResponse
+}
+
+type unMarshalGetTestConfigResponse interface {
+	// FromProto unmarshals GetTestConfigResponse from protobuf object *openapi.GetTestConfigResponse
+	FromProto(msg *openapi.GetTestConfigResponse) (GetTestConfigResponse, error)
+	// FromPbText unmarshals GetTestConfigResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals GetTestConfigResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals GetTestConfigResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *getTestConfigResponse) Marshal() marshalGetTestConfigResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalgetTestConfigResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *getTestConfigResponse) Unmarshal() unMarshalGetTestConfigResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalgetTestConfigResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalgetTestConfigResponse) ToProto() (*openapi.GetTestConfigResponse, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalgetTestConfigResponse) FromProto(msg *openapi.GetTestConfigResponse) (GetTestConfigResponse, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalgetTestConfigResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalgetTestConfigResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalgetTestConfigResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalgetTestConfigResponse) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalgetTestConfigResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalgetTestConfigResponse) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *getTestConfigResponse) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *getTestConfigResponse) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *getTestConfigResponse) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *getTestConfigResponse) Clone() (GetTestConfigResponse, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewGetTestConfigResponse()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *getTestConfigResponse) setNil() {
+	obj.testConfigHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// GetTestConfigResponse is description is TBD
+type GetTestConfigResponse interface {
+	Validation
+	// msg marshals GetTestConfigResponse to protobuf object *openapi.GetTestConfigResponse
+	// and doesn't set defaults
+	msg() *openapi.GetTestConfigResponse
+	// setMsg unmarshals GetTestConfigResponse from protobuf object *openapi.GetTestConfigResponse
+	// and doesn't set defaults
+	setMsg(*openapi.GetTestConfigResponse) GetTestConfigResponse
+	// provides marshal interface
+	Marshal() marshalGetTestConfigResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalGetTestConfigResponse
+	// validate validates GetTestConfigResponse
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (GetTestConfigResponse, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// TestConfig returns TestConfig, set in GetTestConfigResponse.
+	// TestConfig is under Review: the whole schema is being reviewed
+	//
+	// Description TBD
+	TestConfig() TestConfig
+	// SetTestConfig assigns TestConfig provided by user to GetTestConfigResponse.
+	// TestConfig is under Review: the whole schema is being reviewed
+	//
+	// Description TBD
+	SetTestConfig(value TestConfig) GetTestConfigResponse
+	// HasTestConfig checks if TestConfig has been set in GetTestConfigResponse
+	HasTestConfig() bool
+	setNil()
+}
+
+// description is TBD
+// TestConfig returns a TestConfig
+func (obj *getTestConfigResponse) TestConfig() TestConfig {
+	if obj.obj.TestConfig == nil {
+		obj.obj.TestConfig = NewTestConfig().msg()
+	}
+	if obj.testConfigHolder == nil {
+		obj.testConfigHolder = &testConfig{obj: obj.obj.TestConfig}
+	}
+	return obj.testConfigHolder
+}
+
+// description is TBD
+// TestConfig returns a TestConfig
+func (obj *getTestConfigResponse) HasTestConfig() bool {
+	return obj.obj.TestConfig != nil
+}
+
+// description is TBD
+// SetTestConfig sets the TestConfig value in the GetTestConfigResponse object
+func (obj *getTestConfigResponse) SetTestConfig(value TestConfig) GetTestConfigResponse {
+
+	obj.testConfigHolder = nil
+	obj.obj.TestConfig = value.msg()
+
+	return obj
+}
+
+func (obj *getTestConfigResponse) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.TestConfig != nil {
+
+		obj.TestConfig().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *getTestConfigResponse) setDefault() {
+
+}
+
+// ***** SetTestConfigResponse *****
+type setTestConfigResponse struct {
+	validation
+	obj          *openapi.SetTestConfigResponse
+	marshaller   marshalSetTestConfigResponse
+	unMarshaller unMarshalSetTestConfigResponse
+}
+
+func NewSetTestConfigResponse() SetTestConfigResponse {
+	obj := setTestConfigResponse{obj: &openapi.SetTestConfigResponse{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *setTestConfigResponse) msg() *openapi.SetTestConfigResponse {
+	return obj.obj
+}
+
+func (obj *setTestConfigResponse) setMsg(msg *openapi.SetTestConfigResponse) SetTestConfigResponse {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalsetTestConfigResponse struct {
+	obj *setTestConfigResponse
+}
+
+type marshalSetTestConfigResponse interface {
+	// ToProto marshals SetTestConfigResponse to protobuf object *openapi.SetTestConfigResponse
+	ToProto() (*openapi.SetTestConfigResponse, error)
+	// ToPbText marshals SetTestConfigResponse to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals SetTestConfigResponse to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals SetTestConfigResponse to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalsetTestConfigResponse struct {
+	obj *setTestConfigResponse
+}
+
+type unMarshalSetTestConfigResponse interface {
+	// FromProto unmarshals SetTestConfigResponse from protobuf object *openapi.SetTestConfigResponse
+	FromProto(msg *openapi.SetTestConfigResponse) (SetTestConfigResponse, error)
+	// FromPbText unmarshals SetTestConfigResponse from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals SetTestConfigResponse from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals SetTestConfigResponse from JSON text
+	FromJson(value string) error
+}
+
+func (obj *setTestConfigResponse) Marshal() marshalSetTestConfigResponse {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalsetTestConfigResponse{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *setTestConfigResponse) Unmarshal() unMarshalSetTestConfigResponse {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalsetTestConfigResponse{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalsetTestConfigResponse) ToProto() (*openapi.SetTestConfigResponse, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalsetTestConfigResponse) FromProto(msg *openapi.SetTestConfigResponse) (SetTestConfigResponse, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalsetTestConfigResponse) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalsetTestConfigResponse) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalsetTestConfigResponse) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalsetTestConfigResponse) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalsetTestConfigResponse) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalsetTestConfigResponse) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *setTestConfigResponse) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *setTestConfigResponse) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *setTestConfigResponse) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *setTestConfigResponse) Clone() (SetTestConfigResponse, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewSetTestConfigResponse()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// SetTestConfigResponse is description is TBD
+type SetTestConfigResponse interface {
+	Validation
+	// msg marshals SetTestConfigResponse to protobuf object *openapi.SetTestConfigResponse
+	// and doesn't set defaults
+	msg() *openapi.SetTestConfigResponse
+	// setMsg unmarshals SetTestConfigResponse from protobuf object *openapi.SetTestConfigResponse
+	// and doesn't set defaults
+	setMsg(*openapi.SetTestConfigResponse) SetTestConfigResponse
+	// provides marshal interface
+	Marshal() marshalSetTestConfigResponse
+	// provides unmarshal interface
+	Unmarshal() unMarshalSetTestConfigResponse
+	// validate validates SetTestConfigResponse
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (SetTestConfigResponse, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// ResponseBytes returns []byte, set in SetTestConfigResponse.
+	ResponseBytes() []byte
+	// SetResponseBytes assigns []byte provided by user to SetTestConfigResponse
+	SetResponseBytes(value []byte) SetTestConfigResponse
+	// HasResponseBytes checks if ResponseBytes has been set in SetTestConfigResponse
+	HasResponseBytes() bool
+}
+
+// description is TBD
+// ResponseBytes returns a []byte
+func (obj *setTestConfigResponse) ResponseBytes() []byte {
+
+	return obj.obj.ResponseBytes
+}
+
+// description is TBD
+// ResponseBytes returns a []byte
+func (obj *setTestConfigResponse) HasResponseBytes() bool {
+	return obj.obj.ResponseBytes != nil
+}
+
+// description is TBD
+// SetResponseBytes sets the []byte value in the SetTestConfigResponse object
+func (obj *setTestConfigResponse) SetResponseBytes(value []byte) SetTestConfigResponse {
+
+	obj.obj.ResponseBytes = value
+	return obj
+}
+
+func (obj *setTestConfigResponse) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *setTestConfigResponse) setDefault() {
 
 }
 
@@ -17008,6 +18094,1267 @@ func (obj *requiredChoiceParent) setDefault() {
 
 }
 
+// ***** NativeFeatures *****
+type nativeFeatures struct {
+	validation
+	obj                    *openapi.NativeFeatures
+	marshaller             marshalNativeFeatures
+	unMarshaller           unMarshalNativeFeatures
+	requiredValHolder      RequiredVal
+	optionalValHolder      OptionalVal
+	boundaryValHolder      BoundaryVal
+	requiredValArrayHolder RequiredValArray
+	optionalValArrayHolder OptionalValArray
+	boundaryValArrayHolder BoundaryValArray
+	nestedRefObjectHolder  NestedRefObject
+	mixedObjectHolder      MixedObject
+	numberTypeObjectHolder NumberTypeObject
+	iterObjectHolder       NativeFeaturesMixedObjectIter
+}
+
+func NewNativeFeatures() NativeFeatures {
+	obj := nativeFeatures{obj: &openapi.NativeFeatures{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *nativeFeatures) msg() *openapi.NativeFeatures {
+	return obj.obj
+}
+
+func (obj *nativeFeatures) setMsg(msg *openapi.NativeFeatures) NativeFeatures {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalnativeFeatures struct {
+	obj *nativeFeatures
+}
+
+type marshalNativeFeatures interface {
+	// ToProto marshals NativeFeatures to protobuf object *openapi.NativeFeatures
+	ToProto() (*openapi.NativeFeatures, error)
+	// ToPbText marshals NativeFeatures to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals NativeFeatures to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals NativeFeatures to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalnativeFeatures struct {
+	obj *nativeFeatures
+}
+
+type unMarshalNativeFeatures interface {
+	// FromProto unmarshals NativeFeatures from protobuf object *openapi.NativeFeatures
+	FromProto(msg *openapi.NativeFeatures) (NativeFeatures, error)
+	// FromPbText unmarshals NativeFeatures from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals NativeFeatures from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals NativeFeatures from JSON text
+	FromJson(value string) error
+}
+
+func (obj *nativeFeatures) Marshal() marshalNativeFeatures {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalnativeFeatures{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *nativeFeatures) Unmarshal() unMarshalNativeFeatures {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalnativeFeatures{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalnativeFeatures) ToProto() (*openapi.NativeFeatures, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalnativeFeatures) FromProto(msg *openapi.NativeFeatures) (NativeFeatures, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalnativeFeatures) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalnativeFeatures) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalnativeFeatures) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnativeFeatures) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalnativeFeatures) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnativeFeatures) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *nativeFeatures) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *nativeFeatures) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *nativeFeatures) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *nativeFeatures) Clone() (NativeFeatures, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewNativeFeatures()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *nativeFeatures) setNil() {
+	obj.requiredValHolder = nil
+	obj.optionalValHolder = nil
+	obj.boundaryValHolder = nil
+	obj.requiredValArrayHolder = nil
+	obj.optionalValArrayHolder = nil
+	obj.boundaryValArrayHolder = nil
+	obj.nestedRefObjectHolder = nil
+	obj.mixedObjectHolder = nil
+	obj.numberTypeObjectHolder = nil
+	obj.iterObjectHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// NativeFeatures is description is TBD
+type NativeFeatures interface {
+	Validation
+	// msg marshals NativeFeatures to protobuf object *openapi.NativeFeatures
+	// and doesn't set defaults
+	msg() *openapi.NativeFeatures
+	// setMsg unmarshals NativeFeatures from protobuf object *openapi.NativeFeatures
+	// and doesn't set defaults
+	setMsg(*openapi.NativeFeatures) NativeFeatures
+	// provides marshal interface
+	Marshal() marshalNativeFeatures
+	// provides unmarshal interface
+	Unmarshal() unMarshalNativeFeatures
+	// validate validates NativeFeatures
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (NativeFeatures, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// RequiredVal returns RequiredVal, set in NativeFeatures.
+	// RequiredVal is description is TBD
+	RequiredVal() RequiredVal
+	// SetRequiredVal assigns RequiredVal provided by user to NativeFeatures.
+	// RequiredVal is description is TBD
+	SetRequiredVal(value RequiredVal) NativeFeatures
+	// HasRequiredVal checks if RequiredVal has been set in NativeFeatures
+	HasRequiredVal() bool
+	// OptionalVal returns OptionalVal, set in NativeFeatures.
+	// OptionalVal is description is TBD
+	OptionalVal() OptionalVal
+	// SetOptionalVal assigns OptionalVal provided by user to NativeFeatures.
+	// OptionalVal is description is TBD
+	SetOptionalVal(value OptionalVal) NativeFeatures
+	// HasOptionalVal checks if OptionalVal has been set in NativeFeatures
+	HasOptionalVal() bool
+	// BoundaryVal returns BoundaryVal, set in NativeFeatures.
+	// BoundaryVal is description is TBD
+	BoundaryVal() BoundaryVal
+	// SetBoundaryVal assigns BoundaryVal provided by user to NativeFeatures.
+	// BoundaryVal is description is TBD
+	SetBoundaryVal(value BoundaryVal) NativeFeatures
+	// HasBoundaryVal checks if BoundaryVal has been set in NativeFeatures
+	HasBoundaryVal() bool
+	// RequiredValArray returns RequiredValArray, set in NativeFeatures.
+	// RequiredValArray is description is TBD
+	RequiredValArray() RequiredValArray
+	// SetRequiredValArray assigns RequiredValArray provided by user to NativeFeatures.
+	// RequiredValArray is description is TBD
+	SetRequiredValArray(value RequiredValArray) NativeFeatures
+	// HasRequiredValArray checks if RequiredValArray has been set in NativeFeatures
+	HasRequiredValArray() bool
+	// OptionalValArray returns OptionalValArray, set in NativeFeatures.
+	// OptionalValArray is description is TBD
+	OptionalValArray() OptionalValArray
+	// SetOptionalValArray assigns OptionalValArray provided by user to NativeFeatures.
+	// OptionalValArray is description is TBD
+	SetOptionalValArray(value OptionalValArray) NativeFeatures
+	// HasOptionalValArray checks if OptionalValArray has been set in NativeFeatures
+	HasOptionalValArray() bool
+	// BoundaryValArray returns BoundaryValArray, set in NativeFeatures.
+	// BoundaryValArray is description is TBD
+	BoundaryValArray() BoundaryValArray
+	// SetBoundaryValArray assigns BoundaryValArray provided by user to NativeFeatures.
+	// BoundaryValArray is description is TBD
+	SetBoundaryValArray(value BoundaryValArray) NativeFeatures
+	// HasBoundaryValArray checks if BoundaryValArray has been set in NativeFeatures
+	HasBoundaryValArray() bool
+	// NestedRefObject returns NestedRefObject, set in NativeFeatures.
+	// NestedRefObject is description is TBD
+	NestedRefObject() NestedRefObject
+	// SetNestedRefObject assigns NestedRefObject provided by user to NativeFeatures.
+	// NestedRefObject is description is TBD
+	SetNestedRefObject(value NestedRefObject) NativeFeatures
+	// HasNestedRefObject checks if NestedRefObject has been set in NativeFeatures
+	HasNestedRefObject() bool
+	// MixedObject returns MixedObject, set in NativeFeatures.
+	// MixedObject is format validation object
+	MixedObject() MixedObject
+	// SetMixedObject assigns MixedObject provided by user to NativeFeatures.
+	// MixedObject is format validation object
+	SetMixedObject(value MixedObject) NativeFeatures
+	// HasMixedObject checks if MixedObject has been set in NativeFeatures
+	HasMixedObject() bool
+	// NumberTypeObject returns NumberTypeObject, set in NativeFeatures.
+	// NumberTypeObject is description is TBD
+	NumberTypeObject() NumberTypeObject
+	// SetNumberTypeObject assigns NumberTypeObject provided by user to NativeFeatures.
+	// NumberTypeObject is description is TBD
+	SetNumberTypeObject(value NumberTypeObject) NativeFeatures
+	// HasNumberTypeObject checks if NumberTypeObject has been set in NativeFeatures
+	HasNumberTypeObject() bool
+	// IterObject returns NativeFeaturesMixedObjectIterIter, set in NativeFeatures
+	IterObject() NativeFeaturesMixedObjectIter
+	setNil()
+}
+
+// description is TBD
+// RequiredVal returns a RequiredVal
+func (obj *nativeFeatures) RequiredVal() RequiredVal {
+	if obj.obj.RequiredVal == nil {
+		obj.obj.RequiredVal = NewRequiredVal().msg()
+	}
+	if obj.requiredValHolder == nil {
+		obj.requiredValHolder = &requiredVal{obj: obj.obj.RequiredVal}
+	}
+	return obj.requiredValHolder
+}
+
+// description is TBD
+// RequiredVal returns a RequiredVal
+func (obj *nativeFeatures) HasRequiredVal() bool {
+	return obj.obj.RequiredVal != nil
+}
+
+// description is TBD
+// SetRequiredVal sets the RequiredVal value in the NativeFeatures object
+func (obj *nativeFeatures) SetRequiredVal(value RequiredVal) NativeFeatures {
+
+	obj.requiredValHolder = nil
+	obj.obj.RequiredVal = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// OptionalVal returns a OptionalVal
+func (obj *nativeFeatures) OptionalVal() OptionalVal {
+	if obj.obj.OptionalVal == nil {
+		obj.obj.OptionalVal = NewOptionalVal().msg()
+	}
+	if obj.optionalValHolder == nil {
+		obj.optionalValHolder = &optionalVal{obj: obj.obj.OptionalVal}
+	}
+	return obj.optionalValHolder
+}
+
+// description is TBD
+// OptionalVal returns a OptionalVal
+func (obj *nativeFeatures) HasOptionalVal() bool {
+	return obj.obj.OptionalVal != nil
+}
+
+// description is TBD
+// SetOptionalVal sets the OptionalVal value in the NativeFeatures object
+func (obj *nativeFeatures) SetOptionalVal(value OptionalVal) NativeFeatures {
+
+	obj.optionalValHolder = nil
+	obj.obj.OptionalVal = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// BoundaryVal returns a BoundaryVal
+func (obj *nativeFeatures) BoundaryVal() BoundaryVal {
+	if obj.obj.BoundaryVal == nil {
+		obj.obj.BoundaryVal = NewBoundaryVal().msg()
+	}
+	if obj.boundaryValHolder == nil {
+		obj.boundaryValHolder = &boundaryVal{obj: obj.obj.BoundaryVal}
+	}
+	return obj.boundaryValHolder
+}
+
+// description is TBD
+// BoundaryVal returns a BoundaryVal
+func (obj *nativeFeatures) HasBoundaryVal() bool {
+	return obj.obj.BoundaryVal != nil
+}
+
+// description is TBD
+// SetBoundaryVal sets the BoundaryVal value in the NativeFeatures object
+func (obj *nativeFeatures) SetBoundaryVal(value BoundaryVal) NativeFeatures {
+
+	obj.boundaryValHolder = nil
+	obj.obj.BoundaryVal = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// RequiredValArray returns a RequiredValArray
+func (obj *nativeFeatures) RequiredValArray() RequiredValArray {
+	if obj.obj.RequiredValArray == nil {
+		obj.obj.RequiredValArray = NewRequiredValArray().msg()
+	}
+	if obj.requiredValArrayHolder == nil {
+		obj.requiredValArrayHolder = &requiredValArray{obj: obj.obj.RequiredValArray}
+	}
+	return obj.requiredValArrayHolder
+}
+
+// description is TBD
+// RequiredValArray returns a RequiredValArray
+func (obj *nativeFeatures) HasRequiredValArray() bool {
+	return obj.obj.RequiredValArray != nil
+}
+
+// description is TBD
+// SetRequiredValArray sets the RequiredValArray value in the NativeFeatures object
+func (obj *nativeFeatures) SetRequiredValArray(value RequiredValArray) NativeFeatures {
+
+	obj.requiredValArrayHolder = nil
+	obj.obj.RequiredValArray = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// OptionalValArray returns a OptionalValArray
+func (obj *nativeFeatures) OptionalValArray() OptionalValArray {
+	if obj.obj.OptionalValArray == nil {
+		obj.obj.OptionalValArray = NewOptionalValArray().msg()
+	}
+	if obj.optionalValArrayHolder == nil {
+		obj.optionalValArrayHolder = &optionalValArray{obj: obj.obj.OptionalValArray}
+	}
+	return obj.optionalValArrayHolder
+}
+
+// description is TBD
+// OptionalValArray returns a OptionalValArray
+func (obj *nativeFeatures) HasOptionalValArray() bool {
+	return obj.obj.OptionalValArray != nil
+}
+
+// description is TBD
+// SetOptionalValArray sets the OptionalValArray value in the NativeFeatures object
+func (obj *nativeFeatures) SetOptionalValArray(value OptionalValArray) NativeFeatures {
+
+	obj.optionalValArrayHolder = nil
+	obj.obj.OptionalValArray = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// BoundaryValArray returns a BoundaryValArray
+func (obj *nativeFeatures) BoundaryValArray() BoundaryValArray {
+	if obj.obj.BoundaryValArray == nil {
+		obj.obj.BoundaryValArray = NewBoundaryValArray().msg()
+	}
+	if obj.boundaryValArrayHolder == nil {
+		obj.boundaryValArrayHolder = &boundaryValArray{obj: obj.obj.BoundaryValArray}
+	}
+	return obj.boundaryValArrayHolder
+}
+
+// description is TBD
+// BoundaryValArray returns a BoundaryValArray
+func (obj *nativeFeatures) HasBoundaryValArray() bool {
+	return obj.obj.BoundaryValArray != nil
+}
+
+// description is TBD
+// SetBoundaryValArray sets the BoundaryValArray value in the NativeFeatures object
+func (obj *nativeFeatures) SetBoundaryValArray(value BoundaryValArray) NativeFeatures {
+
+	obj.boundaryValArrayHolder = nil
+	obj.obj.BoundaryValArray = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// NestedRefObject returns a NestedRefObject
+func (obj *nativeFeatures) NestedRefObject() NestedRefObject {
+	if obj.obj.NestedRefObject == nil {
+		obj.obj.NestedRefObject = NewNestedRefObject().msg()
+	}
+	if obj.nestedRefObjectHolder == nil {
+		obj.nestedRefObjectHolder = &nestedRefObject{obj: obj.obj.NestedRefObject}
+	}
+	return obj.nestedRefObjectHolder
+}
+
+// description is TBD
+// NestedRefObject returns a NestedRefObject
+func (obj *nativeFeatures) HasNestedRefObject() bool {
+	return obj.obj.NestedRefObject != nil
+}
+
+// description is TBD
+// SetNestedRefObject sets the NestedRefObject value in the NativeFeatures object
+func (obj *nativeFeatures) SetNestedRefObject(value NestedRefObject) NativeFeatures {
+
+	obj.nestedRefObjectHolder = nil
+	obj.obj.NestedRefObject = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// MixedObject returns a MixedObject
+func (obj *nativeFeatures) MixedObject() MixedObject {
+	if obj.obj.MixedObject == nil {
+		obj.obj.MixedObject = NewMixedObject().msg()
+	}
+	if obj.mixedObjectHolder == nil {
+		obj.mixedObjectHolder = &mixedObject{obj: obj.obj.MixedObject}
+	}
+	return obj.mixedObjectHolder
+}
+
+// description is TBD
+// MixedObject returns a MixedObject
+func (obj *nativeFeatures) HasMixedObject() bool {
+	return obj.obj.MixedObject != nil
+}
+
+// description is TBD
+// SetMixedObject sets the MixedObject value in the NativeFeatures object
+func (obj *nativeFeatures) SetMixedObject(value MixedObject) NativeFeatures {
+
+	obj.mixedObjectHolder = nil
+	obj.obj.MixedObject = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// NumberTypeObject returns a NumberTypeObject
+func (obj *nativeFeatures) NumberTypeObject() NumberTypeObject {
+	if obj.obj.NumberTypeObject == nil {
+		obj.obj.NumberTypeObject = NewNumberTypeObject().msg()
+	}
+	if obj.numberTypeObjectHolder == nil {
+		obj.numberTypeObjectHolder = &numberTypeObject{obj: obj.obj.NumberTypeObject}
+	}
+	return obj.numberTypeObjectHolder
+}
+
+// description is TBD
+// NumberTypeObject returns a NumberTypeObject
+func (obj *nativeFeatures) HasNumberTypeObject() bool {
+	return obj.obj.NumberTypeObject != nil
+}
+
+// description is TBD
+// SetNumberTypeObject sets the NumberTypeObject value in the NativeFeatures object
+func (obj *nativeFeatures) SetNumberTypeObject(value NumberTypeObject) NativeFeatures {
+
+	obj.numberTypeObjectHolder = nil
+	obj.obj.NumberTypeObject = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// IterObject returns a []MixedObject
+func (obj *nativeFeatures) IterObject() NativeFeaturesMixedObjectIter {
+	if len(obj.obj.IterObject) == 0 {
+		obj.obj.IterObject = []*openapi.MixedObject{}
+	}
+	if obj.iterObjectHolder == nil {
+		obj.iterObjectHolder = newNativeFeaturesMixedObjectIter(&obj.obj.IterObject).setMsg(obj)
+	}
+	return obj.iterObjectHolder
+}
+
+type nativeFeaturesMixedObjectIter struct {
+	obj              *nativeFeatures
+	mixedObjectSlice []MixedObject
+	fieldPtr         *[]*openapi.MixedObject
+}
+
+func newNativeFeaturesMixedObjectIter(ptr *[]*openapi.MixedObject) NativeFeaturesMixedObjectIter {
+	return &nativeFeaturesMixedObjectIter{fieldPtr: ptr}
+}
+
+type NativeFeaturesMixedObjectIter interface {
+	setMsg(*nativeFeatures) NativeFeaturesMixedObjectIter
+	Items() []MixedObject
+	Add() MixedObject
+	Append(items ...MixedObject) NativeFeaturesMixedObjectIter
+	Set(index int, newObj MixedObject) NativeFeaturesMixedObjectIter
+	Clear() NativeFeaturesMixedObjectIter
+	clearHolderSlice() NativeFeaturesMixedObjectIter
+	appendHolderSlice(item MixedObject) NativeFeaturesMixedObjectIter
+}
+
+func (obj *nativeFeaturesMixedObjectIter) setMsg(msg *nativeFeatures) NativeFeaturesMixedObjectIter {
+	obj.clearHolderSlice()
+	for _, val := range *obj.fieldPtr {
+		obj.appendHolderSlice(&mixedObject{obj: val})
+	}
+	obj.obj = msg
+	return obj
+}
+
+func (obj *nativeFeaturesMixedObjectIter) Items() []MixedObject {
+	return obj.mixedObjectSlice
+}
+
+func (obj *nativeFeaturesMixedObjectIter) Add() MixedObject {
+	newObj := &openapi.MixedObject{}
+	*obj.fieldPtr = append(*obj.fieldPtr, newObj)
+	newLibObj := &mixedObject{obj: newObj}
+	newLibObj.setDefault()
+	obj.mixedObjectSlice = append(obj.mixedObjectSlice, newLibObj)
+	return newLibObj
+}
+
+func (obj *nativeFeaturesMixedObjectIter) Append(items ...MixedObject) NativeFeaturesMixedObjectIter {
+	for _, item := range items {
+		newObj := item.msg()
+		*obj.fieldPtr = append(*obj.fieldPtr, newObj)
+		obj.mixedObjectSlice = append(obj.mixedObjectSlice, item)
+	}
+	return obj
+}
+
+func (obj *nativeFeaturesMixedObjectIter) Set(index int, newObj MixedObject) NativeFeaturesMixedObjectIter {
+	(*obj.fieldPtr)[index] = newObj.msg()
+	obj.mixedObjectSlice[index] = newObj
+	return obj
+}
+func (obj *nativeFeaturesMixedObjectIter) Clear() NativeFeaturesMixedObjectIter {
+	if len(*obj.fieldPtr) > 0 {
+		*obj.fieldPtr = []*openapi.MixedObject{}
+		obj.mixedObjectSlice = []MixedObject{}
+	}
+	return obj
+}
+func (obj *nativeFeaturesMixedObjectIter) clearHolderSlice() NativeFeaturesMixedObjectIter {
+	if len(obj.mixedObjectSlice) > 0 {
+		obj.mixedObjectSlice = []MixedObject{}
+	}
+	return obj
+}
+func (obj *nativeFeaturesMixedObjectIter) appendHolderSlice(item MixedObject) NativeFeaturesMixedObjectIter {
+	obj.mixedObjectSlice = append(obj.mixedObjectSlice, item)
+	return obj
+}
+
+func (obj *nativeFeatures) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.RequiredVal != nil {
+
+		obj.RequiredVal().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.OptionalVal != nil {
+
+		obj.OptionalVal().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.BoundaryVal != nil {
+
+		obj.BoundaryVal().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.RequiredValArray != nil {
+
+		obj.RequiredValArray().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.OptionalValArray != nil {
+
+		obj.OptionalValArray().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.BoundaryValArray != nil {
+
+		obj.BoundaryValArray().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.NestedRefObject != nil {
+
+		obj.NestedRefObject().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.MixedObject != nil {
+
+		obj.MixedObject().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.NumberTypeObject != nil {
+
+		obj.NumberTypeObject().validateObj(vObj, set_default)
+	}
+
+	if len(obj.obj.IterObject) != 0 {
+
+		if set_default {
+			obj.IterObject().clearHolderSlice()
+			for _, item := range obj.obj.IterObject {
+				obj.IterObject().appendHolderSlice(&mixedObject{obj: item})
+			}
+		}
+		for _, item := range obj.IterObject().Items() {
+			item.validateObj(vObj, set_default)
+		}
+
+	}
+
+}
+
+func (obj *nativeFeatures) setDefault() {
+
+}
+
+// ***** ExtendedFeatures *****
+type extendedFeatures struct {
+	validation
+	obj                         *openapi.ExtendedFeatures
+	marshaller                  marshalExtendedFeatures
+	unMarshaller                unMarshalExtendedFeatures
+	choiceValHolder             ChoiceVal
+	choiceValNoPropertiesHolder ChoiceValWithNoProperties
+	xStatusObjectHolder         XStatusObject
+	xEnumObjectHolder           XEnumObject
+	xFieldPatternObjectHolder   XFieldPatternObject
+}
+
+func NewExtendedFeatures() ExtendedFeatures {
+	obj := extendedFeatures{obj: &openapi.ExtendedFeatures{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *extendedFeatures) msg() *openapi.ExtendedFeatures {
+	return obj.obj
+}
+
+func (obj *extendedFeatures) setMsg(msg *openapi.ExtendedFeatures) ExtendedFeatures {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalextendedFeatures struct {
+	obj *extendedFeatures
+}
+
+type marshalExtendedFeatures interface {
+	// ToProto marshals ExtendedFeatures to protobuf object *openapi.ExtendedFeatures
+	ToProto() (*openapi.ExtendedFeatures, error)
+	// ToPbText marshals ExtendedFeatures to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ExtendedFeatures to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ExtendedFeatures to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalextendedFeatures struct {
+	obj *extendedFeatures
+}
+
+type unMarshalExtendedFeatures interface {
+	// FromProto unmarshals ExtendedFeatures from protobuf object *openapi.ExtendedFeatures
+	FromProto(msg *openapi.ExtendedFeatures) (ExtendedFeatures, error)
+	// FromPbText unmarshals ExtendedFeatures from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ExtendedFeatures from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ExtendedFeatures from JSON text
+	FromJson(value string) error
+}
+
+func (obj *extendedFeatures) Marshal() marshalExtendedFeatures {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalextendedFeatures{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *extendedFeatures) Unmarshal() unMarshalExtendedFeatures {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalextendedFeatures{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalextendedFeatures) ToProto() (*openapi.ExtendedFeatures, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalextendedFeatures) FromProto(msg *openapi.ExtendedFeatures) (ExtendedFeatures, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalextendedFeatures) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalextendedFeatures) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalextendedFeatures) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalextendedFeatures) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalextendedFeatures) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalextendedFeatures) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *extendedFeatures) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *extendedFeatures) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *extendedFeatures) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *extendedFeatures) Clone() (ExtendedFeatures, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewExtendedFeatures()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *extendedFeatures) setNil() {
+	obj.choiceValHolder = nil
+	obj.choiceValNoPropertiesHolder = nil
+	obj.xStatusObjectHolder = nil
+	obj.xEnumObjectHolder = nil
+	obj.xFieldPatternObjectHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// ExtendedFeatures is description is TBD
+type ExtendedFeatures interface {
+	Validation
+	// msg marshals ExtendedFeatures to protobuf object *openapi.ExtendedFeatures
+	// and doesn't set defaults
+	msg() *openapi.ExtendedFeatures
+	// setMsg unmarshals ExtendedFeatures from protobuf object *openapi.ExtendedFeatures
+	// and doesn't set defaults
+	setMsg(*openapi.ExtendedFeatures) ExtendedFeatures
+	// provides marshal interface
+	Marshal() marshalExtendedFeatures
+	// provides unmarshal interface
+	Unmarshal() unMarshalExtendedFeatures
+	// validate validates ExtendedFeatures
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ExtendedFeatures, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// ChoiceVal returns ChoiceVal, set in ExtendedFeatures.
+	// ChoiceVal is description is TBD
+	ChoiceVal() ChoiceVal
+	// SetChoiceVal assigns ChoiceVal provided by user to ExtendedFeatures.
+	// ChoiceVal is description is TBD
+	SetChoiceVal(value ChoiceVal) ExtendedFeatures
+	// HasChoiceVal checks if ChoiceVal has been set in ExtendedFeatures
+	HasChoiceVal() bool
+	// ChoiceValNoProperties returns ChoiceValWithNoProperties, set in ExtendedFeatures.
+	// ChoiceValWithNoProperties is description is TBD
+	ChoiceValNoProperties() ChoiceValWithNoProperties
+	// SetChoiceValNoProperties assigns ChoiceValWithNoProperties provided by user to ExtendedFeatures.
+	// ChoiceValWithNoProperties is description is TBD
+	SetChoiceValNoProperties(value ChoiceValWithNoProperties) ExtendedFeatures
+	// HasChoiceValNoProperties checks if ChoiceValNoProperties has been set in ExtendedFeatures
+	HasChoiceValNoProperties() bool
+	// XStatusObject returns XStatusObject, set in ExtendedFeatures.
+	// XStatusObject is description is TBD
+	XStatusObject() XStatusObject
+	// SetXStatusObject assigns XStatusObject provided by user to ExtendedFeatures.
+	// XStatusObject is description is TBD
+	SetXStatusObject(value XStatusObject) ExtendedFeatures
+	// HasXStatusObject checks if XStatusObject has been set in ExtendedFeatures
+	HasXStatusObject() bool
+	// XEnumObject returns XEnumObject, set in ExtendedFeatures.
+	// XEnumObject is description is TBD
+	XEnumObject() XEnumObject
+	// SetXEnumObject assigns XEnumObject provided by user to ExtendedFeatures.
+	// XEnumObject is description is TBD
+	SetXEnumObject(value XEnumObject) ExtendedFeatures
+	// HasXEnumObject checks if XEnumObject has been set in ExtendedFeatures
+	HasXEnumObject() bool
+	// XFieldPatternObject returns XFieldPatternObject, set in ExtendedFeatures.
+	// XFieldPatternObject is description is TBD
+	XFieldPatternObject() XFieldPatternObject
+	// SetXFieldPatternObject assigns XFieldPatternObject provided by user to ExtendedFeatures.
+	// XFieldPatternObject is description is TBD
+	SetXFieldPatternObject(value XFieldPatternObject) ExtendedFeatures
+	// HasXFieldPatternObject checks if XFieldPatternObject has been set in ExtendedFeatures
+	HasXFieldPatternObject() bool
+	setNil()
+}
+
+// description is TBD
+// ChoiceVal returns a ChoiceVal
+func (obj *extendedFeatures) ChoiceVal() ChoiceVal {
+	if obj.obj.ChoiceVal == nil {
+		obj.obj.ChoiceVal = NewChoiceVal().msg()
+	}
+	if obj.choiceValHolder == nil {
+		obj.choiceValHolder = &choiceVal{obj: obj.obj.ChoiceVal}
+	}
+	return obj.choiceValHolder
+}
+
+// description is TBD
+// ChoiceVal returns a ChoiceVal
+func (obj *extendedFeatures) HasChoiceVal() bool {
+	return obj.obj.ChoiceVal != nil
+}
+
+// description is TBD
+// SetChoiceVal sets the ChoiceVal value in the ExtendedFeatures object
+func (obj *extendedFeatures) SetChoiceVal(value ChoiceVal) ExtendedFeatures {
+
+	obj.choiceValHolder = nil
+	obj.obj.ChoiceVal = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ChoiceValNoProperties returns a ChoiceValWithNoProperties
+func (obj *extendedFeatures) ChoiceValNoProperties() ChoiceValWithNoProperties {
+	if obj.obj.ChoiceValNoProperties == nil {
+		obj.obj.ChoiceValNoProperties = NewChoiceValWithNoProperties().msg()
+	}
+	if obj.choiceValNoPropertiesHolder == nil {
+		obj.choiceValNoPropertiesHolder = &choiceValWithNoProperties{obj: obj.obj.ChoiceValNoProperties}
+	}
+	return obj.choiceValNoPropertiesHolder
+}
+
+// description is TBD
+// ChoiceValNoProperties returns a ChoiceValWithNoProperties
+func (obj *extendedFeatures) HasChoiceValNoProperties() bool {
+	return obj.obj.ChoiceValNoProperties != nil
+}
+
+// description is TBD
+// SetChoiceValNoProperties sets the ChoiceValWithNoProperties value in the ExtendedFeatures object
+func (obj *extendedFeatures) SetChoiceValNoProperties(value ChoiceValWithNoProperties) ExtendedFeatures {
+
+	obj.choiceValNoPropertiesHolder = nil
+	obj.obj.ChoiceValNoProperties = value.msg()
+
+	return obj
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// XStatusObject returns a XStatusObject
+func (obj *extendedFeatures) XStatusObject() XStatusObject {
+	if obj.obj.XStatusObject == nil {
+		obj.obj.XStatusObject = NewXStatusObject().msg()
+	}
+	if obj.xStatusObjectHolder == nil {
+		obj.xStatusObjectHolder = &xStatusObject{obj: obj.obj.XStatusObject}
+	}
+	return obj.xStatusObjectHolder
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// XStatusObject returns a XStatusObject
+func (obj *extendedFeatures) HasXStatusObject() bool {
+	return obj.obj.XStatusObject != nil
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// SetXStatusObject sets the XStatusObject value in the ExtendedFeatures object
+func (obj *extendedFeatures) SetXStatusObject(value XStatusObject) ExtendedFeatures {
+
+	obj.xStatusObjectHolder = nil
+	obj.obj.XStatusObject = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// XEnumObject returns a XEnumObject
+func (obj *extendedFeatures) XEnumObject() XEnumObject {
+	if obj.obj.XEnumObject == nil {
+		obj.obj.XEnumObject = NewXEnumObject().msg()
+	}
+	if obj.xEnumObjectHolder == nil {
+		obj.xEnumObjectHolder = &xEnumObject{obj: obj.obj.XEnumObject}
+	}
+	return obj.xEnumObjectHolder
+}
+
+// description is TBD
+// XEnumObject returns a XEnumObject
+func (obj *extendedFeatures) HasXEnumObject() bool {
+	return obj.obj.XEnumObject != nil
+}
+
+// description is TBD
+// SetXEnumObject sets the XEnumObject value in the ExtendedFeatures object
+func (obj *extendedFeatures) SetXEnumObject(value XEnumObject) ExtendedFeatures {
+
+	obj.xEnumObjectHolder = nil
+	obj.obj.XEnumObject = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// XFieldPatternObject returns a XFieldPatternObject
+func (obj *extendedFeatures) XFieldPatternObject() XFieldPatternObject {
+	if obj.obj.XFieldPatternObject == nil {
+		obj.obj.XFieldPatternObject = NewXFieldPatternObject().msg()
+	}
+	if obj.xFieldPatternObjectHolder == nil {
+		obj.xFieldPatternObjectHolder = &xFieldPatternObject{obj: obj.obj.XFieldPatternObject}
+	}
+	return obj.xFieldPatternObjectHolder
+}
+
+// description is TBD
+// XFieldPatternObject returns a XFieldPatternObject
+func (obj *extendedFeatures) HasXFieldPatternObject() bool {
+	return obj.obj.XFieldPatternObject != nil
+}
+
+// description is TBD
+// SetXFieldPatternObject sets the XFieldPatternObject value in the ExtendedFeatures object
+func (obj *extendedFeatures) SetXFieldPatternObject(value XFieldPatternObject) ExtendedFeatures {
+
+	obj.xFieldPatternObjectHolder = nil
+	obj.obj.XFieldPatternObject = value.msg()
+
+	return obj
+}
+
+func (obj *extendedFeatures) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.ChoiceVal != nil {
+
+		obj.ChoiceVal().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ChoiceValNoProperties != nil {
+
+		obj.ChoiceValNoProperties().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.XStatusObject != nil {
+		obj.addWarnings("XStatusObject property in schema ExtendedFeatures is under review, test under_review")
+		obj.XStatusObject().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.XEnumObject != nil {
+
+		obj.XEnumObject().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.XFieldPatternObject != nil {
+
+		obj.XFieldPatternObject().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *extendedFeatures) setDefault() {
+
+}
+
 // ***** Error *****
 type _error struct {
 	validation
@@ -23520,6 +25867,5752 @@ func (obj *requiredChoiceIntermediate) setDefault() {
 
 }
 
+// ***** RequiredVal *****
+type requiredVal struct {
+	validation
+	obj          *openapi.RequiredVal
+	marshaller   marshalRequiredVal
+	unMarshaller unMarshalRequiredVal
+}
+
+func NewRequiredVal() RequiredVal {
+	obj := requiredVal{obj: &openapi.RequiredVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *requiredVal) msg() *openapi.RequiredVal {
+	return obj.obj
+}
+
+func (obj *requiredVal) setMsg(msg *openapi.RequiredVal) RequiredVal {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalrequiredVal struct {
+	obj *requiredVal
+}
+
+type marshalRequiredVal interface {
+	// ToProto marshals RequiredVal to protobuf object *openapi.RequiredVal
+	ToProto() (*openapi.RequiredVal, error)
+	// ToPbText marshals RequiredVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredVal struct {
+	obj *requiredVal
+}
+
+type unMarshalRequiredVal interface {
+	// FromProto unmarshals RequiredVal from protobuf object *openapi.RequiredVal
+	FromProto(msg *openapi.RequiredVal) (RequiredVal, error)
+	// FromPbText unmarshals RequiredVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredVal) Marshal() marshalRequiredVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredVal) Unmarshal() unMarshalRequiredVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredVal) ToProto() (*openapi.RequiredVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalrequiredVal) FromProto(msg *openapi.RequiredVal) (RequiredVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalrequiredVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalrequiredVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalrequiredVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalrequiredVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *requiredVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *requiredVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *requiredVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *requiredVal) Clone() (RequiredVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewRequiredVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// RequiredVal is description is TBD
+type RequiredVal interface {
+	Validation
+	// msg marshals RequiredVal to protobuf object *openapi.RequiredVal
+	// and doesn't set defaults
+	msg() *openapi.RequiredVal
+	// setMsg unmarshals RequiredVal from protobuf object *openapi.RequiredVal
+	// and doesn't set defaults
+	setMsg(*openapi.RequiredVal) RequiredVal
+	// provides marshal interface
+	Marshal() marshalRequiredVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredVal
+	// validate validates RequiredVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (RequiredVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVal returns int32, set in RequiredVal.
+	IntVal() int32
+	// SetIntVal assigns int32 provided by user to RequiredVal
+	SetIntVal(value int32) RequiredVal
+	// NumVal returns float32, set in RequiredVal.
+	NumVal() float32
+	// SetNumVal assigns float32 provided by user to RequiredVal
+	SetNumVal(value float32) RequiredVal
+	// StrVal returns string, set in RequiredVal.
+	StrVal() string
+	// SetStrVal assigns string provided by user to RequiredVal
+	SetStrVal(value string) RequiredVal
+	// BoolVal returns bool, set in RequiredVal.
+	BoolVal() bool
+	// SetBoolVal assigns bool provided by user to RequiredVal
+	SetBoolVal(value bool) RequiredVal
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *requiredVal) IntVal() int32 {
+
+	return *obj.obj.IntVal
+
+}
+
+// description is TBD
+// SetIntVal sets the int32 value in the RequiredVal object
+func (obj *requiredVal) SetIntVal(value int32) RequiredVal {
+
+	obj.obj.IntVal = &value
+	return obj
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *requiredVal) NumVal() float32 {
+
+	return *obj.obj.NumVal
+
+}
+
+// description is TBD
+// SetNumVal sets the float32 value in the RequiredVal object
+func (obj *requiredVal) SetNumVal(value float32) RequiredVal {
+
+	obj.obj.NumVal = &value
+	return obj
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *requiredVal) StrVal() string {
+
+	return *obj.obj.StrVal
+
+}
+
+// description is TBD
+// SetStrVal sets the string value in the RequiredVal object
+func (obj *requiredVal) SetStrVal(value string) RequiredVal {
+
+	obj.obj.StrVal = &value
+	return obj
+}
+
+// description is TBD
+// BoolVal returns a bool
+func (obj *requiredVal) BoolVal() bool {
+
+	return *obj.obj.BoolVal
+
+}
+
+// description is TBD
+// SetBoolVal sets the bool value in the RequiredVal object
+func (obj *requiredVal) SetBoolVal(value bool) RequiredVal {
+
+	obj.obj.BoolVal = &value
+	return obj
+}
+
+func (obj *requiredVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	// IntVal is required
+	if obj.obj.IntVal == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "IntVal is required field on interface RequiredVal")
+	}
+
+	// NumVal is required
+	if obj.obj.NumVal == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "NumVal is required field on interface RequiredVal")
+	}
+
+	// StrVal is required
+	if obj.obj.StrVal == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "StrVal is required field on interface RequiredVal")
+	}
+
+	// BoolVal is required
+	if obj.obj.BoolVal == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "BoolVal is required field on interface RequiredVal")
+	}
+}
+
+func (obj *requiredVal) setDefault() {
+
+}
+
+// ***** OptionalVal *****
+type optionalVal struct {
+	validation
+	obj          *openapi.OptionalVal
+	marshaller   marshalOptionalVal
+	unMarshaller unMarshalOptionalVal
+}
+
+func NewOptionalVal() OptionalVal {
+	obj := optionalVal{obj: &openapi.OptionalVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *optionalVal) msg() *openapi.OptionalVal {
+	return obj.obj
+}
+
+func (obj *optionalVal) setMsg(msg *openapi.OptionalVal) OptionalVal {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshaloptionalVal struct {
+	obj *optionalVal
+}
+
+type marshalOptionalVal interface {
+	// ToProto marshals OptionalVal to protobuf object *openapi.OptionalVal
+	ToProto() (*openapi.OptionalVal, error)
+	// ToPbText marshals OptionalVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals OptionalVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals OptionalVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaloptionalVal struct {
+	obj *optionalVal
+}
+
+type unMarshalOptionalVal interface {
+	// FromProto unmarshals OptionalVal from protobuf object *openapi.OptionalVal
+	FromProto(msg *openapi.OptionalVal) (OptionalVal, error)
+	// FromPbText unmarshals OptionalVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals OptionalVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals OptionalVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *optionalVal) Marshal() marshalOptionalVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaloptionalVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *optionalVal) Unmarshal() unMarshalOptionalVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaloptionalVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaloptionalVal) ToProto() (*openapi.OptionalVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshaloptionalVal) FromProto(msg *openapi.OptionalVal) (OptionalVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshaloptionalVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshaloptionalVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshaloptionalVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloptionalVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshaloptionalVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloptionalVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *optionalVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *optionalVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *optionalVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *optionalVal) Clone() (OptionalVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewOptionalVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// OptionalVal is description is TBD
+type OptionalVal interface {
+	Validation
+	// msg marshals OptionalVal to protobuf object *openapi.OptionalVal
+	// and doesn't set defaults
+	msg() *openapi.OptionalVal
+	// setMsg unmarshals OptionalVal from protobuf object *openapi.OptionalVal
+	// and doesn't set defaults
+	setMsg(*openapi.OptionalVal) OptionalVal
+	// provides marshal interface
+	Marshal() marshalOptionalVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalOptionalVal
+	// validate validates OptionalVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (OptionalVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVal returns int32, set in OptionalVal.
+	IntVal() int32
+	// SetIntVal assigns int32 provided by user to OptionalVal
+	SetIntVal(value int32) OptionalVal
+	// HasIntVal checks if IntVal has been set in OptionalVal
+	HasIntVal() bool
+	// NumVal returns float32, set in OptionalVal.
+	NumVal() float32
+	// SetNumVal assigns float32 provided by user to OptionalVal
+	SetNumVal(value float32) OptionalVal
+	// HasNumVal checks if NumVal has been set in OptionalVal
+	HasNumVal() bool
+	// StrVal returns string, set in OptionalVal.
+	StrVal() string
+	// SetStrVal assigns string provided by user to OptionalVal
+	SetStrVal(value string) OptionalVal
+	// HasStrVal checks if StrVal has been set in OptionalVal
+	HasStrVal() bool
+	// BoolVal returns bool, set in OptionalVal.
+	BoolVal() bool
+	// SetBoolVal assigns bool provided by user to OptionalVal
+	SetBoolVal(value bool) OptionalVal
+	// HasBoolVal checks if BoolVal has been set in OptionalVal
+	HasBoolVal() bool
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *optionalVal) IntVal() int32 {
+
+	return *obj.obj.IntVal
+
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *optionalVal) HasIntVal() bool {
+	return obj.obj.IntVal != nil
+}
+
+// description is TBD
+// SetIntVal sets the int32 value in the OptionalVal object
+func (obj *optionalVal) SetIntVal(value int32) OptionalVal {
+
+	obj.obj.IntVal = &value
+	return obj
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *optionalVal) NumVal() float32 {
+
+	return *obj.obj.NumVal
+
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *optionalVal) HasNumVal() bool {
+	return obj.obj.NumVal != nil
+}
+
+// description is TBD
+// SetNumVal sets the float32 value in the OptionalVal object
+func (obj *optionalVal) SetNumVal(value float32) OptionalVal {
+
+	obj.obj.NumVal = &value
+	return obj
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *optionalVal) StrVal() string {
+
+	return *obj.obj.StrVal
+
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *optionalVal) HasStrVal() bool {
+	return obj.obj.StrVal != nil
+}
+
+// description is TBD
+// SetStrVal sets the string value in the OptionalVal object
+func (obj *optionalVal) SetStrVal(value string) OptionalVal {
+
+	obj.obj.StrVal = &value
+	return obj
+}
+
+// description is TBD
+// BoolVal returns a bool
+func (obj *optionalVal) BoolVal() bool {
+
+	return *obj.obj.BoolVal
+
+}
+
+// description is TBD
+// BoolVal returns a bool
+func (obj *optionalVal) HasBoolVal() bool {
+	return obj.obj.BoolVal != nil
+}
+
+// description is TBD
+// SetBoolVal sets the bool value in the OptionalVal object
+func (obj *optionalVal) SetBoolVal(value bool) OptionalVal {
+
+	obj.obj.BoolVal = &value
+	return obj
+}
+
+func (obj *optionalVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *optionalVal) setDefault() {
+	if obj.obj.IntVal == nil {
+		obj.SetIntVal(50)
+	}
+	if obj.obj.NumVal == nil {
+		obj.SetNumVal(50.05)
+	}
+	if obj.obj.StrVal == nil {
+		obj.SetStrVal("default_str_val")
+	}
+	if obj.obj.BoolVal == nil {
+		obj.SetBoolVal(true)
+	}
+
+}
+
+// ***** BoundaryVal *****
+type boundaryVal struct {
+	validation
+	obj          *openapi.BoundaryVal
+	marshaller   marshalBoundaryVal
+	unMarshaller unMarshalBoundaryVal
+}
+
+func NewBoundaryVal() BoundaryVal {
+	obj := boundaryVal{obj: &openapi.BoundaryVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *boundaryVal) msg() *openapi.BoundaryVal {
+	return obj.obj
+}
+
+func (obj *boundaryVal) setMsg(msg *openapi.BoundaryVal) BoundaryVal {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalboundaryVal struct {
+	obj *boundaryVal
+}
+
+type marshalBoundaryVal interface {
+	// ToProto marshals BoundaryVal to protobuf object *openapi.BoundaryVal
+	ToProto() (*openapi.BoundaryVal, error)
+	// ToPbText marshals BoundaryVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals BoundaryVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals BoundaryVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalboundaryVal struct {
+	obj *boundaryVal
+}
+
+type unMarshalBoundaryVal interface {
+	// FromProto unmarshals BoundaryVal from protobuf object *openapi.BoundaryVal
+	FromProto(msg *openapi.BoundaryVal) (BoundaryVal, error)
+	// FromPbText unmarshals BoundaryVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals BoundaryVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals BoundaryVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *boundaryVal) Marshal() marshalBoundaryVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalboundaryVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *boundaryVal) Unmarshal() unMarshalBoundaryVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalboundaryVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalboundaryVal) ToProto() (*openapi.BoundaryVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalboundaryVal) FromProto(msg *openapi.BoundaryVal) (BoundaryVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalboundaryVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalboundaryVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalboundaryVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalboundaryVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalboundaryVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalboundaryVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *boundaryVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *boundaryVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *boundaryVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *boundaryVal) Clone() (BoundaryVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewBoundaryVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// BoundaryVal is description is TBD
+type BoundaryVal interface {
+	Validation
+	// msg marshals BoundaryVal to protobuf object *openapi.BoundaryVal
+	// and doesn't set defaults
+	msg() *openapi.BoundaryVal
+	// setMsg unmarshals BoundaryVal from protobuf object *openapi.BoundaryVal
+	// and doesn't set defaults
+	setMsg(*openapi.BoundaryVal) BoundaryVal
+	// provides marshal interface
+	Marshal() marshalBoundaryVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalBoundaryVal
+	// validate validates BoundaryVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (BoundaryVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVal returns int32, set in BoundaryVal.
+	IntVal() int32
+	// SetIntVal assigns int32 provided by user to BoundaryVal
+	SetIntVal(value int32) BoundaryVal
+	// HasIntVal checks if IntVal has been set in BoundaryVal
+	HasIntVal() bool
+	// NumVal returns float32, set in BoundaryVal.
+	NumVal() float32
+	// SetNumVal assigns float32 provided by user to BoundaryVal
+	SetNumVal(value float32) BoundaryVal
+	// HasNumVal checks if NumVal has been set in BoundaryVal
+	HasNumVal() bool
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *boundaryVal) IntVal() int32 {
+
+	return *obj.obj.IntVal
+
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *boundaryVal) HasIntVal() bool {
+	return obj.obj.IntVal != nil
+}
+
+// description is TBD
+// SetIntVal sets the int32 value in the BoundaryVal object
+func (obj *boundaryVal) SetIntVal(value int32) BoundaryVal {
+
+	obj.obj.IntVal = &value
+	return obj
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *boundaryVal) NumVal() float32 {
+
+	return *obj.obj.NumVal
+
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *boundaryVal) HasNumVal() bool {
+	return obj.obj.NumVal != nil
+}
+
+// description is TBD
+// SetNumVal sets the float32 value in the BoundaryVal object
+func (obj *boundaryVal) SetNumVal(value float32) BoundaryVal {
+
+	obj.obj.NumVal = &value
+	return obj
+}
+
+func (obj *boundaryVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.IntVal != nil {
+
+		if *obj.obj.IntVal < 5 || *obj.obj.IntVal > 100 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("5 <= BoundaryVal.IntVal <= 100 but Got %d", *obj.obj.IntVal))
+		}
+
+	}
+
+	if obj.obj.NumVal != nil {
+
+		if *obj.obj.NumVal < 5.0 || *obj.obj.NumVal > 100.0 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("5.0 <= BoundaryVal.NumVal <= 100.0 but Got %f", *obj.obj.NumVal))
+		}
+
+	}
+
+}
+
+func (obj *boundaryVal) setDefault() {
+	if obj.obj.IntVal == nil {
+		obj.SetIntVal(50)
+	}
+	if obj.obj.NumVal == nil {
+		obj.SetNumVal(50.05)
+	}
+
+}
+
+// ***** RequiredValArray *****
+type requiredValArray struct {
+	validation
+	obj          *openapi.RequiredValArray
+	marshaller   marshalRequiredValArray
+	unMarshaller unMarshalRequiredValArray
+}
+
+func NewRequiredValArray() RequiredValArray {
+	obj := requiredValArray{obj: &openapi.RequiredValArray{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *requiredValArray) msg() *openapi.RequiredValArray {
+	return obj.obj
+}
+
+func (obj *requiredValArray) setMsg(msg *openapi.RequiredValArray) RequiredValArray {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalrequiredValArray struct {
+	obj *requiredValArray
+}
+
+type marshalRequiredValArray interface {
+	// ToProto marshals RequiredValArray to protobuf object *openapi.RequiredValArray
+	ToProto() (*openapi.RequiredValArray, error)
+	// ToPbText marshals RequiredValArray to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredValArray to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredValArray to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredValArray struct {
+	obj *requiredValArray
+}
+
+type unMarshalRequiredValArray interface {
+	// FromProto unmarshals RequiredValArray from protobuf object *openapi.RequiredValArray
+	FromProto(msg *openapi.RequiredValArray) (RequiredValArray, error)
+	// FromPbText unmarshals RequiredValArray from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredValArray from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredValArray from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredValArray) Marshal() marshalRequiredValArray {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredValArray{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredValArray) Unmarshal() unMarshalRequiredValArray {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredValArray{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredValArray) ToProto() (*openapi.RequiredValArray, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalrequiredValArray) FromProto(msg *openapi.RequiredValArray) (RequiredValArray, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalrequiredValArray) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalrequiredValArray) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalrequiredValArray) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredValArray) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalrequiredValArray) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredValArray) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *requiredValArray) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *requiredValArray) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *requiredValArray) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *requiredValArray) Clone() (RequiredValArray, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewRequiredValArray()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// RequiredValArray is description is TBD
+type RequiredValArray interface {
+	Validation
+	// msg marshals RequiredValArray to protobuf object *openapi.RequiredValArray
+	// and doesn't set defaults
+	msg() *openapi.RequiredValArray
+	// setMsg unmarshals RequiredValArray from protobuf object *openapi.RequiredValArray
+	// and doesn't set defaults
+	setMsg(*openapi.RequiredValArray) RequiredValArray
+	// provides marshal interface
+	Marshal() marshalRequiredValArray
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredValArray
+	// validate validates RequiredValArray
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (RequiredValArray, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVals returns []int32, set in RequiredValArray.
+	IntVals() []int32
+	// SetIntVals assigns []int32 provided by user to RequiredValArray
+	SetIntVals(value []int32) RequiredValArray
+	// NumVals returns []float32, set in RequiredValArray.
+	NumVals() []float32
+	// SetNumVals assigns []float32 provided by user to RequiredValArray
+	SetNumVals(value []float32) RequiredValArray
+	// StrVals returns []string, set in RequiredValArray.
+	StrVals() []string
+	// SetStrVals assigns []string provided by user to RequiredValArray
+	SetStrVals(value []string) RequiredValArray
+	// BoolVals returns []bool, set in RequiredValArray.
+	BoolVals() []bool
+	// SetBoolVals assigns []bool provided by user to RequiredValArray
+	SetBoolVals(value []bool) RequiredValArray
+}
+
+// description is TBD
+// IntVals returns a []int32
+func (obj *requiredValArray) IntVals() []int32 {
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	return obj.obj.IntVals
+}
+
+// description is TBD
+// SetIntVals sets the []int32 value in the RequiredValArray object
+func (obj *requiredValArray) SetIntVals(value []int32) RequiredValArray {
+
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	obj.obj.IntVals = value
+
+	return obj
+}
+
+// description is TBD
+// NumVals returns a []float32
+func (obj *requiredValArray) NumVals() []float32 {
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	return obj.obj.NumVals
+}
+
+// description is TBD
+// SetNumVals sets the []float32 value in the RequiredValArray object
+func (obj *requiredValArray) SetNumVals(value []float32) RequiredValArray {
+
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	obj.obj.NumVals = value
+
+	return obj
+}
+
+// description is TBD
+// StrVals returns a []string
+func (obj *requiredValArray) StrVals() []string {
+	if obj.obj.StrVals == nil {
+		obj.obj.StrVals = make([]string, 0)
+	}
+	return obj.obj.StrVals
+}
+
+// description is TBD
+// SetStrVals sets the []string value in the RequiredValArray object
+func (obj *requiredValArray) SetStrVals(value []string) RequiredValArray {
+
+	if obj.obj.StrVals == nil {
+		obj.obj.StrVals = make([]string, 0)
+	}
+	obj.obj.StrVals = value
+
+	return obj
+}
+
+// description is TBD
+// BoolVals returns a []bool
+func (obj *requiredValArray) BoolVals() []bool {
+	if obj.obj.BoolVals == nil {
+		obj.obj.BoolVals = make([]bool, 0)
+	}
+	return obj.obj.BoolVals
+}
+
+// description is TBD
+// SetBoolVals sets the []bool value in the RequiredValArray object
+func (obj *requiredValArray) SetBoolVals(value []bool) RequiredValArray {
+
+	if obj.obj.BoolVals == nil {
+		obj.obj.BoolVals = make([]bool, 0)
+	}
+	obj.obj.BoolVals = value
+
+	return obj
+}
+
+func (obj *requiredValArray) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *requiredValArray) setDefault() {
+
+}
+
+// ***** OptionalValArray *****
+type optionalValArray struct {
+	validation
+	obj          *openapi.OptionalValArray
+	marshaller   marshalOptionalValArray
+	unMarshaller unMarshalOptionalValArray
+}
+
+func NewOptionalValArray() OptionalValArray {
+	obj := optionalValArray{obj: &openapi.OptionalValArray{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *optionalValArray) msg() *openapi.OptionalValArray {
+	return obj.obj
+}
+
+func (obj *optionalValArray) setMsg(msg *openapi.OptionalValArray) OptionalValArray {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshaloptionalValArray struct {
+	obj *optionalValArray
+}
+
+type marshalOptionalValArray interface {
+	// ToProto marshals OptionalValArray to protobuf object *openapi.OptionalValArray
+	ToProto() (*openapi.OptionalValArray, error)
+	// ToPbText marshals OptionalValArray to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals OptionalValArray to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals OptionalValArray to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaloptionalValArray struct {
+	obj *optionalValArray
+}
+
+type unMarshalOptionalValArray interface {
+	// FromProto unmarshals OptionalValArray from protobuf object *openapi.OptionalValArray
+	FromProto(msg *openapi.OptionalValArray) (OptionalValArray, error)
+	// FromPbText unmarshals OptionalValArray from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals OptionalValArray from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals OptionalValArray from JSON text
+	FromJson(value string) error
+}
+
+func (obj *optionalValArray) Marshal() marshalOptionalValArray {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaloptionalValArray{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *optionalValArray) Unmarshal() unMarshalOptionalValArray {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaloptionalValArray{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaloptionalValArray) ToProto() (*openapi.OptionalValArray, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshaloptionalValArray) FromProto(msg *openapi.OptionalValArray) (OptionalValArray, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshaloptionalValArray) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshaloptionalValArray) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshaloptionalValArray) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloptionalValArray) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshaloptionalValArray) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloptionalValArray) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *optionalValArray) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *optionalValArray) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *optionalValArray) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *optionalValArray) Clone() (OptionalValArray, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewOptionalValArray()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// OptionalValArray is description is TBD
+type OptionalValArray interface {
+	Validation
+	// msg marshals OptionalValArray to protobuf object *openapi.OptionalValArray
+	// and doesn't set defaults
+	msg() *openapi.OptionalValArray
+	// setMsg unmarshals OptionalValArray from protobuf object *openapi.OptionalValArray
+	// and doesn't set defaults
+	setMsg(*openapi.OptionalValArray) OptionalValArray
+	// provides marshal interface
+	Marshal() marshalOptionalValArray
+	// provides unmarshal interface
+	Unmarshal() unMarshalOptionalValArray
+	// validate validates OptionalValArray
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (OptionalValArray, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVals returns []int32, set in OptionalValArray.
+	IntVals() []int32
+	// SetIntVals assigns []int32 provided by user to OptionalValArray
+	SetIntVals(value []int32) OptionalValArray
+	// NumVals returns []float32, set in OptionalValArray.
+	NumVals() []float32
+	// SetNumVals assigns []float32 provided by user to OptionalValArray
+	SetNumVals(value []float32) OptionalValArray
+	// StrVals returns []string, set in OptionalValArray.
+	StrVals() []string
+	// SetStrVals assigns []string provided by user to OptionalValArray
+	SetStrVals(value []string) OptionalValArray
+	// BoolVals returns []bool, set in OptionalValArray.
+	BoolVals() []bool
+	// SetBoolVals assigns []bool provided by user to OptionalValArray
+	SetBoolVals(value []bool) OptionalValArray
+}
+
+// description is TBD
+// IntVals returns a []int32
+func (obj *optionalValArray) IntVals() []int32 {
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	return obj.obj.IntVals
+}
+
+// description is TBD
+// SetIntVals sets the []int32 value in the OptionalValArray object
+func (obj *optionalValArray) SetIntVals(value []int32) OptionalValArray {
+
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	obj.obj.IntVals = value
+
+	return obj
+}
+
+// description is TBD
+// NumVals returns a []float32
+func (obj *optionalValArray) NumVals() []float32 {
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	return obj.obj.NumVals
+}
+
+// description is TBD
+// SetNumVals sets the []float32 value in the OptionalValArray object
+func (obj *optionalValArray) SetNumVals(value []float32) OptionalValArray {
+
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	obj.obj.NumVals = value
+
+	return obj
+}
+
+// description is TBD
+// StrVals returns a []string
+func (obj *optionalValArray) StrVals() []string {
+	if obj.obj.StrVals == nil {
+		obj.obj.StrVals = make([]string, 0)
+	}
+	return obj.obj.StrVals
+}
+
+// description is TBD
+// SetStrVals sets the []string value in the OptionalValArray object
+func (obj *optionalValArray) SetStrVals(value []string) OptionalValArray {
+
+	if obj.obj.StrVals == nil {
+		obj.obj.StrVals = make([]string, 0)
+	}
+	obj.obj.StrVals = value
+
+	return obj
+}
+
+// description is TBD
+// BoolVals returns a []bool
+func (obj *optionalValArray) BoolVals() []bool {
+	if obj.obj.BoolVals == nil {
+		obj.obj.BoolVals = make([]bool, 0)
+	}
+	return obj.obj.BoolVals
+}
+
+// description is TBD
+// SetBoolVals sets the []bool value in the OptionalValArray object
+func (obj *optionalValArray) SetBoolVals(value []bool) OptionalValArray {
+
+	if obj.obj.BoolVals == nil {
+		obj.obj.BoolVals = make([]bool, 0)
+	}
+	obj.obj.BoolVals = value
+
+	return obj
+}
+
+func (obj *optionalValArray) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *optionalValArray) setDefault() {
+	if obj.obj.IntVals == nil {
+		obj.SetIntVals([]int32{10, 20})
+	}
+	if obj.obj.NumVals == nil {
+		obj.SetNumVals([]float32{10.01, 20.02})
+	}
+	if obj.obj.StrVals == nil {
+		obj.SetStrVals([]string{"first_str", "second_str"})
+	}
+
+}
+
+// ***** BoundaryValArray *****
+type boundaryValArray struct {
+	validation
+	obj          *openapi.BoundaryValArray
+	marshaller   marshalBoundaryValArray
+	unMarshaller unMarshalBoundaryValArray
+}
+
+func NewBoundaryValArray() BoundaryValArray {
+	obj := boundaryValArray{obj: &openapi.BoundaryValArray{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *boundaryValArray) msg() *openapi.BoundaryValArray {
+	return obj.obj
+}
+
+func (obj *boundaryValArray) setMsg(msg *openapi.BoundaryValArray) BoundaryValArray {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalboundaryValArray struct {
+	obj *boundaryValArray
+}
+
+type marshalBoundaryValArray interface {
+	// ToProto marshals BoundaryValArray to protobuf object *openapi.BoundaryValArray
+	ToProto() (*openapi.BoundaryValArray, error)
+	// ToPbText marshals BoundaryValArray to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals BoundaryValArray to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals BoundaryValArray to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalboundaryValArray struct {
+	obj *boundaryValArray
+}
+
+type unMarshalBoundaryValArray interface {
+	// FromProto unmarshals BoundaryValArray from protobuf object *openapi.BoundaryValArray
+	FromProto(msg *openapi.BoundaryValArray) (BoundaryValArray, error)
+	// FromPbText unmarshals BoundaryValArray from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals BoundaryValArray from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals BoundaryValArray from JSON text
+	FromJson(value string) error
+}
+
+func (obj *boundaryValArray) Marshal() marshalBoundaryValArray {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalboundaryValArray{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *boundaryValArray) Unmarshal() unMarshalBoundaryValArray {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalboundaryValArray{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalboundaryValArray) ToProto() (*openapi.BoundaryValArray, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalboundaryValArray) FromProto(msg *openapi.BoundaryValArray) (BoundaryValArray, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalboundaryValArray) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalboundaryValArray) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalboundaryValArray) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalboundaryValArray) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalboundaryValArray) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalboundaryValArray) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *boundaryValArray) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *boundaryValArray) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *boundaryValArray) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *boundaryValArray) Clone() (BoundaryValArray, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewBoundaryValArray()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// BoundaryValArray is description is TBD
+type BoundaryValArray interface {
+	Validation
+	// msg marshals BoundaryValArray to protobuf object *openapi.BoundaryValArray
+	// and doesn't set defaults
+	msg() *openapi.BoundaryValArray
+	// setMsg unmarshals BoundaryValArray from protobuf object *openapi.BoundaryValArray
+	// and doesn't set defaults
+	setMsg(*openapi.BoundaryValArray) BoundaryValArray
+	// provides marshal interface
+	Marshal() marshalBoundaryValArray
+	// provides unmarshal interface
+	Unmarshal() unMarshalBoundaryValArray
+	// validate validates BoundaryValArray
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (BoundaryValArray, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// IntVals returns []int32, set in BoundaryValArray.
+	IntVals() []int32
+	// SetIntVals assigns []int32 provided by user to BoundaryValArray
+	SetIntVals(value []int32) BoundaryValArray
+	// NumVals returns []float32, set in BoundaryValArray.
+	NumVals() []float32
+	// SetNumVals assigns []float32 provided by user to BoundaryValArray
+	SetNumVals(value []float32) BoundaryValArray
+}
+
+// description is TBD
+// IntVals returns a []int32
+func (obj *boundaryValArray) IntVals() []int32 {
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	return obj.obj.IntVals
+}
+
+// description is TBD
+// SetIntVals sets the []int32 value in the BoundaryValArray object
+func (obj *boundaryValArray) SetIntVals(value []int32) BoundaryValArray {
+
+	if obj.obj.IntVals == nil {
+		obj.obj.IntVals = make([]int32, 0)
+	}
+	obj.obj.IntVals = value
+
+	return obj
+}
+
+// description is TBD
+// NumVals returns a []float32
+func (obj *boundaryValArray) NumVals() []float32 {
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	return obj.obj.NumVals
+}
+
+// description is TBD
+// SetNumVals sets the []float32 value in the BoundaryValArray object
+func (obj *boundaryValArray) SetNumVals(value []float32) BoundaryValArray {
+
+	if obj.obj.NumVals == nil {
+		obj.obj.NumVals = make([]float32, 0)
+	}
+	obj.obj.NumVals = value
+
+	return obj
+}
+
+func (obj *boundaryValArray) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.IntVals != nil {
+
+		for _, item := range obj.obj.IntVals {
+			if item < 5 || item > 100 {
+				vObj.validationErrors = append(
+					vObj.validationErrors,
+					fmt.Sprintf("5 <= BoundaryValArray.IntVals <= 100 but Got %d", item))
+			}
+
+		}
+
+	}
+
+	if obj.obj.NumVals != nil {
+
+		for _, item := range obj.obj.NumVals {
+			if item < 5.0 || item > 100.0 {
+				vObj.validationErrors = append(
+					vObj.validationErrors,
+					fmt.Sprintf("5.0 <= BoundaryValArray.NumVals <= 100.0 but Got %f", item))
+			}
+
+		}
+
+	}
+
+}
+
+func (obj *boundaryValArray) setDefault() {
+
+}
+
+// ***** NestedRefObject *****
+type nestedRefObject struct {
+	validation
+	obj                    *openapi.NestedRefObject
+	marshaller             marshalNestedRefObject
+	unMarshaller           unMarshalNestedRefObject
+	intermediateNodeHolder IntermediateRefObject
+}
+
+func NewNestedRefObject() NestedRefObject {
+	obj := nestedRefObject{obj: &openapi.NestedRefObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *nestedRefObject) msg() *openapi.NestedRefObject {
+	return obj.obj
+}
+
+func (obj *nestedRefObject) setMsg(msg *openapi.NestedRefObject) NestedRefObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalnestedRefObject struct {
+	obj *nestedRefObject
+}
+
+type marshalNestedRefObject interface {
+	// ToProto marshals NestedRefObject to protobuf object *openapi.NestedRefObject
+	ToProto() (*openapi.NestedRefObject, error)
+	// ToPbText marshals NestedRefObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals NestedRefObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals NestedRefObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalnestedRefObject struct {
+	obj *nestedRefObject
+}
+
+type unMarshalNestedRefObject interface {
+	// FromProto unmarshals NestedRefObject from protobuf object *openapi.NestedRefObject
+	FromProto(msg *openapi.NestedRefObject) (NestedRefObject, error)
+	// FromPbText unmarshals NestedRefObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals NestedRefObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals NestedRefObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *nestedRefObject) Marshal() marshalNestedRefObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalnestedRefObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *nestedRefObject) Unmarshal() unMarshalNestedRefObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalnestedRefObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalnestedRefObject) ToProto() (*openapi.NestedRefObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalnestedRefObject) FromProto(msg *openapi.NestedRefObject) (NestedRefObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalnestedRefObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalnestedRefObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalnestedRefObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnestedRefObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalnestedRefObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnestedRefObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *nestedRefObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *nestedRefObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *nestedRefObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *nestedRefObject) Clone() (NestedRefObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewNestedRefObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *nestedRefObject) setNil() {
+	obj.intermediateNodeHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// NestedRefObject is description is TBD
+type NestedRefObject interface {
+	Validation
+	// msg marshals NestedRefObject to protobuf object *openapi.NestedRefObject
+	// and doesn't set defaults
+	msg() *openapi.NestedRefObject
+	// setMsg unmarshals NestedRefObject from protobuf object *openapi.NestedRefObject
+	// and doesn't set defaults
+	setMsg(*openapi.NestedRefObject) NestedRefObject
+	// provides marshal interface
+	Marshal() marshalNestedRefObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalNestedRefObject
+	// validate validates NestedRefObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (NestedRefObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Name returns string, set in NestedRefObject.
+	Name() string
+	// SetName assigns string provided by user to NestedRefObject
+	SetName(value string) NestedRefObject
+	// HasName checks if Name has been set in NestedRefObject
+	HasName() bool
+	// IntermediateNode returns IntermediateRefObject, set in NestedRefObject.
+	// IntermediateRefObject is description is TBD
+	IntermediateNode() IntermediateRefObject
+	// SetIntermediateNode assigns IntermediateRefObject provided by user to NestedRefObject.
+	// IntermediateRefObject is description is TBD
+	SetIntermediateNode(value IntermediateRefObject) NestedRefObject
+	// HasIntermediateNode checks if IntermediateNode has been set in NestedRefObject
+	HasIntermediateNode() bool
+	setNil()
+}
+
+// description is TBD
+// Name returns a string
+func (obj *nestedRefObject) Name() string {
+
+	return *obj.obj.Name
+
+}
+
+// description is TBD
+// Name returns a string
+func (obj *nestedRefObject) HasName() bool {
+	return obj.obj.Name != nil
+}
+
+// description is TBD
+// SetName sets the string value in the NestedRefObject object
+func (obj *nestedRefObject) SetName(value string) NestedRefObject {
+
+	obj.obj.Name = &value
+	return obj
+}
+
+// description is TBD
+// IntermediateNode returns a IntermediateRefObject
+func (obj *nestedRefObject) IntermediateNode() IntermediateRefObject {
+	if obj.obj.IntermediateNode == nil {
+		obj.obj.IntermediateNode = NewIntermediateRefObject().msg()
+	}
+	if obj.intermediateNodeHolder == nil {
+		obj.intermediateNodeHolder = &intermediateRefObject{obj: obj.obj.IntermediateNode}
+	}
+	return obj.intermediateNodeHolder
+}
+
+// description is TBD
+// IntermediateNode returns a IntermediateRefObject
+func (obj *nestedRefObject) HasIntermediateNode() bool {
+	return obj.obj.IntermediateNode != nil
+}
+
+// description is TBD
+// SetIntermediateNode sets the IntermediateRefObject value in the NestedRefObject object
+func (obj *nestedRefObject) SetIntermediateNode(value IntermediateRefObject) NestedRefObject {
+
+	obj.intermediateNodeHolder = nil
+	obj.obj.IntermediateNode = value.msg()
+
+	return obj
+}
+
+func (obj *nestedRefObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.IntermediateNode != nil {
+
+		obj.IntermediateNode().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *nestedRefObject) setDefault() {
+
+}
+
+// ***** MixedObject *****
+type mixedObject struct {
+	validation
+	obj          *openapi.MixedObject
+	marshaller   marshalMixedObject
+	unMarshaller unMarshalMixedObject
+}
+
+func NewMixedObject() MixedObject {
+	obj := mixedObject{obj: &openapi.MixedObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *mixedObject) msg() *openapi.MixedObject {
+	return obj.obj
+}
+
+func (obj *mixedObject) setMsg(msg *openapi.MixedObject) MixedObject {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalmixedObject struct {
+	obj *mixedObject
+}
+
+type marshalMixedObject interface {
+	// ToProto marshals MixedObject to protobuf object *openapi.MixedObject
+	ToProto() (*openapi.MixedObject, error)
+	// ToPbText marshals MixedObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MixedObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MixedObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmixedObject struct {
+	obj *mixedObject
+}
+
+type unMarshalMixedObject interface {
+	// FromProto unmarshals MixedObject from protobuf object *openapi.MixedObject
+	FromProto(msg *openapi.MixedObject) (MixedObject, error)
+	// FromPbText unmarshals MixedObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MixedObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MixedObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *mixedObject) Marshal() marshalMixedObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmixedObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *mixedObject) Unmarshal() unMarshalMixedObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmixedObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmixedObject) ToProto() (*openapi.MixedObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalmixedObject) FromProto(msg *openapi.MixedObject) (MixedObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalmixedObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalmixedObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalmixedObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmixedObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalmixedObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmixedObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *mixedObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *mixedObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *mixedObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *mixedObject) Clone() (MixedObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewMixedObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// MixedObject is format validation object
+type MixedObject interface {
+	Validation
+	// msg marshals MixedObject to protobuf object *openapi.MixedObject
+	// and doesn't set defaults
+	msg() *openapi.MixedObject
+	// setMsg unmarshals MixedObject from protobuf object *openapi.MixedObject
+	// and doesn't set defaults
+	setMsg(*openapi.MixedObject) MixedObject
+	// provides marshal interface
+	Marshal() marshalMixedObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalMixedObject
+	// validate validates MixedObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (MixedObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// StringParam returns string, set in MixedObject.
+	StringParam() string
+	// SetStringParam assigns string provided by user to MixedObject
+	SetStringParam(value string) MixedObject
+	// HasStringParam checks if StringParam has been set in MixedObject
+	HasStringParam() bool
+	// Integer returns int32, set in MixedObject.
+	Integer() int32
+	// SetInteger assigns int32 provided by user to MixedObject
+	SetInteger(value int32) MixedObject
+	// HasInteger checks if Integer has been set in MixedObject
+	HasInteger() bool
+	// Float returns float32, set in MixedObject.
+	Float() float32
+	// SetFloat assigns float32 provided by user to MixedObject
+	SetFloat(value float32) MixedObject
+	// HasFloat checks if Float has been set in MixedObject
+	HasFloat() bool
+	// Double returns float64, set in MixedObject.
+	Double() float64
+	// SetDouble assigns float64 provided by user to MixedObject
+	SetDouble(value float64) MixedObject
+	// HasDouble checks if Double has been set in MixedObject
+	HasDouble() bool
+	// Mac returns string, set in MixedObject.
+	Mac() string
+	// SetMac assigns string provided by user to MixedObject
+	SetMac(value string) MixedObject
+	// HasMac checks if Mac has been set in MixedObject
+	HasMac() bool
+	// Ipv4 returns string, set in MixedObject.
+	Ipv4() string
+	// SetIpv4 assigns string provided by user to MixedObject
+	SetIpv4(value string) MixedObject
+	// HasIpv4 checks if Ipv4 has been set in MixedObject
+	HasIpv4() bool
+	// Ipv6 returns string, set in MixedObject.
+	Ipv6() string
+	// SetIpv6 assigns string provided by user to MixedObject
+	SetIpv6(value string) MixedObject
+	// HasIpv6 checks if Ipv6 has been set in MixedObject
+	HasIpv6() bool
+	// Hex returns string, set in MixedObject.
+	Hex() string
+	// SetHex assigns string provided by user to MixedObject
+	SetHex(value string) MixedObject
+	// HasHex checks if Hex has been set in MixedObject
+	HasHex() bool
+	// StrLen returns string, set in MixedObject.
+	StrLen() string
+	// SetStrLen assigns string provided by user to MixedObject
+	SetStrLen(value string) MixedObject
+	// HasStrLen checks if StrLen has been set in MixedObject
+	HasStrLen() bool
+	// Integer641 returns int64, set in MixedObject.
+	Integer641() int64
+	// SetInteger641 assigns int64 provided by user to MixedObject
+	SetInteger641(value int64) MixedObject
+	// HasInteger641 checks if Integer641 has been set in MixedObject
+	HasInteger641() bool
+	// Integer642 returns int64, set in MixedObject.
+	Integer642() int64
+	// SetInteger642 assigns int64 provided by user to MixedObject
+	SetInteger642(value int64) MixedObject
+	// HasInteger642 checks if Integer642 has been set in MixedObject
+	HasInteger642() bool
+	// Integer64List returns []int64, set in MixedObject.
+	Integer64List() []int64
+	// SetInteger64List assigns []int64 provided by user to MixedObject
+	SetInteger64List(value []int64) MixedObject
+}
+
+// description is TBD
+// StringParam returns a string
+func (obj *mixedObject) StringParam() string {
+
+	return *obj.obj.StringParam
+
+}
+
+// description is TBD
+// StringParam returns a string
+func (obj *mixedObject) HasStringParam() bool {
+	return obj.obj.StringParam != nil
+}
+
+// description is TBD
+// SetStringParam sets the string value in the MixedObject object
+func (obj *mixedObject) SetStringParam(value string) MixedObject {
+
+	obj.obj.StringParam = &value
+	return obj
+}
+
+// description is TBD
+// Integer returns a int32
+func (obj *mixedObject) Integer() int32 {
+
+	return *obj.obj.Integer
+
+}
+
+// description is TBD
+// Integer returns a int32
+func (obj *mixedObject) HasInteger() bool {
+	return obj.obj.Integer != nil
+}
+
+// description is TBD
+// SetInteger sets the int32 value in the MixedObject object
+func (obj *mixedObject) SetInteger(value int32) MixedObject {
+
+	obj.obj.Integer = &value
+	return obj
+}
+
+// description is TBD
+// Float returns a float32
+func (obj *mixedObject) Float() float32 {
+
+	return *obj.obj.Float
+
+}
+
+// description is TBD
+// Float returns a float32
+func (obj *mixedObject) HasFloat() bool {
+	return obj.obj.Float != nil
+}
+
+// description is TBD
+// SetFloat sets the float32 value in the MixedObject object
+func (obj *mixedObject) SetFloat(value float32) MixedObject {
+
+	obj.obj.Float = &value
+	return obj
+}
+
+// description is TBD
+// Double returns a float64
+func (obj *mixedObject) Double() float64 {
+
+	return *obj.obj.Double
+
+}
+
+// description is TBD
+// Double returns a float64
+func (obj *mixedObject) HasDouble() bool {
+	return obj.obj.Double != nil
+}
+
+// description is TBD
+// SetDouble sets the float64 value in the MixedObject object
+func (obj *mixedObject) SetDouble(value float64) MixedObject {
+
+	obj.obj.Double = &value
+	return obj
+}
+
+// description is TBD
+// Mac returns a string
+func (obj *mixedObject) Mac() string {
+
+	return *obj.obj.Mac
+
+}
+
+// description is TBD
+// Mac returns a string
+func (obj *mixedObject) HasMac() bool {
+	return obj.obj.Mac != nil
+}
+
+// description is TBD
+// SetMac sets the string value in the MixedObject object
+func (obj *mixedObject) SetMac(value string) MixedObject {
+
+	obj.obj.Mac = &value
+	return obj
+}
+
+// description is TBD
+// Ipv4 returns a string
+func (obj *mixedObject) Ipv4() string {
+
+	return *obj.obj.Ipv4
+
+}
+
+// description is TBD
+// Ipv4 returns a string
+func (obj *mixedObject) HasIpv4() bool {
+	return obj.obj.Ipv4 != nil
+}
+
+// description is TBD
+// SetIpv4 sets the string value in the MixedObject object
+func (obj *mixedObject) SetIpv4(value string) MixedObject {
+
+	obj.obj.Ipv4 = &value
+	return obj
+}
+
+// description is TBD
+// Ipv6 returns a string
+func (obj *mixedObject) Ipv6() string {
+
+	return *obj.obj.Ipv6
+
+}
+
+// description is TBD
+// Ipv6 returns a string
+func (obj *mixedObject) HasIpv6() bool {
+	return obj.obj.Ipv6 != nil
+}
+
+// description is TBD
+// SetIpv6 sets the string value in the MixedObject object
+func (obj *mixedObject) SetIpv6(value string) MixedObject {
+
+	obj.obj.Ipv6 = &value
+	return obj
+}
+
+// description is TBD
+// Hex returns a string
+func (obj *mixedObject) Hex() string {
+
+	return *obj.obj.Hex
+
+}
+
+// description is TBD
+// Hex returns a string
+func (obj *mixedObject) HasHex() bool {
+	return obj.obj.Hex != nil
+}
+
+// description is TBD
+// SetHex sets the string value in the MixedObject object
+func (obj *mixedObject) SetHex(value string) MixedObject {
+
+	obj.obj.Hex = &value
+	return obj
+}
+
+// Under Review: Information TBD
+//
+// Description TBD
+// StrLen returns a string
+func (obj *mixedObject) StrLen() string {
+
+	return *obj.obj.StrLen
+
+}
+
+// Under Review: Information TBD
+//
+// Description TBD
+// StrLen returns a string
+func (obj *mixedObject) HasStrLen() bool {
+	return obj.obj.StrLen != nil
+}
+
+// Under Review: Information TBD
+//
+// Description TBD
+// SetStrLen sets the string value in the MixedObject object
+func (obj *mixedObject) SetStrLen(value string) MixedObject {
+
+	obj.obj.StrLen = &value
+	return obj
+}
+
+// int64 type
+// Integer641 returns a int64
+func (obj *mixedObject) Integer641() int64 {
+
+	return *obj.obj.Integer64_1
+
+}
+
+// int64 type
+// Integer641 returns a int64
+func (obj *mixedObject) HasInteger641() bool {
+	return obj.obj.Integer64_1 != nil
+}
+
+// int64 type
+// SetInteger641 sets the int64 value in the MixedObject object
+func (obj *mixedObject) SetInteger641(value int64) MixedObject {
+
+	obj.obj.Integer64_1 = &value
+	return obj
+}
+
+// description is TBD
+// Integer642 returns a int64
+func (obj *mixedObject) Integer642() int64 {
+
+	return *obj.obj.Integer64_2
+
+}
+
+// description is TBD
+// Integer642 returns a int64
+func (obj *mixedObject) HasInteger642() bool {
+	return obj.obj.Integer64_2 != nil
+}
+
+// description is TBD
+// SetInteger642 sets the int64 value in the MixedObject object
+func (obj *mixedObject) SetInteger642(value int64) MixedObject {
+
+	obj.obj.Integer64_2 = &value
+	return obj
+}
+
+// int64 type list
+// Integer64List returns a []int64
+func (obj *mixedObject) Integer64List() []int64 {
+	if obj.obj.Integer64List == nil {
+		obj.obj.Integer64List = make([]int64, 0)
+	}
+	return obj.obj.Integer64List
+}
+
+// int64 type list
+// SetInteger64List sets the []int64 value in the MixedObject object
+func (obj *mixedObject) SetInteger64List(value []int64) MixedObject {
+
+	if obj.obj.Integer64List == nil {
+		obj.obj.Integer64List = make([]int64, 0)
+	}
+	obj.obj.Integer64List = value
+
+	return obj
+}
+
+func (obj *mixedObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Integer != nil {
+
+		if *obj.obj.Integer < 10 || *obj.obj.Integer > 90 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("10 <= MixedObject.Integer <= 90 but Got %d", *obj.obj.Integer))
+		}
+
+	}
+
+	if obj.obj.Mac != nil {
+
+		err := obj.validateMac(obj.Mac())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MixedObject.Mac"))
+		}
+
+	}
+
+	if obj.obj.Ipv4 != nil {
+
+		err := obj.validateIpv4(obj.Ipv4())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MixedObject.Ipv4"))
+		}
+
+	}
+
+	if obj.obj.Ipv6 != nil {
+
+		err := obj.validateIpv6(obj.Ipv6())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MixedObject.Ipv6"))
+		}
+
+	}
+
+	if obj.obj.Hex != nil {
+
+		err := obj.validateHex(obj.Hex())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MixedObject.Hex"))
+		}
+
+	}
+
+	if obj.obj.StrLen != nil {
+		obj.addWarnings("StrLen property in schema MixedObject is under review, Information TBD")
+		if len(*obj.obj.StrLen) < 3 || len(*obj.obj.StrLen) > 6 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf(
+					"3 <= length of MixedObject.StrLen <= 6 but Got %d",
+					len(*obj.obj.StrLen)))
+		}
+
+	}
+
+	if obj.obj.Integer64_2 != nil {
+
+		if *obj.obj.Integer64_2 < 0 || *obj.obj.Integer64_2 > 4261412864 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= MixedObject.Integer64_2 <= 4261412864 but Got %d", *obj.obj.Integer64_2))
+		}
+
+	}
+
+	if obj.obj.Integer64List != nil {
+
+		for _, item := range obj.obj.Integer64List {
+			if item < 0 || item > 4261412864 {
+				vObj.validationErrors = append(
+					vObj.validationErrors,
+					fmt.Sprintf("0 <= MixedObject.Integer64List <= 4261412864 but Got %d", item))
+			}
+
+		}
+
+	}
+
+}
+
+func (obj *mixedObject) setDefault() {
+	if obj.obj.StringParam == nil {
+		obj.SetStringParam("asdf")
+	}
+	if obj.obj.Integer == nil {
+		obj.SetInteger(88)
+	}
+	if obj.obj.Float == nil {
+		obj.SetFloat(22.2)
+	}
+	if obj.obj.Double == nil {
+		obj.SetDouble(2342.22)
+	}
+	if obj.obj.Mac == nil {
+		obj.SetMac("00:00:fa:ce:fa:ce")
+	}
+	if obj.obj.Ipv4 == nil {
+		obj.SetIpv4("1.1.1.1")
+	}
+	if obj.obj.Ipv6 == nil {
+		obj.SetIpv6("::02")
+	}
+	if obj.obj.Hex == nil {
+		obj.SetHex("0102030405060708090a0b0c0d0e0f")
+	}
+
+}
+
+// ***** NumberTypeObject *****
+type numberTypeObject struct {
+	validation
+	obj          *openapi.NumberTypeObject
+	marshaller   marshalNumberTypeObject
+	unMarshaller unMarshalNumberTypeObject
+}
+
+func NewNumberTypeObject() NumberTypeObject {
+	obj := numberTypeObject{obj: &openapi.NumberTypeObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *numberTypeObject) msg() *openapi.NumberTypeObject {
+	return obj.obj
+}
+
+func (obj *numberTypeObject) setMsg(msg *openapi.NumberTypeObject) NumberTypeObject {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalnumberTypeObject struct {
+	obj *numberTypeObject
+}
+
+type marshalNumberTypeObject interface {
+	// ToProto marshals NumberTypeObject to protobuf object *openapi.NumberTypeObject
+	ToProto() (*openapi.NumberTypeObject, error)
+	// ToPbText marshals NumberTypeObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals NumberTypeObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals NumberTypeObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalnumberTypeObject struct {
+	obj *numberTypeObject
+}
+
+type unMarshalNumberTypeObject interface {
+	// FromProto unmarshals NumberTypeObject from protobuf object *openapi.NumberTypeObject
+	FromProto(msg *openapi.NumberTypeObject) (NumberTypeObject, error)
+	// FromPbText unmarshals NumberTypeObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals NumberTypeObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals NumberTypeObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *numberTypeObject) Marshal() marshalNumberTypeObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalnumberTypeObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *numberTypeObject) Unmarshal() unMarshalNumberTypeObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalnumberTypeObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalnumberTypeObject) ToProto() (*openapi.NumberTypeObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalnumberTypeObject) FromProto(msg *openapi.NumberTypeObject) (NumberTypeObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalnumberTypeObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalnumberTypeObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalnumberTypeObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnumberTypeObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalnumberTypeObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalnumberTypeObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *numberTypeObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *numberTypeObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *numberTypeObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *numberTypeObject) Clone() (NumberTypeObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewNumberTypeObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// NumberTypeObject is description is TBD
+type NumberTypeObject interface {
+	Validation
+	// msg marshals NumberTypeObject to protobuf object *openapi.NumberTypeObject
+	// and doesn't set defaults
+	msg() *openapi.NumberTypeObject
+	// setMsg unmarshals NumberTypeObject from protobuf object *openapi.NumberTypeObject
+	// and doesn't set defaults
+	setMsg(*openapi.NumberTypeObject) NumberTypeObject
+	// provides marshal interface
+	Marshal() marshalNumberTypeObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalNumberTypeObject
+	// validate validates NumberTypeObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (NumberTypeObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// ValidateUint321 returns uint32, set in NumberTypeObject.
+	ValidateUint321() uint32
+	// SetValidateUint321 assigns uint32 provided by user to NumberTypeObject
+	SetValidateUint321(value uint32) NumberTypeObject
+	// HasValidateUint321 checks if ValidateUint321 has been set in NumberTypeObject
+	HasValidateUint321() bool
+	// ValidateUint322 returns uint32, set in NumberTypeObject.
+	ValidateUint322() uint32
+	// SetValidateUint322 assigns uint32 provided by user to NumberTypeObject
+	SetValidateUint322(value uint32) NumberTypeObject
+	// HasValidateUint322 checks if ValidateUint322 has been set in NumberTypeObject
+	HasValidateUint322() bool
+	// ValidateUint641 returns uint64, set in NumberTypeObject.
+	ValidateUint641() uint64
+	// SetValidateUint641 assigns uint64 provided by user to NumberTypeObject
+	SetValidateUint641(value uint64) NumberTypeObject
+	// HasValidateUint641 checks if ValidateUint641 has been set in NumberTypeObject
+	HasValidateUint641() bool
+	// ValidateUint642 returns uint64, set in NumberTypeObject.
+	ValidateUint642() uint64
+	// SetValidateUint642 assigns uint64 provided by user to NumberTypeObject
+	SetValidateUint642(value uint64) NumberTypeObject
+	// HasValidateUint642 checks if ValidateUint642 has been set in NumberTypeObject
+	HasValidateUint642() bool
+	// ValidateInt321 returns int32, set in NumberTypeObject.
+	ValidateInt321() int32
+	// SetValidateInt321 assigns int32 provided by user to NumberTypeObject
+	SetValidateInt321(value int32) NumberTypeObject
+	// HasValidateInt321 checks if ValidateInt321 has been set in NumberTypeObject
+	HasValidateInt321() bool
+	// ValidateInt322 returns int32, set in NumberTypeObject.
+	ValidateInt322() int32
+	// SetValidateInt322 assigns int32 provided by user to NumberTypeObject
+	SetValidateInt322(value int32) NumberTypeObject
+	// HasValidateInt322 checks if ValidateInt322 has been set in NumberTypeObject
+	HasValidateInt322() bool
+	// ValidateInt641 returns int64, set in NumberTypeObject.
+	ValidateInt641() int64
+	// SetValidateInt641 assigns int64 provided by user to NumberTypeObject
+	SetValidateInt641(value int64) NumberTypeObject
+	// HasValidateInt641 checks if ValidateInt641 has been set in NumberTypeObject
+	HasValidateInt641() bool
+	// ValidateInt642 returns int64, set in NumberTypeObject.
+	ValidateInt642() int64
+	// SetValidateInt642 assigns int64 provided by user to NumberTypeObject
+	SetValidateInt642(value int64) NumberTypeObject
+	// HasValidateInt642 checks if ValidateInt642 has been set in NumberTypeObject
+	HasValidateInt642() bool
+}
+
+// description is TBD
+// ValidateUint321 returns a uint32
+func (obj *numberTypeObject) ValidateUint321() uint32 {
+
+	return *obj.obj.ValidateUint32_1
+
+}
+
+// description is TBD
+// ValidateUint321 returns a uint32
+func (obj *numberTypeObject) HasValidateUint321() bool {
+	return obj.obj.ValidateUint32_1 != nil
+}
+
+// description is TBD
+// SetValidateUint321 sets the uint32 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateUint321(value uint32) NumberTypeObject {
+
+	obj.obj.ValidateUint32_1 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateUint322 returns a uint32
+func (obj *numberTypeObject) ValidateUint322() uint32 {
+
+	return *obj.obj.ValidateUint32_2
+
+}
+
+// description is TBD
+// ValidateUint322 returns a uint32
+func (obj *numberTypeObject) HasValidateUint322() bool {
+	return obj.obj.ValidateUint32_2 != nil
+}
+
+// description is TBD
+// SetValidateUint322 sets the uint32 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateUint322(value uint32) NumberTypeObject {
+
+	obj.obj.ValidateUint32_2 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateUint641 returns a uint64
+func (obj *numberTypeObject) ValidateUint641() uint64 {
+
+	return *obj.obj.ValidateUint64_1
+
+}
+
+// description is TBD
+// ValidateUint641 returns a uint64
+func (obj *numberTypeObject) HasValidateUint641() bool {
+	return obj.obj.ValidateUint64_1 != nil
+}
+
+// description is TBD
+// SetValidateUint641 sets the uint64 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateUint641(value uint64) NumberTypeObject {
+
+	obj.obj.ValidateUint64_1 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateUint642 returns a uint64
+func (obj *numberTypeObject) ValidateUint642() uint64 {
+
+	return *obj.obj.ValidateUint64_2
+
+}
+
+// description is TBD
+// ValidateUint642 returns a uint64
+func (obj *numberTypeObject) HasValidateUint642() bool {
+	return obj.obj.ValidateUint64_2 != nil
+}
+
+// description is TBD
+// SetValidateUint642 sets the uint64 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateUint642(value uint64) NumberTypeObject {
+
+	obj.obj.ValidateUint64_2 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateInt321 returns a int32
+func (obj *numberTypeObject) ValidateInt321() int32 {
+
+	return *obj.obj.ValidateInt32_1
+
+}
+
+// description is TBD
+// ValidateInt321 returns a int32
+func (obj *numberTypeObject) HasValidateInt321() bool {
+	return obj.obj.ValidateInt32_1 != nil
+}
+
+// description is TBD
+// SetValidateInt321 sets the int32 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateInt321(value int32) NumberTypeObject {
+
+	obj.obj.ValidateInt32_1 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateInt322 returns a int32
+func (obj *numberTypeObject) ValidateInt322() int32 {
+
+	return *obj.obj.ValidateInt32_2
+
+}
+
+// description is TBD
+// ValidateInt322 returns a int32
+func (obj *numberTypeObject) HasValidateInt322() bool {
+	return obj.obj.ValidateInt32_2 != nil
+}
+
+// description is TBD
+// SetValidateInt322 sets the int32 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateInt322(value int32) NumberTypeObject {
+
+	obj.obj.ValidateInt32_2 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateInt641 returns a int64
+func (obj *numberTypeObject) ValidateInt641() int64 {
+
+	return *obj.obj.ValidateInt64_1
+
+}
+
+// description is TBD
+// ValidateInt641 returns a int64
+func (obj *numberTypeObject) HasValidateInt641() bool {
+	return obj.obj.ValidateInt64_1 != nil
+}
+
+// description is TBD
+// SetValidateInt641 sets the int64 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateInt641(value int64) NumberTypeObject {
+
+	obj.obj.ValidateInt64_1 = &value
+	return obj
+}
+
+// description is TBD
+// ValidateInt642 returns a int64
+func (obj *numberTypeObject) ValidateInt642() int64 {
+
+	return *obj.obj.ValidateInt64_2
+
+}
+
+// description is TBD
+// ValidateInt642 returns a int64
+func (obj *numberTypeObject) HasValidateInt642() bool {
+	return obj.obj.ValidateInt64_2 != nil
+}
+
+// description is TBD
+// SetValidateInt642 sets the int64 value in the NumberTypeObject object
+func (obj *numberTypeObject) SetValidateInt642(value int64) NumberTypeObject {
+
+	obj.obj.ValidateInt64_2 = &value
+	return obj
+}
+
+func (obj *numberTypeObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.ValidateUint32_1 != nil {
+
+		if *obj.obj.ValidateUint32_1 > 4294967295 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= NumberTypeObject.ValidateUint32_1 <= 4294967295 but Got %d", *obj.obj.ValidateUint32_1))
+		}
+
+	}
+
+	if obj.obj.ValidateUint64_1 != nil {
+
+		if *obj.obj.ValidateUint64_1 > 9223372036854775807 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= NumberTypeObject.ValidateUint64_1 <= 9223372036854775807 but Got %d", *obj.obj.ValidateUint64_1))
+		}
+
+	}
+
+	if obj.obj.ValidateInt32_1 != nil {
+
+		if *obj.obj.ValidateInt32_1 < 0 || *obj.obj.ValidateInt32_1 > 2147483646 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= NumberTypeObject.ValidateInt32_1 <= 2147483646 but Got %d", *obj.obj.ValidateInt32_1))
+		}
+
+	}
+
+	if obj.obj.ValidateInt64_1 != nil {
+
+		if *obj.obj.ValidateInt64_1 < 0 || *obj.obj.ValidateInt64_1 > 9223372036854775807 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= NumberTypeObject.ValidateInt64_1 <= 9223372036854775807 but Got %d", *obj.obj.ValidateInt64_1))
+		}
+
+	}
+
+}
+
+func (obj *numberTypeObject) setDefault() {
+
+}
+
+// ***** ChoiceVal *****
+type choiceVal struct {
+	validation
+	obj            *openapi.ChoiceVal
+	marshaller     marshalChoiceVal
+	unMarshaller   unMarshalChoiceVal
+	mixedValHolder MixedVal
+}
+
+func NewChoiceVal() ChoiceVal {
+	obj := choiceVal{obj: &openapi.ChoiceVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *choiceVal) msg() *openapi.ChoiceVal {
+	return obj.obj
+}
+
+func (obj *choiceVal) setMsg(msg *openapi.ChoiceVal) ChoiceVal {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalchoiceVal struct {
+	obj *choiceVal
+}
+
+type marshalChoiceVal interface {
+	// ToProto marshals ChoiceVal to protobuf object *openapi.ChoiceVal
+	ToProto() (*openapi.ChoiceVal, error)
+	// ToPbText marshals ChoiceVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChoiceVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChoiceVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchoiceVal struct {
+	obj *choiceVal
+}
+
+type unMarshalChoiceVal interface {
+	// FromProto unmarshals ChoiceVal from protobuf object *openapi.ChoiceVal
+	FromProto(msg *openapi.ChoiceVal) (ChoiceVal, error)
+	// FromPbText unmarshals ChoiceVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChoiceVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChoiceVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *choiceVal) Marshal() marshalChoiceVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchoiceVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *choiceVal) Unmarshal() unMarshalChoiceVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchoiceVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchoiceVal) ToProto() (*openapi.ChoiceVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalchoiceVal) FromProto(msg *openapi.ChoiceVal) (ChoiceVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalchoiceVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalchoiceVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalchoiceVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalchoiceVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *choiceVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *choiceVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *choiceVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *choiceVal) Clone() (ChoiceVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewChoiceVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *choiceVal) setNil() {
+	obj.mixedValHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// ChoiceVal is description is TBD
+type ChoiceVal interface {
+	Validation
+	// msg marshals ChoiceVal to protobuf object *openapi.ChoiceVal
+	// and doesn't set defaults
+	msg() *openapi.ChoiceVal
+	// setMsg unmarshals ChoiceVal from protobuf object *openapi.ChoiceVal
+	// and doesn't set defaults
+	setMsg(*openapi.ChoiceVal) ChoiceVal
+	// provides marshal interface
+	Marshal() marshalChoiceVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalChoiceVal
+	// validate validates ChoiceVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ChoiceVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// MixedVal returns MixedVal, set in ChoiceVal.
+	// MixedVal is description is TBD
+	MixedVal() MixedVal
+	// SetMixedVal assigns MixedVal provided by user to ChoiceVal.
+	// MixedVal is description is TBD
+	SetMixedVal(value MixedVal) ChoiceVal
+	// HasMixedVal checks if MixedVal has been set in ChoiceVal
+	HasMixedVal() bool
+	setNil()
+}
+
+// description is TBD
+// MixedVal returns a MixedVal
+func (obj *choiceVal) MixedVal() MixedVal {
+	if obj.obj.MixedVal == nil {
+		obj.obj.MixedVal = NewMixedVal().msg()
+	}
+	if obj.mixedValHolder == nil {
+		obj.mixedValHolder = &mixedVal{obj: obj.obj.MixedVal}
+	}
+	return obj.mixedValHolder
+}
+
+// description is TBD
+// MixedVal returns a MixedVal
+func (obj *choiceVal) HasMixedVal() bool {
+	return obj.obj.MixedVal != nil
+}
+
+// description is TBD
+// SetMixedVal sets the MixedVal value in the ChoiceVal object
+func (obj *choiceVal) SetMixedVal(value MixedVal) ChoiceVal {
+
+	obj.mixedValHolder = nil
+	obj.obj.MixedVal = value.msg()
+
+	return obj
+}
+
+func (obj *choiceVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.MixedVal != nil {
+
+		obj.MixedVal().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *choiceVal) setDefault() {
+
+}
+
+// ***** ChoiceValWithNoProperties *****
+type choiceValWithNoProperties struct {
+	validation
+	obj                   *openapi.ChoiceValWithNoProperties
+	marshaller            marshalChoiceValWithNoProperties
+	unMarshaller          unMarshalChoiceValWithNoProperties
+	intermediateObjHolder RequiredChoice
+}
+
+func NewChoiceValWithNoProperties() ChoiceValWithNoProperties {
+	obj := choiceValWithNoProperties{obj: &openapi.ChoiceValWithNoProperties{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *choiceValWithNoProperties) msg() *openapi.ChoiceValWithNoProperties {
+	return obj.obj
+}
+
+func (obj *choiceValWithNoProperties) setMsg(msg *openapi.ChoiceValWithNoProperties) ChoiceValWithNoProperties {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalchoiceValWithNoProperties struct {
+	obj *choiceValWithNoProperties
+}
+
+type marshalChoiceValWithNoProperties interface {
+	// ToProto marshals ChoiceValWithNoProperties to protobuf object *openapi.ChoiceValWithNoProperties
+	ToProto() (*openapi.ChoiceValWithNoProperties, error)
+	// ToPbText marshals ChoiceValWithNoProperties to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChoiceValWithNoProperties to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChoiceValWithNoProperties to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchoiceValWithNoProperties struct {
+	obj *choiceValWithNoProperties
+}
+
+type unMarshalChoiceValWithNoProperties interface {
+	// FromProto unmarshals ChoiceValWithNoProperties from protobuf object *openapi.ChoiceValWithNoProperties
+	FromProto(msg *openapi.ChoiceValWithNoProperties) (ChoiceValWithNoProperties, error)
+	// FromPbText unmarshals ChoiceValWithNoProperties from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChoiceValWithNoProperties from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChoiceValWithNoProperties from JSON text
+	FromJson(value string) error
+}
+
+func (obj *choiceValWithNoProperties) Marshal() marshalChoiceValWithNoProperties {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchoiceValWithNoProperties{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *choiceValWithNoProperties) Unmarshal() unMarshalChoiceValWithNoProperties {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchoiceValWithNoProperties{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchoiceValWithNoProperties) ToProto() (*openapi.ChoiceValWithNoProperties, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalchoiceValWithNoProperties) FromProto(msg *openapi.ChoiceValWithNoProperties) (ChoiceValWithNoProperties, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalchoiceValWithNoProperties) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalchoiceValWithNoProperties) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalchoiceValWithNoProperties) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceValWithNoProperties) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalchoiceValWithNoProperties) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceValWithNoProperties) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *choiceValWithNoProperties) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *choiceValWithNoProperties) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *choiceValWithNoProperties) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *choiceValWithNoProperties) Clone() (ChoiceValWithNoProperties, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewChoiceValWithNoProperties()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *choiceValWithNoProperties) setNil() {
+	obj.intermediateObjHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// ChoiceValWithNoProperties is description is TBD
+type ChoiceValWithNoProperties interface {
+	Validation
+	// msg marshals ChoiceValWithNoProperties to protobuf object *openapi.ChoiceValWithNoProperties
+	// and doesn't set defaults
+	msg() *openapi.ChoiceValWithNoProperties
+	// setMsg unmarshals ChoiceValWithNoProperties from protobuf object *openapi.ChoiceValWithNoProperties
+	// and doesn't set defaults
+	setMsg(*openapi.ChoiceValWithNoProperties) ChoiceValWithNoProperties
+	// provides marshal interface
+	Marshal() marshalChoiceValWithNoProperties
+	// provides unmarshal interface
+	Unmarshal() unMarshalChoiceValWithNoProperties
+	// validate validates ChoiceValWithNoProperties
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ChoiceValWithNoProperties, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns ChoiceValWithNoPropertiesChoiceEnum, set in ChoiceValWithNoProperties
+	Choice() ChoiceValWithNoPropertiesChoiceEnum
+	// setChoice assigns ChoiceValWithNoPropertiesChoiceEnum provided by user to ChoiceValWithNoProperties
+	setChoice(value ChoiceValWithNoPropertiesChoiceEnum) ChoiceValWithNoProperties
+	// getter for NoObj to set choice.
+	NoObj()
+	// IntermediateObj returns RequiredChoice, set in ChoiceValWithNoProperties.
+	// RequiredChoice is description is TBD
+	IntermediateObj() RequiredChoice
+	// SetIntermediateObj assigns RequiredChoice provided by user to ChoiceValWithNoProperties.
+	// RequiredChoice is description is TBD
+	SetIntermediateObj(value RequiredChoice) ChoiceValWithNoProperties
+	// HasIntermediateObj checks if IntermediateObj has been set in ChoiceValWithNoProperties
+	HasIntermediateObj() bool
+	setNil()
+}
+
+type ChoiceValWithNoPropertiesChoiceEnum string
+
+// Enum of Choice on ChoiceValWithNoProperties
+var ChoiceValWithNoPropertiesChoice = struct {
+	INTERMEDIATE_OBJ ChoiceValWithNoPropertiesChoiceEnum
+	NO_OBJ           ChoiceValWithNoPropertiesChoiceEnum
+}{
+	INTERMEDIATE_OBJ: ChoiceValWithNoPropertiesChoiceEnum("intermediate_obj"),
+	NO_OBJ:           ChoiceValWithNoPropertiesChoiceEnum("no_obj"),
+}
+
+func (obj *choiceValWithNoProperties) Choice() ChoiceValWithNoPropertiesChoiceEnum {
+	return ChoiceValWithNoPropertiesChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// getter for NoObj to set choice
+func (obj *choiceValWithNoProperties) NoObj() {
+	obj.setChoice(ChoiceValWithNoPropertiesChoice.NO_OBJ)
+}
+
+func (obj *choiceValWithNoProperties) setChoice(value ChoiceValWithNoPropertiesChoiceEnum) ChoiceValWithNoProperties {
+	intValue, ok := openapi.ChoiceValWithNoProperties_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on ChoiceValWithNoPropertiesChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.ChoiceValWithNoProperties_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.IntermediateObj = nil
+	obj.intermediateObjHolder = nil
+
+	if value == ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ {
+		obj.obj.IntermediateObj = NewRequiredChoice().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// IntermediateObj returns a RequiredChoice
+func (obj *choiceValWithNoProperties) IntermediateObj() RequiredChoice {
+	if obj.obj.IntermediateObj == nil {
+		obj.setChoice(ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
+	}
+	if obj.intermediateObjHolder == nil {
+		obj.intermediateObjHolder = &requiredChoice{obj: obj.obj.IntermediateObj}
+	}
+	return obj.intermediateObjHolder
+}
+
+// description is TBD
+// IntermediateObj returns a RequiredChoice
+func (obj *choiceValWithNoProperties) HasIntermediateObj() bool {
+	return obj.obj.IntermediateObj != nil
+}
+
+// description is TBD
+// SetIntermediateObj sets the RequiredChoice value in the ChoiceValWithNoProperties object
+func (obj *choiceValWithNoProperties) SetIntermediateObj(value RequiredChoice) ChoiceValWithNoProperties {
+	obj.setChoice(ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
+	obj.intermediateObjHolder = nil
+	obj.obj.IntermediateObj = value.msg()
+
+	return obj
+}
+
+func (obj *choiceValWithNoProperties) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	// Choice is required
+	if obj.obj.Choice == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface ChoiceValWithNoProperties")
+	}
+
+	if obj.obj.IntermediateObj != nil {
+
+		obj.IntermediateObj().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *choiceValWithNoProperties) setDefault() {
+
+}
+
+// ***** XStatusObject *****
+type xStatusObject struct {
+	validation
+	obj          *openapi.XStatusObject
+	marshaller   marshalXStatusObject
+	unMarshaller unMarshalXStatusObject
+}
+
+func NewXStatusObject() XStatusObject {
+	obj := xStatusObject{obj: &openapi.XStatusObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *xStatusObject) msg() *openapi.XStatusObject {
+	return obj.obj
+}
+
+func (obj *xStatusObject) setMsg(msg *openapi.XStatusObject) XStatusObject {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalxStatusObject struct {
+	obj *xStatusObject
+}
+
+type marshalXStatusObject interface {
+	// ToProto marshals XStatusObject to protobuf object *openapi.XStatusObject
+	ToProto() (*openapi.XStatusObject, error)
+	// ToPbText marshals XStatusObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals XStatusObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals XStatusObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalxStatusObject struct {
+	obj *xStatusObject
+}
+
+type unMarshalXStatusObject interface {
+	// FromProto unmarshals XStatusObject from protobuf object *openapi.XStatusObject
+	FromProto(msg *openapi.XStatusObject) (XStatusObject, error)
+	// FromPbText unmarshals XStatusObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals XStatusObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals XStatusObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *xStatusObject) Marshal() marshalXStatusObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalxStatusObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *xStatusObject) Unmarshal() unMarshalXStatusObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalxStatusObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalxStatusObject) ToProto() (*openapi.XStatusObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalxStatusObject) FromProto(msg *openapi.XStatusObject) (XStatusObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalxStatusObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalxStatusObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalxStatusObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxStatusObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalxStatusObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxStatusObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *xStatusObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *xStatusObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *xStatusObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *xStatusObject) Clone() (XStatusObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewXStatusObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// XStatusObject is description is TBD
+type XStatusObject interface {
+	Validation
+	// msg marshals XStatusObject to protobuf object *openapi.XStatusObject
+	// and doesn't set defaults
+	msg() *openapi.XStatusObject
+	// setMsg unmarshals XStatusObject from protobuf object *openapi.XStatusObject
+	// and doesn't set defaults
+	setMsg(*openapi.XStatusObject) XStatusObject
+	// provides marshal interface
+	Marshal() marshalXStatusObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalXStatusObject
+	// validate validates XStatusObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (XStatusObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// EnumProperty returns XStatusObjectEnumPropertyEnum, set in XStatusObject
+	EnumProperty() XStatusObjectEnumPropertyEnum
+	// SetEnumProperty assigns XStatusObjectEnumPropertyEnum provided by user to XStatusObject
+	SetEnumProperty(value XStatusObjectEnumPropertyEnum) XStatusObject
+	// HasEnumProperty checks if EnumProperty has been set in XStatusObject
+	HasEnumProperty() bool
+	// DecprecatedProperty1 returns string, set in XStatusObject.
+	DecprecatedProperty1() string
+	// SetDecprecatedProperty1 assigns string provided by user to XStatusObject
+	SetDecprecatedProperty1(value string) XStatusObject
+	// HasDecprecatedProperty1 checks if DecprecatedProperty1 has been set in XStatusObject
+	HasDecprecatedProperty1() bool
+	// DecprecatedProperty2 returns int32, set in XStatusObject.
+	DecprecatedProperty2() int32
+	// SetDecprecatedProperty2 assigns int32 provided by user to XStatusObject
+	SetDecprecatedProperty2(value int32) XStatusObject
+	// HasDecprecatedProperty2 checks if DecprecatedProperty2 has been set in XStatusObject
+	HasDecprecatedProperty2() bool
+	// UnderReviewProperty1 returns string, set in XStatusObject.
+	UnderReviewProperty1() string
+	// SetUnderReviewProperty1 assigns string provided by user to XStatusObject
+	SetUnderReviewProperty1(value string) XStatusObject
+	// HasUnderReviewProperty1 checks if UnderReviewProperty1 has been set in XStatusObject
+	HasUnderReviewProperty1() bool
+	// UnderReviewProperty2 returns int32, set in XStatusObject.
+	UnderReviewProperty2() int32
+	// SetUnderReviewProperty2 assigns int32 provided by user to XStatusObject
+	SetUnderReviewProperty2(value int32) XStatusObject
+	// HasUnderReviewProperty2 checks if UnderReviewProperty2 has been set in XStatusObject
+	HasUnderReviewProperty2() bool
+	// Basic returns string, set in XStatusObject.
+	Basic() string
+	// SetBasic assigns string provided by user to XStatusObject
+	SetBasic(value string) XStatusObject
+	// HasBasic checks if Basic has been set in XStatusObject
+	HasBasic() bool
+}
+
+type XStatusObjectEnumPropertyEnum string
+
+// Enum of EnumProperty on XStatusObject
+var XStatusObjectEnumProperty = struct {
+	DECPRECATED_PROPERTY_1  XStatusObjectEnumPropertyEnum
+	UNDER_REVIEW_PROPERTY_1 XStatusObjectEnumPropertyEnum
+	BASIC                   XStatusObjectEnumPropertyEnum
+}{
+	DECPRECATED_PROPERTY_1:  XStatusObjectEnumPropertyEnum("decprecated_property_1"),
+	UNDER_REVIEW_PROPERTY_1: XStatusObjectEnumPropertyEnum("under_review_property_1"),
+	BASIC:                   XStatusObjectEnumPropertyEnum("basic"),
+}
+
+func (obj *xStatusObject) EnumProperty() XStatusObjectEnumPropertyEnum {
+	return XStatusObjectEnumPropertyEnum(obj.obj.EnumProperty.Enum().String())
+}
+
+// description is TBD
+// EnumProperty returns a string
+func (obj *xStatusObject) HasEnumProperty() bool {
+	return obj.obj.EnumProperty != nil
+}
+
+func (obj *xStatusObject) SetEnumProperty(value XStatusObjectEnumPropertyEnum) XStatusObject {
+	intValue, ok := openapi.XStatusObject_EnumProperty_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on XStatusObjectEnumPropertyEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.XStatusObject_EnumProperty_Enum(intValue)
+	obj.obj.EnumProperty = &enumValue
+
+	return obj
+}
+
+// description is TBD
+// DecprecatedProperty1 returns a string
+func (obj *xStatusObject) DecprecatedProperty1() string {
+
+	return *obj.obj.DecprecatedProperty_1
+
+}
+
+// description is TBD
+// DecprecatedProperty1 returns a string
+func (obj *xStatusObject) HasDecprecatedProperty1() bool {
+	return obj.obj.DecprecatedProperty_1 != nil
+}
+
+// description is TBD
+// SetDecprecatedProperty1 sets the string value in the XStatusObject object
+func (obj *xStatusObject) SetDecprecatedProperty1(value string) XStatusObject {
+
+	obj.obj.DecprecatedProperty_1 = &value
+	return obj
+}
+
+// Deprecated: test deprecated
+//
+// Description TBD
+// DecprecatedProperty2 returns a int32
+func (obj *xStatusObject) DecprecatedProperty2() int32 {
+
+	return *obj.obj.DecprecatedProperty_2
+
+}
+
+// Deprecated: test deprecated
+//
+// Description TBD
+// DecprecatedProperty2 returns a int32
+func (obj *xStatusObject) HasDecprecatedProperty2() bool {
+	return obj.obj.DecprecatedProperty_2 != nil
+}
+
+// Deprecated: test deprecated
+//
+// Description TBD
+// SetDecprecatedProperty2 sets the int32 value in the XStatusObject object
+func (obj *xStatusObject) SetDecprecatedProperty2(value int32) XStatusObject {
+
+	obj.obj.DecprecatedProperty_2 = &value
+	return obj
+}
+
+// description is TBD
+// UnderReviewProperty1 returns a string
+func (obj *xStatusObject) UnderReviewProperty1() string {
+
+	return *obj.obj.UnderReviewProperty_1
+
+}
+
+// description is TBD
+// UnderReviewProperty1 returns a string
+func (obj *xStatusObject) HasUnderReviewProperty1() bool {
+	return obj.obj.UnderReviewProperty_1 != nil
+}
+
+// description is TBD
+// SetUnderReviewProperty1 sets the string value in the XStatusObject object
+func (obj *xStatusObject) SetUnderReviewProperty1(value string) XStatusObject {
+
+	obj.obj.UnderReviewProperty_1 = &value
+	return obj
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// UnderReviewProperty2 returns a int32
+func (obj *xStatusObject) UnderReviewProperty2() int32 {
+
+	return *obj.obj.UnderReviewProperty_2
+
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// UnderReviewProperty2 returns a int32
+func (obj *xStatusObject) HasUnderReviewProperty2() bool {
+	return obj.obj.UnderReviewProperty_2 != nil
+}
+
+// Under Review: test under_review
+//
+// Description TBD
+// SetUnderReviewProperty2 sets the int32 value in the XStatusObject object
+func (obj *xStatusObject) SetUnderReviewProperty2(value int32) XStatusObject {
+
+	obj.obj.UnderReviewProperty_2 = &value
+	return obj
+}
+
+// description is TBD
+// Basic returns a string
+func (obj *xStatusObject) Basic() string {
+
+	return *obj.obj.Basic
+
+}
+
+// description is TBD
+// Basic returns a string
+func (obj *xStatusObject) HasBasic() bool {
+	return obj.obj.Basic != nil
+}
+
+// description is TBD
+// SetBasic sets the string value in the XStatusObject object
+func (obj *xStatusObject) SetBasic(value string) XStatusObject {
+
+	obj.obj.Basic = &value
+	return obj
+}
+
+func (obj *xStatusObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.EnumProperty.Number() == 1 {
+		obj.addWarnings("DECPRECATED_PROPERTY_1 enum in property EnumProperty is deprecated, test deprecated")
+	}
+
+	if obj.obj.EnumProperty.Number() == 2 {
+		obj.addWarnings("UNDER_REVIEW_PROPERTY_1 enum in property EnumProperty is under review, test under_review")
+	}
+
+	// DecprecatedProperty_2 is deprecated
+	if obj.obj.DecprecatedProperty_2 != nil {
+		obj.addWarnings("DecprecatedProperty_2 property in schema XStatusObject is deprecated, test deprecated")
+	}
+
+	// UnderReviewProperty_2 is under_review
+	if obj.obj.UnderReviewProperty_2 != nil {
+		obj.addWarnings("UnderReviewProperty_2 property in schema XStatusObject is under review, test under_review")
+	}
+
+}
+
+func (obj *xStatusObject) setDefault() {
+
+}
+
+// ***** XEnumObject *****
+type xEnumObject struct {
+	validation
+	obj          *openapi.XEnumObject
+	marshaller   marshalXEnumObject
+	unMarshaller unMarshalXEnumObject
+}
+
+func NewXEnumObject() XEnumObject {
+	obj := xEnumObject{obj: &openapi.XEnumObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *xEnumObject) msg() *openapi.XEnumObject {
+	return obj.obj
+}
+
+func (obj *xEnumObject) setMsg(msg *openapi.XEnumObject) XEnumObject {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalxEnumObject struct {
+	obj *xEnumObject
+}
+
+type marshalXEnumObject interface {
+	// ToProto marshals XEnumObject to protobuf object *openapi.XEnumObject
+	ToProto() (*openapi.XEnumObject, error)
+	// ToPbText marshals XEnumObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals XEnumObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals XEnumObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalxEnumObject struct {
+	obj *xEnumObject
+}
+
+type unMarshalXEnumObject interface {
+	// FromProto unmarshals XEnumObject from protobuf object *openapi.XEnumObject
+	FromProto(msg *openapi.XEnumObject) (XEnumObject, error)
+	// FromPbText unmarshals XEnumObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals XEnumObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals XEnumObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *xEnumObject) Marshal() marshalXEnumObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalxEnumObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *xEnumObject) Unmarshal() unMarshalXEnumObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalxEnumObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalxEnumObject) ToProto() (*openapi.XEnumObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalxEnumObject) FromProto(msg *openapi.XEnumObject) (XEnumObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalxEnumObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalxEnumObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalxEnumObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxEnumObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalxEnumObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxEnumObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *xEnumObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *xEnumObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *xEnumObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *xEnumObject) Clone() (XEnumObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewXEnumObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// XEnumObject is description is TBD
+type XEnumObject interface {
+	Validation
+	// msg marshals XEnumObject to protobuf object *openapi.XEnumObject
+	// and doesn't set defaults
+	msg() *openapi.XEnumObject
+	// setMsg unmarshals XEnumObject from protobuf object *openapi.XEnumObject
+	// and doesn't set defaults
+	setMsg(*openapi.XEnumObject) XEnumObject
+	// provides marshal interface
+	Marshal() marshalXEnumObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalXEnumObject
+	// validate validates XEnumObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (XEnumObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// XEnumVal returns XEnumObjectXEnumValEnum, set in XEnumObject
+	XEnumVal() XEnumObjectXEnumValEnum
+	// SetXEnumVal assigns XEnumObjectXEnumValEnum provided by user to XEnumObject
+	SetXEnumVal(value XEnumObjectXEnumValEnum) XEnumObject
+	// HasXEnumVal checks if XEnumVal has been set in XEnumObject
+	HasXEnumVal() bool
+}
+
+type XEnumObjectXEnumValEnum string
+
+// Enum of XEnumVal on XEnumObject
+var XEnumObjectXEnumVal = struct {
+	FIRST_VAL  XEnumObjectXEnumValEnum
+	SECOND_VAL XEnumObjectXEnumValEnum
+	THIRD_VAL  XEnumObjectXEnumValEnum
+	FOURTH_VAL XEnumObjectXEnumValEnum
+}{
+	FIRST_VAL:  XEnumObjectXEnumValEnum("first_val"),
+	SECOND_VAL: XEnumObjectXEnumValEnum("second_val"),
+	THIRD_VAL:  XEnumObjectXEnumValEnum("third_val"),
+	FOURTH_VAL: XEnumObjectXEnumValEnum("fourth_val"),
+}
+
+func (obj *xEnumObject) XEnumVal() XEnumObjectXEnumValEnum {
+	return XEnumObjectXEnumValEnum(obj.obj.XEnumVal.Enum().String())
+}
+
+// A property to showcase x-enum feature
+// XEnumVal returns a string
+func (obj *xEnumObject) HasXEnumVal() bool {
+	return obj.obj.XEnumVal != nil
+}
+
+func (obj *xEnumObject) SetXEnumVal(value XEnumObjectXEnumValEnum) XEnumObject {
+	intValue, ok := openapi.XEnumObject_XEnumVal_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on XEnumObjectXEnumValEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.XEnumObject_XEnumVal_Enum(intValue)
+	obj.obj.XEnumVal = &enumValue
+
+	return obj
+}
+
+func (obj *xEnumObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *xEnumObject) setDefault() {
+	if obj.obj.XEnumVal == nil {
+		obj.SetXEnumVal(XEnumObjectXEnumVal.THIRD_VAL)
+
+	}
+
+}
+
+// ***** XFieldPatternObject *****
+type xFieldPatternObject struct {
+	validation
+	obj                   *openapi.XFieldPatternObject
+	marshaller            marshalXFieldPatternObject
+	unMarshaller          unMarshalXFieldPatternObject
+	ipv4PatternHolder     Ipv4PatternObject
+	ipv6PatternHolder     Ipv6PatternObject
+	macPatternHolder      MacPatternObject
+	integerPatternHolder  IntegerPatternObject
+	checksumPatternHolder ChecksumPatternObject
+}
+
+func NewXFieldPatternObject() XFieldPatternObject {
+	obj := xFieldPatternObject{obj: &openapi.XFieldPatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *xFieldPatternObject) msg() *openapi.XFieldPatternObject {
+	return obj.obj
+}
+
+func (obj *xFieldPatternObject) setMsg(msg *openapi.XFieldPatternObject) XFieldPatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalxFieldPatternObject struct {
+	obj *xFieldPatternObject
+}
+
+type marshalXFieldPatternObject interface {
+	// ToProto marshals XFieldPatternObject to protobuf object *openapi.XFieldPatternObject
+	ToProto() (*openapi.XFieldPatternObject, error)
+	// ToPbText marshals XFieldPatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals XFieldPatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals XFieldPatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalxFieldPatternObject struct {
+	obj *xFieldPatternObject
+}
+
+type unMarshalXFieldPatternObject interface {
+	// FromProto unmarshals XFieldPatternObject from protobuf object *openapi.XFieldPatternObject
+	FromProto(msg *openapi.XFieldPatternObject) (XFieldPatternObject, error)
+	// FromPbText unmarshals XFieldPatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals XFieldPatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals XFieldPatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *xFieldPatternObject) Marshal() marshalXFieldPatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalxFieldPatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *xFieldPatternObject) Unmarshal() unMarshalXFieldPatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalxFieldPatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalxFieldPatternObject) ToProto() (*openapi.XFieldPatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalxFieldPatternObject) FromProto(msg *openapi.XFieldPatternObject) (XFieldPatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalxFieldPatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalxFieldPatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalxFieldPatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxFieldPatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalxFieldPatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalxFieldPatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *xFieldPatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *xFieldPatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *xFieldPatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *xFieldPatternObject) Clone() (XFieldPatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewXFieldPatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *xFieldPatternObject) setNil() {
+	obj.ipv4PatternHolder = nil
+	obj.ipv6PatternHolder = nil
+	obj.macPatternHolder = nil
+	obj.integerPatternHolder = nil
+	obj.checksumPatternHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// XFieldPatternObject is description is TBD
+type XFieldPatternObject interface {
+	Validation
+	// msg marshals XFieldPatternObject to protobuf object *openapi.XFieldPatternObject
+	// and doesn't set defaults
+	msg() *openapi.XFieldPatternObject
+	// setMsg unmarshals XFieldPatternObject from protobuf object *openapi.XFieldPatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.XFieldPatternObject) XFieldPatternObject
+	// provides marshal interface
+	Marshal() marshalXFieldPatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalXFieldPatternObject
+	// validate validates XFieldPatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (XFieldPatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Ipv4Pattern returns Ipv4PatternObject, set in XFieldPatternObject.
+	// Ipv4PatternObject is test ipv4 pattern
+	Ipv4Pattern() Ipv4PatternObject
+	// SetIpv4Pattern assigns Ipv4PatternObject provided by user to XFieldPatternObject.
+	// Ipv4PatternObject is test ipv4 pattern
+	SetIpv4Pattern(value Ipv4PatternObject) XFieldPatternObject
+	// HasIpv4Pattern checks if Ipv4Pattern has been set in XFieldPatternObject
+	HasIpv4Pattern() bool
+	// Ipv6Pattern returns Ipv6PatternObject, set in XFieldPatternObject.
+	// Ipv6PatternObject is test ipv6 pattern
+	Ipv6Pattern() Ipv6PatternObject
+	// SetIpv6Pattern assigns Ipv6PatternObject provided by user to XFieldPatternObject.
+	// Ipv6PatternObject is test ipv6 pattern
+	SetIpv6Pattern(value Ipv6PatternObject) XFieldPatternObject
+	// HasIpv6Pattern checks if Ipv6Pattern has been set in XFieldPatternObject
+	HasIpv6Pattern() bool
+	// MacPattern returns MacPatternObject, set in XFieldPatternObject.
+	// MacPatternObject is test mac pattern
+	MacPattern() MacPatternObject
+	// SetMacPattern assigns MacPatternObject provided by user to XFieldPatternObject.
+	// MacPatternObject is test mac pattern
+	SetMacPattern(value MacPatternObject) XFieldPatternObject
+	// HasMacPattern checks if MacPattern has been set in XFieldPatternObject
+	HasMacPattern() bool
+	// IntegerPattern returns IntegerPatternObject, set in XFieldPatternObject.
+	// IntegerPatternObject is test integer pattern
+	IntegerPattern() IntegerPatternObject
+	// SetIntegerPattern assigns IntegerPatternObject provided by user to XFieldPatternObject.
+	// IntegerPatternObject is test integer pattern
+	SetIntegerPattern(value IntegerPatternObject) XFieldPatternObject
+	// HasIntegerPattern checks if IntegerPattern has been set in XFieldPatternObject
+	HasIntegerPattern() bool
+	// ChecksumPattern returns ChecksumPatternObject, set in XFieldPatternObject.
+	// ChecksumPatternObject is test checksum pattern
+	ChecksumPattern() ChecksumPatternObject
+	// SetChecksumPattern assigns ChecksumPatternObject provided by user to XFieldPatternObject.
+	// ChecksumPatternObject is test checksum pattern
+	SetChecksumPattern(value ChecksumPatternObject) XFieldPatternObject
+	// HasChecksumPattern checks if ChecksumPattern has been set in XFieldPatternObject
+	HasChecksumPattern() bool
+	setNil()
+}
+
+// description is TBD
+// Ipv4Pattern returns a Ipv4PatternObject
+func (obj *xFieldPatternObject) Ipv4Pattern() Ipv4PatternObject {
+	if obj.obj.Ipv4Pattern == nil {
+		obj.obj.Ipv4Pattern = NewIpv4PatternObject().msg()
+	}
+	if obj.ipv4PatternHolder == nil {
+		obj.ipv4PatternHolder = &ipv4PatternObject{obj: obj.obj.Ipv4Pattern}
+	}
+	return obj.ipv4PatternHolder
+}
+
+// description is TBD
+// Ipv4Pattern returns a Ipv4PatternObject
+func (obj *xFieldPatternObject) HasIpv4Pattern() bool {
+	return obj.obj.Ipv4Pattern != nil
+}
+
+// description is TBD
+// SetIpv4Pattern sets the Ipv4PatternObject value in the XFieldPatternObject object
+func (obj *xFieldPatternObject) SetIpv4Pattern(value Ipv4PatternObject) XFieldPatternObject {
+
+	obj.ipv4PatternHolder = nil
+	obj.obj.Ipv4Pattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Ipv6Pattern returns a Ipv6PatternObject
+func (obj *xFieldPatternObject) Ipv6Pattern() Ipv6PatternObject {
+	if obj.obj.Ipv6Pattern == nil {
+		obj.obj.Ipv6Pattern = NewIpv6PatternObject().msg()
+	}
+	if obj.ipv6PatternHolder == nil {
+		obj.ipv6PatternHolder = &ipv6PatternObject{obj: obj.obj.Ipv6Pattern}
+	}
+	return obj.ipv6PatternHolder
+}
+
+// description is TBD
+// Ipv6Pattern returns a Ipv6PatternObject
+func (obj *xFieldPatternObject) HasIpv6Pattern() bool {
+	return obj.obj.Ipv6Pattern != nil
+}
+
+// description is TBD
+// SetIpv6Pattern sets the Ipv6PatternObject value in the XFieldPatternObject object
+func (obj *xFieldPatternObject) SetIpv6Pattern(value Ipv6PatternObject) XFieldPatternObject {
+
+	obj.ipv6PatternHolder = nil
+	obj.obj.Ipv6Pattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// MacPattern returns a MacPatternObject
+func (obj *xFieldPatternObject) MacPattern() MacPatternObject {
+	if obj.obj.MacPattern == nil {
+		obj.obj.MacPattern = NewMacPatternObject().msg()
+	}
+	if obj.macPatternHolder == nil {
+		obj.macPatternHolder = &macPatternObject{obj: obj.obj.MacPattern}
+	}
+	return obj.macPatternHolder
+}
+
+// description is TBD
+// MacPattern returns a MacPatternObject
+func (obj *xFieldPatternObject) HasMacPattern() bool {
+	return obj.obj.MacPattern != nil
+}
+
+// description is TBD
+// SetMacPattern sets the MacPatternObject value in the XFieldPatternObject object
+func (obj *xFieldPatternObject) SetMacPattern(value MacPatternObject) XFieldPatternObject {
+
+	obj.macPatternHolder = nil
+	obj.obj.MacPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// IntegerPattern returns a IntegerPatternObject
+func (obj *xFieldPatternObject) IntegerPattern() IntegerPatternObject {
+	if obj.obj.IntegerPattern == nil {
+		obj.obj.IntegerPattern = NewIntegerPatternObject().msg()
+	}
+	if obj.integerPatternHolder == nil {
+		obj.integerPatternHolder = &integerPatternObject{obj: obj.obj.IntegerPattern}
+	}
+	return obj.integerPatternHolder
+}
+
+// description is TBD
+// IntegerPattern returns a IntegerPatternObject
+func (obj *xFieldPatternObject) HasIntegerPattern() bool {
+	return obj.obj.IntegerPattern != nil
+}
+
+// description is TBD
+// SetIntegerPattern sets the IntegerPatternObject value in the XFieldPatternObject object
+func (obj *xFieldPatternObject) SetIntegerPattern(value IntegerPatternObject) XFieldPatternObject {
+
+	obj.integerPatternHolder = nil
+	obj.obj.IntegerPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ChecksumPattern returns a ChecksumPatternObject
+func (obj *xFieldPatternObject) ChecksumPattern() ChecksumPatternObject {
+	if obj.obj.ChecksumPattern == nil {
+		obj.obj.ChecksumPattern = NewChecksumPatternObject().msg()
+	}
+	if obj.checksumPatternHolder == nil {
+		obj.checksumPatternHolder = &checksumPatternObject{obj: obj.obj.ChecksumPattern}
+	}
+	return obj.checksumPatternHolder
+}
+
+// description is TBD
+// ChecksumPattern returns a ChecksumPatternObject
+func (obj *xFieldPatternObject) HasChecksumPattern() bool {
+	return obj.obj.ChecksumPattern != nil
+}
+
+// description is TBD
+// SetChecksumPattern sets the ChecksumPatternObject value in the XFieldPatternObject object
+func (obj *xFieldPatternObject) SetChecksumPattern(value ChecksumPatternObject) XFieldPatternObject {
+
+	obj.checksumPatternHolder = nil
+	obj.obj.ChecksumPattern = value.msg()
+
+	return obj
+}
+
+func (obj *xFieldPatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Ipv4Pattern != nil {
+
+		obj.Ipv4Pattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Ipv6Pattern != nil {
+
+		obj.Ipv6Pattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.MacPattern != nil {
+
+		obj.MacPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.IntegerPattern != nil {
+
+		obj.IntegerPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ChecksumPattern != nil {
+
+		obj.ChecksumPattern().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *xFieldPatternObject) setDefault() {
+
+}
+
 // ***** PortMetric *****
 type portMetric struct {
 	validation
@@ -26313,5 +34406,7124 @@ func (obj *requiredChoiceIntermeLeaf) validateObj(vObj *validation, set_default 
 }
 
 func (obj *requiredChoiceIntermeLeaf) setDefault() {
+
+}
+
+// ***** IntermediateRefObject *****
+type intermediateRefObject struct {
+	validation
+	obj            *openapi.IntermediateRefObject
+	marshaller     marshalIntermediateRefObject
+	unMarshaller   unMarshalIntermediateRefObject
+	leafNodeHolder LeafVal
+}
+
+func NewIntermediateRefObject() IntermediateRefObject {
+	obj := intermediateRefObject{obj: &openapi.IntermediateRefObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *intermediateRefObject) msg() *openapi.IntermediateRefObject {
+	return obj.obj
+}
+
+func (obj *intermediateRefObject) setMsg(msg *openapi.IntermediateRefObject) IntermediateRefObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalintermediateRefObject struct {
+	obj *intermediateRefObject
+}
+
+type marshalIntermediateRefObject interface {
+	// ToProto marshals IntermediateRefObject to protobuf object *openapi.IntermediateRefObject
+	ToProto() (*openapi.IntermediateRefObject, error)
+	// ToPbText marshals IntermediateRefObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals IntermediateRefObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals IntermediateRefObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalintermediateRefObject struct {
+	obj *intermediateRefObject
+}
+
+type unMarshalIntermediateRefObject interface {
+	// FromProto unmarshals IntermediateRefObject from protobuf object *openapi.IntermediateRefObject
+	FromProto(msg *openapi.IntermediateRefObject) (IntermediateRefObject, error)
+	// FromPbText unmarshals IntermediateRefObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals IntermediateRefObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals IntermediateRefObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *intermediateRefObject) Marshal() marshalIntermediateRefObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalintermediateRefObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *intermediateRefObject) Unmarshal() unMarshalIntermediateRefObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalintermediateRefObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalintermediateRefObject) ToProto() (*openapi.IntermediateRefObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalintermediateRefObject) FromProto(msg *openapi.IntermediateRefObject) (IntermediateRefObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalintermediateRefObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalintermediateRefObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalintermediateRefObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalintermediateRefObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalintermediateRefObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalintermediateRefObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *intermediateRefObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *intermediateRefObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *intermediateRefObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *intermediateRefObject) Clone() (IntermediateRefObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewIntermediateRefObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *intermediateRefObject) setNil() {
+	obj.leafNodeHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// IntermediateRefObject is description is TBD
+type IntermediateRefObject interface {
+	Validation
+	// msg marshals IntermediateRefObject to protobuf object *openapi.IntermediateRefObject
+	// and doesn't set defaults
+	msg() *openapi.IntermediateRefObject
+	// setMsg unmarshals IntermediateRefObject from protobuf object *openapi.IntermediateRefObject
+	// and doesn't set defaults
+	setMsg(*openapi.IntermediateRefObject) IntermediateRefObject
+	// provides marshal interface
+	Marshal() marshalIntermediateRefObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalIntermediateRefObject
+	// validate validates IntermediateRefObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (IntermediateRefObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Name returns string, set in IntermediateRefObject.
+	Name() string
+	// SetName assigns string provided by user to IntermediateRefObject
+	SetName(value string) IntermediateRefObject
+	// HasName checks if Name has been set in IntermediateRefObject
+	HasName() bool
+	// LeafNode returns LeafVal, set in IntermediateRefObject.
+	// LeafVal is description is TBD
+	LeafNode() LeafVal
+	// SetLeafNode assigns LeafVal provided by user to IntermediateRefObject.
+	// LeafVal is description is TBD
+	SetLeafNode(value LeafVal) IntermediateRefObject
+	// HasLeafNode checks if LeafNode has been set in IntermediateRefObject
+	HasLeafNode() bool
+	setNil()
+}
+
+// description is TBD
+// Name returns a string
+func (obj *intermediateRefObject) Name() string {
+
+	return *obj.obj.Name
+
+}
+
+// description is TBD
+// Name returns a string
+func (obj *intermediateRefObject) HasName() bool {
+	return obj.obj.Name != nil
+}
+
+// description is TBD
+// SetName sets the string value in the IntermediateRefObject object
+func (obj *intermediateRefObject) SetName(value string) IntermediateRefObject {
+
+	obj.obj.Name = &value
+	return obj
+}
+
+// description is TBD
+// LeafNode returns a LeafVal
+func (obj *intermediateRefObject) LeafNode() LeafVal {
+	if obj.obj.LeafNode == nil {
+		obj.obj.LeafNode = NewLeafVal().msg()
+	}
+	if obj.leafNodeHolder == nil {
+		obj.leafNodeHolder = &leafVal{obj: obj.obj.LeafNode}
+	}
+	return obj.leafNodeHolder
+}
+
+// description is TBD
+// LeafNode returns a LeafVal
+func (obj *intermediateRefObject) HasLeafNode() bool {
+	return obj.obj.LeafNode != nil
+}
+
+// description is TBD
+// SetLeafNode sets the LeafVal value in the IntermediateRefObject object
+func (obj *intermediateRefObject) SetLeafNode(value LeafVal) IntermediateRefObject {
+
+	obj.leafNodeHolder = nil
+	obj.obj.LeafNode = value.msg()
+
+	return obj
+}
+
+func (obj *intermediateRefObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.LeafNode != nil {
+
+		obj.LeafNode().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *intermediateRefObject) setDefault() {
+
+}
+
+// ***** MixedVal *****
+type mixedVal struct {
+	validation
+	obj          *openapi.MixedVal
+	marshaller   marshalMixedVal
+	unMarshaller unMarshalMixedVal
+}
+
+func NewMixedVal() MixedVal {
+	obj := mixedVal{obj: &openapi.MixedVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *mixedVal) msg() *openapi.MixedVal {
+	return obj.obj
+}
+
+func (obj *mixedVal) setMsg(msg *openapi.MixedVal) MixedVal {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalmixedVal struct {
+	obj *mixedVal
+}
+
+type marshalMixedVal interface {
+	// ToProto marshals MixedVal to protobuf object *openapi.MixedVal
+	ToProto() (*openapi.MixedVal, error)
+	// ToPbText marshals MixedVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MixedVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MixedVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmixedVal struct {
+	obj *mixedVal
+}
+
+type unMarshalMixedVal interface {
+	// FromProto unmarshals MixedVal from protobuf object *openapi.MixedVal
+	FromProto(msg *openapi.MixedVal) (MixedVal, error)
+	// FromPbText unmarshals MixedVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MixedVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MixedVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *mixedVal) Marshal() marshalMixedVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmixedVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *mixedVal) Unmarshal() unMarshalMixedVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmixedVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmixedVal) ToProto() (*openapi.MixedVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalmixedVal) FromProto(msg *openapi.MixedVal) (MixedVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalmixedVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalmixedVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalmixedVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmixedVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalmixedVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmixedVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *mixedVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *mixedVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *mixedVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *mixedVal) Clone() (MixedVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewMixedVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// MixedVal is description is TBD
+type MixedVal interface {
+	Validation
+	// msg marshals MixedVal to protobuf object *openapi.MixedVal
+	// and doesn't set defaults
+	msg() *openapi.MixedVal
+	// setMsg unmarshals MixedVal from protobuf object *openapi.MixedVal
+	// and doesn't set defaults
+	setMsg(*openapi.MixedVal) MixedVal
+	// provides marshal interface
+	Marshal() marshalMixedVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalMixedVal
+	// validate validates MixedVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (MixedVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns MixedValChoiceEnum, set in MixedVal
+	Choice() MixedValChoiceEnum
+	// setChoice assigns MixedValChoiceEnum provided by user to MixedVal
+	setChoice(value MixedValChoiceEnum) MixedVal
+	// HasChoice checks if Choice has been set in MixedVal
+	HasChoice() bool
+	// IntVal returns int32, set in MixedVal.
+	IntVal() int32
+	// SetIntVal assigns int32 provided by user to MixedVal
+	SetIntVal(value int32) MixedVal
+	// HasIntVal checks if IntVal has been set in MixedVal
+	HasIntVal() bool
+	// NumVal returns float32, set in MixedVal.
+	NumVal() float32
+	// SetNumVal assigns float32 provided by user to MixedVal
+	SetNumVal(value float32) MixedVal
+	// HasNumVal checks if NumVal has been set in MixedVal
+	HasNumVal() bool
+	// StrVal returns string, set in MixedVal.
+	StrVal() string
+	// SetStrVal assigns string provided by user to MixedVal
+	SetStrVal(value string) MixedVal
+	// HasStrVal checks if StrVal has been set in MixedVal
+	HasStrVal() bool
+	// BoolVal returns bool, set in MixedVal.
+	BoolVal() bool
+	// SetBoolVal assigns bool provided by user to MixedVal
+	SetBoolVal(value bool) MixedVal
+	// HasBoolVal checks if BoolVal has been set in MixedVal
+	HasBoolVal() bool
+}
+
+type MixedValChoiceEnum string
+
+// Enum of Choice on MixedVal
+var MixedValChoice = struct {
+	INT_VAL  MixedValChoiceEnum
+	NUM_VAL  MixedValChoiceEnum
+	STR_VAL  MixedValChoiceEnum
+	BOOL_VAL MixedValChoiceEnum
+}{
+	INT_VAL:  MixedValChoiceEnum("int_val"),
+	NUM_VAL:  MixedValChoiceEnum("num_val"),
+	STR_VAL:  MixedValChoiceEnum("str_val"),
+	BOOL_VAL: MixedValChoiceEnum("bool_val"),
+}
+
+func (obj *mixedVal) Choice() MixedValChoiceEnum {
+	return MixedValChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *mixedVal) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *mixedVal) setChoice(value MixedValChoiceEnum) MixedVal {
+	intValue, ok := openapi.MixedVal_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on MixedValChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.MixedVal_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.BoolVal = nil
+	obj.obj.StrVal = nil
+	obj.obj.NumVal = nil
+	obj.obj.IntVal = nil
+
+	if value == MixedValChoice.INT_VAL {
+		defaultValue := int32(50)
+		obj.obj.IntVal = &defaultValue
+	}
+
+	if value == MixedValChoice.NUM_VAL {
+		defaultValue := float32(50.05)
+		obj.obj.NumVal = &defaultValue
+	}
+
+	if value == MixedValChoice.STR_VAL {
+		defaultValue := "default_str_val"
+		obj.obj.StrVal = &defaultValue
+	}
+
+	if value == MixedValChoice.BOOL_VAL {
+		defaultValue := bool(true)
+		obj.obj.BoolVal = &defaultValue
+	}
+
+	return obj
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *mixedVal) IntVal() int32 {
+
+	if obj.obj.IntVal == nil {
+		obj.setChoice(MixedValChoice.INT_VAL)
+	}
+
+	return *obj.obj.IntVal
+
+}
+
+// description is TBD
+// IntVal returns a int32
+func (obj *mixedVal) HasIntVal() bool {
+	return obj.obj.IntVal != nil
+}
+
+// description is TBD
+// SetIntVal sets the int32 value in the MixedVal object
+func (obj *mixedVal) SetIntVal(value int32) MixedVal {
+	obj.setChoice(MixedValChoice.INT_VAL)
+	obj.obj.IntVal = &value
+	return obj
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *mixedVal) NumVal() float32 {
+
+	if obj.obj.NumVal == nil {
+		obj.setChoice(MixedValChoice.NUM_VAL)
+	}
+
+	return *obj.obj.NumVal
+
+}
+
+// description is TBD
+// NumVal returns a float32
+func (obj *mixedVal) HasNumVal() bool {
+	return obj.obj.NumVal != nil
+}
+
+// description is TBD
+// SetNumVal sets the float32 value in the MixedVal object
+func (obj *mixedVal) SetNumVal(value float32) MixedVal {
+	obj.setChoice(MixedValChoice.NUM_VAL)
+	obj.obj.NumVal = &value
+	return obj
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *mixedVal) StrVal() string {
+
+	if obj.obj.StrVal == nil {
+		obj.setChoice(MixedValChoice.STR_VAL)
+	}
+
+	return *obj.obj.StrVal
+
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *mixedVal) HasStrVal() bool {
+	return obj.obj.StrVal != nil
+}
+
+// description is TBD
+// SetStrVal sets the string value in the MixedVal object
+func (obj *mixedVal) SetStrVal(value string) MixedVal {
+	obj.setChoice(MixedValChoice.STR_VAL)
+	obj.obj.StrVal = &value
+	return obj
+}
+
+// description is TBD
+// BoolVal returns a bool
+func (obj *mixedVal) BoolVal() bool {
+
+	if obj.obj.BoolVal == nil {
+		obj.setChoice(MixedValChoice.BOOL_VAL)
+	}
+
+	return *obj.obj.BoolVal
+
+}
+
+// description is TBD
+// BoolVal returns a bool
+func (obj *mixedVal) HasBoolVal() bool {
+	return obj.obj.BoolVal != nil
+}
+
+// description is TBD
+// SetBoolVal sets the bool value in the MixedVal object
+func (obj *mixedVal) SetBoolVal(value bool) MixedVal {
+	obj.setChoice(MixedValChoice.BOOL_VAL)
+	obj.obj.BoolVal = &value
+	return obj
+}
+
+func (obj *mixedVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *mixedVal) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(MixedValChoice.INT_VAL)
+
+	}
+
+}
+
+// ***** RequiredChoice *****
+type requiredChoice struct {
+	validation
+	obj          *openapi.RequiredChoice
+	marshaller   marshalRequiredChoice
+	unMarshaller unMarshalRequiredChoice
+	leafHolder   LeafVal
+}
+
+func NewRequiredChoice() RequiredChoice {
+	obj := requiredChoice{obj: &openapi.RequiredChoice{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *requiredChoice) msg() *openapi.RequiredChoice {
+	return obj.obj
+}
+
+func (obj *requiredChoice) setMsg(msg *openapi.RequiredChoice) RequiredChoice {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalrequiredChoice struct {
+	obj *requiredChoice
+}
+
+type marshalRequiredChoice interface {
+	// ToProto marshals RequiredChoice to protobuf object *openapi.RequiredChoice
+	ToProto() (*openapi.RequiredChoice, error)
+	// ToPbText marshals RequiredChoice to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals RequiredChoice to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals RequiredChoice to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalrequiredChoice struct {
+	obj *requiredChoice
+}
+
+type unMarshalRequiredChoice interface {
+	// FromProto unmarshals RequiredChoice from protobuf object *openapi.RequiredChoice
+	FromProto(msg *openapi.RequiredChoice) (RequiredChoice, error)
+	// FromPbText unmarshals RequiredChoice from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals RequiredChoice from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals RequiredChoice from JSON text
+	FromJson(value string) error
+}
+
+func (obj *requiredChoice) Marshal() marshalRequiredChoice {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalrequiredChoice{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *requiredChoice) Unmarshal() unMarshalRequiredChoice {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalrequiredChoice{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalrequiredChoice) ToProto() (*openapi.RequiredChoice, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalrequiredChoice) FromProto(msg *openapi.RequiredChoice) (RequiredChoice, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalrequiredChoice) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalrequiredChoice) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalrequiredChoice) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredChoice) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalrequiredChoice) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalrequiredChoice) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *requiredChoice) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *requiredChoice) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *requiredChoice) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *requiredChoice) Clone() (RequiredChoice, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewRequiredChoice()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *requiredChoice) setNil() {
+	obj.leafHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// RequiredChoice is description is TBD
+type RequiredChoice interface {
+	Validation
+	// msg marshals RequiredChoice to protobuf object *openapi.RequiredChoice
+	// and doesn't set defaults
+	msg() *openapi.RequiredChoice
+	// setMsg unmarshals RequiredChoice from protobuf object *openapi.RequiredChoice
+	// and doesn't set defaults
+	setMsg(*openapi.RequiredChoice) RequiredChoice
+	// provides marshal interface
+	Marshal() marshalRequiredChoice
+	// provides unmarshal interface
+	Unmarshal() unMarshalRequiredChoice
+	// validate validates RequiredChoice
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (RequiredChoice, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns RequiredChoiceChoiceEnum, set in RequiredChoice
+	Choice() RequiredChoiceChoiceEnum
+	// setChoice assigns RequiredChoiceChoiceEnum provided by user to RequiredChoice
+	setChoice(value RequiredChoiceChoiceEnum) RequiredChoice
+	// StrVal returns string, set in RequiredChoice.
+	StrVal() string
+	// SetStrVal assigns string provided by user to RequiredChoice
+	SetStrVal(value string) RequiredChoice
+	// HasStrVal checks if StrVal has been set in RequiredChoice
+	HasStrVal() bool
+	// Leaf returns LeafVal, set in RequiredChoice.
+	// LeafVal is description is TBD
+	Leaf() LeafVal
+	// SetLeaf assigns LeafVal provided by user to RequiredChoice.
+	// LeafVal is description is TBD
+	SetLeaf(value LeafVal) RequiredChoice
+	// HasLeaf checks if Leaf has been set in RequiredChoice
+	HasLeaf() bool
+	setNil()
+}
+
+type RequiredChoiceChoiceEnum string
+
+// Enum of Choice on RequiredChoice
+var RequiredChoiceChoice = struct {
+	STR_VAL RequiredChoiceChoiceEnum
+	LEAF    RequiredChoiceChoiceEnum
+}{
+	STR_VAL: RequiredChoiceChoiceEnum("str_val"),
+	LEAF:    RequiredChoiceChoiceEnum("leaf"),
+}
+
+func (obj *requiredChoice) Choice() RequiredChoiceChoiceEnum {
+	return RequiredChoiceChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+func (obj *requiredChoice) setChoice(value RequiredChoiceChoiceEnum) RequiredChoice {
+	intValue, ok := openapi.RequiredChoice_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on RequiredChoiceChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.RequiredChoice_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Leaf = nil
+	obj.leafHolder = nil
+	obj.obj.StrVal = nil
+
+	if value == RequiredChoiceChoice.STR_VAL {
+		defaultValue := "some string"
+		obj.obj.StrVal = &defaultValue
+	}
+
+	if value == RequiredChoiceChoice.LEAF {
+		obj.obj.Leaf = NewLeafVal().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *requiredChoice) StrVal() string {
+
+	if obj.obj.StrVal == nil {
+		obj.setChoice(RequiredChoiceChoice.STR_VAL)
+	}
+
+	return *obj.obj.StrVal
+
+}
+
+// description is TBD
+// StrVal returns a string
+func (obj *requiredChoice) HasStrVal() bool {
+	return obj.obj.StrVal != nil
+}
+
+// description is TBD
+// SetStrVal sets the string value in the RequiredChoice object
+func (obj *requiredChoice) SetStrVal(value string) RequiredChoice {
+	obj.setChoice(RequiredChoiceChoice.STR_VAL)
+	obj.obj.StrVal = &value
+	return obj
+}
+
+// description is TBD
+// Leaf returns a LeafVal
+func (obj *requiredChoice) Leaf() LeafVal {
+	if obj.obj.Leaf == nil {
+		obj.setChoice(RequiredChoiceChoice.LEAF)
+	}
+	if obj.leafHolder == nil {
+		obj.leafHolder = &leafVal{obj: obj.obj.Leaf}
+	}
+	return obj.leafHolder
+}
+
+// description is TBD
+// Leaf returns a LeafVal
+func (obj *requiredChoice) HasLeaf() bool {
+	return obj.obj.Leaf != nil
+}
+
+// description is TBD
+// SetLeaf sets the LeafVal value in the RequiredChoice object
+func (obj *requiredChoice) SetLeaf(value LeafVal) RequiredChoice {
+	obj.setChoice(RequiredChoiceChoice.LEAF)
+	obj.leafHolder = nil
+	obj.obj.Leaf = value.msg()
+
+	return obj
+}
+
+func (obj *requiredChoice) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	// Choice is required
+	if obj.obj.Choice == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface RequiredChoice")
+	}
+
+	if obj.obj.Leaf != nil {
+
+		obj.Leaf().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *requiredChoice) setDefault() {
+	if obj.obj.StrVal == nil {
+		obj.SetStrVal("some string")
+	}
+
+}
+
+// ***** Ipv4PatternObject *****
+type ipv4PatternObject struct {
+	validation
+	obj          *openapi.Ipv4PatternObject
+	marshaller   marshalIpv4PatternObject
+	unMarshaller unMarshalIpv4PatternObject
+	ipv4Holder   PatternIpv4PatternObjectIpv4
+}
+
+func NewIpv4PatternObject() Ipv4PatternObject {
+	obj := ipv4PatternObject{obj: &openapi.Ipv4PatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *ipv4PatternObject) msg() *openapi.Ipv4PatternObject {
+	return obj.obj
+}
+
+func (obj *ipv4PatternObject) setMsg(msg *openapi.Ipv4PatternObject) Ipv4PatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalipv4PatternObject struct {
+	obj *ipv4PatternObject
+}
+
+type marshalIpv4PatternObject interface {
+	// ToProto marshals Ipv4PatternObject to protobuf object *openapi.Ipv4PatternObject
+	ToProto() (*openapi.Ipv4PatternObject, error)
+	// ToPbText marshals Ipv4PatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Ipv4PatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Ipv4PatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalipv4PatternObject struct {
+	obj *ipv4PatternObject
+}
+
+type unMarshalIpv4PatternObject interface {
+	// FromProto unmarshals Ipv4PatternObject from protobuf object *openapi.Ipv4PatternObject
+	FromProto(msg *openapi.Ipv4PatternObject) (Ipv4PatternObject, error)
+	// FromPbText unmarshals Ipv4PatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Ipv4PatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Ipv4PatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *ipv4PatternObject) Marshal() marshalIpv4PatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalipv4PatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *ipv4PatternObject) Unmarshal() unMarshalIpv4PatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalipv4PatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalipv4PatternObject) ToProto() (*openapi.Ipv4PatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalipv4PatternObject) FromProto(msg *openapi.Ipv4PatternObject) (Ipv4PatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalipv4PatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalipv4PatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalipv4PatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalipv4PatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalipv4PatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalipv4PatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *ipv4PatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *ipv4PatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *ipv4PatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *ipv4PatternObject) Clone() (Ipv4PatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewIpv4PatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *ipv4PatternObject) setNil() {
+	obj.ipv4Holder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// Ipv4PatternObject is test ipv4 pattern
+type Ipv4PatternObject interface {
+	Validation
+	// msg marshals Ipv4PatternObject to protobuf object *openapi.Ipv4PatternObject
+	// and doesn't set defaults
+	msg() *openapi.Ipv4PatternObject
+	// setMsg unmarshals Ipv4PatternObject from protobuf object *openapi.Ipv4PatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.Ipv4PatternObject) Ipv4PatternObject
+	// provides marshal interface
+	Marshal() marshalIpv4PatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalIpv4PatternObject
+	// validate validates Ipv4PatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (Ipv4PatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Ipv4 returns PatternIpv4PatternObjectIpv4, set in Ipv4PatternObject.
+	// PatternIpv4PatternObjectIpv4 is tBD
+	Ipv4() PatternIpv4PatternObjectIpv4
+	// SetIpv4 assigns PatternIpv4PatternObjectIpv4 provided by user to Ipv4PatternObject.
+	// PatternIpv4PatternObjectIpv4 is tBD
+	SetIpv4(value PatternIpv4PatternObjectIpv4) Ipv4PatternObject
+	// HasIpv4 checks if Ipv4 has been set in Ipv4PatternObject
+	HasIpv4() bool
+	setNil()
+}
+
+// description is TBD
+// Ipv4 returns a PatternIpv4PatternObjectIpv4
+func (obj *ipv4PatternObject) Ipv4() PatternIpv4PatternObjectIpv4 {
+	if obj.obj.Ipv4 == nil {
+		obj.obj.Ipv4 = NewPatternIpv4PatternObjectIpv4().msg()
+	}
+	if obj.ipv4Holder == nil {
+		obj.ipv4Holder = &patternIpv4PatternObjectIpv4{obj: obj.obj.Ipv4}
+	}
+	return obj.ipv4Holder
+}
+
+// description is TBD
+// Ipv4 returns a PatternIpv4PatternObjectIpv4
+func (obj *ipv4PatternObject) HasIpv4() bool {
+	return obj.obj.Ipv4 != nil
+}
+
+// description is TBD
+// SetIpv4 sets the PatternIpv4PatternObjectIpv4 value in the Ipv4PatternObject object
+func (obj *ipv4PatternObject) SetIpv4(value PatternIpv4PatternObjectIpv4) Ipv4PatternObject {
+
+	obj.ipv4Holder = nil
+	obj.obj.Ipv4 = value.msg()
+
+	return obj
+}
+
+func (obj *ipv4PatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Ipv4 != nil {
+
+		obj.Ipv4().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *ipv4PatternObject) setDefault() {
+
+}
+
+// ***** Ipv6PatternObject *****
+type ipv6PatternObject struct {
+	validation
+	obj          *openapi.Ipv6PatternObject
+	marshaller   marshalIpv6PatternObject
+	unMarshaller unMarshalIpv6PatternObject
+	ipv6Holder   PatternIpv6PatternObjectIpv6
+}
+
+func NewIpv6PatternObject() Ipv6PatternObject {
+	obj := ipv6PatternObject{obj: &openapi.Ipv6PatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *ipv6PatternObject) msg() *openapi.Ipv6PatternObject {
+	return obj.obj
+}
+
+func (obj *ipv6PatternObject) setMsg(msg *openapi.Ipv6PatternObject) Ipv6PatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalipv6PatternObject struct {
+	obj *ipv6PatternObject
+}
+
+type marshalIpv6PatternObject interface {
+	// ToProto marshals Ipv6PatternObject to protobuf object *openapi.Ipv6PatternObject
+	ToProto() (*openapi.Ipv6PatternObject, error)
+	// ToPbText marshals Ipv6PatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals Ipv6PatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals Ipv6PatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalipv6PatternObject struct {
+	obj *ipv6PatternObject
+}
+
+type unMarshalIpv6PatternObject interface {
+	// FromProto unmarshals Ipv6PatternObject from protobuf object *openapi.Ipv6PatternObject
+	FromProto(msg *openapi.Ipv6PatternObject) (Ipv6PatternObject, error)
+	// FromPbText unmarshals Ipv6PatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals Ipv6PatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals Ipv6PatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *ipv6PatternObject) Marshal() marshalIpv6PatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalipv6PatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *ipv6PatternObject) Unmarshal() unMarshalIpv6PatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalipv6PatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalipv6PatternObject) ToProto() (*openapi.Ipv6PatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalipv6PatternObject) FromProto(msg *openapi.Ipv6PatternObject) (Ipv6PatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalipv6PatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalipv6PatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalipv6PatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalipv6PatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalipv6PatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalipv6PatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *ipv6PatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *ipv6PatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *ipv6PatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *ipv6PatternObject) Clone() (Ipv6PatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewIpv6PatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *ipv6PatternObject) setNil() {
+	obj.ipv6Holder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// Ipv6PatternObject is test ipv6 pattern
+type Ipv6PatternObject interface {
+	Validation
+	// msg marshals Ipv6PatternObject to protobuf object *openapi.Ipv6PatternObject
+	// and doesn't set defaults
+	msg() *openapi.Ipv6PatternObject
+	// setMsg unmarshals Ipv6PatternObject from protobuf object *openapi.Ipv6PatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.Ipv6PatternObject) Ipv6PatternObject
+	// provides marshal interface
+	Marshal() marshalIpv6PatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalIpv6PatternObject
+	// validate validates Ipv6PatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (Ipv6PatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Ipv6 returns PatternIpv6PatternObjectIpv6, set in Ipv6PatternObject.
+	// PatternIpv6PatternObjectIpv6 is tBD
+	Ipv6() PatternIpv6PatternObjectIpv6
+	// SetIpv6 assigns PatternIpv6PatternObjectIpv6 provided by user to Ipv6PatternObject.
+	// PatternIpv6PatternObjectIpv6 is tBD
+	SetIpv6(value PatternIpv6PatternObjectIpv6) Ipv6PatternObject
+	// HasIpv6 checks if Ipv6 has been set in Ipv6PatternObject
+	HasIpv6() bool
+	setNil()
+}
+
+// description is TBD
+// Ipv6 returns a PatternIpv6PatternObjectIpv6
+func (obj *ipv6PatternObject) Ipv6() PatternIpv6PatternObjectIpv6 {
+	if obj.obj.Ipv6 == nil {
+		obj.obj.Ipv6 = NewPatternIpv6PatternObjectIpv6().msg()
+	}
+	if obj.ipv6Holder == nil {
+		obj.ipv6Holder = &patternIpv6PatternObjectIpv6{obj: obj.obj.Ipv6}
+	}
+	return obj.ipv6Holder
+}
+
+// description is TBD
+// Ipv6 returns a PatternIpv6PatternObjectIpv6
+func (obj *ipv6PatternObject) HasIpv6() bool {
+	return obj.obj.Ipv6 != nil
+}
+
+// description is TBD
+// SetIpv6 sets the PatternIpv6PatternObjectIpv6 value in the Ipv6PatternObject object
+func (obj *ipv6PatternObject) SetIpv6(value PatternIpv6PatternObjectIpv6) Ipv6PatternObject {
+
+	obj.ipv6Holder = nil
+	obj.obj.Ipv6 = value.msg()
+
+	return obj
+}
+
+func (obj *ipv6PatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Ipv6 != nil {
+
+		obj.Ipv6().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *ipv6PatternObject) setDefault() {
+
+}
+
+// ***** MacPatternObject *****
+type macPatternObject struct {
+	validation
+	obj          *openapi.MacPatternObject
+	marshaller   marshalMacPatternObject
+	unMarshaller unMarshalMacPatternObject
+	macHolder    PatternMacPatternObjectMac
+}
+
+func NewMacPatternObject() MacPatternObject {
+	obj := macPatternObject{obj: &openapi.MacPatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *macPatternObject) msg() *openapi.MacPatternObject {
+	return obj.obj
+}
+
+func (obj *macPatternObject) setMsg(msg *openapi.MacPatternObject) MacPatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalmacPatternObject struct {
+	obj *macPatternObject
+}
+
+type marshalMacPatternObject interface {
+	// ToProto marshals MacPatternObject to protobuf object *openapi.MacPatternObject
+	ToProto() (*openapi.MacPatternObject, error)
+	// ToPbText marshals MacPatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals MacPatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals MacPatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalmacPatternObject struct {
+	obj *macPatternObject
+}
+
+type unMarshalMacPatternObject interface {
+	// FromProto unmarshals MacPatternObject from protobuf object *openapi.MacPatternObject
+	FromProto(msg *openapi.MacPatternObject) (MacPatternObject, error)
+	// FromPbText unmarshals MacPatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals MacPatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals MacPatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *macPatternObject) Marshal() marshalMacPatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalmacPatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *macPatternObject) Unmarshal() unMarshalMacPatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalmacPatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalmacPatternObject) ToProto() (*openapi.MacPatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalmacPatternObject) FromProto(msg *openapi.MacPatternObject) (MacPatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalmacPatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalmacPatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalmacPatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmacPatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalmacPatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalmacPatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *macPatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *macPatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *macPatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *macPatternObject) Clone() (MacPatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewMacPatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *macPatternObject) setNil() {
+	obj.macHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// MacPatternObject is test mac pattern
+type MacPatternObject interface {
+	Validation
+	// msg marshals MacPatternObject to protobuf object *openapi.MacPatternObject
+	// and doesn't set defaults
+	msg() *openapi.MacPatternObject
+	// setMsg unmarshals MacPatternObject from protobuf object *openapi.MacPatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.MacPatternObject) MacPatternObject
+	// provides marshal interface
+	Marshal() marshalMacPatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalMacPatternObject
+	// validate validates MacPatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (MacPatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Mac returns PatternMacPatternObjectMac, set in MacPatternObject.
+	// PatternMacPatternObjectMac is tBD
+	Mac() PatternMacPatternObjectMac
+	// SetMac assigns PatternMacPatternObjectMac provided by user to MacPatternObject.
+	// PatternMacPatternObjectMac is tBD
+	SetMac(value PatternMacPatternObjectMac) MacPatternObject
+	// HasMac checks if Mac has been set in MacPatternObject
+	HasMac() bool
+	setNil()
+}
+
+// description is TBD
+// Mac returns a PatternMacPatternObjectMac
+func (obj *macPatternObject) Mac() PatternMacPatternObjectMac {
+	if obj.obj.Mac == nil {
+		obj.obj.Mac = NewPatternMacPatternObjectMac().msg()
+	}
+	if obj.macHolder == nil {
+		obj.macHolder = &patternMacPatternObjectMac{obj: obj.obj.Mac}
+	}
+	return obj.macHolder
+}
+
+// description is TBD
+// Mac returns a PatternMacPatternObjectMac
+func (obj *macPatternObject) HasMac() bool {
+	return obj.obj.Mac != nil
+}
+
+// description is TBD
+// SetMac sets the PatternMacPatternObjectMac value in the MacPatternObject object
+func (obj *macPatternObject) SetMac(value PatternMacPatternObjectMac) MacPatternObject {
+
+	obj.macHolder = nil
+	obj.obj.Mac = value.msg()
+
+	return obj
+}
+
+func (obj *macPatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Mac != nil {
+
+		obj.Mac().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *macPatternObject) setDefault() {
+
+}
+
+// ***** IntegerPatternObject *****
+type integerPatternObject struct {
+	validation
+	obj           *openapi.IntegerPatternObject
+	marshaller    marshalIntegerPatternObject
+	unMarshaller  unMarshalIntegerPatternObject
+	integerHolder PatternIntegerPatternObjectInteger
+}
+
+func NewIntegerPatternObject() IntegerPatternObject {
+	obj := integerPatternObject{obj: &openapi.IntegerPatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *integerPatternObject) msg() *openapi.IntegerPatternObject {
+	return obj.obj
+}
+
+func (obj *integerPatternObject) setMsg(msg *openapi.IntegerPatternObject) IntegerPatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalintegerPatternObject struct {
+	obj *integerPatternObject
+}
+
+type marshalIntegerPatternObject interface {
+	// ToProto marshals IntegerPatternObject to protobuf object *openapi.IntegerPatternObject
+	ToProto() (*openapi.IntegerPatternObject, error)
+	// ToPbText marshals IntegerPatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals IntegerPatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals IntegerPatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalintegerPatternObject struct {
+	obj *integerPatternObject
+}
+
+type unMarshalIntegerPatternObject interface {
+	// FromProto unmarshals IntegerPatternObject from protobuf object *openapi.IntegerPatternObject
+	FromProto(msg *openapi.IntegerPatternObject) (IntegerPatternObject, error)
+	// FromPbText unmarshals IntegerPatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals IntegerPatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals IntegerPatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *integerPatternObject) Marshal() marshalIntegerPatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalintegerPatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *integerPatternObject) Unmarshal() unMarshalIntegerPatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalintegerPatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalintegerPatternObject) ToProto() (*openapi.IntegerPatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalintegerPatternObject) FromProto(msg *openapi.IntegerPatternObject) (IntegerPatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalintegerPatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalintegerPatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalintegerPatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalintegerPatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalintegerPatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalintegerPatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *integerPatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *integerPatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *integerPatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *integerPatternObject) Clone() (IntegerPatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewIntegerPatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *integerPatternObject) setNil() {
+	obj.integerHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// IntegerPatternObject is test integer pattern
+type IntegerPatternObject interface {
+	Validation
+	// msg marshals IntegerPatternObject to protobuf object *openapi.IntegerPatternObject
+	// and doesn't set defaults
+	msg() *openapi.IntegerPatternObject
+	// setMsg unmarshals IntegerPatternObject from protobuf object *openapi.IntegerPatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.IntegerPatternObject) IntegerPatternObject
+	// provides marshal interface
+	Marshal() marshalIntegerPatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalIntegerPatternObject
+	// validate validates IntegerPatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (IntegerPatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Integer returns PatternIntegerPatternObjectInteger, set in IntegerPatternObject.
+	// PatternIntegerPatternObjectInteger is tBD
+	Integer() PatternIntegerPatternObjectInteger
+	// SetInteger assigns PatternIntegerPatternObjectInteger provided by user to IntegerPatternObject.
+	// PatternIntegerPatternObjectInteger is tBD
+	SetInteger(value PatternIntegerPatternObjectInteger) IntegerPatternObject
+	// HasInteger checks if Integer has been set in IntegerPatternObject
+	HasInteger() bool
+	setNil()
+}
+
+// description is TBD
+// Integer returns a PatternIntegerPatternObjectInteger
+func (obj *integerPatternObject) Integer() PatternIntegerPatternObjectInteger {
+	if obj.obj.Integer == nil {
+		obj.obj.Integer = NewPatternIntegerPatternObjectInteger().msg()
+	}
+	if obj.integerHolder == nil {
+		obj.integerHolder = &patternIntegerPatternObjectInteger{obj: obj.obj.Integer}
+	}
+	return obj.integerHolder
+}
+
+// description is TBD
+// Integer returns a PatternIntegerPatternObjectInteger
+func (obj *integerPatternObject) HasInteger() bool {
+	return obj.obj.Integer != nil
+}
+
+// description is TBD
+// SetInteger sets the PatternIntegerPatternObjectInteger value in the IntegerPatternObject object
+func (obj *integerPatternObject) SetInteger(value PatternIntegerPatternObjectInteger) IntegerPatternObject {
+
+	obj.integerHolder = nil
+	obj.obj.Integer = value.msg()
+
+	return obj
+}
+
+func (obj *integerPatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Integer != nil {
+
+		obj.Integer().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *integerPatternObject) setDefault() {
+
+}
+
+// ***** ChecksumPatternObject *****
+type checksumPatternObject struct {
+	validation
+	obj            *openapi.ChecksumPatternObject
+	marshaller     marshalChecksumPatternObject
+	unMarshaller   unMarshalChecksumPatternObject
+	checksumHolder PatternChecksumPatternObjectChecksum
+}
+
+func NewChecksumPatternObject() ChecksumPatternObject {
+	obj := checksumPatternObject{obj: &openapi.ChecksumPatternObject{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *checksumPatternObject) msg() *openapi.ChecksumPatternObject {
+	return obj.obj
+}
+
+func (obj *checksumPatternObject) setMsg(msg *openapi.ChecksumPatternObject) ChecksumPatternObject {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalchecksumPatternObject struct {
+	obj *checksumPatternObject
+}
+
+type marshalChecksumPatternObject interface {
+	// ToProto marshals ChecksumPatternObject to protobuf object *openapi.ChecksumPatternObject
+	ToProto() (*openapi.ChecksumPatternObject, error)
+	// ToPbText marshals ChecksumPatternObject to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChecksumPatternObject to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChecksumPatternObject to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchecksumPatternObject struct {
+	obj *checksumPatternObject
+}
+
+type unMarshalChecksumPatternObject interface {
+	// FromProto unmarshals ChecksumPatternObject from protobuf object *openapi.ChecksumPatternObject
+	FromProto(msg *openapi.ChecksumPatternObject) (ChecksumPatternObject, error)
+	// FromPbText unmarshals ChecksumPatternObject from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChecksumPatternObject from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChecksumPatternObject from JSON text
+	FromJson(value string) error
+}
+
+func (obj *checksumPatternObject) Marshal() marshalChecksumPatternObject {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchecksumPatternObject{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *checksumPatternObject) Unmarshal() unMarshalChecksumPatternObject {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchecksumPatternObject{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchecksumPatternObject) ToProto() (*openapi.ChecksumPatternObject, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalchecksumPatternObject) FromProto(msg *openapi.ChecksumPatternObject) (ChecksumPatternObject, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalchecksumPatternObject) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalchecksumPatternObject) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalchecksumPatternObject) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchecksumPatternObject) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalchecksumPatternObject) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchecksumPatternObject) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *checksumPatternObject) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *checksumPatternObject) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *checksumPatternObject) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *checksumPatternObject) Clone() (ChecksumPatternObject, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewChecksumPatternObject()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *checksumPatternObject) setNil() {
+	obj.checksumHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// ChecksumPatternObject is test checksum pattern
+type ChecksumPatternObject interface {
+	Validation
+	// msg marshals ChecksumPatternObject to protobuf object *openapi.ChecksumPatternObject
+	// and doesn't set defaults
+	msg() *openapi.ChecksumPatternObject
+	// setMsg unmarshals ChecksumPatternObject from protobuf object *openapi.ChecksumPatternObject
+	// and doesn't set defaults
+	setMsg(*openapi.ChecksumPatternObject) ChecksumPatternObject
+	// provides marshal interface
+	Marshal() marshalChecksumPatternObject
+	// provides unmarshal interface
+	Unmarshal() unMarshalChecksumPatternObject
+	// validate validates ChecksumPatternObject
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ChecksumPatternObject, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Checksum returns PatternChecksumPatternObjectChecksum, set in ChecksumPatternObject.
+	// PatternChecksumPatternObjectChecksum is tBD
+	Checksum() PatternChecksumPatternObjectChecksum
+	// SetChecksum assigns PatternChecksumPatternObjectChecksum provided by user to ChecksumPatternObject.
+	// PatternChecksumPatternObjectChecksum is tBD
+	SetChecksum(value PatternChecksumPatternObjectChecksum) ChecksumPatternObject
+	// HasChecksum checks if Checksum has been set in ChecksumPatternObject
+	HasChecksum() bool
+	setNil()
+}
+
+// description is TBD
+// Checksum returns a PatternChecksumPatternObjectChecksum
+func (obj *checksumPatternObject) Checksum() PatternChecksumPatternObjectChecksum {
+	if obj.obj.Checksum == nil {
+		obj.obj.Checksum = NewPatternChecksumPatternObjectChecksum().msg()
+	}
+	if obj.checksumHolder == nil {
+		obj.checksumHolder = &patternChecksumPatternObjectChecksum{obj: obj.obj.Checksum}
+	}
+	return obj.checksumHolder
+}
+
+// description is TBD
+// Checksum returns a PatternChecksumPatternObjectChecksum
+func (obj *checksumPatternObject) HasChecksum() bool {
+	return obj.obj.Checksum != nil
+}
+
+// description is TBD
+// SetChecksum sets the PatternChecksumPatternObjectChecksum value in the ChecksumPatternObject object
+func (obj *checksumPatternObject) SetChecksum(value PatternChecksumPatternObjectChecksum) ChecksumPatternObject {
+
+	obj.checksumHolder = nil
+	obj.obj.Checksum = value.msg()
+
+	return obj
+}
+
+func (obj *checksumPatternObject) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Checksum != nil {
+
+		obj.Checksum().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *checksumPatternObject) setDefault() {
+
+}
+
+// ***** LeafVal *****
+type leafVal struct {
+	validation
+	obj          *openapi.LeafVal
+	marshaller   marshalLeafVal
+	unMarshaller unMarshalLeafVal
+}
+
+func NewLeafVal() LeafVal {
+	obj := leafVal{obj: &openapi.LeafVal{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *leafVal) msg() *openapi.LeafVal {
+	return obj.obj
+}
+
+func (obj *leafVal) setMsg(msg *openapi.LeafVal) LeafVal {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalleafVal struct {
+	obj *leafVal
+}
+
+type marshalLeafVal interface {
+	// ToProto marshals LeafVal to protobuf object *openapi.LeafVal
+	ToProto() (*openapi.LeafVal, error)
+	// ToPbText marshals LeafVal to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals LeafVal to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals LeafVal to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalleafVal struct {
+	obj *leafVal
+}
+
+type unMarshalLeafVal interface {
+	// FromProto unmarshals LeafVal from protobuf object *openapi.LeafVal
+	FromProto(msg *openapi.LeafVal) (LeafVal, error)
+	// FromPbText unmarshals LeafVal from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals LeafVal from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals LeafVal from JSON text
+	FromJson(value string) error
+}
+
+func (obj *leafVal) Marshal() marshalLeafVal {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalleafVal{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *leafVal) Unmarshal() unMarshalLeafVal {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalleafVal{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalleafVal) ToProto() (*openapi.LeafVal, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalleafVal) FromProto(msg *openapi.LeafVal) (LeafVal, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalleafVal) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalleafVal) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalleafVal) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalleafVal) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalleafVal) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalleafVal) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *leafVal) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *leafVal) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *leafVal) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *leafVal) Clone() (LeafVal, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewLeafVal()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// LeafVal is description is TBD
+type LeafVal interface {
+	Validation
+	// msg marshals LeafVal to protobuf object *openapi.LeafVal
+	// and doesn't set defaults
+	msg() *openapi.LeafVal
+	// setMsg unmarshals LeafVal from protobuf object *openapi.LeafVal
+	// and doesn't set defaults
+	setMsg(*openapi.LeafVal) LeafVal
+	// provides marshal interface
+	Marshal() marshalLeafVal
+	// provides unmarshal interface
+	Unmarshal() unMarshalLeafVal
+	// validate validates LeafVal
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (LeafVal, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Name returns string, set in LeafVal.
+	Name() string
+	// SetName assigns string provided by user to LeafVal
+	SetName(value string) LeafVal
+	// HasName checks if Name has been set in LeafVal
+	HasName() bool
+	// Value returns int32, set in LeafVal.
+	Value() int32
+	// SetValue assigns int32 provided by user to LeafVal
+	SetValue(value int32) LeafVal
+	// HasValue checks if Value has been set in LeafVal
+	HasValue() bool
+}
+
+// description is TBD
+// Name returns a string
+func (obj *leafVal) Name() string {
+
+	return *obj.obj.Name
+
+}
+
+// description is TBD
+// Name returns a string
+func (obj *leafVal) HasName() bool {
+	return obj.obj.Name != nil
+}
+
+// description is TBD
+// SetName sets the string value in the LeafVal object
+func (obj *leafVal) SetName(value string) LeafVal {
+
+	obj.obj.Name = &value
+	return obj
+}
+
+// description is TBD
+// Value returns a int32
+func (obj *leafVal) Value() int32 {
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a int32
+func (obj *leafVal) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the int32 value in the LeafVal object
+func (obj *leafVal) SetValue(value int32) LeafVal {
+
+	obj.obj.Value = &value
+	return obj
+}
+
+func (obj *leafVal) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *leafVal) setDefault() {
+
+}
+
+// ***** PatternIpv4PatternObjectIpv4 *****
+type patternIpv4PatternObjectIpv4 struct {
+	validation
+	obj             *openapi.PatternIpv4PatternObjectIpv4
+	marshaller      marshalPatternIpv4PatternObjectIpv4
+	unMarshaller    unMarshalPatternIpv4PatternObjectIpv4
+	incrementHolder PatternIpv4PatternObjectIpv4Counter
+	decrementHolder PatternIpv4PatternObjectIpv4Counter
+}
+
+func NewPatternIpv4PatternObjectIpv4() PatternIpv4PatternObjectIpv4 {
+	obj := patternIpv4PatternObjectIpv4{obj: &openapi.PatternIpv4PatternObjectIpv4{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4) msg() *openapi.PatternIpv4PatternObjectIpv4 {
+	return obj.obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4) setMsg(msg *openapi.PatternIpv4PatternObjectIpv4) PatternIpv4PatternObjectIpv4 {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIpv4PatternObjectIpv4 struct {
+	obj *patternIpv4PatternObjectIpv4
+}
+
+type marshalPatternIpv4PatternObjectIpv4 interface {
+	// ToProto marshals PatternIpv4PatternObjectIpv4 to protobuf object *openapi.PatternIpv4PatternObjectIpv4
+	ToProto() (*openapi.PatternIpv4PatternObjectIpv4, error)
+	// ToPbText marshals PatternIpv4PatternObjectIpv4 to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv4PatternObjectIpv4 to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv4PatternObjectIpv4 to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv4PatternObjectIpv4 struct {
+	obj *patternIpv4PatternObjectIpv4
+}
+
+type unMarshalPatternIpv4PatternObjectIpv4 interface {
+	// FromProto unmarshals PatternIpv4PatternObjectIpv4 from protobuf object *openapi.PatternIpv4PatternObjectIpv4
+	FromProto(msg *openapi.PatternIpv4PatternObjectIpv4) (PatternIpv4PatternObjectIpv4, error)
+	// FromPbText unmarshals PatternIpv4PatternObjectIpv4 from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv4PatternObjectIpv4 from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv4PatternObjectIpv4 from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv4PatternObjectIpv4) Marshal() marshalPatternIpv4PatternObjectIpv4 {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv4PatternObjectIpv4{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv4PatternObjectIpv4) Unmarshal() unMarshalPatternIpv4PatternObjectIpv4 {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv4PatternObjectIpv4{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4) ToProto() (*openapi.PatternIpv4PatternObjectIpv4, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4) FromProto(msg *openapi.PatternIpv4PatternObjectIpv4) (PatternIpv4PatternObjectIpv4, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIpv4PatternObjectIpv4) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv4PatternObjectIpv4) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv4PatternObjectIpv4) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIpv4PatternObjectIpv4) Clone() (PatternIpv4PatternObjectIpv4, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIpv4PatternObjectIpv4()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternIpv4PatternObjectIpv4) setNil() {
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternIpv4PatternObjectIpv4 is tBD
+type PatternIpv4PatternObjectIpv4 interface {
+	Validation
+	// msg marshals PatternIpv4PatternObjectIpv4 to protobuf object *openapi.PatternIpv4PatternObjectIpv4
+	// and doesn't set defaults
+	msg() *openapi.PatternIpv4PatternObjectIpv4
+	// setMsg unmarshals PatternIpv4PatternObjectIpv4 from protobuf object *openapi.PatternIpv4PatternObjectIpv4
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIpv4PatternObjectIpv4) PatternIpv4PatternObjectIpv4
+	// provides marshal interface
+	Marshal() marshalPatternIpv4PatternObjectIpv4
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv4PatternObjectIpv4
+	// validate validates PatternIpv4PatternObjectIpv4
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIpv4PatternObjectIpv4, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternIpv4PatternObjectIpv4ChoiceEnum, set in PatternIpv4PatternObjectIpv4
+	Choice() PatternIpv4PatternObjectIpv4ChoiceEnum
+	// setChoice assigns PatternIpv4PatternObjectIpv4ChoiceEnum provided by user to PatternIpv4PatternObjectIpv4
+	setChoice(value PatternIpv4PatternObjectIpv4ChoiceEnum) PatternIpv4PatternObjectIpv4
+	// HasChoice checks if Choice has been set in PatternIpv4PatternObjectIpv4
+	HasChoice() bool
+	// Value returns string, set in PatternIpv4PatternObjectIpv4.
+	Value() string
+	// SetValue assigns string provided by user to PatternIpv4PatternObjectIpv4
+	SetValue(value string) PatternIpv4PatternObjectIpv4
+	// HasValue checks if Value has been set in PatternIpv4PatternObjectIpv4
+	HasValue() bool
+	// Values returns []string, set in PatternIpv4PatternObjectIpv4.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternIpv4PatternObjectIpv4
+	SetValues(value []string) PatternIpv4PatternObjectIpv4
+	// Increment returns PatternIpv4PatternObjectIpv4Counter, set in PatternIpv4PatternObjectIpv4.
+	// PatternIpv4PatternObjectIpv4Counter is ipv4 counter pattern
+	Increment() PatternIpv4PatternObjectIpv4Counter
+	// SetIncrement assigns PatternIpv4PatternObjectIpv4Counter provided by user to PatternIpv4PatternObjectIpv4.
+	// PatternIpv4PatternObjectIpv4Counter is ipv4 counter pattern
+	SetIncrement(value PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4
+	// HasIncrement checks if Increment has been set in PatternIpv4PatternObjectIpv4
+	HasIncrement() bool
+	// Decrement returns PatternIpv4PatternObjectIpv4Counter, set in PatternIpv4PatternObjectIpv4.
+	// PatternIpv4PatternObjectIpv4Counter is ipv4 counter pattern
+	Decrement() PatternIpv4PatternObjectIpv4Counter
+	// SetDecrement assigns PatternIpv4PatternObjectIpv4Counter provided by user to PatternIpv4PatternObjectIpv4.
+	// PatternIpv4PatternObjectIpv4Counter is ipv4 counter pattern
+	SetDecrement(value PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4
+	// HasDecrement checks if Decrement has been set in PatternIpv4PatternObjectIpv4
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternIpv4PatternObjectIpv4ChoiceEnum string
+
+// Enum of Choice on PatternIpv4PatternObjectIpv4
+var PatternIpv4PatternObjectIpv4Choice = struct {
+	VALUE     PatternIpv4PatternObjectIpv4ChoiceEnum
+	VALUES    PatternIpv4PatternObjectIpv4ChoiceEnum
+	INCREMENT PatternIpv4PatternObjectIpv4ChoiceEnum
+	DECREMENT PatternIpv4PatternObjectIpv4ChoiceEnum
+}{
+	VALUE:     PatternIpv4PatternObjectIpv4ChoiceEnum("value"),
+	VALUES:    PatternIpv4PatternObjectIpv4ChoiceEnum("values"),
+	INCREMENT: PatternIpv4PatternObjectIpv4ChoiceEnum("increment"),
+	DECREMENT: PatternIpv4PatternObjectIpv4ChoiceEnum("decrement"),
+}
+
+func (obj *patternIpv4PatternObjectIpv4) Choice() PatternIpv4PatternObjectIpv4ChoiceEnum {
+	return PatternIpv4PatternObjectIpv4ChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternIpv4PatternObjectIpv4) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternIpv4PatternObjectIpv4) setChoice(value PatternIpv4PatternObjectIpv4ChoiceEnum) PatternIpv4PatternObjectIpv4 {
+	intValue, ok := openapi.PatternIpv4PatternObjectIpv4_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternIpv4PatternObjectIpv4ChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternIpv4PatternObjectIpv4_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternIpv4PatternObjectIpv4Choice.VALUE {
+		defaultValue := "0.0.0.0"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternIpv4PatternObjectIpv4Choice.VALUES {
+		defaultValue := []string{"0.0.0.0"}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternIpv4PatternObjectIpv4Choice.INCREMENT {
+		obj.obj.Increment = NewPatternIpv4PatternObjectIpv4Counter().msg()
+	}
+
+	if value == PatternIpv4PatternObjectIpv4Choice.DECREMENT {
+		obj.obj.Decrement = NewPatternIpv4PatternObjectIpv4Counter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternIpv4PatternObjectIpv4) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternIpv4PatternObjectIpv4) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternIpv4PatternObjectIpv4 object
+func (obj *patternIpv4PatternObjectIpv4) SetValue(value string) PatternIpv4PatternObjectIpv4 {
+	obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternIpv4PatternObjectIpv4) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"0.0.0.0"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternIpv4PatternObjectIpv4 object
+func (obj *patternIpv4PatternObjectIpv4) SetValues(value []string) PatternIpv4PatternObjectIpv4 {
+	obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Increment returns a PatternIpv4PatternObjectIpv4Counter
+func (obj *patternIpv4PatternObjectIpv4) Increment() PatternIpv4PatternObjectIpv4Counter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternIpv4PatternObjectIpv4Choice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternIpv4PatternObjectIpv4Counter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternIpv4PatternObjectIpv4Counter
+func (obj *patternIpv4PatternObjectIpv4) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternIpv4PatternObjectIpv4Counter value in the PatternIpv4PatternObjectIpv4 object
+func (obj *patternIpv4PatternObjectIpv4) SetIncrement(value PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4 {
+	obj.setChoice(PatternIpv4PatternObjectIpv4Choice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternIpv4PatternObjectIpv4Counter
+func (obj *patternIpv4PatternObjectIpv4) Decrement() PatternIpv4PatternObjectIpv4Counter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternIpv4PatternObjectIpv4Choice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternIpv4PatternObjectIpv4Counter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternIpv4PatternObjectIpv4Counter
+func (obj *patternIpv4PatternObjectIpv4) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternIpv4PatternObjectIpv4Counter value in the PatternIpv4PatternObjectIpv4 object
+func (obj *patternIpv4PatternObjectIpv4) SetDecrement(value PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4 {
+	obj.setChoice(PatternIpv4PatternObjectIpv4Choice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateIpv4(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv4PatternObjectIpv4.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateIpv4Slice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv4PatternObjectIpv4.Values"))
+		}
+
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternIpv4PatternObjectIpv4) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUE)
+
+	}
+
+}
+
+// ***** PatternIpv6PatternObjectIpv6 *****
+type patternIpv6PatternObjectIpv6 struct {
+	validation
+	obj             *openapi.PatternIpv6PatternObjectIpv6
+	marshaller      marshalPatternIpv6PatternObjectIpv6
+	unMarshaller    unMarshalPatternIpv6PatternObjectIpv6
+	incrementHolder PatternIpv6PatternObjectIpv6Counter
+	decrementHolder PatternIpv6PatternObjectIpv6Counter
+}
+
+func NewPatternIpv6PatternObjectIpv6() PatternIpv6PatternObjectIpv6 {
+	obj := patternIpv6PatternObjectIpv6{obj: &openapi.PatternIpv6PatternObjectIpv6{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6) msg() *openapi.PatternIpv6PatternObjectIpv6 {
+	return obj.obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6) setMsg(msg *openapi.PatternIpv6PatternObjectIpv6) PatternIpv6PatternObjectIpv6 {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIpv6PatternObjectIpv6 struct {
+	obj *patternIpv6PatternObjectIpv6
+}
+
+type marshalPatternIpv6PatternObjectIpv6 interface {
+	// ToProto marshals PatternIpv6PatternObjectIpv6 to protobuf object *openapi.PatternIpv6PatternObjectIpv6
+	ToProto() (*openapi.PatternIpv6PatternObjectIpv6, error)
+	// ToPbText marshals PatternIpv6PatternObjectIpv6 to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv6PatternObjectIpv6 to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv6PatternObjectIpv6 to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv6PatternObjectIpv6 struct {
+	obj *patternIpv6PatternObjectIpv6
+}
+
+type unMarshalPatternIpv6PatternObjectIpv6 interface {
+	// FromProto unmarshals PatternIpv6PatternObjectIpv6 from protobuf object *openapi.PatternIpv6PatternObjectIpv6
+	FromProto(msg *openapi.PatternIpv6PatternObjectIpv6) (PatternIpv6PatternObjectIpv6, error)
+	// FromPbText unmarshals PatternIpv6PatternObjectIpv6 from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv6PatternObjectIpv6 from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv6PatternObjectIpv6 from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv6PatternObjectIpv6) Marshal() marshalPatternIpv6PatternObjectIpv6 {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv6PatternObjectIpv6{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv6PatternObjectIpv6) Unmarshal() unMarshalPatternIpv6PatternObjectIpv6 {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv6PatternObjectIpv6{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6) ToProto() (*openapi.PatternIpv6PatternObjectIpv6, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6) FromProto(msg *openapi.PatternIpv6PatternObjectIpv6) (PatternIpv6PatternObjectIpv6, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIpv6PatternObjectIpv6) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv6PatternObjectIpv6) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv6PatternObjectIpv6) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIpv6PatternObjectIpv6) Clone() (PatternIpv6PatternObjectIpv6, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIpv6PatternObjectIpv6()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternIpv6PatternObjectIpv6) setNil() {
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternIpv6PatternObjectIpv6 is tBD
+type PatternIpv6PatternObjectIpv6 interface {
+	Validation
+	// msg marshals PatternIpv6PatternObjectIpv6 to protobuf object *openapi.PatternIpv6PatternObjectIpv6
+	// and doesn't set defaults
+	msg() *openapi.PatternIpv6PatternObjectIpv6
+	// setMsg unmarshals PatternIpv6PatternObjectIpv6 from protobuf object *openapi.PatternIpv6PatternObjectIpv6
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIpv6PatternObjectIpv6) PatternIpv6PatternObjectIpv6
+	// provides marshal interface
+	Marshal() marshalPatternIpv6PatternObjectIpv6
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv6PatternObjectIpv6
+	// validate validates PatternIpv6PatternObjectIpv6
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIpv6PatternObjectIpv6, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternIpv6PatternObjectIpv6ChoiceEnum, set in PatternIpv6PatternObjectIpv6
+	Choice() PatternIpv6PatternObjectIpv6ChoiceEnum
+	// setChoice assigns PatternIpv6PatternObjectIpv6ChoiceEnum provided by user to PatternIpv6PatternObjectIpv6
+	setChoice(value PatternIpv6PatternObjectIpv6ChoiceEnum) PatternIpv6PatternObjectIpv6
+	// HasChoice checks if Choice has been set in PatternIpv6PatternObjectIpv6
+	HasChoice() bool
+	// Value returns string, set in PatternIpv6PatternObjectIpv6.
+	Value() string
+	// SetValue assigns string provided by user to PatternIpv6PatternObjectIpv6
+	SetValue(value string) PatternIpv6PatternObjectIpv6
+	// HasValue checks if Value has been set in PatternIpv6PatternObjectIpv6
+	HasValue() bool
+	// Values returns []string, set in PatternIpv6PatternObjectIpv6.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternIpv6PatternObjectIpv6
+	SetValues(value []string) PatternIpv6PatternObjectIpv6
+	// Increment returns PatternIpv6PatternObjectIpv6Counter, set in PatternIpv6PatternObjectIpv6.
+	// PatternIpv6PatternObjectIpv6Counter is ipv6 counter pattern
+	Increment() PatternIpv6PatternObjectIpv6Counter
+	// SetIncrement assigns PatternIpv6PatternObjectIpv6Counter provided by user to PatternIpv6PatternObjectIpv6.
+	// PatternIpv6PatternObjectIpv6Counter is ipv6 counter pattern
+	SetIncrement(value PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6
+	// HasIncrement checks if Increment has been set in PatternIpv6PatternObjectIpv6
+	HasIncrement() bool
+	// Decrement returns PatternIpv6PatternObjectIpv6Counter, set in PatternIpv6PatternObjectIpv6.
+	// PatternIpv6PatternObjectIpv6Counter is ipv6 counter pattern
+	Decrement() PatternIpv6PatternObjectIpv6Counter
+	// SetDecrement assigns PatternIpv6PatternObjectIpv6Counter provided by user to PatternIpv6PatternObjectIpv6.
+	// PatternIpv6PatternObjectIpv6Counter is ipv6 counter pattern
+	SetDecrement(value PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6
+	// HasDecrement checks if Decrement has been set in PatternIpv6PatternObjectIpv6
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternIpv6PatternObjectIpv6ChoiceEnum string
+
+// Enum of Choice on PatternIpv6PatternObjectIpv6
+var PatternIpv6PatternObjectIpv6Choice = struct {
+	VALUE     PatternIpv6PatternObjectIpv6ChoiceEnum
+	VALUES    PatternIpv6PatternObjectIpv6ChoiceEnum
+	INCREMENT PatternIpv6PatternObjectIpv6ChoiceEnum
+	DECREMENT PatternIpv6PatternObjectIpv6ChoiceEnum
+}{
+	VALUE:     PatternIpv6PatternObjectIpv6ChoiceEnum("value"),
+	VALUES:    PatternIpv6PatternObjectIpv6ChoiceEnum("values"),
+	INCREMENT: PatternIpv6PatternObjectIpv6ChoiceEnum("increment"),
+	DECREMENT: PatternIpv6PatternObjectIpv6ChoiceEnum("decrement"),
+}
+
+func (obj *patternIpv6PatternObjectIpv6) Choice() PatternIpv6PatternObjectIpv6ChoiceEnum {
+	return PatternIpv6PatternObjectIpv6ChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternIpv6PatternObjectIpv6) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternIpv6PatternObjectIpv6) setChoice(value PatternIpv6PatternObjectIpv6ChoiceEnum) PatternIpv6PatternObjectIpv6 {
+	intValue, ok := openapi.PatternIpv6PatternObjectIpv6_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternIpv6PatternObjectIpv6ChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternIpv6PatternObjectIpv6_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternIpv6PatternObjectIpv6Choice.VALUE {
+		defaultValue := "::"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternIpv6PatternObjectIpv6Choice.VALUES {
+		defaultValue := []string{"::"}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternIpv6PatternObjectIpv6Choice.INCREMENT {
+		obj.obj.Increment = NewPatternIpv6PatternObjectIpv6Counter().msg()
+	}
+
+	if value == PatternIpv6PatternObjectIpv6Choice.DECREMENT {
+		obj.obj.Decrement = NewPatternIpv6PatternObjectIpv6Counter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternIpv6PatternObjectIpv6) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternIpv6PatternObjectIpv6) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternIpv6PatternObjectIpv6 object
+func (obj *patternIpv6PatternObjectIpv6) SetValue(value string) PatternIpv6PatternObjectIpv6 {
+	obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternIpv6PatternObjectIpv6) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"::"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternIpv6PatternObjectIpv6 object
+func (obj *patternIpv6PatternObjectIpv6) SetValues(value []string) PatternIpv6PatternObjectIpv6 {
+	obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Increment returns a PatternIpv6PatternObjectIpv6Counter
+func (obj *patternIpv6PatternObjectIpv6) Increment() PatternIpv6PatternObjectIpv6Counter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternIpv6PatternObjectIpv6Choice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternIpv6PatternObjectIpv6Counter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternIpv6PatternObjectIpv6Counter
+func (obj *patternIpv6PatternObjectIpv6) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternIpv6PatternObjectIpv6Counter value in the PatternIpv6PatternObjectIpv6 object
+func (obj *patternIpv6PatternObjectIpv6) SetIncrement(value PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6 {
+	obj.setChoice(PatternIpv6PatternObjectIpv6Choice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternIpv6PatternObjectIpv6Counter
+func (obj *patternIpv6PatternObjectIpv6) Decrement() PatternIpv6PatternObjectIpv6Counter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternIpv6PatternObjectIpv6Choice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternIpv6PatternObjectIpv6Counter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternIpv6PatternObjectIpv6Counter
+func (obj *patternIpv6PatternObjectIpv6) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternIpv6PatternObjectIpv6Counter value in the PatternIpv6PatternObjectIpv6 object
+func (obj *patternIpv6PatternObjectIpv6) SetDecrement(value PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6 {
+	obj.setChoice(PatternIpv6PatternObjectIpv6Choice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateIpv6(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv6PatternObjectIpv6.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateIpv6Slice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv6PatternObjectIpv6.Values"))
+		}
+
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternIpv6PatternObjectIpv6) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUE)
+
+	}
+
+}
+
+// ***** PatternMacPatternObjectMac *****
+type patternMacPatternObjectMac struct {
+	validation
+	obj             *openapi.PatternMacPatternObjectMac
+	marshaller      marshalPatternMacPatternObjectMac
+	unMarshaller    unMarshalPatternMacPatternObjectMac
+	incrementHolder PatternMacPatternObjectMacCounter
+	decrementHolder PatternMacPatternObjectMacCounter
+}
+
+func NewPatternMacPatternObjectMac() PatternMacPatternObjectMac {
+	obj := patternMacPatternObjectMac{obj: &openapi.PatternMacPatternObjectMac{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternMacPatternObjectMac) msg() *openapi.PatternMacPatternObjectMac {
+	return obj.obj
+}
+
+func (obj *patternMacPatternObjectMac) setMsg(msg *openapi.PatternMacPatternObjectMac) PatternMacPatternObjectMac {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternMacPatternObjectMac struct {
+	obj *patternMacPatternObjectMac
+}
+
+type marshalPatternMacPatternObjectMac interface {
+	// ToProto marshals PatternMacPatternObjectMac to protobuf object *openapi.PatternMacPatternObjectMac
+	ToProto() (*openapi.PatternMacPatternObjectMac, error)
+	// ToPbText marshals PatternMacPatternObjectMac to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternMacPatternObjectMac to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternMacPatternObjectMac to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternMacPatternObjectMac struct {
+	obj *patternMacPatternObjectMac
+}
+
+type unMarshalPatternMacPatternObjectMac interface {
+	// FromProto unmarshals PatternMacPatternObjectMac from protobuf object *openapi.PatternMacPatternObjectMac
+	FromProto(msg *openapi.PatternMacPatternObjectMac) (PatternMacPatternObjectMac, error)
+	// FromPbText unmarshals PatternMacPatternObjectMac from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternMacPatternObjectMac from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternMacPatternObjectMac from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternMacPatternObjectMac) Marshal() marshalPatternMacPatternObjectMac {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternMacPatternObjectMac{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternMacPatternObjectMac) Unmarshal() unMarshalPatternMacPatternObjectMac {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternMacPatternObjectMac{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternMacPatternObjectMac) ToProto() (*openapi.PatternMacPatternObjectMac, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMac) FromProto(msg *openapi.PatternMacPatternObjectMac) (PatternMacPatternObjectMac, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternMacPatternObjectMac) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMac) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternMacPatternObjectMac) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMac) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternMacPatternObjectMac) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMac) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternMacPatternObjectMac) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternMacPatternObjectMac) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternMacPatternObjectMac) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternMacPatternObjectMac) Clone() (PatternMacPatternObjectMac, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternMacPatternObjectMac()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternMacPatternObjectMac) setNil() {
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternMacPatternObjectMac is tBD
+type PatternMacPatternObjectMac interface {
+	Validation
+	// msg marshals PatternMacPatternObjectMac to protobuf object *openapi.PatternMacPatternObjectMac
+	// and doesn't set defaults
+	msg() *openapi.PatternMacPatternObjectMac
+	// setMsg unmarshals PatternMacPatternObjectMac from protobuf object *openapi.PatternMacPatternObjectMac
+	// and doesn't set defaults
+	setMsg(*openapi.PatternMacPatternObjectMac) PatternMacPatternObjectMac
+	// provides marshal interface
+	Marshal() marshalPatternMacPatternObjectMac
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternMacPatternObjectMac
+	// validate validates PatternMacPatternObjectMac
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternMacPatternObjectMac, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternMacPatternObjectMacChoiceEnum, set in PatternMacPatternObjectMac
+	Choice() PatternMacPatternObjectMacChoiceEnum
+	// setChoice assigns PatternMacPatternObjectMacChoiceEnum provided by user to PatternMacPatternObjectMac
+	setChoice(value PatternMacPatternObjectMacChoiceEnum) PatternMacPatternObjectMac
+	// HasChoice checks if Choice has been set in PatternMacPatternObjectMac
+	HasChoice() bool
+	// Value returns string, set in PatternMacPatternObjectMac.
+	Value() string
+	// SetValue assigns string provided by user to PatternMacPatternObjectMac
+	SetValue(value string) PatternMacPatternObjectMac
+	// HasValue checks if Value has been set in PatternMacPatternObjectMac
+	HasValue() bool
+	// Values returns []string, set in PatternMacPatternObjectMac.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternMacPatternObjectMac
+	SetValues(value []string) PatternMacPatternObjectMac
+	// Auto returns string, set in PatternMacPatternObjectMac.
+	Auto() string
+	// HasAuto checks if Auto has been set in PatternMacPatternObjectMac
+	HasAuto() bool
+	// Increment returns PatternMacPatternObjectMacCounter, set in PatternMacPatternObjectMac.
+	// PatternMacPatternObjectMacCounter is mac counter pattern
+	Increment() PatternMacPatternObjectMacCounter
+	// SetIncrement assigns PatternMacPatternObjectMacCounter provided by user to PatternMacPatternObjectMac.
+	// PatternMacPatternObjectMacCounter is mac counter pattern
+	SetIncrement(value PatternMacPatternObjectMacCounter) PatternMacPatternObjectMac
+	// HasIncrement checks if Increment has been set in PatternMacPatternObjectMac
+	HasIncrement() bool
+	// Decrement returns PatternMacPatternObjectMacCounter, set in PatternMacPatternObjectMac.
+	// PatternMacPatternObjectMacCounter is mac counter pattern
+	Decrement() PatternMacPatternObjectMacCounter
+	// SetDecrement assigns PatternMacPatternObjectMacCounter provided by user to PatternMacPatternObjectMac.
+	// PatternMacPatternObjectMacCounter is mac counter pattern
+	SetDecrement(value PatternMacPatternObjectMacCounter) PatternMacPatternObjectMac
+	// HasDecrement checks if Decrement has been set in PatternMacPatternObjectMac
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternMacPatternObjectMacChoiceEnum string
+
+// Enum of Choice on PatternMacPatternObjectMac
+var PatternMacPatternObjectMacChoice = struct {
+	VALUE     PatternMacPatternObjectMacChoiceEnum
+	VALUES    PatternMacPatternObjectMacChoiceEnum
+	AUTO      PatternMacPatternObjectMacChoiceEnum
+	INCREMENT PatternMacPatternObjectMacChoiceEnum
+	DECREMENT PatternMacPatternObjectMacChoiceEnum
+}{
+	VALUE:     PatternMacPatternObjectMacChoiceEnum("value"),
+	VALUES:    PatternMacPatternObjectMacChoiceEnum("values"),
+	AUTO:      PatternMacPatternObjectMacChoiceEnum("auto"),
+	INCREMENT: PatternMacPatternObjectMacChoiceEnum("increment"),
+	DECREMENT: PatternMacPatternObjectMacChoiceEnum("decrement"),
+}
+
+func (obj *patternMacPatternObjectMac) Choice() PatternMacPatternObjectMacChoiceEnum {
+	return PatternMacPatternObjectMacChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternMacPatternObjectMac) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternMacPatternObjectMac) setChoice(value PatternMacPatternObjectMacChoiceEnum) PatternMacPatternObjectMac {
+	intValue, ok := openapi.PatternMacPatternObjectMac_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternMacPatternObjectMacChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternMacPatternObjectMac_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Auto = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternMacPatternObjectMacChoice.VALUE {
+		defaultValue := "00:00:00:00:00:00"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternMacPatternObjectMacChoice.VALUES {
+		defaultValue := []string{"00:00:00:00:00:00"}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternMacPatternObjectMacChoice.AUTO {
+		defaultValue := "00:00:00:00:00:00"
+		obj.obj.Auto = &defaultValue
+	}
+
+	if value == PatternMacPatternObjectMacChoice.INCREMENT {
+		obj.obj.Increment = NewPatternMacPatternObjectMacCounter().msg()
+	}
+
+	if value == PatternMacPatternObjectMacChoice.DECREMENT {
+		obj.obj.Decrement = NewPatternMacPatternObjectMacCounter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternMacPatternObjectMac) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternMacPatternObjectMacChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternMacPatternObjectMac) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternMacPatternObjectMac object
+func (obj *patternMacPatternObjectMac) SetValue(value string) PatternMacPatternObjectMac {
+	obj.setChoice(PatternMacPatternObjectMacChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternMacPatternObjectMac) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"00:00:00:00:00:00"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternMacPatternObjectMac object
+func (obj *patternMacPatternObjectMac) SetValues(value []string) PatternMacPatternObjectMac {
+	obj.setChoice(PatternMacPatternObjectMacChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// The OTG implementation can provide a system generated
+// value for this property. If the OTG is unable to generate a value
+// the default value must be used.
+// Auto returns a string
+func (obj *patternMacPatternObjectMac) Auto() string {
+
+	if obj.obj.Auto == nil {
+		obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+	}
+
+	return *obj.obj.Auto
+
+}
+
+// The OTG implementation can provide a system generated
+// value for this property. If the OTG is unable to generate a value
+// the default value must be used.
+// Auto returns a string
+func (obj *patternMacPatternObjectMac) HasAuto() bool {
+	return obj.obj.Auto != nil
+}
+
+// description is TBD
+// Increment returns a PatternMacPatternObjectMacCounter
+func (obj *patternMacPatternObjectMac) Increment() PatternMacPatternObjectMacCounter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternMacPatternObjectMacChoice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternMacPatternObjectMacCounter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternMacPatternObjectMacCounter
+func (obj *patternMacPatternObjectMac) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternMacPatternObjectMacCounter value in the PatternMacPatternObjectMac object
+func (obj *patternMacPatternObjectMac) SetIncrement(value PatternMacPatternObjectMacCounter) PatternMacPatternObjectMac {
+	obj.setChoice(PatternMacPatternObjectMacChoice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternMacPatternObjectMacCounter
+func (obj *patternMacPatternObjectMac) Decrement() PatternMacPatternObjectMacCounter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternMacPatternObjectMacChoice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternMacPatternObjectMacCounter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternMacPatternObjectMacCounter
+func (obj *patternMacPatternObjectMac) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternMacPatternObjectMacCounter value in the PatternMacPatternObjectMac object
+func (obj *patternMacPatternObjectMac) SetDecrement(value PatternMacPatternObjectMacCounter) PatternMacPatternObjectMac {
+	obj.setChoice(PatternMacPatternObjectMacChoice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternMacPatternObjectMac) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateMac(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternMacPatternObjectMac.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateMacSlice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternMacPatternObjectMac.Values"))
+		}
+
+	}
+
+	if obj.obj.Auto != nil {
+
+		err := obj.validateMac(obj.Auto())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternMacPatternObjectMac.Auto"))
+		}
+
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternMacPatternObjectMac) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+
+	}
+
+}
+
+// ***** PatternIntegerPatternObjectInteger *****
+type patternIntegerPatternObjectInteger struct {
+	validation
+	obj             *openapi.PatternIntegerPatternObjectInteger
+	marshaller      marshalPatternIntegerPatternObjectInteger
+	unMarshaller    unMarshalPatternIntegerPatternObjectInteger
+	incrementHolder PatternIntegerPatternObjectIntegerCounter
+	decrementHolder PatternIntegerPatternObjectIntegerCounter
+}
+
+func NewPatternIntegerPatternObjectInteger() PatternIntegerPatternObjectInteger {
+	obj := patternIntegerPatternObjectInteger{obj: &openapi.PatternIntegerPatternObjectInteger{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIntegerPatternObjectInteger) msg() *openapi.PatternIntegerPatternObjectInteger {
+	return obj.obj
+}
+
+func (obj *patternIntegerPatternObjectInteger) setMsg(msg *openapi.PatternIntegerPatternObjectInteger) PatternIntegerPatternObjectInteger {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIntegerPatternObjectInteger struct {
+	obj *patternIntegerPatternObjectInteger
+}
+
+type marshalPatternIntegerPatternObjectInteger interface {
+	// ToProto marshals PatternIntegerPatternObjectInteger to protobuf object *openapi.PatternIntegerPatternObjectInteger
+	ToProto() (*openapi.PatternIntegerPatternObjectInteger, error)
+	// ToPbText marshals PatternIntegerPatternObjectInteger to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIntegerPatternObjectInteger to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIntegerPatternObjectInteger to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIntegerPatternObjectInteger struct {
+	obj *patternIntegerPatternObjectInteger
+}
+
+type unMarshalPatternIntegerPatternObjectInteger interface {
+	// FromProto unmarshals PatternIntegerPatternObjectInteger from protobuf object *openapi.PatternIntegerPatternObjectInteger
+	FromProto(msg *openapi.PatternIntegerPatternObjectInteger) (PatternIntegerPatternObjectInteger, error)
+	// FromPbText unmarshals PatternIntegerPatternObjectInteger from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIntegerPatternObjectInteger from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIntegerPatternObjectInteger from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIntegerPatternObjectInteger) Marshal() marshalPatternIntegerPatternObjectInteger {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIntegerPatternObjectInteger{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIntegerPatternObjectInteger) Unmarshal() unMarshalPatternIntegerPatternObjectInteger {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIntegerPatternObjectInteger{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIntegerPatternObjectInteger) ToProto() (*openapi.PatternIntegerPatternObjectInteger, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectInteger) FromProto(msg *openapi.PatternIntegerPatternObjectInteger) (PatternIntegerPatternObjectInteger, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIntegerPatternObjectInteger) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectInteger) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIntegerPatternObjectInteger) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectInteger) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIntegerPatternObjectInteger) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectInteger) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIntegerPatternObjectInteger) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIntegerPatternObjectInteger) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIntegerPatternObjectInteger) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIntegerPatternObjectInteger) Clone() (PatternIntegerPatternObjectInteger, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIntegerPatternObjectInteger()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternIntegerPatternObjectInteger) setNil() {
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternIntegerPatternObjectInteger is tBD
+type PatternIntegerPatternObjectInteger interface {
+	Validation
+	// msg marshals PatternIntegerPatternObjectInteger to protobuf object *openapi.PatternIntegerPatternObjectInteger
+	// and doesn't set defaults
+	msg() *openapi.PatternIntegerPatternObjectInteger
+	// setMsg unmarshals PatternIntegerPatternObjectInteger from protobuf object *openapi.PatternIntegerPatternObjectInteger
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIntegerPatternObjectInteger) PatternIntegerPatternObjectInteger
+	// provides marshal interface
+	Marshal() marshalPatternIntegerPatternObjectInteger
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIntegerPatternObjectInteger
+	// validate validates PatternIntegerPatternObjectInteger
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIntegerPatternObjectInteger, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternIntegerPatternObjectIntegerChoiceEnum, set in PatternIntegerPatternObjectInteger
+	Choice() PatternIntegerPatternObjectIntegerChoiceEnum
+	// setChoice assigns PatternIntegerPatternObjectIntegerChoiceEnum provided by user to PatternIntegerPatternObjectInteger
+	setChoice(value PatternIntegerPatternObjectIntegerChoiceEnum) PatternIntegerPatternObjectInteger
+	// HasChoice checks if Choice has been set in PatternIntegerPatternObjectInteger
+	HasChoice() bool
+	// Value returns uint32, set in PatternIntegerPatternObjectInteger.
+	Value() uint32
+	// SetValue assigns uint32 provided by user to PatternIntegerPatternObjectInteger
+	SetValue(value uint32) PatternIntegerPatternObjectInteger
+	// HasValue checks if Value has been set in PatternIntegerPatternObjectInteger
+	HasValue() bool
+	// Values returns []uint32, set in PatternIntegerPatternObjectInteger.
+	Values() []uint32
+	// SetValues assigns []uint32 provided by user to PatternIntegerPatternObjectInteger
+	SetValues(value []uint32) PatternIntegerPatternObjectInteger
+	// Increment returns PatternIntegerPatternObjectIntegerCounter, set in PatternIntegerPatternObjectInteger.
+	// PatternIntegerPatternObjectIntegerCounter is integer counter pattern
+	Increment() PatternIntegerPatternObjectIntegerCounter
+	// SetIncrement assigns PatternIntegerPatternObjectIntegerCounter provided by user to PatternIntegerPatternObjectInteger.
+	// PatternIntegerPatternObjectIntegerCounter is integer counter pattern
+	SetIncrement(value PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectInteger
+	// HasIncrement checks if Increment has been set in PatternIntegerPatternObjectInteger
+	HasIncrement() bool
+	// Decrement returns PatternIntegerPatternObjectIntegerCounter, set in PatternIntegerPatternObjectInteger.
+	// PatternIntegerPatternObjectIntegerCounter is integer counter pattern
+	Decrement() PatternIntegerPatternObjectIntegerCounter
+	// SetDecrement assigns PatternIntegerPatternObjectIntegerCounter provided by user to PatternIntegerPatternObjectInteger.
+	// PatternIntegerPatternObjectIntegerCounter is integer counter pattern
+	SetDecrement(value PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectInteger
+	// HasDecrement checks if Decrement has been set in PatternIntegerPatternObjectInteger
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternIntegerPatternObjectIntegerChoiceEnum string
+
+// Enum of Choice on PatternIntegerPatternObjectInteger
+var PatternIntegerPatternObjectIntegerChoice = struct {
+	VALUE     PatternIntegerPatternObjectIntegerChoiceEnum
+	VALUES    PatternIntegerPatternObjectIntegerChoiceEnum
+	INCREMENT PatternIntegerPatternObjectIntegerChoiceEnum
+	DECREMENT PatternIntegerPatternObjectIntegerChoiceEnum
+}{
+	VALUE:     PatternIntegerPatternObjectIntegerChoiceEnum("value"),
+	VALUES:    PatternIntegerPatternObjectIntegerChoiceEnum("values"),
+	INCREMENT: PatternIntegerPatternObjectIntegerChoiceEnum("increment"),
+	DECREMENT: PatternIntegerPatternObjectIntegerChoiceEnum("decrement"),
+}
+
+func (obj *patternIntegerPatternObjectInteger) Choice() PatternIntegerPatternObjectIntegerChoiceEnum {
+	return PatternIntegerPatternObjectIntegerChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternIntegerPatternObjectInteger) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternIntegerPatternObjectInteger) setChoice(value PatternIntegerPatternObjectIntegerChoiceEnum) PatternIntegerPatternObjectInteger {
+	intValue, ok := openapi.PatternIntegerPatternObjectInteger_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternIntegerPatternObjectIntegerChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternIntegerPatternObjectInteger_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternIntegerPatternObjectIntegerChoice.VALUE {
+		defaultValue := uint32(0)
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternIntegerPatternObjectIntegerChoice.VALUES {
+		defaultValue := []uint32{0}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternIntegerPatternObjectIntegerChoice.INCREMENT {
+		obj.obj.Increment = NewPatternIntegerPatternObjectIntegerCounter().msg()
+	}
+
+	if value == PatternIntegerPatternObjectIntegerChoice.DECREMENT {
+		obj.obj.Decrement = NewPatternIntegerPatternObjectIntegerCounter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a uint32
+func (obj *patternIntegerPatternObjectInteger) Value() uint32 {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a uint32
+func (obj *patternIntegerPatternObjectInteger) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the uint32 value in the PatternIntegerPatternObjectInteger object
+func (obj *patternIntegerPatternObjectInteger) SetValue(value uint32) PatternIntegerPatternObjectInteger {
+	obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []uint32
+func (obj *patternIntegerPatternObjectInteger) Values() []uint32 {
+	if obj.obj.Values == nil {
+		obj.SetValues([]uint32{0})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []uint32 value in the PatternIntegerPatternObjectInteger object
+func (obj *patternIntegerPatternObjectInteger) SetValues(value []uint32) PatternIntegerPatternObjectInteger {
+	obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]uint32, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Increment returns a PatternIntegerPatternObjectIntegerCounter
+func (obj *patternIntegerPatternObjectInteger) Increment() PatternIntegerPatternObjectIntegerCounter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternIntegerPatternObjectIntegerChoice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternIntegerPatternObjectIntegerCounter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternIntegerPatternObjectIntegerCounter
+func (obj *patternIntegerPatternObjectInteger) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternIntegerPatternObjectIntegerCounter value in the PatternIntegerPatternObjectInteger object
+func (obj *patternIntegerPatternObjectInteger) SetIncrement(value PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectInteger {
+	obj.setChoice(PatternIntegerPatternObjectIntegerChoice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternIntegerPatternObjectIntegerCounter
+func (obj *patternIntegerPatternObjectInteger) Decrement() PatternIntegerPatternObjectIntegerCounter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternIntegerPatternObjectIntegerChoice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternIntegerPatternObjectIntegerCounter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternIntegerPatternObjectIntegerCounter
+func (obj *patternIntegerPatternObjectInteger) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternIntegerPatternObjectIntegerCounter value in the PatternIntegerPatternObjectInteger object
+func (obj *patternIntegerPatternObjectInteger) SetDecrement(value PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectInteger {
+	obj.setChoice(PatternIntegerPatternObjectIntegerChoice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternIntegerPatternObjectInteger) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		if *obj.obj.Value > 255 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= PatternIntegerPatternObjectInteger.Value <= 255 but Got %d", *obj.obj.Value))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		for _, item := range obj.obj.Values {
+			if item > 255 {
+				vObj.validationErrors = append(
+					vObj.validationErrors,
+					fmt.Sprintf("min(uint32) <= PatternIntegerPatternObjectInteger.Values <= 255 but Got %d", item))
+			}
+
+		}
+
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternIntegerPatternObjectInteger) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUE)
+
+	}
+
+}
+
+// ***** PatternChecksumPatternObjectChecksum *****
+type patternChecksumPatternObjectChecksum struct {
+	validation
+	obj          *openapi.PatternChecksumPatternObjectChecksum
+	marshaller   marshalPatternChecksumPatternObjectChecksum
+	unMarshaller unMarshalPatternChecksumPatternObjectChecksum
+}
+
+func NewPatternChecksumPatternObjectChecksum() PatternChecksumPatternObjectChecksum {
+	obj := patternChecksumPatternObjectChecksum{obj: &openapi.PatternChecksumPatternObjectChecksum{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternChecksumPatternObjectChecksum) msg() *openapi.PatternChecksumPatternObjectChecksum {
+	return obj.obj
+}
+
+func (obj *patternChecksumPatternObjectChecksum) setMsg(msg *openapi.PatternChecksumPatternObjectChecksum) PatternChecksumPatternObjectChecksum {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternChecksumPatternObjectChecksum struct {
+	obj *patternChecksumPatternObjectChecksum
+}
+
+type marshalPatternChecksumPatternObjectChecksum interface {
+	// ToProto marshals PatternChecksumPatternObjectChecksum to protobuf object *openapi.PatternChecksumPatternObjectChecksum
+	ToProto() (*openapi.PatternChecksumPatternObjectChecksum, error)
+	// ToPbText marshals PatternChecksumPatternObjectChecksum to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternChecksumPatternObjectChecksum to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternChecksumPatternObjectChecksum to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternChecksumPatternObjectChecksum struct {
+	obj *patternChecksumPatternObjectChecksum
+}
+
+type unMarshalPatternChecksumPatternObjectChecksum interface {
+	// FromProto unmarshals PatternChecksumPatternObjectChecksum from protobuf object *openapi.PatternChecksumPatternObjectChecksum
+	FromProto(msg *openapi.PatternChecksumPatternObjectChecksum) (PatternChecksumPatternObjectChecksum, error)
+	// FromPbText unmarshals PatternChecksumPatternObjectChecksum from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternChecksumPatternObjectChecksum from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternChecksumPatternObjectChecksum from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternChecksumPatternObjectChecksum) Marshal() marshalPatternChecksumPatternObjectChecksum {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternChecksumPatternObjectChecksum{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternChecksumPatternObjectChecksum) Unmarshal() unMarshalPatternChecksumPatternObjectChecksum {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternChecksumPatternObjectChecksum{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternChecksumPatternObjectChecksum) ToProto() (*openapi.PatternChecksumPatternObjectChecksum, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternChecksumPatternObjectChecksum) FromProto(msg *openapi.PatternChecksumPatternObjectChecksum) (PatternChecksumPatternObjectChecksum, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternChecksumPatternObjectChecksum) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternChecksumPatternObjectChecksum) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternChecksumPatternObjectChecksum) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternChecksumPatternObjectChecksum) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternChecksumPatternObjectChecksum) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternChecksumPatternObjectChecksum) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternChecksumPatternObjectChecksum) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternChecksumPatternObjectChecksum) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternChecksumPatternObjectChecksum) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternChecksumPatternObjectChecksum) Clone() (PatternChecksumPatternObjectChecksum, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternChecksumPatternObjectChecksum()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternChecksumPatternObjectChecksum is tBD
+type PatternChecksumPatternObjectChecksum interface {
+	Validation
+	// msg marshals PatternChecksumPatternObjectChecksum to protobuf object *openapi.PatternChecksumPatternObjectChecksum
+	// and doesn't set defaults
+	msg() *openapi.PatternChecksumPatternObjectChecksum
+	// setMsg unmarshals PatternChecksumPatternObjectChecksum from protobuf object *openapi.PatternChecksumPatternObjectChecksum
+	// and doesn't set defaults
+	setMsg(*openapi.PatternChecksumPatternObjectChecksum) PatternChecksumPatternObjectChecksum
+	// provides marshal interface
+	Marshal() marshalPatternChecksumPatternObjectChecksum
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternChecksumPatternObjectChecksum
+	// validate validates PatternChecksumPatternObjectChecksum
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternChecksumPatternObjectChecksum, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternChecksumPatternObjectChecksumChoiceEnum, set in PatternChecksumPatternObjectChecksum
+	Choice() PatternChecksumPatternObjectChecksumChoiceEnum
+	// setChoice assigns PatternChecksumPatternObjectChecksumChoiceEnum provided by user to PatternChecksumPatternObjectChecksum
+	setChoice(value PatternChecksumPatternObjectChecksumChoiceEnum) PatternChecksumPatternObjectChecksum
+	// HasChoice checks if Choice has been set in PatternChecksumPatternObjectChecksum
+	HasChoice() bool
+	// Generated returns PatternChecksumPatternObjectChecksumGeneratedEnum, set in PatternChecksumPatternObjectChecksum
+	Generated() PatternChecksumPatternObjectChecksumGeneratedEnum
+	// SetGenerated assigns PatternChecksumPatternObjectChecksumGeneratedEnum provided by user to PatternChecksumPatternObjectChecksum
+	SetGenerated(value PatternChecksumPatternObjectChecksumGeneratedEnum) PatternChecksumPatternObjectChecksum
+	// HasGenerated checks if Generated has been set in PatternChecksumPatternObjectChecksum
+	HasGenerated() bool
+	// Custom returns uint32, set in PatternChecksumPatternObjectChecksum.
+	Custom() uint32
+	// SetCustom assigns uint32 provided by user to PatternChecksumPatternObjectChecksum
+	SetCustom(value uint32) PatternChecksumPatternObjectChecksum
+	// HasCustom checks if Custom has been set in PatternChecksumPatternObjectChecksum
+	HasCustom() bool
+}
+
+type PatternChecksumPatternObjectChecksumChoiceEnum string
+
+// Enum of Choice on PatternChecksumPatternObjectChecksum
+var PatternChecksumPatternObjectChecksumChoice = struct {
+	GENERATED PatternChecksumPatternObjectChecksumChoiceEnum
+	CUSTOM    PatternChecksumPatternObjectChecksumChoiceEnum
+}{
+	GENERATED: PatternChecksumPatternObjectChecksumChoiceEnum("generated"),
+	CUSTOM:    PatternChecksumPatternObjectChecksumChoiceEnum("custom"),
+}
+
+func (obj *patternChecksumPatternObjectChecksum) Choice() PatternChecksumPatternObjectChecksumChoiceEnum {
+	return PatternChecksumPatternObjectChecksumChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// The type of checksum
+// Choice returns a string
+func (obj *patternChecksumPatternObjectChecksum) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternChecksumPatternObjectChecksum) setChoice(value PatternChecksumPatternObjectChecksumChoiceEnum) PatternChecksumPatternObjectChecksum {
+	intValue, ok := openapi.PatternChecksumPatternObjectChecksum_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternChecksumPatternObjectChecksumChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternChecksumPatternObjectChecksum_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Custom = nil
+	obj.obj.Generated = openapi.PatternChecksumPatternObjectChecksum_Generated_unspecified.Enum()
+	return obj
+}
+
+type PatternChecksumPatternObjectChecksumGeneratedEnum string
+
+// Enum of Generated on PatternChecksumPatternObjectChecksum
+var PatternChecksumPatternObjectChecksumGenerated = struct {
+	GOOD PatternChecksumPatternObjectChecksumGeneratedEnum
+	BAD  PatternChecksumPatternObjectChecksumGeneratedEnum
+}{
+	GOOD: PatternChecksumPatternObjectChecksumGeneratedEnum("good"),
+	BAD:  PatternChecksumPatternObjectChecksumGeneratedEnum("bad"),
+}
+
+func (obj *patternChecksumPatternObjectChecksum) Generated() PatternChecksumPatternObjectChecksumGeneratedEnum {
+	return PatternChecksumPatternObjectChecksumGeneratedEnum(obj.obj.Generated.Enum().String())
+}
+
+// A system generated checksum value
+// Generated returns a string
+func (obj *patternChecksumPatternObjectChecksum) HasGenerated() bool {
+	return obj.obj.Generated != nil
+}
+
+func (obj *patternChecksumPatternObjectChecksum) SetGenerated(value PatternChecksumPatternObjectChecksumGeneratedEnum) PatternChecksumPatternObjectChecksum {
+	intValue, ok := openapi.PatternChecksumPatternObjectChecksum_Generated_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternChecksumPatternObjectChecksumGeneratedEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternChecksumPatternObjectChecksum_Generated_Enum(intValue)
+	obj.obj.Generated = &enumValue
+
+	return obj
+}
+
+// A custom checksum value
+// Custom returns a uint32
+func (obj *patternChecksumPatternObjectChecksum) Custom() uint32 {
+
+	if obj.obj.Custom == nil {
+		obj.setChoice(PatternChecksumPatternObjectChecksumChoice.CUSTOM)
+	}
+
+	return *obj.obj.Custom
+
+}
+
+// A custom checksum value
+// Custom returns a uint32
+func (obj *patternChecksumPatternObjectChecksum) HasCustom() bool {
+	return obj.obj.Custom != nil
+}
+
+// A custom checksum value
+// SetCustom sets the uint32 value in the PatternChecksumPatternObjectChecksum object
+func (obj *patternChecksumPatternObjectChecksum) SetCustom(value uint32) PatternChecksumPatternObjectChecksum {
+	obj.setChoice(PatternChecksumPatternObjectChecksumChoice.CUSTOM)
+	obj.obj.Custom = &value
+	return obj
+}
+
+func (obj *patternChecksumPatternObjectChecksum) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Custom != nil {
+
+		if *obj.obj.Custom > 255 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= PatternChecksumPatternObjectChecksum.Custom <= 255 but Got %d", *obj.obj.Custom))
+		}
+
+	}
+
+}
+
+func (obj *patternChecksumPatternObjectChecksum) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternChecksumPatternObjectChecksumChoice.GENERATED)
+		if obj.obj.Generated.Number() == 0 {
+			obj.SetGenerated(PatternChecksumPatternObjectChecksumGenerated.GOOD)
+
+		}
+
+	}
+
+}
+
+// ***** PatternIpv4PatternObjectIpv4Counter *****
+type patternIpv4PatternObjectIpv4Counter struct {
+	validation
+	obj          *openapi.PatternIpv4PatternObjectIpv4Counter
+	marshaller   marshalPatternIpv4PatternObjectIpv4Counter
+	unMarshaller unMarshalPatternIpv4PatternObjectIpv4Counter
+}
+
+func NewPatternIpv4PatternObjectIpv4Counter() PatternIpv4PatternObjectIpv4Counter {
+	obj := patternIpv4PatternObjectIpv4Counter{obj: &openapi.PatternIpv4PatternObjectIpv4Counter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) msg() *openapi.PatternIpv4PatternObjectIpv4Counter {
+	return obj.obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) setMsg(msg *openapi.PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4Counter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIpv4PatternObjectIpv4Counter struct {
+	obj *patternIpv4PatternObjectIpv4Counter
+}
+
+type marshalPatternIpv4PatternObjectIpv4Counter interface {
+	// ToProto marshals PatternIpv4PatternObjectIpv4Counter to protobuf object *openapi.PatternIpv4PatternObjectIpv4Counter
+	ToProto() (*openapi.PatternIpv4PatternObjectIpv4Counter, error)
+	// ToPbText marshals PatternIpv4PatternObjectIpv4Counter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv4PatternObjectIpv4Counter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv4PatternObjectIpv4Counter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv4PatternObjectIpv4Counter struct {
+	obj *patternIpv4PatternObjectIpv4Counter
+}
+
+type unMarshalPatternIpv4PatternObjectIpv4Counter interface {
+	// FromProto unmarshals PatternIpv4PatternObjectIpv4Counter from protobuf object *openapi.PatternIpv4PatternObjectIpv4Counter
+	FromProto(msg *openapi.PatternIpv4PatternObjectIpv4Counter) (PatternIpv4PatternObjectIpv4Counter, error)
+	// FromPbText unmarshals PatternIpv4PatternObjectIpv4Counter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv4PatternObjectIpv4Counter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv4PatternObjectIpv4Counter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) Marshal() marshalPatternIpv4PatternObjectIpv4Counter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv4PatternObjectIpv4Counter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) Unmarshal() unMarshalPatternIpv4PatternObjectIpv4Counter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv4PatternObjectIpv4Counter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4Counter) ToProto() (*openapi.PatternIpv4PatternObjectIpv4Counter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4Counter) FromProto(msg *openapi.PatternIpv4PatternObjectIpv4Counter) (PatternIpv4PatternObjectIpv4Counter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4Counter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4Counter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4Counter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4Counter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIpv4PatternObjectIpv4Counter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv4PatternObjectIpv4Counter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) Clone() (PatternIpv4PatternObjectIpv4Counter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIpv4PatternObjectIpv4Counter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternIpv4PatternObjectIpv4Counter is ipv4 counter pattern
+type PatternIpv4PatternObjectIpv4Counter interface {
+	Validation
+	// msg marshals PatternIpv4PatternObjectIpv4Counter to protobuf object *openapi.PatternIpv4PatternObjectIpv4Counter
+	// and doesn't set defaults
+	msg() *openapi.PatternIpv4PatternObjectIpv4Counter
+	// setMsg unmarshals PatternIpv4PatternObjectIpv4Counter from protobuf object *openapi.PatternIpv4PatternObjectIpv4Counter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIpv4PatternObjectIpv4Counter) PatternIpv4PatternObjectIpv4Counter
+	// provides marshal interface
+	Marshal() marshalPatternIpv4PatternObjectIpv4Counter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv4PatternObjectIpv4Counter
+	// validate validates PatternIpv4PatternObjectIpv4Counter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIpv4PatternObjectIpv4Counter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns string, set in PatternIpv4PatternObjectIpv4Counter.
+	Start() string
+	// SetStart assigns string provided by user to PatternIpv4PatternObjectIpv4Counter
+	SetStart(value string) PatternIpv4PatternObjectIpv4Counter
+	// HasStart checks if Start has been set in PatternIpv4PatternObjectIpv4Counter
+	HasStart() bool
+	// Step returns string, set in PatternIpv4PatternObjectIpv4Counter.
+	Step() string
+	// SetStep assigns string provided by user to PatternIpv4PatternObjectIpv4Counter
+	SetStep(value string) PatternIpv4PatternObjectIpv4Counter
+	// HasStep checks if Step has been set in PatternIpv4PatternObjectIpv4Counter
+	HasStep() bool
+	// Count returns uint32, set in PatternIpv4PatternObjectIpv4Counter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternIpv4PatternObjectIpv4Counter
+	SetCount(value uint32) PatternIpv4PatternObjectIpv4Counter
+	// HasCount checks if Count has been set in PatternIpv4PatternObjectIpv4Counter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternIpv4PatternObjectIpv4Counter) Start() string {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternIpv4PatternObjectIpv4Counter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the string value in the PatternIpv4PatternObjectIpv4Counter object
+func (obj *patternIpv4PatternObjectIpv4Counter) SetStart(value string) PatternIpv4PatternObjectIpv4Counter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternIpv4PatternObjectIpv4Counter) Step() string {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternIpv4PatternObjectIpv4Counter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the string value in the PatternIpv4PatternObjectIpv4Counter object
+func (obj *patternIpv4PatternObjectIpv4Counter) SetStep(value string) PatternIpv4PatternObjectIpv4Counter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIpv4PatternObjectIpv4Counter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIpv4PatternObjectIpv4Counter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternIpv4PatternObjectIpv4Counter object
+func (obj *patternIpv4PatternObjectIpv4Counter) SetCount(value uint32) PatternIpv4PatternObjectIpv4Counter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		err := obj.validateIpv4(obj.Start())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv4PatternObjectIpv4Counter.Start"))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		err := obj.validateIpv4(obj.Step())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv4PatternObjectIpv4Counter.Step"))
+		}
+
+	}
+
+}
+
+func (obj *patternIpv4PatternObjectIpv4Counter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart("0.0.0.0")
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep("0.0.0.1")
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
+
+}
+
+// ***** PatternIpv6PatternObjectIpv6Counter *****
+type patternIpv6PatternObjectIpv6Counter struct {
+	validation
+	obj          *openapi.PatternIpv6PatternObjectIpv6Counter
+	marshaller   marshalPatternIpv6PatternObjectIpv6Counter
+	unMarshaller unMarshalPatternIpv6PatternObjectIpv6Counter
+}
+
+func NewPatternIpv6PatternObjectIpv6Counter() PatternIpv6PatternObjectIpv6Counter {
+	obj := patternIpv6PatternObjectIpv6Counter{obj: &openapi.PatternIpv6PatternObjectIpv6Counter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) msg() *openapi.PatternIpv6PatternObjectIpv6Counter {
+	return obj.obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) setMsg(msg *openapi.PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6Counter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIpv6PatternObjectIpv6Counter struct {
+	obj *patternIpv6PatternObjectIpv6Counter
+}
+
+type marshalPatternIpv6PatternObjectIpv6Counter interface {
+	// ToProto marshals PatternIpv6PatternObjectIpv6Counter to protobuf object *openapi.PatternIpv6PatternObjectIpv6Counter
+	ToProto() (*openapi.PatternIpv6PatternObjectIpv6Counter, error)
+	// ToPbText marshals PatternIpv6PatternObjectIpv6Counter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIpv6PatternObjectIpv6Counter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIpv6PatternObjectIpv6Counter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIpv6PatternObjectIpv6Counter struct {
+	obj *patternIpv6PatternObjectIpv6Counter
+}
+
+type unMarshalPatternIpv6PatternObjectIpv6Counter interface {
+	// FromProto unmarshals PatternIpv6PatternObjectIpv6Counter from protobuf object *openapi.PatternIpv6PatternObjectIpv6Counter
+	FromProto(msg *openapi.PatternIpv6PatternObjectIpv6Counter) (PatternIpv6PatternObjectIpv6Counter, error)
+	// FromPbText unmarshals PatternIpv6PatternObjectIpv6Counter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIpv6PatternObjectIpv6Counter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIpv6PatternObjectIpv6Counter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) Marshal() marshalPatternIpv6PatternObjectIpv6Counter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIpv6PatternObjectIpv6Counter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) Unmarshal() unMarshalPatternIpv6PatternObjectIpv6Counter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIpv6PatternObjectIpv6Counter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6Counter) ToProto() (*openapi.PatternIpv6PatternObjectIpv6Counter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6Counter) FromProto(msg *openapi.PatternIpv6PatternObjectIpv6Counter) (PatternIpv6PatternObjectIpv6Counter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6Counter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6Counter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6Counter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6Counter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIpv6PatternObjectIpv6Counter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIpv6PatternObjectIpv6Counter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) Clone() (PatternIpv6PatternObjectIpv6Counter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIpv6PatternObjectIpv6Counter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternIpv6PatternObjectIpv6Counter is ipv6 counter pattern
+type PatternIpv6PatternObjectIpv6Counter interface {
+	Validation
+	// msg marshals PatternIpv6PatternObjectIpv6Counter to protobuf object *openapi.PatternIpv6PatternObjectIpv6Counter
+	// and doesn't set defaults
+	msg() *openapi.PatternIpv6PatternObjectIpv6Counter
+	// setMsg unmarshals PatternIpv6PatternObjectIpv6Counter from protobuf object *openapi.PatternIpv6PatternObjectIpv6Counter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIpv6PatternObjectIpv6Counter) PatternIpv6PatternObjectIpv6Counter
+	// provides marshal interface
+	Marshal() marshalPatternIpv6PatternObjectIpv6Counter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIpv6PatternObjectIpv6Counter
+	// validate validates PatternIpv6PatternObjectIpv6Counter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIpv6PatternObjectIpv6Counter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns string, set in PatternIpv6PatternObjectIpv6Counter.
+	Start() string
+	// SetStart assigns string provided by user to PatternIpv6PatternObjectIpv6Counter
+	SetStart(value string) PatternIpv6PatternObjectIpv6Counter
+	// HasStart checks if Start has been set in PatternIpv6PatternObjectIpv6Counter
+	HasStart() bool
+	// Step returns string, set in PatternIpv6PatternObjectIpv6Counter.
+	Step() string
+	// SetStep assigns string provided by user to PatternIpv6PatternObjectIpv6Counter
+	SetStep(value string) PatternIpv6PatternObjectIpv6Counter
+	// HasStep checks if Step has been set in PatternIpv6PatternObjectIpv6Counter
+	HasStep() bool
+	// Count returns uint32, set in PatternIpv6PatternObjectIpv6Counter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternIpv6PatternObjectIpv6Counter
+	SetCount(value uint32) PatternIpv6PatternObjectIpv6Counter
+	// HasCount checks if Count has been set in PatternIpv6PatternObjectIpv6Counter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternIpv6PatternObjectIpv6Counter) Start() string {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternIpv6PatternObjectIpv6Counter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the string value in the PatternIpv6PatternObjectIpv6Counter object
+func (obj *patternIpv6PatternObjectIpv6Counter) SetStart(value string) PatternIpv6PatternObjectIpv6Counter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternIpv6PatternObjectIpv6Counter) Step() string {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternIpv6PatternObjectIpv6Counter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the string value in the PatternIpv6PatternObjectIpv6Counter object
+func (obj *patternIpv6PatternObjectIpv6Counter) SetStep(value string) PatternIpv6PatternObjectIpv6Counter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIpv6PatternObjectIpv6Counter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIpv6PatternObjectIpv6Counter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternIpv6PatternObjectIpv6Counter object
+func (obj *patternIpv6PatternObjectIpv6Counter) SetCount(value uint32) PatternIpv6PatternObjectIpv6Counter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		err := obj.validateIpv6(obj.Start())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv6PatternObjectIpv6Counter.Start"))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		err := obj.validateIpv6(obj.Step())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternIpv6PatternObjectIpv6Counter.Step"))
+		}
+
+	}
+
+}
+
+func (obj *patternIpv6PatternObjectIpv6Counter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart("::")
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep("::1")
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
+
+}
+
+// ***** PatternMacPatternObjectMacCounter *****
+type patternMacPatternObjectMacCounter struct {
+	validation
+	obj          *openapi.PatternMacPatternObjectMacCounter
+	marshaller   marshalPatternMacPatternObjectMacCounter
+	unMarshaller unMarshalPatternMacPatternObjectMacCounter
+}
+
+func NewPatternMacPatternObjectMacCounter() PatternMacPatternObjectMacCounter {
+	obj := patternMacPatternObjectMacCounter{obj: &openapi.PatternMacPatternObjectMacCounter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternMacPatternObjectMacCounter) msg() *openapi.PatternMacPatternObjectMacCounter {
+	return obj.obj
+}
+
+func (obj *patternMacPatternObjectMacCounter) setMsg(msg *openapi.PatternMacPatternObjectMacCounter) PatternMacPatternObjectMacCounter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternMacPatternObjectMacCounter struct {
+	obj *patternMacPatternObjectMacCounter
+}
+
+type marshalPatternMacPatternObjectMacCounter interface {
+	// ToProto marshals PatternMacPatternObjectMacCounter to protobuf object *openapi.PatternMacPatternObjectMacCounter
+	ToProto() (*openapi.PatternMacPatternObjectMacCounter, error)
+	// ToPbText marshals PatternMacPatternObjectMacCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternMacPatternObjectMacCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternMacPatternObjectMacCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternMacPatternObjectMacCounter struct {
+	obj *patternMacPatternObjectMacCounter
+}
+
+type unMarshalPatternMacPatternObjectMacCounter interface {
+	// FromProto unmarshals PatternMacPatternObjectMacCounter from protobuf object *openapi.PatternMacPatternObjectMacCounter
+	FromProto(msg *openapi.PatternMacPatternObjectMacCounter) (PatternMacPatternObjectMacCounter, error)
+	// FromPbText unmarshals PatternMacPatternObjectMacCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternMacPatternObjectMacCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternMacPatternObjectMacCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternMacPatternObjectMacCounter) Marshal() marshalPatternMacPatternObjectMacCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternMacPatternObjectMacCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternMacPatternObjectMacCounter) Unmarshal() unMarshalPatternMacPatternObjectMacCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternMacPatternObjectMacCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternMacPatternObjectMacCounter) ToProto() (*openapi.PatternMacPatternObjectMacCounter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMacCounter) FromProto(msg *openapi.PatternMacPatternObjectMacCounter) (PatternMacPatternObjectMacCounter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternMacPatternObjectMacCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMacCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternMacPatternObjectMacCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMacCounter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternMacPatternObjectMacCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternMacPatternObjectMacCounter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternMacPatternObjectMacCounter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternMacPatternObjectMacCounter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternMacPatternObjectMacCounter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternMacPatternObjectMacCounter) Clone() (PatternMacPatternObjectMacCounter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternMacPatternObjectMacCounter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternMacPatternObjectMacCounter is mac counter pattern
+type PatternMacPatternObjectMacCounter interface {
+	Validation
+	// msg marshals PatternMacPatternObjectMacCounter to protobuf object *openapi.PatternMacPatternObjectMacCounter
+	// and doesn't set defaults
+	msg() *openapi.PatternMacPatternObjectMacCounter
+	// setMsg unmarshals PatternMacPatternObjectMacCounter from protobuf object *openapi.PatternMacPatternObjectMacCounter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternMacPatternObjectMacCounter) PatternMacPatternObjectMacCounter
+	// provides marshal interface
+	Marshal() marshalPatternMacPatternObjectMacCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternMacPatternObjectMacCounter
+	// validate validates PatternMacPatternObjectMacCounter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternMacPatternObjectMacCounter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns string, set in PatternMacPatternObjectMacCounter.
+	Start() string
+	// SetStart assigns string provided by user to PatternMacPatternObjectMacCounter
+	SetStart(value string) PatternMacPatternObjectMacCounter
+	// HasStart checks if Start has been set in PatternMacPatternObjectMacCounter
+	HasStart() bool
+	// Step returns string, set in PatternMacPatternObjectMacCounter.
+	Step() string
+	// SetStep assigns string provided by user to PatternMacPatternObjectMacCounter
+	SetStep(value string) PatternMacPatternObjectMacCounter
+	// HasStep checks if Step has been set in PatternMacPatternObjectMacCounter
+	HasStep() bool
+	// Count returns uint32, set in PatternMacPatternObjectMacCounter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternMacPatternObjectMacCounter
+	SetCount(value uint32) PatternMacPatternObjectMacCounter
+	// HasCount checks if Count has been set in PatternMacPatternObjectMacCounter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternMacPatternObjectMacCounter) Start() string {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternMacPatternObjectMacCounter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the string value in the PatternMacPatternObjectMacCounter object
+func (obj *patternMacPatternObjectMacCounter) SetStart(value string) PatternMacPatternObjectMacCounter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternMacPatternObjectMacCounter) Step() string {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternMacPatternObjectMacCounter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the string value in the PatternMacPatternObjectMacCounter object
+func (obj *patternMacPatternObjectMacCounter) SetStep(value string) PatternMacPatternObjectMacCounter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternMacPatternObjectMacCounter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternMacPatternObjectMacCounter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternMacPatternObjectMacCounter object
+func (obj *patternMacPatternObjectMacCounter) SetCount(value uint32) PatternMacPatternObjectMacCounter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternMacPatternObjectMacCounter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		err := obj.validateMac(obj.Start())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternMacPatternObjectMacCounter.Start"))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		err := obj.validateMac(obj.Step())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternMacPatternObjectMacCounter.Step"))
+		}
+
+	}
+
+}
+
+func (obj *patternMacPatternObjectMacCounter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart("00:00:00:00:00:00")
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep("00:00:00:00:00:01")
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
+
+}
+
+// ***** PatternIntegerPatternObjectIntegerCounter *****
+type patternIntegerPatternObjectIntegerCounter struct {
+	validation
+	obj          *openapi.PatternIntegerPatternObjectIntegerCounter
+	marshaller   marshalPatternIntegerPatternObjectIntegerCounter
+	unMarshaller unMarshalPatternIntegerPatternObjectIntegerCounter
+}
+
+func NewPatternIntegerPatternObjectIntegerCounter() PatternIntegerPatternObjectIntegerCounter {
+	obj := patternIntegerPatternObjectIntegerCounter{obj: &openapi.PatternIntegerPatternObjectIntegerCounter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) msg() *openapi.PatternIntegerPatternObjectIntegerCounter {
+	return obj.obj
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) setMsg(msg *openapi.PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectIntegerCounter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternIntegerPatternObjectIntegerCounter struct {
+	obj *patternIntegerPatternObjectIntegerCounter
+}
+
+type marshalPatternIntegerPatternObjectIntegerCounter interface {
+	// ToProto marshals PatternIntegerPatternObjectIntegerCounter to protobuf object *openapi.PatternIntegerPatternObjectIntegerCounter
+	ToProto() (*openapi.PatternIntegerPatternObjectIntegerCounter, error)
+	// ToPbText marshals PatternIntegerPatternObjectIntegerCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternIntegerPatternObjectIntegerCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternIntegerPatternObjectIntegerCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternIntegerPatternObjectIntegerCounter struct {
+	obj *patternIntegerPatternObjectIntegerCounter
+}
+
+type unMarshalPatternIntegerPatternObjectIntegerCounter interface {
+	// FromProto unmarshals PatternIntegerPatternObjectIntegerCounter from protobuf object *openapi.PatternIntegerPatternObjectIntegerCounter
+	FromProto(msg *openapi.PatternIntegerPatternObjectIntegerCounter) (PatternIntegerPatternObjectIntegerCounter, error)
+	// FromPbText unmarshals PatternIntegerPatternObjectIntegerCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternIntegerPatternObjectIntegerCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternIntegerPatternObjectIntegerCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) Marshal() marshalPatternIntegerPatternObjectIntegerCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternIntegerPatternObjectIntegerCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) Unmarshal() unMarshalPatternIntegerPatternObjectIntegerCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternIntegerPatternObjectIntegerCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternIntegerPatternObjectIntegerCounter) ToProto() (*openapi.PatternIntegerPatternObjectIntegerCounter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectIntegerCounter) FromProto(msg *openapi.PatternIntegerPatternObjectIntegerCounter) (PatternIntegerPatternObjectIntegerCounter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternIntegerPatternObjectIntegerCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectIntegerCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternIntegerPatternObjectIntegerCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectIntegerCounter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternIntegerPatternObjectIntegerCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternIntegerPatternObjectIntegerCounter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) Clone() (PatternIntegerPatternObjectIntegerCounter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternIntegerPatternObjectIntegerCounter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternIntegerPatternObjectIntegerCounter is integer counter pattern
+type PatternIntegerPatternObjectIntegerCounter interface {
+	Validation
+	// msg marshals PatternIntegerPatternObjectIntegerCounter to protobuf object *openapi.PatternIntegerPatternObjectIntegerCounter
+	// and doesn't set defaults
+	msg() *openapi.PatternIntegerPatternObjectIntegerCounter
+	// setMsg unmarshals PatternIntegerPatternObjectIntegerCounter from protobuf object *openapi.PatternIntegerPatternObjectIntegerCounter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternIntegerPatternObjectIntegerCounter) PatternIntegerPatternObjectIntegerCounter
+	// provides marshal interface
+	Marshal() marshalPatternIntegerPatternObjectIntegerCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternIntegerPatternObjectIntegerCounter
+	// validate validates PatternIntegerPatternObjectIntegerCounter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternIntegerPatternObjectIntegerCounter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns uint32, set in PatternIntegerPatternObjectIntegerCounter.
+	Start() uint32
+	// SetStart assigns uint32 provided by user to PatternIntegerPatternObjectIntegerCounter
+	SetStart(value uint32) PatternIntegerPatternObjectIntegerCounter
+	// HasStart checks if Start has been set in PatternIntegerPatternObjectIntegerCounter
+	HasStart() bool
+	// Step returns uint32, set in PatternIntegerPatternObjectIntegerCounter.
+	Step() uint32
+	// SetStep assigns uint32 provided by user to PatternIntegerPatternObjectIntegerCounter
+	SetStep(value uint32) PatternIntegerPatternObjectIntegerCounter
+	// HasStep checks if Step has been set in PatternIntegerPatternObjectIntegerCounter
+	HasStep() bool
+	// Count returns uint32, set in PatternIntegerPatternObjectIntegerCounter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternIntegerPatternObjectIntegerCounter
+	SetCount(value uint32) PatternIntegerPatternObjectIntegerCounter
+	// HasCount checks if Count has been set in PatternIntegerPatternObjectIntegerCounter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) Start() uint32 {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the uint32 value in the PatternIntegerPatternObjectIntegerCounter object
+func (obj *patternIntegerPatternObjectIntegerCounter) SetStart(value uint32) PatternIntegerPatternObjectIntegerCounter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) Step() uint32 {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the uint32 value in the PatternIntegerPatternObjectIntegerCounter object
+func (obj *patternIntegerPatternObjectIntegerCounter) SetStep(value uint32) PatternIntegerPatternObjectIntegerCounter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternIntegerPatternObjectIntegerCounter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternIntegerPatternObjectIntegerCounter object
+func (obj *patternIntegerPatternObjectIntegerCounter) SetCount(value uint32) PatternIntegerPatternObjectIntegerCounter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		if *obj.obj.Start > 255 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= PatternIntegerPatternObjectIntegerCounter.Start <= 255 but Got %d", *obj.obj.Start))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		if *obj.obj.Step > 255 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= PatternIntegerPatternObjectIntegerCounter.Step <= 255 but Got %d", *obj.obj.Step))
+		}
+
+	}
+
+	if obj.obj.Count != nil {
+
+		if *obj.obj.Count > 255 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("0 <= PatternIntegerPatternObjectIntegerCounter.Count <= 255 but Got %d", *obj.obj.Count))
+		}
+
+	}
+
+}
+
+func (obj *patternIntegerPatternObjectIntegerCounter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart(0)
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep(1)
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
 
 }
