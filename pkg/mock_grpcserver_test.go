@@ -1,4 +1,4 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"net"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	sanity "github.com/open-traffic-generator/openapiart/pkg/sanity"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
+	sanity "github.com/open-traffic-generator/goapi/pkg/openapi"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -64,7 +64,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = fmt.Errorf("SetConfig has detected configuration errors")
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
 		resp = nil
-		errObj := openapiart.NewError()
+		errObj := goapi.NewError()
 		var code int32 = 500
 		_ = errObj.SetCode(code)
 		tmp := errObj.SetKind("internal")
@@ -83,7 +83,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = nil
 	case sanity.PrefixConfig_Response_status_404.Enum().Number():
 		s.Config = req.PrefixConfig
-		errObj := openapiart.NewError()
+		errObj := goapi.NewError()
 		var code int32 = 404
 		_ = errObj.SetCode(code)
 		_ = errObj.SetErrors([]string{"returning err1", "returning err2"})
@@ -104,7 +104,7 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
-	ver, _ := openapiart.NewApi().GetLocalVersion().Marshal().ToProto()
+	ver, _ := goapi.NewApi().GetLocalVersion().Marshal().ToProto()
 	resp := &sanity.GetVersionResponse{
 		Version: ver,
 	}
@@ -117,7 +117,7 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 		if req.UpdateConfig.G[0].GetName() == "ErStr" {
 			return nil, fmt.Errorf("unit test error")
 		} else if req.UpdateConfig.G[0].GetName() == "Erkind" {
-			errObj := openapiart.NewError()
+			errObj := goapi.NewError()
 			var code int32 = 404
 			_ = errObj.SetCode(code)
 			tmp := errObj.SetKind("validation")

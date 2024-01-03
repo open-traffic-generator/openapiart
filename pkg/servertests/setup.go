@@ -1,7 +1,7 @@
 package test
 
 import (
-	"github.com/open-traffic-generator/openapiart/pkg/httpapi"
+	"github.com/open-traffic-generator/goapi/pkg/httpapi"
 
 	"github.com/gorilla/mux"
 )

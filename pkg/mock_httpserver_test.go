@@ -1,14 +1,14 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"fmt"
 	"log"
 	"net/http"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	httpapi "github.com/open-traffic-generator/openapiart/pkg/httpapi"
-	controllers "github.com/open-traffic-generator/openapiart/pkg/httpapi/controllers"
-	interfaces "github.com/open-traffic-generator/openapiart/pkg/httpapi/interfaces"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
+	httpapi "github.com/open-traffic-generator/goapi/pkg/httpapi"
+	controllers "github.com/open-traffic-generator/goapi/pkg/httpapi/controllers"
+	interfaces "github.com/open-traffic-generator/goapi/pkg/httpapi/interfaces"
 )
 
 // 	Common struct
@@ -16,7 +16,7 @@ import (
 type HttpServer struct {
 	serverLocation string
 	Location       string
-	Config         openapiart.PrefixConfig
+	Config         goapi.PrefixConfig
 }
 
 var (
@@ -76,16 +76,16 @@ func (h *capabilitiesHandler) GetController() interfaces.CapabilitiesController 
 	return h.controller
 }
 
-func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Request) (openapiart.SetConfigResponse, error) {
+func (h *bundlerHandler) SetConfig(rbody goapi.PrefixConfig, r *http.Request) (goapi.SetConfigResponse, error) {
 	httpServer.Config = rbody
-	response := openapiart.NewSetConfigResponse()
+	response := goapi.NewSetConfigResponse()
 	switch httpServer.Config.Response() {
-	case openapiart.PrefixConfigResponse.STATUS_200:
+	case goapi.PrefixConfigResponse.STATUS_200:
 		response.SetResponseBytes([]byte("Successful set config operation"))
-	case openapiart.PrefixConfigResponse.STATUS_400:
+	case goapi.PrefixConfigResponse.STATUS_400:
 		return nil, fmt.Errorf("client error !!!!")
-	case openapiart.PrefixConfigResponse.STATUS_500:
-		err := openapiart.NewError()
+	case goapi.PrefixConfigResponse.STATUS_500:
+		err := goapi.NewError()
 		var code int32 = 500
 		_ = err.SetCode(code)
 		e := err.SetKind("internal")
@@ -97,8 +97,8 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 	return response, nil
 }
 
-func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *http.Request) (openapiart.UpdateConfigurationResponse, error) {
-	response := openapiart.NewUpdateConfigurationResponse()
+func (h *bundlerHandler) UpdateConfiguration(rbody goapi.UpdateConfig, r *http.Request) (goapi.UpdateConfigurationResponse, error) {
+	response := goapi.NewUpdateConfigurationResponse()
 	data, _ := httpServer.Config.Marshal().ToJson()
 	err := response.PrefixConfig().Unmarshal().FromJson(data)
 	if err != nil {
@@ -107,15 +107,15 @@ func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *h
 	return response, nil
 }
 
-func (h *bundlerHandler) GetConfig(r *http.Request) (openapiart.GetConfigResponse, error) {
-	response := openapiart.NewGetConfigResponse()
+func (h *bundlerHandler) GetConfig(r *http.Request) (goapi.GetConfigResponse, error) {
+	response := goapi.NewGetConfigResponse()
 	response.SetPrefixConfig(httpServer.Config)
 	return response, nil
 }
 
-func (h *capabilitiesHandler) GetVersion(r *http.Request) (openapiart.GetVersionResponse, error) {
-	response := openapiart.NewGetVersionResponse()
-	response.SetVersion(openapiart.NewApi().GetLocalVersion())
+func (h *capabilitiesHandler) GetVersion(r *http.Request) (goapi.GetVersionResponse, error) {
+	response := goapi.NewGetVersionResponse()
+	response.SetVersion(goapi.NewApi().GetLocalVersion())
 	return response, nil
 }
 
@@ -135,33 +135,33 @@ func (h *metricsHandler) GetController() interfaces.MetricsController {
 	return h.controller
 }
 
-func (h *metricsHandler) GetMetrics(req openapiart.MetricsRequest, r *http.Request) (openapiart.GetMetricsResponse, error) {
+func (h *metricsHandler) GetMetrics(req goapi.MetricsRequest, r *http.Request) (goapi.GetMetricsResponse, error) {
 	ch, _ := req.Marshal().ToProto()
 	choice := ch.GetChoice().String()
 	switch choice {
 	case "port":
-		response := openapiart.NewGetMetricsResponse()
+		response := goapi.NewGetMetricsResponse()
 		response.Metrics().Ports().Add().SetName("p1").SetTxFrames(2000).SetRxFrames(1777)
 		response.Metrics().Ports().Add().SetName("p2").SetTxFrames(3000).SetRxFrames(2999)
 		return response, nil
 	case "flow":
-		response := openapiart.NewGetMetricsResponse()
+		response := goapi.NewGetMetricsResponse()
 		response.Metrics().Flows().Add().SetName("f1").SetTxFrames(2000).SetRxFrames(1777)
 		response.Metrics().Flows().Add().SetName("f2").SetTxFrames(3000).SetRxFrames(2999)
 		return response, nil
 	default:
-		return openapiart.NewGetMetricsResponse(), nil
+		return goapi.NewGetMetricsResponse(), nil
 	}
 }
 
-func (h *metricsHandler) GetWarnings(r *http.Request) (openapiart.GetWarningsResponse, error) {
-	response := openapiart.NewGetWarningsResponse()
+func (h *metricsHandler) GetWarnings(r *http.Request) (goapi.GetWarningsResponse, error) {
+	response := goapi.NewGetWarningsResponse()
 	response.WarningDetails().SetWarnings([]string{"This is your first warning", "Your last warning"})
 	return response, nil
 }
 
-func (h *metricsHandler) ClearWarnings(r *http.Request) (openapiart.ClearWarningsResponse, error) {
-	response := openapiart.NewClearWarningsResponse()
+func (h *metricsHandler) ClearWarnings(r *http.Request) (goapi.ClearWarningsResponse, error) {
+	response := goapi.NewClearWarningsResponse()
 	response.SetResponseString("success")
 	return response, nil
 }
