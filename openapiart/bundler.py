@@ -684,12 +684,9 @@ class Bundler(object):
                 )
             )
         if "signed" in xpattern:
-            if (
-                xpattern["format"] != "integer"
-                and xpattern["format"] != "checksum"
-            ):
+            if xpattern["format"] != "integer":
                 self._errors.append(
-                    "signed property can only be used if the format is set to integer or checksum in property {}".format(
+                    "signed property can only be used if the format is set to integer in property {}".format(
                         str(xpattern_path.full_path)
                     )
                 )
@@ -780,8 +777,6 @@ class Bundler(object):
         auto_field = AutoFieldUid()
         length = int(xpattern.get("length", 8))
         fmt = "uint32" if length <= 32 else "uint64"
-        if xpattern.get("signed", False):
-            fmt = fmt[1:]
         schema = {
             "description": description,
             "type": "object",
@@ -815,8 +810,6 @@ class Bundler(object):
                 },
             },
         }
-        if xpattern.get("signed", False):
-            schema["properties"]["custom"]["minimum"] = -(2**length)
         self._content["components"]["schemas"][schema_name] = schema
 
     def _generate_value_schema(

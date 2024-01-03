@@ -61,12 +61,3 @@ components:
             length: 8
             features: [count]
           x-field-uid: 1
-    SignedChecksumPattern:
-      description: Test signed checksum pattern
-      type: object
-      properties:
-        checksum:
-          x-field-pattern:
-            format: checksum
-            signed: true
-          x-field-uid: 1

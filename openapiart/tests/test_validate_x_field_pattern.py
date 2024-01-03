@@ -26,7 +26,7 @@ def test_validate_pattern():
         "components.schemas.Config.properties.integer.x-field-pattern property using x-field-pattern with format integer must contain length property",
         "components.schemas.Config.properties.wrong.x-field-pattern has unspported format random , valid formats are ['integer', 'ipv4', 'ipv6', 'mac', 'checksum']",
         "components.schemas.Config.properties.int_128.x-field-pattern property using x-field-pattern with format integer cannot have length greater than 64",
-        "signed property can only be used if the format is set to integer or checksum in property components.schemas.Config.properties.signed_value_without_int.x-field-pattern",
+        "signed property can only be used if the format is set to integer in property components.schemas.Config.properties.signed_value_without_int.x-field-pattern",
         "invalid value 45 in components.schemas.Config.properties.wrong_int_signed_value.x-field-pattern, signed property can either be true or false",
     ]
     with pytest.raises(Exception) as execinfo:

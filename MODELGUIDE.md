@@ -183,7 +183,7 @@ x-field-pattern:
     type: integer
   signed:
     description: >-
-      Valid only if the format is of type integer or checksum.
+      Valid only if the format is of type integer.
       Indicates whether the integer value is signed or unsigned.
       If the property is not specified the value is considered as unsigned.
       Its a boolean value which is optional in nature.
