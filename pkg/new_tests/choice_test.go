@@ -3,7 +3,7 @@ package openapiart_test
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,25 +12,25 @@ func TestChoiceValSchema(t *testing.T) {
 	// This test checks the values in choice val schema.
 	// Objective is to check if values are set properly.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mVal := config.ExtendedFeatures().ChoiceVal().MixedVal()
 
 	mVal.SetIntVal(34)
 
 	assert.Equal(t, mVal.IntVal(), int32(34))
-	assert.Equal(t, mVal.Choice(), openapiart.MixedValChoice.INT_VAL)
+	assert.Equal(t, mVal.Choice(), goapi.MixedValChoice.INT_VAL)
 
 	mVal.SetNumVal(50.05)
 	assert.Equal(t, mVal.NumVal(), float32(50.05))
-	assert.Equal(t, mVal.Choice(), openapiart.MixedValChoice.NUM_VAL)
+	assert.Equal(t, mVal.Choice(), goapi.MixedValChoice.NUM_VAL)
 
 	mVal.SetStrVal("str1")
 	assert.Equal(t, mVal.StrVal(), "str1")
-	assert.Equal(t, mVal.Choice(), openapiart.MixedValChoice.STR_VAL)
+	assert.Equal(t, mVal.Choice(), goapi.MixedValChoice.STR_VAL)
 
 	mVal.SetBoolVal(true)
 	assert.Equal(t, mVal.BoolVal(), true)
-	assert.Equal(t, mVal.Choice(), openapiart.MixedValChoice.BOOL_VAL)
+	assert.Equal(t, mVal.Choice(), goapi.MixedValChoice.BOOL_VAL)
 
 	_, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
@@ -40,13 +40,13 @@ func TestChoiceHeirarchy(t *testing.T) {
 
 	// This test checks choices at different heirarchy
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	val := config.ExtendedFeatures().ChoiceValNoProperties()
 
 	val.IntermediateObj().Leaf().SetName("str1").SetValue(3)
 
-	assert.Equal(t, val.Choice(), openapiart.ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
-	assert.Equal(t, val.IntermediateObj().Choice(), openapiart.RequiredChoiceChoice.LEAF)
+	assert.Equal(t, val.Choice(), goapi.ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
+	assert.Equal(t, val.IntermediateObj().Choice(), goapi.RequiredChoiceChoice.LEAF)
 	assert.Equal(t, val.IntermediateObj().Leaf().Name(), "str1")
 	assert.Equal(t, val.IntermediateObj().Leaf().Value(), int32(3))
 
@@ -58,11 +58,11 @@ func TestChoiceWithNoProperties(t *testing.T) {
 
 	// This test checks choices with no properties has no issues reagrding set and get
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	val := config.ExtendedFeatures().ChoiceValNoProperties()
 
 	val.NoObj()
-	assert.Equal(t, val.Choice(), openapiart.ChoiceValWithNoPropertiesChoice.NO_OBJ)
+	assert.Equal(t, val.Choice(), goapi.ChoiceValWithNoPropertiesChoice.NO_OBJ)
 
 	_, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
@@ -73,7 +73,7 @@ func TestChoiceWithRequiredFeild(t *testing.T) {
 
 	// This set checks choices which are defined as required
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	val := config.ExtendedFeatures().ChoiceValNoProperties()
 
 	// check error
@@ -83,8 +83,8 @@ func TestChoiceWithRequiredFeild(t *testing.T) {
 
 	val.IntermediateObj().SetStrVal("str1")
 
-	assert.Equal(t, val.Choice(), openapiart.ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
-	assert.Equal(t, val.IntermediateObj().Choice(), openapiart.RequiredChoiceChoice.STR_VAL)
+	assert.Equal(t, val.Choice(), goapi.ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ)
+	assert.Equal(t, val.IntermediateObj().Choice(), goapi.RequiredChoiceChoice.STR_VAL)
 	assert.Equal(t, val.IntermediateObj().StrVal(), "str1")
 
 	_, err = config.Marshal().ToYaml()

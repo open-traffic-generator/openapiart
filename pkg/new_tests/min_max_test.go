@@ -3,7 +3,7 @@ package openapiart_test
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestBoundaryValSchema(t *testing.T) {
 	// This test checks the values in boundary val schema.
 	// Objective is validation should not a problem.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	rVal := config.NativeFeatures().BoundaryVal()
 	rVal.SetIntVal(40)
 	rVal.SetNumVal(5.67)
@@ -25,7 +25,7 @@ func TestBoundaryArrayValSchema(t *testing.T) {
 	// This test checks the values in boundary val schema.
 	// Objective is validation should not a problem.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	rVal := config.NativeFeatures().BoundaryValArray()
 	rVal.SetIntVals([]int32{40, 50})
 	rVal.SetNumVals([]float32{5.67, 6.78})
@@ -38,7 +38,7 @@ func TestErrorForMinCheck(t *testing.T) {
 
 	// This test basically verifies if proper errors are raised by SDk for min and max values
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	rVal := config.NativeFeatures().BoundaryVal()
 
 	// check max errors

@@ -3,7 +3,7 @@ package openapiart_test
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestRequiredValSchema(t *testing.T) {
 	// This test checks the values in required schema.
 	// Objective is validation should not a problem.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	rVal := config.NativeFeatures().RequiredVal()
 	rVal.SetIntVal(40)
 	rVal.SetNumVal(5.67)
@@ -28,7 +28,7 @@ func TestRequiredErr(t *testing.T) {
 	// This test checks error returned by SDK for required properties.
 	// Objective is that the SDK return proper validation error.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	config.NativeFeatures().RequiredVal()
 
 	_, err := config.Marshal().ToYaml()
@@ -41,7 +41,7 @@ func TestRequiredArraySchema(t *testing.T) {
 	// This test checks the values in required array schema.
 	// Objective is validation should not a problem.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	rVal := config.NativeFeatures().RequiredValArray()
 	rVal.SetIntVals([]int32{40, 50})
 	rVal.SetNumVals([]float32{5.67})

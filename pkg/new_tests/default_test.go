@@ -3,7 +3,7 @@ package openapiart_test
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestOptionalValSchema(t *testing.T) {
 	// This test checks the values in optional schema.
 	// Objective is to check if default values are set properly.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	oVal := config.NativeFeatures().OptionalVal()
 	assert.Equal(t, oVal.IntVal(), int32(50))
 	assert.Equal(t, oVal.NumVal(), float32(50.05))
@@ -28,7 +28,7 @@ func TestOptionalArrayValSchema(t *testing.T) {
 	// This test checks the values in optional array schema.
 	// Objective is to check if default values are set properly.
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	oVal := config.NativeFeatures().OptionalValArray()
 	assert.Equal(t, oVal.IntVals(), []int32{10, 20})
 	assert.Equal(t, oVal.NumVals(), []float32{10.01, 20.02})

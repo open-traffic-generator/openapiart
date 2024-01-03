@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStatuswarningInPrimitiveAttrs(t *testing.T) {
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
-	xSt.SetDecprecatedProperty2(45).SetUnderReviewProperty2(65).SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
+	xSt.SetDecprecatedProperty2(45).SetUnderReviewProperty2(65).SetEnumProperty(goapi.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
 	_, err := xSt.Marshal().ToYaml()
 	if err != nil {
@@ -27,11 +27,11 @@ func TestStatuswarningInPrimitiveAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInStructAttrs(t *testing.T) {
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	eF := config.ExtendedFeatures()
-	eF.XStatusObject().SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
+	eF.XStatusObject().SetEnumProperty(goapi.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 
 	// validating the warnings
 	_, err := config.Marshal().ToYaml()
@@ -45,11 +45,11 @@ func TestStatusWarningsInStructAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInXEnumAttrs(t *testing.T) {
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
-	xSt.SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
+	xSt.SetEnumProperty(goapi.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
 	_, err := xSt.Marshal().ToYaml()
 	if err != nil {
@@ -62,11 +62,11 @@ func TestStatusWarningsInXEnumAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInSchemaObjects(t *testing.T) {
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
-	xSt.SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
+	xSt.SetEnumProperty(goapi.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
 	_, err := config.Marshal().ToYaml()
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +14,7 @@ var integer62Values = []int64{5645336, 989645336}
 
 func TestIterAdd(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	config.NativeFeatures().IterObject().Add().SetStrLen("200").SetInteger641(2132433546).SetInteger642(5645336)
 	config.NativeFeatures().IterObject().Add().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336)
 
@@ -28,9 +28,9 @@ func TestIterAdd(t *testing.T) {
 
 func TestAppend(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	config.NativeFeatures().IterObject().Add().SetStrLen("200").SetInteger641(2132433546).SetInteger642(5645336)
-	itr := config.NativeFeatures().IterObject().Append(openapiart.NewMixedObject().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336))
+	itr := config.NativeFeatures().IterObject().Append(goapi.NewMixedObject().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336))
 
 	assert.Equal(t, len(itr.Items()), 2)
 	for idx, iterObj := range config.NativeFeatures().IterObject().Items() {
@@ -42,7 +42,7 @@ func TestAppend(t *testing.T) {
 
 func TestClear(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	config.NativeFeatures().IterObject().Add().SetStrLen("200").SetInteger641(2132433546).SetInteger642(5645336)
 	config.NativeFeatures().IterObject().Add().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336)
 
@@ -59,13 +59,13 @@ func TestSet(t *testing.T) {
 		}
 	}()
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	config.NativeFeatures().IterObject().Add().SetStrLen("200").SetInteger641(2132433546).SetInteger642(5645336)
 	config.NativeFeatures().IterObject().Add()
-	itr := config.NativeFeatures().IterObject().Set(1, openapiart.NewMixedObject().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336))
+	itr := config.NativeFeatures().IterObject().Set(1, goapi.NewMixedObject().SetStrLen("300").SetInteger641(3892433546).SetInteger642(989645336))
 
 	assert.Equal(t, strlenValues[1], itr.Items()[1].StrLen())
 	assert.Equal(t, len(itr.Items()), 2)
 
-	config.NativeFeatures().IterObject().Set(3, openapiart.NewMixedObject().SetStrLen("400").SetInteger641(4789678546).SetInteger642(4567645336))
+	config.NativeFeatures().IterObject().Set(3, goapi.NewMixedObject().SetStrLen("400").SetInteger641(4789678546).SetInteger642(4567645336))
 }

@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFormatsSanity(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetStringParam("asdf")
 	mixedVal.SetInteger(88)
@@ -39,7 +39,7 @@ var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.
 
 func TestGoodIpv4Validation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range GoodIpv4 {
 		ipv4 := mixedVal.SetIpv4(ip)
@@ -50,7 +50,7 @@ func TestGoodIpv4Validation(t *testing.T) {
 
 func TestBadIpv4Validation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range BadIpv4 {
 		ipv4 := mixedVal.SetIpv4(ip)
@@ -66,7 +66,7 @@ var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", 
 
 func TestGoodIpv6Validation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range GoodIpv6 {
 		ipv6 := mixedVal.SetIpv6(ip)
@@ -77,7 +77,7 @@ func TestGoodIpv6Validation(t *testing.T) {
 
 func TestBadIpv6Validation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range BadIpv6 {
 		ipv6 := mixedVal.SetIpv6(ip)
@@ -95,7 +95,7 @@ var BadMac = []string{
 
 func TestGoodMacValidation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mac := mixedVal.SetMac(GoodMac[0])
 	_, err := mac.Marshal().ToYaml()
@@ -104,7 +104,7 @@ func TestGoodMacValidation(t *testing.T) {
 
 func TestBadMacValidation(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, mac := range BadMac {
 		macObj := mixedVal.SetMac(mac)
@@ -117,7 +117,7 @@ func TestBadMacValidation(t *testing.T) {
 
 func TestGoodHex(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
 	_, err := mixedVal.Marshal().ToYaml()
@@ -141,7 +141,7 @@ func TestGoodHex(t *testing.T) {
 
 func TestBadHex(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetHex("1.1.1.1")
 	_, err := mixedVal.Marshal().ToYaml()
@@ -163,7 +163,7 @@ func TestBadHex(t *testing.T) {
 // The below test needs tobe revistited once the proper support of data types is added in go
 func TestIntegerDatatypes(t *testing.T) {
 
-	config := openapiart.NewTestConfig()
+	config := goapi.NewTestConfig()
 	numberTypeVal := config.NativeFeatures().NumberTypeObject()
 	numberTypeVal.SetValidateUint321(2147483646)
 	log.Print(numberTypeVal.ValidateUint321())
