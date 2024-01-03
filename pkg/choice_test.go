@@ -8,8 +8,8 @@ import (
 )
 
 func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+
+	config := goapi.NewPrefixConfig()
 	fObj := config.F()
 
 	// test default choice and values
@@ -29,22 +29,21 @@ func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
 	assert.Equal(t, fObj.FA(), "str1")
 
 	// setting choice with no property
-	fObj.SetChoice(goapi.FObjectChoice.F_C)
+	fObj.FC()
 	assert.Equal(t, fObj.Choice(), goapi.FObjectChoice.F_C)
 
-	err := fObj.Validate()
+	_, err := fObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), goapi.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 
 	// rest of operation should not be impacted
@@ -59,7 +58,9 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 
 	config.ChoiceObject().Append(goapi.NewChoiceObject())
 
-	config.ChoiceObject().Set(1, goapi.NewChoiceObject().SetChoice("e_obj"))
+	chObj := goapi.NewChoiceObject()
+	chObj.EObj()
+	config.ChoiceObject().Set(1, chObj)
 	assert.Len(t, config.ChoiceObject().Items(), 2)
 
 	config.ChoiceObject().Clear()
@@ -67,14 +68,13 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 }
 
 func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), goapi.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 
 	fObj := choiceObj.FObj()
@@ -86,12 +86,12 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 	assert.Equal(t, fObj.FA(), "some string")
 
 	// set choice with no properties in child obj
-	fObj.SetChoice(goapi.FObjectChoice.F_C)
+	fObj.FC()
 	assert.Equal(t, fObj.Choice(), goapi.FObjectChoice.F_C)
 	assert.False(t, fObj.HasFA())
 	assert.False(t, fObj.HasFB())
 
 	// validate the whole object
-	err = choiceObj.Validate()
+	_, err = choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 }

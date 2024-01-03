@@ -46,9 +46,9 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) (goapi.GetSingleItemRes
 	} else {
 		err := goapi.NewError()
 		var code int32 = 500
-		err.Msg().Code = &code
-		err.Msg().Errors = []string{fmt.Sprintf("not found: id '%s'", id)}
-		jsonStr, _ := err.ToJson()
+		_ = err.SetCode(code)
+		_ = err.SetErrors([]string{fmt.Sprintf("not found: id '%s'", id)})
+		jsonStr, _ := err.Marshal().ToJson()
 		return nil, fmt.Errorf(jsonStr)
 	}
 	return result, nil

@@ -21,7 +21,7 @@ func TestGetRootResponse(t *testing.T) {
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := goapi.NewCommonResponseSuccess()
-	err := r.FromJson(string(jsonResponse))
+	err := r.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "from GetRootResponse", r.Message())
 }
@@ -34,7 +34,7 @@ func TestPostRootResponse(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, wr.Code)
 
 	inputbody := goapi.NewApiTestInputBody().SetSomeString("this is the input body")
-	j, _ := inputbody.ToJson()
+	j, _ := inputbody.Marshal().ToJson()
 	inputbuffer := bytes.NewBuffer([]byte(j))
 
 	req, _ = http.NewRequest(http.MethodPost, "/api/apitest", inputbuffer)
@@ -44,7 +44,7 @@ func TestPostRootResponse(t *testing.T) {
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := goapi.NewCommonResponseSuccess()
-	err := r.FromJson(string(jsonResponse))
+	err := r.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "this is the input body", r.Message())
 }

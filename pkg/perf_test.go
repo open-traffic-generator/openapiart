@@ -11,8 +11,7 @@ import (
 
 func TestPerf(t *testing.T) {
 	start := time.Now()
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetCase(goapi.NewLayer1Ieee802X().SetFlowControl(true))
 	config.SetSpace1(10)
@@ -54,13 +53,13 @@ func TestPerf(t *testing.T) {
 	fmt.Printf("Time elapsed for manual configuration %d ms\n", (end.Nanosecond()-start.Nanosecond())/1000)
 
 	jStart := time.Now()
-	json, j_err := config.ToJson()
+	json, j_err := config.Marshal().ToJson()
 	jEnd := time.Now()
 	yStart := time.Now()
-	yaml, y_err := config.ToYaml()
+	yaml, y_err := config.Marshal().ToYaml()
 	yEnd := time.Now()
 	pStart := time.Now()
-	pbText, p_err := config.ToPbText()
+	pbText, p_err := config.Marshal().ToPbText()
 	pEnd := time.Now()
 
 	fmt.Printf("Time elapsed to serialize to Json %d ms \n", (jEnd.Nanosecond()-jStart.Nanosecond())/1000)
@@ -72,20 +71,20 @@ func TestPerf(t *testing.T) {
 	assert.Nil(t, p_err)
 
 	jDStart := time.Now()
-	jsonconf := api.NewPrefixConfig()
-	jdErr := jsonconf.FromJson(json)
+	jsonconf := goapi.NewPrefixConfig()
+	jdErr := jsonconf.Unmarshal().FromJson(json)
 	assert.Nil(t, jdErr)
 	jDEnd := time.Now()
 
 	yDStart := time.Now()
-	yamlconf := api.NewPrefixConfig()
-	ydErr := yamlconf.FromYaml(yaml)
+	yamlconf := goapi.NewPrefixConfig()
+	ydErr := yamlconf.Unmarshal().FromYaml(yaml)
 	assert.Nil(t, ydErr)
 	yDEnd := time.Now()
 
 	pDStart := time.Now()
-	pbConf := api.NewPrefixConfig()
-	pdErr := pbConf.FromPbText(pbText)
+	pbConf := goapi.NewPrefixConfig()
+	pdErr := pbConf.Unmarshal().FromPbText(pbText)
 	assert.Nil(t, pdErr)
 	pDEnd := time.Now()
 

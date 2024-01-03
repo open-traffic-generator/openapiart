@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NewFullyPopulatedPrefixConfig(api goapi.GoapiApi) goapi.PrefixConfig {
-	config := api.NewPrefixConfig()
+func NewFullyPopulatedPrefixConfig(api goapi.Api) goapi.PrefixConfig {
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
@@ -61,12 +61,12 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	yaml1, err := c1.ToYaml()
+	yaml1, err := c1.Marshal().ToYaml()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
-	yaml_err := c2.FromYaml(yaml1)
+	c2 := goapi.NewPrefixConfig()
+	yaml_err := c2.Unmarshal().FromYaml(yaml1)
 	assert.Nil(t, yaml_err)
-	yaml2, err := c2.ToYaml()
+	yaml2, err := c2.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }
@@ -75,12 +75,12 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
-	json1, err := c1.ToJson()
+	json1, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
-	json_err := c2.FromJson(json1)
+	c2 := goapi.NewPrefixConfig()
+	json_err := c2.Unmarshal().FromJson(json1)
 	assert.Nil(t, json_err)
-	json2, err := c2.ToJson()
+	json2, err := c2.Marshal().ToJson()
 	assert.Nil(t, err)
 	assert.Equal(t, json1, json2)
 }
@@ -91,7 +91,7 @@ func TestPartialSerDes(t *testing.T) {
 
 	// convert the configuration to a map[string]interface{}
 	var jsonMap map[string]interface{}
-	c1json, err := c1.ToJson()
+	c1json, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
 	unmarsh_err := json.Unmarshal([]byte(c1json), &jsonMap)
 	assert.Nil(t, unmarsh_err)
@@ -103,15 +103,15 @@ func TestPartialSerDes(t *testing.T) {
 	data2, _ := json.Marshal(jsonMap["g"].([]interface{})[0].(map[string]interface{}))
 
 	// create a new config that consists of just the e object and the g object
-	c2 := api.NewPrefixConfig()
-	json_err := c2.E().FromJson(string(data1))
+	c2 := goapi.NewPrefixConfig()
+	json_err := c2.E().Unmarshal().FromJson(string(data1))
 	assert.Nil(t, json_err)
-	json_err1 := c2.G().Add().FromJson(string(data2))
+	json_err1 := c2.G().Add().Unmarshal().FromJson(string(data2))
 	assert.Nil(t, json_err1)
-	yaml1, err := c2.E().ToYaml()
+	yaml1, err := c2.E().Marshal().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(yaml1)
-	yaml2, err := c2.G().Add().ToYaml()
+	yaml2, err := c2.G().Add().Marshal().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(yaml2)
 }
@@ -119,21 +119,20 @@ func TestPartialSerDes(t *testing.T) {
 func TestPrefixConfigPbTextSerDes(t *testing.T) {
 	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
-	pbString, err := c1.ToPbText()
+	pbString, err := c1.Marshal().ToPbText()
 	assert.Nil(t, err)
-	c2 := api.NewPrefixConfig()
-	pbtext_err := c2.FromPbText(pbString)
+	c2 := goapi.NewPrefixConfig()
+	pbtext_err := c2.Unmarshal().FromPbText(pbString)
 	assert.Nil(t, pbtext_err)
-	c1json, err := c1.ToJson()
+	c1json, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
-	c2json, err := c2.ToJson()
+	c2json, err := c2.Marshal().ToJson()
 	assert.Nil(t, err)
 	assert.Equal(t, c1json, c2json)
 }
 
 func TestArrayOfStringsSetGet(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.ListOfStringValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfStringValues([]string{"one", "two", "three"}).ListOfStringValues()
@@ -141,8 +140,7 @@ func TestArrayOfStringsSetGet(t *testing.T) {
 }
 
 func TestArrayOfEnumsSetGet(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.DValues()
 	assert.Equal(t, 0, len(values))
 	enums := []goapi.PrefixConfigDValuesEnum{
@@ -155,8 +153,7 @@ func TestArrayOfEnumsSetGet(t *testing.T) {
 }
 
 func TestArrayOfIntegersSetGet(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.ListOfIntegerValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
@@ -164,67 +161,60 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 }
 
 func TestValidJsonDecode(t *testing.T) {
-	// Valid FromJson
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	// Valid Unmarshal().FromJson
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.Nil(t, err)
 }
 
 func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:14): unknown field "bz"`)
 }
 
 func TestBadEnumJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:47): invalid value for enum type: "status_800"`)
 }
 
 func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:20): invalid value for float type: "abc"`)
 }
 
 func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
 
 func TestWithoutValueJsonDecode(t *testing.T) {
 	// Valid without value
-	api := goapi.NewApi()
-	c1 := api.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
-	err := c1.FromJson(input_str)
+	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:32): invalid value for int32 type: ""`)
 }
 
 func TestValidYamlDecode(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -234,17 +224,16 @@ required_object:
   e_b: 2
 response: status_200
 `
-	err := config.FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.Nil(t, err)
-	configYaml, err := config.ToYaml()
+	configYaml, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, data, configYaml)
 }
 
 func TestBadKeyYamlDecode(t *testing.T) {
 	// Valid Wrong key
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 bz: 12.2
 c: 2
@@ -253,14 +242,13 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:13): unknown field "bz"`)
 }
 
 func TestBadEnumYamlDecode(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -270,15 +258,14 @@ required_object:
   e_b: 2
 response: status_800
 `
-	err := config.FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:84): invalid value for enum type: "status_800"`)
 }
 
 func TestBadDatatypeYamlDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: abc
 c: 2
@@ -287,15 +274,14 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:17): invalid value for float type: "abc"`)
 }
 
 func TestBadDatastructureYamlDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: [Make It Easy]
 b: 9.9
 c: 2
@@ -304,7 +290,7 @@ required_object:
   e_a: 1
   e_b: 2
 `
-	err := config.FromYaml(data)
+	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
 }
@@ -312,33 +298,36 @@ required_object:
 func TestSetMsg(t *testing.T) {
 	api := goapi.NewApi()
 	config := NewFullyPopulatedPrefixConfig(api)
-	copy := goapi.NewApi().NewPrefixConfig()
-	copy.SetMsg(config.Msg())
-	configYaml, err := config.ToYaml()
+	copy := goapi.NewPrefixConfig()
+	p, err := config.Marshal().ToProto()
 	assert.Nil(t, err)
-	copyYaml, err := copy.ToYaml()
+	_, err = copy.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
+	configYaml, err := config.Marshal().ToYaml()
+	assert.Nil(t, err)
+	copyYaml, err := copy.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, configYaml, copyYaml)
 }
 
 func TestNestedSetMsg(t *testing.T) {
-	api := goapi.NewApi()
-	eObject := goapi.NewApi().NewPrefixConfig().K().EObject()
+	eObject := goapi.NewPrefixConfig().K().EObject()
 	eObject.SetEA(23423.22)
 	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
-	config := api.NewPrefixConfig()
-	config.K().EObject().SetMsg(eObject.Msg())
-	yaml1, err := config.K().EObject().ToYaml()
+	config := goapi.NewPrefixConfig()
+	p, _ := eObject.Marshal().ToProto()
+	_, err := config.K().EObject().Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	yaml2, err := eObject.ToYaml()
+	yaml1, err := config.K().EObject().Marshal().ToYaml()
+	assert.Nil(t, err)
+	yaml2, err := eObject.Marshal().ToYaml()
 	assert.Nil(t, err)
 	assert.Equal(t, yaml1, yaml2)
 }
 
 func TestAuto(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(

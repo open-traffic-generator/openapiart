@@ -26,8 +26,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 }
 
 func TestJsonSerialization(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.RequiredObject().SetEA(3.0).SetEB(47.234)
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
@@ -69,7 +68,7 @@ func TestJsonSerialization(t *testing.T) {
 	config.ChecksumPattern().Checksum().SetCustom(64)
 
 	// TBD: this needs to be fixed as order of json keys is not guaranteed to be the same
-	// out := config.ToJson()
+	// out := config.Marshal().ToJson()
 	// actualJson := []byte(out)
 	// bs, err := ioutil.ReadFile("expected.json")
 	// if err != nil {
@@ -79,7 +78,7 @@ func TestJsonSerialization(t *testing.T) {
 	// expectedJson := bs
 	// eq, _ := JSONBytesEqual(actualJson, expectedJson)
 	// assert.Equal(t, eq, true)
-	yaml, err := config.ToYaml()
+	yaml, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
 	log.Print(yaml)
 }
@@ -88,9 +87,9 @@ func TestNewAndSet(t *testing.T) {
 	c := goapi.NewPrefixConfig()
 	c.SetE(goapi.NewEObject().SetEA(123.456).SetEB(453.123))
 	c.SetF(goapi.NewFObject().SetFA("fa string"))
-	yaml1, err := c.E().ToYaml()
+	yaml1, err := c.E().Marshal().ToYaml()
 	assert.Nil(t, err)
-	yaml2, err := c.F().ToYaml()
+	yaml2, err := c.F().Marshal().ToYaml()
 	assert.Nil(t, err)
 	log.Println(yaml1)
 	log.Println(yaml2)
@@ -102,8 +101,7 @@ func TestSimpleTypes(t *testing.T) {
 	var c int32 = 1
 	h := true
 	i := []byte("sample string")
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdfg").SetB(12.2).SetC(1).SetH(true).SetI([]byte("sample string"))
 	assert.Equal(t, a, config.A())
 	assert.Equal(t, b, config.B())
@@ -117,8 +115,7 @@ var gbValues = []int32{11, 22}
 var gcValues = []float32{11.11, 22.22}
 
 func TestIterAdd(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
 	config.G().Add().SetGA("2222").SetGB(22).SetGC(22.22)
 
@@ -131,8 +128,7 @@ func TestIterAdd(t *testing.T) {
 }
 
 func TestIterAppend(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.G().Add().SetGA("1111").SetGB(11).SetGC(11.11)
 	g := config.G().Append(goapi.NewGObject().SetGA("2222").SetGB(22).SetGC(22.22))
 
@@ -151,8 +147,7 @@ func TestIterSet(t *testing.T) {
 			assert.Equal(t, errValue, fmt.Sprintf("%v", err))
 		}
 	}()
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	name := "new name set on slice"
 	config.G().Add().SetName("original name set on add")
 	config.G().Add()
@@ -186,9 +181,8 @@ func TestListWrapFromJson(t *testing.T) {
 		],
 		"h":  true
 	  }`
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
-	assert.Nil(t, config.FromJson(listWrap))
+	config := goapi.NewPrefixConfig()
+	assert.Nil(t, config.Unmarshal().FromJson(listWrap))
 	assert.Equal(t, len(config.G().Items()), 1)
 }
 
@@ -197,8 +191,7 @@ func TestEObject(t *testing.T) {
 	eb := 1.2
 	mparam1 := "Mparam1"
 	maparam2 := "Mparam2"
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	assert.Equal(t, ea, config.E().EA())
 	assert.Equal(t, eb, config.E().EB())
@@ -211,8 +204,7 @@ func TestGObject(t *testing.T) {
 	gb := []int32{1, 2}
 	gc := []float32{11.1, 22.2}
 	ge := []float64{1.0, 2.0}
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	g1 := config.G().Add()
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := config.G().Add()
@@ -224,15 +216,14 @@ func TestGObject(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	g1json, err := g1.ToJson()
+	g1json, err := g1.Marshal().ToJson()
 	assert.Nil(t, err)
-	g1yaml, err := g1.ToYaml()
+	g1yaml, err := g1.Marshal().ToYaml()
 	assert.Nil(t, err)
 	log.Print(g1json, g1yaml)
 }
 func TestGObjectAppendMultiple(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	items := []goapi.GObject{
 		goapi.NewGObject().SetGA("g_1"),
 		goapi.NewGObject().SetGA("g_2"),
@@ -249,8 +240,7 @@ func TestGObjectAppend(t *testing.T) {
 	gb := []int32{1, 2}
 	gc := []float32{11.1, 22.2}
 	ge := []float64{1.0, 2.0}
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	g1 := goapi.NewGObject()
 	g1.SetGA("g_1").SetGB(1).SetGC(11.1).SetGE(1.0)
 	g2 := goapi.NewGObject()
@@ -262,14 +252,13 @@ func TestGObjectAppend(t *testing.T) {
 		assert.Equal(t, gc[i], G.GC())
 		assert.Equal(t, ge[i], G.GE())
 	}
-	// log.Print(g1.ToJson(), g1.ToYaml())
+	// log.Print(g1.Marshal().ToJson(), g1.Marshal().ToYaml())
 }
 
 func TestLObject(t *testing.T) {
 	var int_ int32 = 80
 	var float_ float32 = 100.11
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	l := config.L()
 	l.SetStringParam("test")
 	l.SetInteger(80)
@@ -296,8 +285,7 @@ func TestLObject(t *testing.T) {
 //	Confirm the underlying protobuf EObject has been created by setting the
 //	properties of the returned RequiredObject
 func TestRequiredObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	r := config.RequiredObject()
 	r.SetEA(22.2)
 	r.SetEB(66.1)
@@ -310,8 +298,7 @@ func TestRequiredObject(t *testing.T) {
 //	Confirm the underlying protobuf EObject has been created by setting the
 //	properties of the returned OptionalObject
 func TestOptionalObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	r := config.OptionalObject()
 	r.SetEA(22.2)
 	r.SetEB(66.1)
@@ -323,8 +310,7 @@ func TestResponseEnum(t *testing.T) {
 	// for _, fld := range flds {
 	// 	assert.NotEqual(t, fld.Name, "UNSPECIFIED")
 	// }
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
 	assert.Equal(t, config.Response(), goapi.PrefixConfigResponse.STATUS_400)
 	fmt.Println("response: ", config.Response())
@@ -335,7 +321,7 @@ func TestChoice(t *testing.T) {
 	config := NewFullyPopulatedPrefixConfig(api)
 
 	f := config.F()
-	fJson, err := f.ToJson()
+	fJson, err := f.Marshal().ToJson()
 	assert.Nil(t, err)
 	fmt.Println(fJson)
 	f.SetFA("a fa string")
@@ -347,14 +333,13 @@ func TestChoice(t *testing.T) {
 	j.JB()
 	assert.Equal(t, j.Choice(), goapi.JObjectChoice.J_B)
 
-	configYaml, err := config.ToYaml()
+	configYaml, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
 	fmt.Println(configYaml)
 }
 
 func TestHas(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	assert.False(t, config.HasE())
 	assert.False(t, config.HasF())
 	assert.False(t, config.HasChecksumPattern())
@@ -369,19 +354,17 @@ var BadMac = []string{
 }
 
 func TestGoodMacValidation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValue(GoodMac[0])
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValidation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	for _, mac := range BadMac {
 		macObj := config.MacPattern().Mac().SetValue(mac)
-		err := macObj.Validate()
+		_, err := macObj.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Mac")
 		}
@@ -389,18 +372,16 @@ func TestBadMacValidation(t *testing.T) {
 }
 
 func TestGoodMacValues(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(GoodMac)
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValues(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	mac := config.MacPattern().Mac().SetValues(BadMac)
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -408,12 +389,11 @@ func TestBadMacValues(t *testing.T) {
 }
 
 func TestBadMacIncrement(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	mac := config.MacPattern().Mac().Increment().SetStart(GoodMac[0])
 	mac.SetStep(BadMac[0])
 	mac.SetCount(10)
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -421,12 +401,11 @@ func TestBadMacIncrement(t *testing.T) {
 }
 
 func TestBadMacDecrement(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	mac := config.MacPattern().Mac().Decrement().SetStart(BadMac[0])
 	mac.SetStep(GoodMac[0])
 	mac.SetCount(10)
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	fmt.Println(err.Error())
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid mac address")
@@ -437,19 +416,17 @@ var GoodIpv4 = []string{"1.1.1.1", "255.255.255.255"}
 var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"}
 
 func TestGoodIpv4Validation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValue(GoodIpv4[0])
-	err := ipv4.Validate()
+	_, err := ipv4.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadIpv4Validation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	for _, ip := range BadIpv4 {
 		ipv4 := config.Ipv4Pattern().Ipv4().SetValue(ip)
-		err := ipv4.Validate()
+		_, err := ipv4.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Ipv4")
 		}
@@ -457,34 +434,31 @@ func TestBadIpv4Validation(t *testing.T) {
 }
 
 func TestBadIpv4Values(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().SetValues(BadIpv4)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid ipv4 addresses")
 	}
 }
 
 func TestBadIpv4Increment(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().Increment().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid Ipv4")
 	}
 }
 
 func TestBadIpv4Decrement(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv4 := config.Ipv4Pattern().Ipv4().Decrement().SetStart(GoodIpv4[0])
 	ipv4.SetStep(BadIpv4[0])
 	ipv4.SetCount(10)
-	err := ipv4.Validate()
+	_, err := ipv4.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid Ipv4")
 	}
@@ -494,19 +468,17 @@ var GoodIpv6 = []string{"::", "1::", ": :", "abcd::1234", "aa:00bd:a:b:c:d:f:abc
 var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"}
 
 func TestGoodIpv6Validation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValue(GoodIpv6[0])
-	err := ipv6.Validate()
+	_, err := ipv6.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadIpv6Validation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	for _, ip := range BadIpv6 {
 		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
-		err := ipv6.Validate()
+		_, err := ipv6.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 		}
@@ -514,48 +486,44 @@ func TestBadIpv6Validation(t *testing.T) {
 }
 
 func TestBadIpv6Values(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().SetValues(BadIpv6)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6 address")
 	}
 }
 
 func TestBadIpv6Increment(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().Increment().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 	}
 }
 
 func TestBadIpv6Decrement(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	ipv6 := config.Ipv6Pattern().Ipv6().Decrement().SetStart(GoodIpv6[0])
 	ipv6.SetStep(BadIpv6[0])
 	ipv6.SetCount(10)
-	err := ipv6.Validate()
+	_, err := ipv6.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 	}
 }
 
 func TestDefaultSimpleTypes(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetA("asdf")
 	config.SetB(65)
 	config.SetC(33)
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
-	actual_result, err := config.ToJson()
+	actual_result, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	expected_result := `{
 		"a":"asdf", 
@@ -572,10 +540,9 @@ func TestDefaultSimpleTypes(t *testing.T) {
 }
 
 func TestDefaultEObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.E().SetEA(1).SetEB(2)
-	actual_result, err := config.E().ToJson()
+	actual_result, err := config.E().Marshal().ToJson()
 	assert.Nil(t, err)
 	expected_result := `
 	{
@@ -586,10 +553,9 @@ func TestDefaultEObject(t *testing.T) {
 }
 
 func TestDefaultFObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.F()
-	actual_result, err := config.F().ToJson()
+	actual_result, err := config.F().Marshal().ToJson()
 	assert.Nil(t, err)
 	expected_result := `
 	{
@@ -600,8 +566,7 @@ func TestDefaultFObject(t *testing.T) {
 }
 
 func TestRequiredValidation(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.RequiredObject().SetEA(10.2).SetEB(20)
 	config.SetA("abc")
 	config.SetB(10.32)
@@ -616,53 +581,51 @@ func TestRequiredValidation(t *testing.T) {
 		SetIpv6("2001::1").
 		SetIpv4("1.1.1.1")
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestHexPattern(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	l := config.L()
 	l.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err := l.Validate()
+	_, err := l.Marshal().ToYaml()
 	assert.Nil(t, err)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err1 := l.Validate()
+	_, err1 := l.Marshal().ToYaml()
 	assert.Nil(t, err1)
 	l.SetHex("")
-	err2 := l.Validate()
+	_, err2 := l.Marshal().ToYaml()
 	assert.NotNil(t, err2)
 	l.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b0000000x0")
-	err3 := l.Validate()
+	_, err3 := l.Marshal().ToYaml()
 	assert.NotNil(t, err3)
 	l.SetHex("0x00")
-	err4 := l.Validate()
+	_, err4 := l.Marshal().ToYaml()
 	assert.Nil(t, err4)
 	l.SetHex("0XAF12")
-	err5 := l.Validate()
+	_, err5 := l.Marshal().ToYaml()
 	assert.Nil(t, err5)
 }
 
 func TestChoice1(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	json := `{
 		"choice": "f_b",
 		"f_b": 30.0
 	}`
-	g := config.F().FromJson(json)
+	g := config.F().Unmarshal().FromJson(json)
 	assert.Nil(t, g)
-	configFjson, err := config.F().ToJson()
+	configFjson, err := config.F().Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, configFjson, json)
 	json2 := `{
 		"choice": "f_a",
 		"f_a": "this is f string"
 	}`
-	f := config.F().FromJson(json2)
+	f := config.F().Unmarshal().FromJson(json2)
 	assert.Nil(t, f)
-	configFjson2, err := config.F().ToJson()
+	configFjson2, err := config.F().Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, configFjson2, json2)
 	fmt.Println(configFjson2)
@@ -670,7 +633,7 @@ func TestChoice1(t *testing.T) {
 
 func TestRequiredField(t *testing.T) {
 	mandate := goapi.NewMandate()
-	err := mandate.Validate()
+	_, err := mandate.Marshal().ToYaml()
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "RequiredParam is required field")
 }
@@ -678,11 +641,11 @@ func TestRequiredField(t *testing.T) {
 func TestRequiredEnumField(t *testing.T) {
 	config := goapi.NewPrefixConfig()
 	rc := config.RequiredChoiceObject()
-	err := rc.Validate()
+	_, err := rc.Marshal().ToYaml()
 	assert.NotNil(t, err)
 	rc.IntermediateObj()
 	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
-	err = rc.Validate()
+	_, err = rc.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
@@ -696,7 +659,7 @@ func TestOptionalDefault(t *testing.T) {
 		"g_d":  "some string",
 		"g_f":  "a"
 	  }`
-	gObjectJson, err := gObject.ToJson()
+	gObjectJson, err := gObject.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, gObjectJson, gJson)
 }
@@ -714,7 +677,7 @@ func TestInterger64(t *testing.T) {
 		},
 		"integer64": 100
 	}`
-	err := config.FromJson(int_64)
+	err := config.Unmarshal().FromJson(int_64)
 	assert.Equal(t, config.Integer64(), int64(100))
 	assert.Nil(t, err)
 	int_64_str := `{
@@ -727,7 +690,7 @@ func TestInterger64(t *testing.T) {
 			"e_b" : 2
 		}
 	}`
-	err1 := config.FromJson(int_64_str)
+	err1 := config.Unmarshal().FromJson(int_64_str)
 	assert.Nil(t, err1)
 }
 
@@ -745,7 +708,7 @@ func TestInt32Param(t *testing.T) {
 		"int32_param": 100,
 		"auto_int32_param": 101
 	}`
-	err := config.FromJson(int_32)
+	err := config.Unmarshal().FromJson(int_32)
 	assert.Equal(t, config.Int32Param(), int32(100))
 	assert.Equal(t, config.AutoInt32Param(), int32(101))
 	assert.Nil(t, err)
@@ -761,7 +724,7 @@ func TestInt32Param(t *testing.T) {
 		"int32_list_param": ["100", "-1", "-500", 500],
 		"auto_int32_list_param": ["100", "1001", "72", "909"]
 	}`
-	err1 := config.FromJson(int32_list_str)
+	err1 := config.Unmarshal().FromJson(int32_list_str)
 	assert.Equal(t, config.Int32ListParam(), []int32{100, -1, -500, 500})
 	assert.Equal(t, config.AutoInt32ListParam(), []int32{100, 1001, 72, 909})
 	assert.Nil(t, err1)
@@ -780,7 +743,7 @@ func TestUint32Param(t *testing.T) {
 		},
 		"uint32_param": 22
 	}`
-	err := config.FromJson(uint_32)
+	err := config.Unmarshal().FromJson(uint_32)
 	assert.Equal(t, config.Uint32Param(), uint32(22))
 	assert.Nil(t, err)
 	uint32_list_str := `{
@@ -794,7 +757,7 @@ func TestUint32Param(t *testing.T) {
 		},
 		"uint32_list_param": ["100", "0", "500"]
 	}`
-	err1 := config.FromJson(uint32_list_str)
+	err1 := config.Unmarshal().FromJson(uint32_list_str)
 	assert.Equal(t, config.Uint32ListParam(), []uint32{100, 0, 500})
 	assert.Nil(t, err1)
 }
@@ -812,7 +775,7 @@ func TestUInt64Param(t *testing.T) {
 		},
 		"uint64_param": 4294967395
 	}`
-	err := config.FromJson(uint_64)
+	err := config.Unmarshal().FromJson(uint_64)
 	assert.Nil(t, err)
 	int32_list_str := `{
 		"a":"asdf", 
@@ -825,7 +788,7 @@ func TestUInt64Param(t *testing.T) {
 		},
 		"uint64_list_param": ["4294967395", "4294967396", "4294967397"]
 	}`
-	err1 := config.FromJson(int32_list_str)
+	err1 := config.Unmarshal().FromJson(int32_list_str)
 	assert.Equal(t, config.Uint64ListParam(), []uint64{4294967395, 4294967396, 4294967397})
 	assert.Nil(t, err1)
 }
@@ -838,7 +801,8 @@ func TestFromJsonToCleanObject(t *testing.T) {
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_500)
 	config.SetRequiredObject(goapi.NewEObject().SetEA(10.1).SetEB(30.234))
 	config.SetInteger64(200645)
-	assert.Nil(t, config.Validate())
+	_, err := config.Marshal().ToYaml()
+	assert.Nil(t, err)
 	new_json := `{
 		"a":"asdf", 
 		"b" : 65, 
@@ -850,9 +814,9 @@ func TestFromJsonToCleanObject(t *testing.T) {
 		},
 		"h": false
 	}`
-	err := config.FromJson(new_json)
+	err = config.Unmarshal().FromJson(new_json)
 	assert.Nil(t, err)
-	configJson, err := config.ToJson()
+	configJson, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, new_json, configJson)
 	new_json1 := `{
@@ -865,7 +829,7 @@ func TestFromJsonToCleanObject(t *testing.T) {
 		},
 		"h": false
 	}`
-	err1 := config.FromJson(new_json1)
+	err1 := config.Unmarshal().FromJson(new_json1)
 	assert.NotNil(t, err1)
 	assert.Contains(t, err1.Error(), "A is required field")
 }
@@ -877,7 +841,7 @@ func TestChoiceStale(t *testing.T) {
 		"choice": "f_a",
 		"f_a": "This is A Value"
 	}`
-	fObjectJson, err := fObject.ToJson()
+	fObjectJson, err := fObject.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, expected_json, fObjectJson)
 	fObject.SetFB(30.245)
@@ -885,7 +849,7 @@ func TestChoiceStale(t *testing.T) {
 		"choice": "f_b",
 		"f_b": 30.245
 	}`
-	fObjectJson2, err := fObject.ToJson()
+	fObjectJson2, err := fObject.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, expected_json1, fObjectJson2)
 }
@@ -930,8 +894,7 @@ func TestChoice2(t *testing.T) {
 		  }
 		}
 	  }`
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.K().FObject().SetFA("asf")
@@ -939,7 +902,7 @@ func TestChoice2(t *testing.T) {
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
 	config.J().Add().JB().SetFA("asf")
-	configJson, err := config.ToJson()
+	configJson, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	log.Print(configJson)
 	require.JSONEq(t, expected_json, configJson)
@@ -952,13 +915,13 @@ func TestGetter(t *testing.T) {
 		"choice": "f_a",
 		"f_a": "some string"
 	}`
-	fObjectJson, err := fObject.ToJson()
+	fObjectJson, err := fObject.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, expected_json, fObjectJson)
 
 	fObject1 := goapi.NewFObject()
 	fObject1.Choice()
-	fObject1Json, err := fObject1.ToJson()
+	fObject1Json, err := fObject1.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, expected_json, fObject1Json)
 
@@ -970,7 +933,7 @@ func TestGetter(t *testing.T) {
 			"value":  "0.0.0.0"
 		}
 	}`
-	patternJson, err := pattern.ToJson()
+	patternJson, err := pattern.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, exp_ipv4, patternJson)
 	pattern.Ipv4().SetValue("10.1.1.1")
@@ -984,7 +947,7 @@ func TestGetter(t *testing.T) {
 			]
 		}
 	}`
-	patternJson1, err := pattern.ToJson()
+	patternJson1, err := pattern.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, exp_ipv41, patternJson1)
 	pattern.Ipv4().SetValues([]string{"20.1.1.1"})
@@ -994,29 +957,27 @@ func TestGetter(t *testing.T) {
 		"choice": "generated",
 		"generated": "good"
 	}`
-	checksumJson, err := checksum.ToJson()
+	checksumJson, err := checksum.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, ch_json, checksumJson)
 	fmt.Println(checksumJson)
 }
 
 func TestStringLength(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
 	config.SetFullDuplex100Mb(2)
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	config.SetStrLen("123456")
-	configJson, err := config.ToJson()
+	configJson, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	log.Print(configJson)
 }
 
 func TestListClear(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	list := config.G()
 	list.Append(goapi.NewGObject().SetGA("a1"))
 	list.Append(goapi.NewGObject().SetGA("a2"))
@@ -1052,12 +1013,11 @@ func TestConfigHas200Result(t *testing.T) {
 }
 
 func TestFromJsonErrors(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	json := `{
 		"abc": "test"
 	}`
-	err := config.FromJson(json)
+	err := config.Unmarshal().FromJson(json)
 	assert.Contains(t, err.Error(), "unmarshal error")
 	json1 := `{
 		"choice": "g_e",
@@ -1065,19 +1025,18 @@ func TestFromJsonErrors(t *testing.T) {
 		"g_b": "20"
 	}`
 	gObj := goapi.NewGObject()
-	err1 := gObj.FromJson(json1)
+	err1 := gObj.Unmarshal().FromJson(json1)
 	assert.Nil(t, err1)
 	json2 := `{
 		"choice": "f_t"
 	}`
 	fObj := goapi.NewFObject()
-	err2 := fObj.FromJson(json2)
+	err2 := fObj.Unmarshal().FromJson(json2)
 	assert.Contains(t, err2.Error(), "unmarshal error")
 }
 
 func TestStringLengthError(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetName("config")
 	config.SetSpace1(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
@@ -1088,15 +1047,14 @@ func TestStringLengthError(t *testing.T) {
 	config.StrLen()
 	config.Space1()
 	config.Name()
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "3 <= length of prefixconfig.strlen <= 6 but got 8")
 	}
 }
 
 func TestIncorrectChoiceEnum(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
@@ -1107,7 +1065,7 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 	config.Ieee8021Qbb()
 	config.FullDuplex100Mb()
 	config.Response()
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "status_600 is not a valid choice")
 	}
@@ -1115,7 +1073,7 @@ func TestIncorrectChoiceEnum(t *testing.T) {
 
 func TestEObjectValidation(t *testing.T) {
 	eObject := goapi.NewEObject()
-	err := eObject.Validate()
+	_, err := eObject.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "ea is required field on interface eobject\neb is required field on interface eobject")
 	}
@@ -1123,15 +1081,14 @@ func TestEObjectValidation(t *testing.T) {
 
 func TestMObjectValidation(t *testing.T) {
 	mObject := goapi.NewMObject()
-	err := mObject.Validate()
+	_, err := mObject.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()), "required field on interface mobject")
 	}
 }
 
 func TestMobjectValidationError(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.RequiredObject().SetEA(10.2).SetEB(20)
 	config.SetA("abc")
 	config.SetB(10.32)
@@ -1146,7 +1103,7 @@ func TestMobjectValidationError(t *testing.T) {
 		SetIpv6("2001::1::1").
 		SetIpv4("1.1.1.1.2")
 	config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()),
@@ -1158,8 +1115,7 @@ func TestMobjectValidationError(t *testing.T) {
 }
 
 func TestLObjectError(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	l := config.L()
 	l.SetStringParam("test")
 	l.SetInteger(180)
@@ -1169,7 +1125,7 @@ func TestLObjectError(t *testing.T) {
 	l.SetIpv4("1.1.1.1.1.1")
 	l.SetIpv6("2000::1:::4")
 	l.SetHex("0x12KJN")
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	assert.NotNil(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, strings.ToLower(err.Error()),
@@ -1181,46 +1137,47 @@ func TestLObjectError(t *testing.T) {
 }
 
 func TestIeee802x(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetCase(goapi.NewLayer1Ieee802X())
 	config.Case()
 	l1 := goapi.NewLayer1Ieee802X()
 	l1.SetFlowControl(true)
-	l1.SetMsg(l1.Msg())
+	p, _ := l1.Marshal().ToProto()
+	_, err := l1.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	l1.FlowControl()
 	l1.HasFlowControl()
-	l1json, err := l1.ToJson()
+	l1json, err := l1.Marshal().ToJson()
 	assert.Nil(t, err)
-	l1yaml, err := l1.ToYaml()
+	l1yaml, err := l1.Marshal().ToYaml()
 	assert.Nil(t, err)
-	l1pbText, err := l1.ToPbText()
+	l1pbText, err := l1.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, l1.FromJson(l1json))
-	assert.Nil(t, l1.FromYaml(l1yaml))
-	assert.Nil(t, l1.FromPbText(l1pbText))
+	assert.Nil(t, l1.Unmarshal().FromJson(l1json))
+	assert.Nil(t, l1.Unmarshal().FromYaml(l1yaml))
+	assert.Nil(t, l1.Unmarshal().FromPbText(l1pbText))
 }
 
 func TestLevelFour(t *testing.T) {
 	new_level_four := goapi.NewLevelFour()
-	new_level_four.Msg()
-	new_level_four.SetMsg(new_level_four.Msg())
+	p, _ := new_level_four.Marshal().ToProto()
+	_, err := new_level_four.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_level_four.HasL4P1()
 	new_level_four.SetL4P1(new_level_four.L4P1())
-	fourJson, err := new_level_four.ToJson()
+	fourJson, err := new_level_four.Marshal().ToJson()
 	assert.Nil(t, err)
-	fourYaml, err := new_level_four.ToYaml()
+	fourYaml, err := new_level_four.Marshal().ToYaml()
 	assert.Nil(t, err)
-	fourPbText, err := new_level_four.ToPbText()
+	fourPbText, err := new_level_four.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_level_four.FromJson(fourJson))
-	assert.Nil(t, new_level_four.FromYaml(fourYaml))
-	assert.Nil(t, new_level_four.FromPbText(fourPbText))
+	assert.Nil(t, new_level_four.Unmarshal().FromJson(fourJson))
+	assert.Nil(t, new_level_four.Unmarshal().FromYaml(fourYaml))
+	assert.Nil(t, new_level_four.Unmarshal().FromPbText(fourPbText))
 }
 
 func TestIterAppendJObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.J().Add()
 	j := config.J().Append(goapi.NewJObject())
 
@@ -1228,11 +1185,12 @@ func TestIterAppendJObject(t *testing.T) {
 }
 
 func TestIterSetJObject(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.J().Add().JA().SetEA(100)
 	config.J().Add()
-	j := config.J().Set(1, goapi.NewJObject().SetChoice("j_b"))
+	jObj := goapi.NewJObject()
+	jObj.JB()
+	j := config.J().Set(1, jObj)
 
 	assert.Contains(t, j.Items()[1].Choice(), "j_b")
 	assert.Len(t, config.J().Items(), 2)
@@ -1284,8 +1242,7 @@ func TestIterSetPortMetrics(t *testing.T) {
 }
 
 func TestFromYamlErrors(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	incorrect_format := `{
 		"a":"asdf",
 		"b" : 65,
@@ -1297,7 +1254,7 @@ func TestFromYamlErrors(t *testing.T) {
 			"e_b" : 2
 
 	}`
-	assert.NotNil(t, config.FromYaml(incorrect_format))
+	assert.NotNil(t, config.Unmarshal().FromYaml(incorrect_format))
 	incorrect_key := `{
 		"a":"asdf",
 		"z" : 65,
@@ -1309,7 +1266,7 @@ func TestFromYamlErrors(t *testing.T) {
 			"e_b" : 2
 		}
 	}`
-	assert.NotNil(t, config.FromYaml(incorrect_key))
+	assert.NotNil(t, config.Unmarshal().FromYaml(incorrect_key))
 	incorrect_value := `{
 		"a":"asdf",
 		"b" : 65,
@@ -1322,12 +1279,11 @@ func TestFromYamlErrors(t *testing.T) {
 			"e_b" : 2
 		}
 	}`
-	assert.NotNil(t, config.FromYaml(incorrect_value))
+	assert.NotNil(t, config.Unmarshal().FromYaml(incorrect_value))
 }
 
 func TestFromPbTextErrors(t *testing.T) {
-	api := goapi.NewApi()
-	config := api.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	incorrect_format := `{
 		"a":"asdf",
 		"b" : 65,
@@ -1339,7 +1295,7 @@ func TestFromPbTextErrors(t *testing.T) {
 			"e_b" : 2
 
 	}`
-	assert.NotNil(t, config.FromPbText(incorrect_format))
+	assert.NotNil(t, config.Unmarshal().FromPbText(incorrect_format))
 	incorrect_key := `{
 		"a":"asdf",
 		"z" : 65,
@@ -1351,7 +1307,7 @@ func TestFromPbTextErrors(t *testing.T) {
 			"e_b" : 2
 		}
 	}`
-	assert.NotNil(t, config.FromPbText(incorrect_key))
+	assert.NotNil(t, config.Unmarshal().FromPbText(incorrect_key))
 }
 
 func TestUpdateConfig(t *testing.T) {
@@ -1360,145 +1316,145 @@ func TestUpdateConfig(t *testing.T) {
 		config1.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 		_, set_err := api.SetConfig(config1)
 		assert.Nil(t, set_err)
-		config2 := api.NewUpdateConfig()
+		config2 := goapi.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
-		config2PbText, err := config2.ToPbText()
+		config2PbText, err := config2.Marshal().ToPbText()
 		assert.Nil(t, err)
-		config2Json, err := config2.ToJson()
+		config2Json, err := config2.Marshal().ToJson()
 		assert.Nil(t, err)
-		config2Yaml, err := config2.ToYaml()
+		config2Yaml, err := config2.Marshal().ToYaml()
 		assert.Nil(t, err)
-		assert.Nil(t, config2.FromJson(config2Json))
-		assert.Nil(t, config2.FromYaml(config2Yaml))
-		assert.Nil(t, config2.FromPbText(config2PbText))
+		assert.Nil(t, config2.Unmarshal().FromJson(config2Json))
+		assert.Nil(t, config2.Unmarshal().FromYaml(config2Yaml))
+		assert.Nil(t, config2.Unmarshal().FromPbText(config2PbText))
 		// config2.SetMsg(config2.Msg())
 		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
 		assert.NotNil(t, config3)
-		config3Yaml, err := config3.ToYaml()
+		config3Yaml, err := config3.Marshal().ToYaml()
 		assert.Nil(t, err)
 		log.Println(config3Yaml)
 	}
 }
 
 func TestNewSetConfigResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewSetConfigResponse()
+	new_resp := goapi.NewSetConfigResponse()
 	new_resp.SetResponseBytes([]byte{0, 1})
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasResponseBytes()
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewUpdateConfigResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewUpdateConfigurationResponse()
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	new_resp := goapi.NewUpdateConfigurationResponse()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasPrefixConfig()
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewGetConfigResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewGetConfigResponse()
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	new_resp := goapi.NewGetConfigResponse()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasPrefixConfig()
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewGetMetricsResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewGetMetricsResponse()
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	new_resp := goapi.NewGetMetricsResponse()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasMetrics()
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewGetWarningsResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewGetWarningsResponse()
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	new_resp := goapi.NewGetWarningsResponse()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasWarningDetails()
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewClearWarningsResponse(t *testing.T) {
-	api := goapi.NewApi()
-	new_resp := api.NewClearWarningsResponse()
-	new_resp.SetMsg(new_resp.Msg())
-	new_resp.Msg()
+	new_resp := goapi.NewClearWarningsResponse()
+	p, _ := new_resp.Marshal().ToProto()
+	_, err := new_resp.Unmarshal().FromProto(p)
+	assert.Nil(t, err)
 	new_resp.HasResponseString()
 	new_resp.SetResponseString("success")
-	respJson, err := new_resp.ToJson()
+	respJson, err := new_resp.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_resp.ToYaml()
+	respYaml, err := new_resp.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_resp.ToPbText()
+	respPbText, err := new_resp.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_resp.FromJson(respJson))
-	assert.Nil(t, new_resp.FromYaml(respYaml))
-	assert.Nil(t, new_resp.FromPbText(respPbText))
+	assert.Nil(t, new_resp.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_resp.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_resp.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewError(t *testing.T) {
 	new_err := goapi.NewError()
 	var code int32 = 500
-	new_err.Msg().Code = &code
-	new_err.Msg().Errors = []string{"err1"}
-	respJson, err := new_err.ToJson()
+	_ = new_err.SetCode(code)
+	_ = new_err.SetErrors([]string{"err1"})
+	respJson, err := new_err.Marshal().ToJson()
 	assert.Nil(t, err)
-	respYaml, err := new_err.ToYaml()
+	respYaml, err := new_err.Marshal().ToYaml()
 	assert.Nil(t, err)
-	respPbText, err := new_err.ToPbText()
+	respPbText, err := new_err.Marshal().ToPbText()
 	assert.Nil(t, err)
-	assert.Nil(t, new_err.FromJson(respJson))
-	assert.Nil(t, new_err.FromYaml(respYaml))
-	assert.Nil(t, new_err.FromPbText(respPbText))
+	assert.Nil(t, new_err.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_err.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_err.Unmarshal().FromPbText(respPbText))
 	er := new_err.SetErrors(new_err.Errors())
 	if er != nil {
 		fmt.Println(er)
@@ -1507,32 +1463,34 @@ func TestNewError(t *testing.T) {
 
 func TestNewMetrics(t *testing.T) {
 	new_metrics := goapi.NewMetrics()
-	new_metrics.SetMsg(new_metrics.Msg())
-	new_metrics.Msg()
-	respJson, err := new_metrics.ToJson()
+	p, _ := new_metrics.Marshal().ToProto()
+	_, err := new_metrics.Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	respYaml, err := new_metrics.ToYaml()
+	respJson, err := new_metrics.Marshal().ToJson()
 	assert.Nil(t, err)
-	respPbText, err := new_metrics.ToPbText()
+	respYaml, err := new_metrics.Marshal().ToYaml()
 	assert.Nil(t, err)
-	assert.Nil(t, new_metrics.FromJson(respJson))
-	assert.Nil(t, new_metrics.FromYaml(respYaml))
-	assert.Nil(t, new_metrics.FromPbText(respPbText))
+	respPbText, err := new_metrics.Marshal().ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_metrics.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_metrics.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_metrics.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewWarningDetails(t *testing.T) {
 	new_warnings := goapi.NewWarningDetails()
-	new_warnings.SetMsg(new_warnings.Msg())
-	new_warnings.Msg()
-	respJson, err := new_warnings.ToJson()
+	p, _ := new_warnings.Marshal().ToProto()
+	_, err := new_warnings.Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	respYaml, err := new_warnings.ToYaml()
+	respJson, err := new_warnings.Marshal().ToJson()
 	assert.Nil(t, err)
-	respPbText, err := new_warnings.ToPbText()
+	respYaml, err := new_warnings.Marshal().ToYaml()
 	assert.Nil(t, err)
-	assert.Nil(t, new_warnings.FromJson(respJson))
-	assert.Nil(t, new_warnings.FromYaml(respYaml))
-	assert.Nil(t, new_warnings.FromPbText(respPbText))
+	respPbText, err := new_warnings.Marshal().ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_warnings.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_warnings.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_warnings.Unmarshal().FromPbText(respPbText))
 }
 
 func TestNewPortMetric(t *testing.T) {
@@ -1540,21 +1498,23 @@ func TestNewPortMetric(t *testing.T) {
 	new_port_metric.SetName("portmetric")
 	new_port_metric.SetTxFrames(1000)
 	new_port_metric.SetRxFrames(2000)
-	new_port_metric.SetMsg(new_port_metric.Msg())
-	new_port_metric.Msg()
-	respJson, err := new_port_metric.ToJson()
+	p, _ := new_port_metric.Marshal().ToProto()
+	_, err := new_port_metric.Unmarshal().FromProto(p)
 	assert.Nil(t, err)
-	respYaml, err := new_port_metric.ToYaml()
+	respJson, err := new_port_metric.Marshal().ToJson()
 	assert.Nil(t, err)
-	respPbText, err := new_port_metric.ToPbText()
+	respYaml, err := new_port_metric.Marshal().ToYaml()
 	assert.Nil(t, err)
-	assert.Nil(t, new_port_metric.FromJson(respJson))
-	assert.Nil(t, new_port_metric.FromYaml(respYaml))
-	assert.Nil(t, new_port_metric.FromPbText(respPbText))
+	respPbText, err := new_port_metric.Marshal().ToPbText()
+	assert.Nil(t, err)
+	assert.Nil(t, new_port_metric.Unmarshal().FromJson(respJson))
+	assert.Nil(t, new_port_metric.Unmarshal().FromYaml(respYaml))
+	assert.Nil(t, new_port_metric.Unmarshal().FromPbText(respPbText))
 	new_port_metric.Name()
 	new_port_metric.RxFrames()
 	new_port_metric.TxFrames()
-	assert.Nil(t, new_port_metric.Validate())
+	_, err = new_port_metric.Marshal().ToYaml()
+	assert.Nil(t, err)
 }
 
 func TestItemsMethod(t *testing.T) {
@@ -1562,31 +1522,31 @@ func TestItemsMethod(t *testing.T) {
 	config1 := NewFullyPopulatedPrefixConfig(api)
 	config1.G().Add().SetGA("this is GA string")
 	assert.Equal(t, config1.G(), config1.G())
-	config2 := api.NewPrefixConfig()
-	config1Json, err := config1.ToJson()
+	config2 := goapi.NewPrefixConfig()
+	config1Json, err := config1.Marshal().ToJson()
 	assert.Nil(t, err)
-	json_err := config2.FromJson(config1Json)
+	json_err := config2.Unmarshal().FromJson(config1Json)
 	assert.Nil(t, json_err)
 	assert.Len(t, config1.G().Items(), 2)
 	assert.Len(t, config2.G().Items(), 2)
 	for ind, obj := range config1.G().Items() {
-		objJson, err := obj.ToJson()
+		objJson, err := obj.Marshal().ToJson()
 		assert.Nil(t, err)
-		gJson, err := config2.G().Items()[ind].ToJson()
+		gJson, err := config2.G().Items()[ind].Marshal().ToJson()
 		assert.Nil(t, err)
 		assert.Equal(t, objJson, gJson)
 	}
-	configJson1, err := config1.ToJson()
+	configJson1, err := config1.Marshal().ToJson()
 	assert.Nil(t, err)
-	config2Json, err := config2.ToJson()
+	config2Json, err := config2.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, configJson1, config2Json)
 	config2.G().Add().SetGB(200000)
 	assert.Len(t, config2.G().Items(), 3)
 	for ind, obj := range config1.G().Items() {
-		objJson1, err := obj.ToJson()
+		objJson1, err := obj.Marshal().ToJson()
 		assert.Nil(t, err)
-		gJson1, err := config2.G().Items()[ind].ToJson()
+		gJson1, err := config2.G().Items()[ind].Marshal().ToJson()
 		assert.Nil(t, err)
 		assert.Equal(t, objJson1, gJson1)
 	}
@@ -1602,46 +1562,46 @@ func TestStructGetterMethod(t *testing.T) {
 	assert.Equal(t, val, jObject.JA())
 
 	jObject1 := goapi.NewJObject()
-	jOject1json, err := jObject.ToJson()
+	jOject1json, err := jObject.Marshal().ToJson()
 	assert.Nil(t, err)
-	err1 := jObject1.FromJson(jOject1json)
+	err1 := jObject1.Unmarshal().FromJson(jOject1json)
 	assert.Nil(t, err1)
 	assert.Equal(t, jObject1.JA(), jObject1.JA())
 
 	jObject2 := goapi.NewJObject()
 	val2 := jObject2.JA()
 	val2.SetEA(0.23495).SetEB(1.456)
-	jObject2Json, err := jObject.ToJson()
+	jObject2Json, err := jObject.Marshal().ToJson()
 	assert.Nil(t, err)
-	err2 := jObject2.FromJson(jObject2Json)
+	err2 := jObject2.Unmarshal().FromJson(jObject2Json)
 	assert.Nil(t, err2)
 	assert.NotEqual(t, val2, jObject2.JA())
 }
 
 func TestFromJsonEmpty(t *testing.T) {
 	fObject := goapi.NewFObject()
-	value1, err := fObject.ToJson()
+	value1, err := fObject.Marshal().ToJson()
 	assert.Nil(t, err)
-	value2, err := fObject.ToYaml()
+	value2, err := fObject.Marshal().ToYaml()
 	assert.Nil(t, err)
-	value3, err := fObject.ToPbText()
+	value3, err := fObject.Marshal().ToPbText()
 	assert.Nil(t, err)
 	for i, v := range []string{"", ``, `{}`, "{}"} {
-		err1 := fObject.FromJson(v)
+		err1 := fObject.Unmarshal().FromJson(v)
 		assert.Nil(t, err1)
-		err2 := fObject.FromYaml(v)
+		err2 := fObject.Unmarshal().FromYaml(v)
 		assert.Nil(t, err2)
 		if i < 2 {
-			err3 := fObject.FromPbText(v)
+			err3 := fObject.Unmarshal().FromPbText(v)
 			assert.Nil(t, err3)
 		}
 	}
 
-	fObjectJson, err := fObject.ToJson()
+	fObjectJson, err := fObject.Marshal().ToJson()
 	assert.Nil(t, err)
-	fObjectYaml, err := fObject.ToYaml()
+	fObjectYaml, err := fObject.Marshal().ToYaml()
 	assert.Nil(t, err)
-	fObjectPbText, err := fObject.ToPbText()
+	fObjectPbText, err := fObject.Marshal().ToPbText()
 	assert.Nil(t, err)
 	require.JSONEq(t, value1, fObjectJson)
 	require.Equal(t, value2, fObjectYaml)
@@ -1659,10 +1619,10 @@ func TestChoiceDefaults(t *testing.T) {
 			"e_b": 6.78
 		}
 	}`
-	j, err0 := jObject.ToJson()
+	j, err0 := jObject.Marshal().ToJson()
 	assert.Nil(t, err0)
 	require.JSONEq(t, json, j)
-	jObject.SetChoice(goapi.JObjectChoice.J_B)
+	jObject.JB()
 	json1 := `
 	{
 		"choice": "j_b",
@@ -1671,7 +1631,7 @@ func TestChoiceDefaults(t *testing.T) {
 			"f_a": "some string"
 		}
 	}`
-	j1, err1 := jObject.ToJson()
+	j1, err1 := jObject.Marshal().ToJson()
 	assert.Nil(t, err1)
 	require.JSONEq(t, json1, j1)
 	jObject.JB().FB()
@@ -1683,7 +1643,7 @@ func TestChoiceDefaults(t *testing.T) {
 			"f_b": 3
 		}
 	}`
-	j2, err2 := jObject.ToJson()
+	j2, err2 := jObject.Marshal().ToJson()
 	assert.Nil(t, err2)
 	require.JSONEq(t, json2, j2)
 	integer := goapi.NewIntegerPattern()
@@ -1697,7 +1657,7 @@ func TestChoiceDefaults(t *testing.T) {
 		  ]
 		}
 	}`
-	j3, err3 := integer.ToJson()
+	j3, err3 := integer.Marshal().ToJson()
 	assert.Nil(t, err3)
 	require.JSONEq(t, json3, j3)
 	integer.Integer().SetValues([]uint32{1, 2, 3})
@@ -1710,7 +1670,7 @@ func TestChoiceDefaults(t *testing.T) {
 		  ]
 		}
 	}`
-	j4, err4 := integer.ToJson()
+	j4, err4 := integer.Marshal().ToJson()
 	assert.Nil(t, err4)
 	require.JSONEq(t, json4, j4)
 }
@@ -1723,7 +1683,7 @@ func TestSetterWrapperHolder(t *testing.T) {
 			"choice": "ports"
 		}
 	}`
-	metricsrespJson, err := metricsResp.ToJson()
+	metricsrespJson, err := metricsResp.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson)
 	fmt.Println(metricsrespJson)
@@ -1740,12 +1700,12 @@ func TestSetterWrapperHolder(t *testing.T) {
 		  ]
 		}
 	}`
-	metricsrespJson1, err := metricsResp.ToJson()
+	metricsrespJson1, err := metricsResp.Marshal().ToJson()
 	assert.Nil(t, err)
 	fmt.Println(metricsrespJson1)
 	require.JSONEq(t, json, metricsrespJson1)
 	metricsResp.SetMetrics(goapi.NewMetrics())
-	metricsrespJson2, err := metricsResp.ToJson()
+	metricsrespJson2, err := metricsResp.Marshal().ToJson()
 	assert.Nil(t, err)
 	require.JSONEq(t, json1, metricsrespJson2)
 	fmt.Println(metricsrespJson2)
@@ -1786,8 +1746,8 @@ func TestClone(t *testing.T) {
 
 // 	assert.Len(t, config.Warnings(), 0)
 
-// 	// Warning by ToJson
-// 	data, err := config.ToJson()
+// 	// Warning by Marshal().ToJson
+// 	data, err := config.Marshal().ToJson()
 
 // 	assert.Nil(t, err)
 // 	warnings = config.Warnings()
@@ -1804,8 +1764,8 @@ func TestClone(t *testing.T) {
 
 // 	config1 := api.NewPrefixConfig()
 
-// 	// Warning by FromJson
-// 	err1 := config1.FromJson(data)
+// 	// Warning by Unmarshal().FromJson
+// 	err1 := config1.Unmarshal().FromJson(data)
 // 	assert.Nil(t, err1)
 // 	warnings = config1.Warnings()
 
@@ -1837,25 +1797,25 @@ func TestClone(t *testing.T) {
 // 	// Two similar objects with same Name.
 // 	prefix.WList().Add().SetWName("global_unique_similar_obj")
 // 	prefix.WList().Add().SetWName("global_unique_similar_obj")
-// 	_, err := prefix.ToJson()
+// 	_, err := prefix.Marshal().ToJson()
 // 	assert.NotNil(t, err)
 // 	assert.Contains(t, err.Error(), "global_unique_similar_obj already exists")
 
 // 	// Two similar objects with different name
 // 	prefix.WList().Items()[1].SetWName("global_unique_similar_obj1")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.Nil(t, err)
 
 // 	// Two different objects with same name
 // 	prefix.SetName("global_unique")
 // 	prefix.WList().Add().SetWName("global_unique")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.NotNil(t, err)
 // 	assert.Contains(t, err.Error(), "global_unique already exists")
 
 // 	// Two different objects with different name
 // 	prefix.SetName("global_unique1")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.Nil(t, err)
 // 	// ********************************************
 
@@ -1865,19 +1825,19 @@ func TestClone(t *testing.T) {
 // 	// Two similar objects with same Name.
 // 	prefix.XList().Add().SetName("local_unique")
 // 	prefix.XList().Add().SetName("local_unique")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.NotNil(t, err)
 // 	assert.Contains(t, err.Error(), "local_unique already exists")
 
 // 	// Two similar objects with different name
 // 	prefix.XList().Items()[0].SetName("local_unique1")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.Nil(t, err)
 
 // 	// Two different objects with same name
 // 	prefix.SetName("local_global_mix")
 // 	prefix.ZObject().SetName("local_global_mix")
-// 	_, err = prefix.ToJson()
+// 	_, err = prefix.Marshal().ToJson()
 // 	assert.NotNil(t, err)
 // }
 
@@ -1905,12 +1865,12 @@ func TestClone(t *testing.T) {
 
 // 	// serialize with non existing name
 // 	prefix_.YObject().SetYName("wObj3")
-// 	_, err = prefix_.ToJson()
+// 	_, err = prefix_.Marshal().ToJson()
 // 	assert.NotNil(t, err)
 
 // 	// serialize with valid data
 // 	prefix_.YObject().SetYName("wObj1")
-// 	data, j_err := prefix_.ToJson()
+// 	data, j_err := prefix_.Marshal().ToJson()
 // 	assert.Nil(t, j_err)
 
 // 	re := regexp.MustCompile(`y_name.+wObj1`)
@@ -1920,7 +1880,7 @@ func TestClone(t *testing.T) {
 // 	// Deserialize with non-existing name
 // 	prefix1 := goapi.NewPrefixConfig()
 // 	fmt.Println(data)
-// 	err1 := prefix1.FromJson(data)
+// 	err1 := prefix1.Unmarshal().FromJson(data)
 // 	assert.NotNil(t, err1)
 // 	fmt.Println(err1.Error())
 
@@ -1929,6 +1889,6 @@ func TestClone(t *testing.T) {
 // 	// data = strings.Replace(data, `"y_name": "wObj3"`, `"y_name": "wObj1"`, 1)
 
 // 	// Deserialize with valid name
-// 	err2 := prefix1.FromJson(data)
+// 	err2 := prefix1.Unmarshal().FromJson(data)
 // 	assert.Nil(t, err2)
 // }

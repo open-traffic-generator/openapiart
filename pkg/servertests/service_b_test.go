@@ -19,7 +19,7 @@ func TestGetAllItems(t *testing.T) {
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := goapi.NewServiceAbcItemList()
-	err := r.FromJson(string(jsonResponse))
+	err := r.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	items := r.Items().Items()
 	assert.Equal(t, 2, len(items))
@@ -36,7 +36,7 @@ func TestGetSingleItem(t *testing.T) {
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := goapi.NewServiceAbcItem()
-	err := r.FromJson(string(jsonResponse))
+	err := r.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "1", r.SomeId())
 
@@ -47,7 +47,7 @@ func TestGetSingleItem(t *testing.T) {
 
 	jsonResponse, _ = io.ReadAll(wr.Body)
 	errNew := goapi.NewError()
-	errFromJson := errNew.FromJson(string(jsonResponse))
+	errFromJson := errNew.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, errFromJson)
 	assert.Equal(t, "not found: id '3'", errNew.Errors()[0])
 }
@@ -61,7 +61,7 @@ func TestGetSingleItemLevel2(t *testing.T) {
 
 	jsonResponse, _ := io.ReadAll(wr.Body)
 	r := goapi.NewServiceAbcItem()
-	err := r.FromJson(string(jsonResponse))
+	err := r.Unmarshal().FromJson(string(jsonResponse))
 	assert.Nil(t, err)
 	assert.Equal(t, "aa", r.PathId())
 	assert.Equal(t, "bb", r.Level2())

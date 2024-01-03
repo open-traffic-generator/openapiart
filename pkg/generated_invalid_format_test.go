@@ -20,9 +20,9 @@ func TestPrefixConfigIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPrefixConfig()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestEObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -37,9 +37,9 @@ func TestEObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewEObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestFObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -54,9 +54,9 @@ func TestFObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewFObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestGObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -71,9 +71,9 @@ func TestGObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewGObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestJObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -88,9 +88,9 @@ func TestJObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewJObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestKObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -105,9 +105,9 @@ func TestKObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewKObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -122,9 +122,9 @@ func TestLObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLevelOneIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -139,9 +139,9 @@ func TestLevelOneIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLevelOne()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestMandateIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -156,9 +156,9 @@ func TestMandateIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewMandate()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestIpv4PatternIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -173,9 +173,9 @@ func TestIpv4PatternIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewIpv4Pattern()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestIpv6PatternIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -190,9 +190,9 @@ func TestIpv6PatternIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewIpv6Pattern()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestMacPatternIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -207,9 +207,9 @@ func TestMacPatternIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewMacPattern()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestIntegerPatternIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -224,9 +224,9 @@ func TestIntegerPatternIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewIntegerPattern()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestChecksumPatternIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -241,9 +241,9 @@ func TestChecksumPatternIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewChecksumPattern()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLayer1Ieee802XIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -258,9 +258,9 @@ func TestLayer1Ieee802XIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLayer1Ieee802X()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestMObjectIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -275,9 +275,9 @@ func TestMObjectIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewMObject()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternPrefixConfigHeaderChecksumIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -292,9 +292,9 @@ func TestPatternPrefixConfigHeaderChecksumIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternPrefixConfigHeaderChecksum()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestUpdateConfigIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -309,9 +309,9 @@ func TestUpdateConfigIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewUpdateConfig()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestSetConfigResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -326,9 +326,9 @@ func TestSetConfigResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewSetConfigResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestErrorDetailsIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -343,9 +343,9 @@ func TestErrorDetailsIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewError()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestErrorIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -360,9 +360,9 @@ func TestErrorIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewError()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestUpdateConfigResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -377,9 +377,9 @@ func TestUpdateConfigResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewUpdateConfigurationResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestGetConfigResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -394,9 +394,9 @@ func TestGetConfigResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewGetConfigResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestGetMetricsResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -411,9 +411,9 @@ func TestGetMetricsResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewGetMetricsResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestMetricsIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -428,9 +428,9 @@ func TestMetricsIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewMetrics()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestGetWarningsResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -445,9 +445,9 @@ func TestGetWarningsResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewGetWarningsResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestWarningDetailsIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -462,9 +462,9 @@ func TestWarningDetailsIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewWarningDetails()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestClearWarningsResponseIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -479,9 +479,9 @@ func TestClearWarningsResponseIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewClearWarningsResponse()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLevelTwoIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -496,9 +496,9 @@ func TestLevelTwoIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLevelTwo()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLevelFourIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -513,9 +513,9 @@ func TestLevelFourIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLevelFour()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIpv4PatternIpv4IncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -530,9 +530,9 @@ func TestPatternIpv4PatternIpv4IncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIpv4PatternIpv4()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIpv6PatternIpv6IncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -547,9 +547,9 @@ func TestPatternIpv6PatternIpv6IncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIpv6PatternIpv6()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternMacPatternMacIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -564,9 +564,9 @@ func TestPatternMacPatternMacIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternMacPatternMac()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIntegerPatternIntegerIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -581,9 +581,9 @@ func TestPatternIntegerPatternIntegerIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIntegerPatternInteger()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternChecksumPatternChecksumIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -598,9 +598,9 @@ func TestPatternChecksumPatternChecksumIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternChecksumPatternChecksum()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPortMetricIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -615,9 +615,9 @@ func TestPortMetricIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPortMetric()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestLevelThreeIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -632,9 +632,9 @@ func TestLevelThreeIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewLevelThree()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIpv4PatternIpv4CounterIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -649,9 +649,9 @@ func TestPatternIpv4PatternIpv4CounterIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIpv4PatternIpv4Counter()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIpv6PatternIpv6CounterIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -666,9 +666,9 @@ func TestPatternIpv6PatternIpv6CounterIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIpv6PatternIpv6Counter()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternMacPatternMacCounterIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -683,9 +683,9 @@ func TestPatternMacPatternMacCounterIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternMacPatternMacCounter()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
 func TestPatternIntegerPatternIntegerCounterIncorrectFormat(t *testing.T) {
 	incorrect_format := `{
@@ -700,7 +700,7 @@ func TestPatternIntegerPatternIntegerCounterIncorrectFormat(t *testing.T) {
 	    }`
 
 	object := goapi.NewPatternIntegerPatternIntegerCounter()
-	assert.NotNil(t, object.FromYaml(incorrect_format))
-	assert.NotNil(t, object.FromJson(incorrect_format))
-	assert.NotNil(t, object.FromPbText(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromYaml(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromJson(incorrect_format))
+	assert.NotNil(t, object.Unmarshal().FromPbText(incorrect_format))
 }
