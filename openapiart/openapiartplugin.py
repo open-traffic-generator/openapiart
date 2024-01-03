@@ -90,7 +90,6 @@ class OpenApiArtPlugin(object):
 
 
 class type_limits(object):
-
     limits = {
         "int32": (-2147483648, 2147483647),
         "uint32": (0, 4294967295),
@@ -100,7 +99,7 @@ class type_limits(object):
 
     @classmethod
     def _min_max_in_range(cls, format, min, max):
-        if min is None or max is None:
+        if min is None and max is None:
             return True
         elif min is None or max is None:
             if min is None:
@@ -130,37 +129,30 @@ class type_limits(object):
         if max < min:
             raise Exception("min %d cannot be less than max %d", min, max)
 
-        # TODO: this logic needs to be replaced with the one commented out below
-        if min > 2147483647 or max > 2147483647:
-            return "int64"
-        else:
+        if cls._min_max_in_range("uint32", min, max):
+            return "uint32"
+        if cls._min_max_in_range("uint64", min, max):
+            return "uint64"
+        if cls._min_max_in_range("int32", min, max):
             return "int32"
-        # TODO: following snippet is more accurate but introduces breaking
-        # changes and hence commented out
-        # if self._min_max_in_range("uint32", min, max):
-        #     return "uint32"
-        # if self._min_max_in_range("uint64", min, max):
-        #     return "uint64"
-        # if self._min_max_in_range("int32", min, max):
-        #     return "int32"
-        # if self._min_max_in_range("int64", min, max):
-        #     return "int64"
+        if cls._min_max_in_range("int64", min, max):
+            return "int64"
 
     @classmethod
     def _get_integer_format(cls, type_format, min, max):
         valid_formats = ["int32", "int64", "uint32", "uint64"]
-        if type_format is not None:
-            if type_format in valid_formats:
-                if not cls._min_max_in_range(type_format, min, max):
-                    raise Exception(
-                        "format {} is not compatible with [min,max] [{},{}]".format(
-                            type_format, min, max
-                        )
+        if type_format is None:
+            type_format = "int32"
+        if type_format in valid_formats:
+            if not cls._min_max_in_range(type_format, min, max):
+                raise Exception(
+                    "format {} is not compatible with [min,max] [{},{}]".format(
+                        type_format, min, max
                     )
-                return type_format
-            raise Exception(
-                "unsupported format %s, supported formats are: %s",
-                type_format,
-                valid_formats,
-            )
-        return cls._format_from_range(min, max)
+                )
+            return type_format
+        raise Exception(
+            "unsupported format %s, supported formats are: %s",
+            type_format,
+            valid_formats,
+        )

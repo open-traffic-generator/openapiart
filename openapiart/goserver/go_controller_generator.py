@@ -164,7 +164,7 @@ class GoServerControllerGenerator(object):
                     body, readError := io.ReadAll(r.Body)
                     if body != nil {{
                         item = {new_modelname}()
-                        err := item.FromJson(string(body))
+                        err := item.Unmarshal().FromJson(string(body))
                         if err != nil {{
                             ctrl.{rsp_400_error}(w, "validation", err)
                             return
@@ -224,7 +224,12 @@ class GoServerControllerGenerator(object):
 
             # This is require as workaround of https://github.com/open-traffic-generator/openapiart/issues/220
             if self._need_warning_check(route, response):
-                rsp_section = """data, err := {mrl_name}MrlOpts.Marshal(result.{struct}().Msg())
+                rsp_section = """
+                        proto, err := result.{struct}().Marshal().ToProto()
+                        if err != nil {{
+                            ctrl.{rsp_400_error}(w, "validation", err)
+                        }}
+                        data, err := {mrl_name}MrlOpts.Marshal(proto)
                         if err != nil {{
                             ctrl.{rsp_400_error}(w, "validation", err)
                         }}
@@ -238,12 +243,15 @@ class GoServerControllerGenerator(object):
                 # we dont want to check for default and stuff
                 continue
             else:
-                rsp_section = """if _, err := httpapi.{write_method}(w, {response_value}, result.{struct_name}()); err != nil {{
+                rsp_section = """if _, err := httpapi.{write_method}(w, {response_value}, result.{struct_name}(){marshal_func}); err != nil {{
                             log.Print(err.Error())
                     }}""".format(
                     write_method=write_method,
                     response_value=response.response_value,
                     struct_name=struct_name,
+                    marshal_func=""
+                    if struct_name in ["ResponseString", "ResponseBytes"]
+                    else ".Marshal()",
                 )
 
             w.write_line(
@@ -276,14 +284,14 @@ class GoServerControllerGenerator(object):
                     result = rErr
                 }} else {{
                     result = {models_prefix}NewError()
-                    err := result.FromJson(rsp_err.Error())
+                    err := result.Unmarshal().FromJson(rsp_err.Error())
                     if err != nil {{
-                        result.Msg().Code = statusCode
+                        _ = result.SetCode(statusCode)
                         err = result.SetKind(errorKind)
                         if err != nil {{
                             log.Print(err.Error())
                         }}
-                        result.Msg().Errors = []string{{rsp_err.Error()}}
+                        _ = result.SetErrors([]string{{rsp_err.Error()}})
                     }}
                 }}
             """.format(
@@ -300,7 +308,7 @@ class GoServerControllerGenerator(object):
                     statusCode = 500
                 }}
                 {set_errors}
-                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result); err != nil {{
+                if _, err := httpapi.WriteJSONResponse(w, int(result.Code()), result.Marshal()); err != nil {{
                     log.Print(err.Error())
                 }}
             }}

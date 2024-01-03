@@ -1,7 +1,7 @@
 # Build process
 # Generate go and python artifacts using 3.9
 # Test generated go artifacts using latest go
-# Test generate python artifacts using 2.7 and 3.9
+# Test generate python artifacts using 3.x
 
 name: CICD
 
@@ -46,6 +46,91 @@ jobs:
           path: |
             dist
             pkg
+
+  dev_workflow_ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.20"
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          version: "23.3"
+      - name: Trigger dev workflow
+        run: |
+          python do.py build
+
+  #   dev_workflow_macos:
+  #     runs-on: macos-latest
+  #     steps:
+  #       - name: Checkout source
+  #         uses: actions/checkout@v2
+  #         with:
+  #           ref: ${{ github.head_ref }}
+  #       - name: Set up Python 3.10
+  #         uses: actions/setup-python@v2
+  #         with:
+  #           python-version: "3.10"
+  #       - uses: actions/setup-go@v2
+  #         with:
+  #           go-version: "1.20"
+  #       - name: Install Protoc
+  #         uses: arduino/setup-protoc@v2
+  #         with:
+  #           version: "23.3"
+  #       - name: Trigger dev workflow
+  #         run: |
+  #           python do.py build
+
+  #   dev_workflow_windows:
+  #     runs-on: windows-latest
+  #     steps:
+  #       - name: Checkout source
+  #         uses: actions/checkout@v2
+  #         with:
+  #           ref: ${{ github.head_ref }}
+  #       - name: Set up Python 3.10
+  #         uses: actions/setup-python@v2
+  #         with:
+  #           python-version: "3.10"
+  #       - uses: actions/setup-go@v2
+  #         with:
+  #           go-version: "1.20"
+  #       - name: Install Protoc
+  #         uses: arduino/setup-protoc@v2
+  #         with:
+  #           version: "23.3"
+  #       - name: Trigger dev workflow
+  #         run: |
+  #           python do.py build
+
+  dev_workflow_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Setup docker
+        uses: docker/setup-buildx-action@v2
+      - name: Build image
+        run: |
+          docker build . -t openapiart:dev
+      - name: Start container
+        run: |
+          docker run -td openapiart:dev
+      - name: List containers
+        run: |
+          docker ps -a
 
   python_tests:
     needs: build
@@ -95,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        go-version: ["1.17.13", "1.18.10", "1.19.5", "1.20"]
+        go-version: ["1.19", "1.20", "1.21"]
       fail-fast: false
     steps:
       - name: Checkout source
@@ -141,46 +226,6 @@ jobs:
       - name: Run go tests
         run: |
           python do.py testgo
-
-  dev_workflow_host:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.10"
-      - uses: actions/setup-go@v2
-        with:
-          go-version: "1.20"
-      - name: Setup Go and protoc
-        run: |
-          python do.py setup_ext 1.20
-      - name: Trigger dev workflow
-        run: |
-          python do.py build
-
-  dev_workflow_docker:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Setup docker
-        uses: docker/setup-buildx-action@v2
-      - name: Build image
-        run: |
-          docker build . -t openapiart:dev
-      - name: Start container
-        run: |
-          docker run -td openapiart:dev
-      - name: List containers
-        run: |
-          docker ps -a
 
   proto_yml_generation_test:
     needs: build
@@ -244,7 +289,7 @@ jobs:
       - name: Publish package
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          PYPI_USERNAME=${{ secrets.PYPI_USERNAME }} PYPI_PASSWORD=${{ secrets.PYPI_PASSWORD }} python do.py release
+          PYPI_USERNAME=__token__ PYPI_PASSWORD=${{ secrets.PYPI_API_TOKEN }} python do.py release
       - name: Create release and publish artifacts
         if: steps.check_tag.outputs.exists == 'false'
         uses: ncipollo/release-action@v1

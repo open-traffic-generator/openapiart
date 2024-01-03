@@ -1,0 +1,73 @@
+paths:
+  /config:
+    post:
+      tags: ["Bundler"]
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "Standard success binary payload"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    Config:
+      type: object
+      description: |-
+        This is a field uid object
+      properties:
+        integer64:
+          description: int64 type
+          type: integer
+          format: int64
+          x-field-uid: 1
+        integer32:
+          description: int32 type
+          type: integer
+          format: int32
+          x-field-uid: 2
+        u64:
+          description: u64 type
+          type: integer
+          format: uint32
+          x-field-uid: 3
+        u32:
+          description: u32 type
+          type: integer
+          format: uint64
+          x-field-uid: 4
+        u8:
+          description: u8 type
+          type: integer
+          format: uint8
+          x-field-uid: 5
+        u16:
+          description: u16 type
+          type: integer
+          format: uint16
+          x-field-uid: 6
+        int:
+          description: int type
+          type: integer
+          format: int
+          x-field-uid: 7
+        typo:
+          description: wrong typo type
+          type: integer
+          format: usnit64
+          x-field-uid: 8
+
+
+
+

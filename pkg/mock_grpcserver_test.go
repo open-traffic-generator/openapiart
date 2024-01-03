@@ -65,11 +65,12 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	case sanity.PrefixConfig_Response_status_500.Enum().Number():
 		resp = nil
 		errObj := openapiart.NewError()
-		errObj.Msg().Code = 500
+		var code int32 = 500
+		_ = errObj.SetCode(code)
 		tmp := errObj.SetKind("internal")
 		fmt.Println(tmp)
-		errObj.Msg().Errors = []string{"internal err 1"}
-		jsonStr, e := errObj.ToJson()
+		_ = errObj.SetErrors([]string{"internal err 1"})
+		jsonStr, e := errObj.Marshal().ToJson()
 		if e != nil {
 			return resp, e
 		}
@@ -83,9 +84,10 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	case sanity.PrefixConfig_Response_status_404.Enum().Number():
 		s.Config = req.PrefixConfig
 		errObj := openapiart.NewError()
-		errObj.Msg().Code = 404
-		errObj.Msg().Errors = []string{"returning err1", "returning err2"}
-		jsonStr, e := errObj.ToJson()
+		var code int32 = 404
+		_ = errObj.SetCode(code)
+		_ = errObj.SetErrors([]string{"returning err1", "returning err2"})
+		jsonStr, e := errObj.Marshal().ToJson()
 		if e != nil {
 			return resp, e
 		}
@@ -102,8 +104,9 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
+	ver, _ := openapiart.NewApi().GetLocalVersion().Marshal().ToProto()
 	resp := &sanity.GetVersionResponse{
-		Version: openapiart.NewApi().GetLocalVersion().Msg(),
+		Version: ver,
 	}
 	return resp, nil
 }
@@ -115,11 +118,12 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 			return nil, fmt.Errorf("unit test error")
 		} else if req.UpdateConfig.G[0].GetName() == "Erkind" {
 			errObj := openapiart.NewError()
-			errObj.Msg().Code = 404
+			var code int32 = 404
+			_ = errObj.SetCode(code)
 			tmp := errObj.SetKind("validation")
 			fmt.Println(tmp)
-			errObj.Msg().Errors = []string{"invalid1", "invalid2"}
-			jsonStr, e := errObj.ToJson()
+			_ = errObj.SetErrors([]string{"invalid1", "invalid2"})
+			jsonStr, e := errObj.Marshal().ToJson()
 			if e != nil {
 				return nil, e
 			}
@@ -145,14 +149,14 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 				Choice: &choice_val,
 				Ports: []*sanity.PortMetric{
 					{
-						Name:     "P2",
-						TxFrames: 3000,
-						RxFrames: 2788,
+						Name:     s.GetStringPtr("P2"),
+						TxFrames: s.GetFloatPtr(3000),
+						RxFrames: s.GetFloatPtr(2788),
 					},
 					{
-						Name:     "P1",
-						TxFrames: 2323,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("P1"),
+						TxFrames: s.GetFloatPtr(2323),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 				},
 			},
@@ -165,14 +169,14 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 				Choice: &choice_val,
 				Flows: []*sanity.FlowMetric{
 					{
-						Name:     "F2",
-						TxFrames: 4000,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("F2"),
+						TxFrames: s.GetFloatPtr(4000),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 					{
-						Name:     "F1",
-						TxFrames: 2000,
-						RxFrames: 2000,
+						Name:     s.GetStringPtr("F1"),
+						TxFrames: s.GetFloatPtr(2000),
+						RxFrames: s.GetFloatPtr(2000),
 					},
 				},
 			},
@@ -198,4 +202,12 @@ func (s *GrpcServer) ClearWarnings(ctx context.Context, empty *empty.Empty) (*sa
 		String_: value,
 	}
 	return resp, nil
+}
+
+func (s *GrpcServer) GetStringPtr(value string) *string {
+	return &value
+}
+
+func (s *GrpcServer) GetFloatPtr(value float64) *float64 {
+	return &value
 }

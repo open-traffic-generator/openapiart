@@ -2,7 +2,6 @@ import pytest
 
 
 def test_warnings_with_api(api, capfd):
-
     u_conf = api.update_config()
     u_conf.g.gobject(g_a="abcd")
 
@@ -31,7 +30,7 @@ def test_warning_for_primitive_attr(api, capsys):
 
     conf.space_1 = 56
     conf.str_len = "1245"
-    conf.hex_slice = ["str1", "str2"]
+    conf.hex_slice = ["0xff", "0xab"]
     s_obj = conf.serialize(conf.DICT)
 
     out, err = capsys.readouterr()

@@ -9,7 +9,7 @@ import platform
 
 BLACK_VERSION = "22.1.0"
 GO_VERSION = "1.20"
-PROTOC_VERSION = "3.20.3"
+PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
 LOCAL_PATH = os.path.join(os.path.expanduser("~"), ".local")
@@ -39,9 +39,17 @@ def on_x86():
     return arch() == "x86_64"
 
 
-def on_linux():
+def get_platform():
     print("The platform is {}".format(sys.platform))
-    return "linux" in sys.platform
+    return sys.platform
+
+
+def on_linux():
+    return "linux" in get_platform()
+
+
+def on_macos():
+    return "darwin" in get_platform()
 
 
 def get_go(version=GO_VERSION, targz=None):
@@ -75,7 +83,9 @@ def get_go(version=GO_VERSION, targz=None):
 
 def get_go_deps():
     print("Getting Go libraries for grpc / protobuf ...")
-    cmd = "GO111MODULE=on CGO_ENABLED=0 go install"
+    cmd = "go install"
+    if on_linux() or on_macos():
+        cmd = "CGO_ENABLED=0 {}".format(cmd)
     run(
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0",
@@ -116,7 +126,6 @@ def setup_ext(go_version=GO_VERSION, protoc_version=PROTOC_VERSION):
     if on_linux():
         get_go(go_version)
         get_protoc(protoc_version)
-        get_go_deps()
     else:
         print("Skipping go and protoc installation on non-linux platform ...")
 
@@ -161,6 +170,8 @@ def init(use_sdk=None):
                 py() + " -m pip install -r {}".format(art_test),
             ]
         )
+
+    get_go_deps()
 
 
 def lint(check="false"):
@@ -267,8 +278,12 @@ def go_lint():
         else:
             version = "1.51.1"
 
-        pkg = "{}go install -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
-            "" if sys.platform == "win32" else "GO111MODULE=on CGO_ENABLED=0 ",
+        pkg = "go install"
+        if on_linux() or on_macos():
+            pkg = "CGO_ENABLED=0 {}".format(pkg)
+
+        pkg = "{} -v github.com/golangci/golangci-lint/cmd/golangci-lint@v{}".format(
+            pkg,
             version,
         )
         run([pkg])
@@ -332,12 +347,16 @@ def clean():
         "dist",
         "build",
         "*.egg-info",
+        "cov_report",
+        "art",
     ]
     recursive_patterns = [
         ".pytest_cache",
         "__pycache__",
         "*.pyc",
         "*.log",
+        "coverage.txt",
+        ".coverage",
     ]
 
     for pattern in pwd_patterns:
@@ -410,7 +429,10 @@ def py():
         print(py.path)
         return py.path
     except AttributeError:
-        py.path = os.path.join(".env", "bin", "python")
+        if on_linux() or on_macos():
+            py.path = os.path.join(".env", "bin", "python")
+        else:
+            py.path = os.path.join(".env", "Scripts", "python")
         if not os.path.exists(py.path):
             py.path = sys.executable
 
@@ -463,45 +485,51 @@ def getstatusoutput(command):
 
 
 def build(sdk="all", env_setup=None):
-    print("\nStep 1: Set up virtaul env")
+    print("\nSTEP 1: Set up virtual environment")
 
     if env_setup is not None and env_setup.lower() == "clean":
         print("\nCleaning up exsisting env")
-        run(["rm -rf .env"])
+        clean()
+        rm_path(".env")
 
     if not os.path.exists(".env"):
         setup()
     else:
         print("\nvirtualenv already exists.\n")
 
-    py.path = os.path.join(".env", "bin", "python")
+    if on_linux() or on_macos():
+        py.path = os.path.join(".env", "bin", "python")
+    else:
+        py.path = os.path.join(".env", "Scripts", "python")
+
     print(
         "\nWill be using the following python interpreter path "
         + py.path
         + "\n"
     )
 
-    print("\nStep 2: Install current changes of openapiart to venv\n")
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    test_req = os.path.join(base_dir, "openapiart", "test_requirements.txt")
-    run([py() + " setup.py install", py() + " -m pip install -r " + test_req])
-    print("\nStep 3: Generating python and Go SDKs\n")
+    print(
+        "\nSTEP 2: Install openapiart with current changes against virtual environment\n"
+    )
+    init()
+    run([py() + " setup.py install"])
+    print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":
-        print("\nStep 4: Perform Python lint\n")
+        print("\nSTEP 4: Perform Python lint\n")
         lint()
-        print("\nStep 5: Run Python Tests\n")
+        print("\nSTEP 5: Run Python Tests\n")
         testpy()
     else:
-        print("\nSkipping Step 4: python lint and Step 5: run python tests\n")
+        print("\nSkipping STEP 4: python lint and STEP 5: run python tests\n")
     if sdk == "go" or sdk == "all":
-        print("\nStep 6: Run Go Lint\n")
+        print("\nSTEP 6: Run Go Lint\n")
         go_lint()
-        print("\nStep 7: Run Go Tests")
+        print("\nSTEP 7: Run Go Tests")
         testgo()
     else:
-        print("\nStep 6: Perform Go lint and Step 7: run go tests\n")
-    print("\nBuild Successfull\n")
+        print("\nSkipping STEP 6: Perform Go lint and STEP 7: Run go tests\n")
+    print("\nBuild Succeeded\n")
 
 
 def main():
