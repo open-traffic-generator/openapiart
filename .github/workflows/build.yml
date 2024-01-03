@@ -78,7 +78,8 @@ jobs:
           git config user.name "Github Actions Bot"
           git config user.email "actions@github.com"
           git pull
-          git add --force artifacts/\*
+          git add --force artifacts/
+          git rm --cached artifacts/pyapi/__pycache__
           if git status --porcelain | grep .
             then
               git commit -m "Update auto generated go code"
