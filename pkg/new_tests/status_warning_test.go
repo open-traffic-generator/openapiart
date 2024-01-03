@@ -9,14 +9,13 @@ import (
 )
 
 func TestStatuswarningInPrimitiveAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
 	xSt.SetDecprecatedProperty2(45).SetUnderReviewProperty2(65).SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
-	err := xSt.Validate()
+	_, err := xSt.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -28,15 +27,14 @@ func TestStatuswarningInPrimitiveAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInStructAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	eF := config.ExtendedFeatures()
 	eF.XStatusObject().SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -47,14 +45,13 @@ func TestStatusWarningsInStructAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInXEnumAttrs(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
 	xSt.SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
-	err := xSt.Validate()
+	_, err := xSt.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}
@@ -65,14 +62,13 @@ func TestStatusWarningsInXEnumAttrs(t *testing.T) {
 }
 
 func TestStatusWarningsInSchemaObjects(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 
 	// setting all the primitive values which has x-status set
 	xSt := config.ExtendedFeatures().XStatusObject()
 	xSt.SetEnumProperty(openapiart.XStatusObjectEnumProperty.DECPRECATED_PROPERTY_1)
 	// validating the warnings
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	if err != nil {
 		t.Logf("error: %s", err.Error())
 	}

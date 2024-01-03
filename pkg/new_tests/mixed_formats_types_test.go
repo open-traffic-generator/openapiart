@@ -11,8 +11,7 @@ import (
 
 func TestFormatsSanity(t *testing.T) {
 
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetStringParam("asdf")
 	mixedVal.SetInteger(88)
@@ -28,9 +27,9 @@ func TestFormatsSanity(t *testing.T) {
 	log.Print(mixedVal.Integer642())
 	mixedVal.SetInteger64List([]int64{4261412864, 2})
 	log.Print(mixedVal.Integer64List())
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
-	configJson, err := config.ToJson()
+	configJson, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	log.Print(configJson)
 }
@@ -39,23 +38,23 @@ var GoodIpv4 = []string{"1.1.1.1", "255.255.255.255"}
 var BadIpv4 = []string{"1.1. 1.1", "33.4", "asdf", "100", "-20", "::01", "1.1.1.1.1", "256.256.256.256", "-255.-255.-255.-255"}
 
 func TestGoodIpv4Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range GoodIpv4 {
 		ipv4 := mixedVal.SetIpv4(ip)
-		err := ipv4.Validate()
+		_, err := ipv4.Marshal().ToYaml()
 		assert.Nil(t, err)
 	}
 }
 
 func TestBadIpv4Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range BadIpv4 {
 		ipv4 := mixedVal.SetIpv4(ip)
-		err := ipv4.Validate()
+		_, err := ipv4.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Ipv4")
 		}
@@ -66,23 +65,23 @@ var GoodIpv6 = []string{"::", "1::", "abcd::1234", "aa:00bd:a:b:c:d:f:abcd"}
 var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"}
 
 func TestGoodIpv6Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range GoodIpv6 {
 		ipv6 := mixedVal.SetIpv6(ip)
-		err := ipv6.Validate()
+		_, err := ipv6.Marshal().ToYaml()
 		assert.Nil(t, err)
 	}
 }
 
 func TestBadIpv6Validation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, ip := range BadIpv6 {
 		ipv6 := mixedVal.SetIpv6(ip)
-		err := ipv6.Validate()
+		_, err := ipv6.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
 		}
@@ -95,21 +94,21 @@ var BadMac = []string{
 }
 
 func TestGoodMacValidation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mac := mixedVal.SetMac(GoodMac[0])
-	err := mac.Validate()
+	_, err := mac.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestBadMacValidation(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	for _, mac := range BadMac {
 		macObj := mixedVal.SetMac(mac)
-		err := macObj.Validate()
+		_, err := macObj.Marshal().ToYaml()
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "Invalid Mac")
 		}
@@ -117,45 +116,45 @@ func TestBadMacValidation(t *testing.T) {
 }
 
 func TestGoodHex(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetHex("200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err := mixedVal.Validate()
+	_, err := mixedVal.Marshal().ToYaml()
 	assert.Nil(t, err)
 	mixedVal.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b00000000")
-	err1 := mixedVal.Validate()
+	_, err1 := mixedVal.Marshal().ToYaml()
 	assert.Nil(t, err1)
 	mixedVal.SetHex("")
-	err2 := mixedVal.Validate()
+	_, err2 := mixedVal.Marshal().ToYaml()
 	assert.NotNil(t, err2)
 	mixedVal.SetHex("0x00200000000000000b00000000200000000000000b00000000200000000000000b0000000x0")
-	err3 := mixedVal.Validate()
+	_, err3 := mixedVal.Marshal().ToYaml()
 	assert.NotNil(t, err3)
 	mixedVal.SetHex("0x00")
-	err4 := mixedVal.Validate()
+	_, err4 := mixedVal.Marshal().ToYaml()
 	assert.Nil(t, err4)
 	mixedVal.SetHex("0XAF12")
-	err5 := mixedVal.Validate()
+	_, err5 := mixedVal.Marshal().ToYaml()
 	assert.Nil(t, err5)
 }
 
 func TestBadHex(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+
+	config := openapiart.NewTestConfig()
 	mixedVal := config.NativeFeatures().MixedObject()
 	mixedVal.SetHex("1.1.1.1")
-	err := mixedVal.Validate()
+	_, err := mixedVal.Marshal().ToYaml()
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "Invalid hex")
 	}
 	mixedVal.SetHex("::01")
-	err1 := mixedVal.Validate()
+	_, err1 := mixedVal.Marshal().ToYaml()
 	if assert.Error(t, err1) {
 		assert.Contains(t, err1.Error(), "Invalid hex")
 	}
 	mixedVal.SetHex("00:00:fa:ce:fa:ce:01")
-	err2 := mixedVal.Validate()
+	_, err2 := mixedVal.Marshal().ToYaml()
 	if assert.Error(t, err2) {
 		assert.Contains(t, err2.Error(), "Invalid hex")
 	}
@@ -164,8 +163,7 @@ func TestBadHex(t *testing.T) {
 // The below test needs tobe revistited once the proper support of data types is added in go
 func TestIntegerDatatypes(t *testing.T) {
 
-	api := openapiart.NewApi()
-	config := api.NewTestConfig()
+	config := openapiart.NewTestConfig()
 	numberTypeVal := config.NativeFeatures().NumberTypeObject()
 	numberTypeVal.SetValidateUint321(2147483646)
 	log.Print(numberTypeVal.ValidateUint321())
@@ -184,9 +182,9 @@ func TestIntegerDatatypes(t *testing.T) {
 	numberTypeVal.SetValidateInt642(4261412865)
 	log.Print(numberTypeVal.ValidateInt642())
 
-	err := config.Validate()
+	_, err := config.Marshal().ToYaml()
 	assert.Nil(t, err)
-	configJson, err := config.ToJson()
+	configJson, err := config.Marshal().ToJson()
 	assert.Nil(t, err)
 	log.Print(configJson)
 }

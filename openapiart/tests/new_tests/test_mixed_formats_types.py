@@ -243,10 +243,7 @@ def test_integer_datatypes(api):
     number_type_object = config.native_features.number_type_object
     value = number_type_object._TYPES.get("validate_uint32_1")
     assert value.get("format") is not None
-    # TODO: Uncomment when the backward compatibility support is uncommented from openapiartprotobuf
-    # and remove the existing validation with int64
-    # assert value.get("format") == "uint32"
-    assert value.get("format") == "int64"
+    assert value.get("format") == "uint32"
     number_type_object.validate_uint32_1 = 4261412865
 
     value = number_type_object._TYPES.get("validate_uint32_2")
@@ -256,10 +253,7 @@ def test_integer_datatypes(api):
 
     value = number_type_object._TYPES.get("validate_uint64_1")
     assert value.get("format") is not None
-    # TODO: Uncomment when the backward compatibility support is uncommented from openapiartprotobuf
-    # and remove the existing validation with int64
-    # assert value.get("format") == "uint64"
-    assert value.get("format") == "int64"
+    assert value.get("format") == "uint64"
     number_type_object.validate_uint64_1 = 9223372036854775807
 
     value = number_type_object._TYPES.get("validate_uint64_2")
@@ -289,7 +283,7 @@ def test_integer_datatypes(api):
 
     data = config.serialize("dict")
     assert isinstance(
-        data["native_features"]["number_type_object"]["validate_uint32_1"], str
+        data["native_features"]["number_type_object"]["validate_uint32_1"], int
     )
     assert isinstance(
         data["native_features"]["number_type_object"]["validate_uint32_2"], int
