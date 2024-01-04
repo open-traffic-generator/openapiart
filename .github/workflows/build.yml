@@ -79,7 +79,7 @@ jobs:
           git config user.email "actions@github.com"
           git pull
           git add --force artifacts/\*
-          git rm -r --cached artifacts/pyapi/__pycache_
+          git rm -r --cached artifacts/pyapi/__pycache__
           if git status --porcelain | grep .
             then
               git commit -m "Update auto generated go code"
