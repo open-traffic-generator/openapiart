@@ -214,6 +214,24 @@ def generate(sdk="", cicd=""):
     )
 
 
+def generate_from_yaml(sdk="all"):
+    if sdk == "python":
+        yaml_file = "yaml_files/generate_python.yaml"
+    elif sdk == "go":
+        yaml_file = "yaml_files/generate_go.yaml"
+    else:
+        yaml_file = "yaml_files/generate_all.yaml"
+
+    yaml_file = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), yaml_file)
+    )
+    run(
+        [
+            py() + "  -m openapiart --config_file " + yaml_file,
+        ]
+    )
+
+
 def testpy():
     run(
         [
