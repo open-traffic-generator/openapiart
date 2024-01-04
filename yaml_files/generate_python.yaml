@@ -4,8 +4,8 @@ api_files:
   - openapiart/tests/api/api.yaml
   - openapiart/goserver/api/service_a.api.yaml
   - openapiart/goserver/api/service_b.api.yaml
-artifact_dir: art
+artifact_dir: artifacts
 generate_version_api: true
 languages:
   python:
-    package_name: sanity
+    package_name: pyapi
