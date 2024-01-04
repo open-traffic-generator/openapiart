@@ -20,20 +20,20 @@ class GenerateFromYaml(object):
         - openapiart/tests/api/api.yaml
         - openapiart/goserver/api/service_a.api.yaml
         - openapiart/goserver/api/service_b.api.yaml
-    artifact_dir: art
+    artifact_dir: artifacts
     generate_version_api: true
     languages:
         python:
-            package_name: sanity
+            package_name: pyapi
         go:
             sdk:
-                package_dir: github.com/open-traffic-generator/openapiart/pkg
-                package_name: openapiart
+                package_dir: github.com/open-traffic-generator/goapi/pkg
+                package_name: goapi
                 sdk_version: 0.0.1
             server:
-                module_path: github.com/open-traffic-generator/openapiart/pkg
-                models_prefix: sanity
-                models_path: github.com/open-traffic-generator/openapiart/pkg
+                module_path: github.com/open-traffic-generator/goapi/pkg
+                models_prefix: openapi
+                models_path: github.com/open-traffic-generator/goapi/pkg
             tidy:
                 relative_package_dir: pkg
 
@@ -95,8 +95,8 @@ class GenerateFromYaml(object):
         artifact_dir = self._config.get("artifact_dir", "art")
         artifact_dir = os.path.normpath(os.path.abspath(artifact_dir))
         proto_service = self._config.get("proto_service", "Openapi")
-        protobuf_name = self._config.get("protobuf_name", "sanity")
-        extension_prefix = self._config.get("extension_prefix", "sanity")
+        protobuf_name = self._config.get("protobuf_name", "openpai")
+        extension_prefix = self._config.get("extension_prefix", "openapi")
         generate_version_api = self._config.get("generate_version_api", True)
 
         self._openapiart = openapiart_class(
