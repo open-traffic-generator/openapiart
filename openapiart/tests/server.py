@@ -77,8 +77,8 @@ def after_request(resp):
 class OpenApiServer(object):
     def __init__(self, package):
         # TODO Shall change the below sanity path to be dynamic
-        pkg_name = "sanity"
-        lib_path = "../../art/%s" % pkg_name
+        pkg_name = "pyapi"
+        lib_path = "../../artifacts/%s" % pkg_name
         sys.path.append(
             os.path.join(os.path.join(os.path.dirname(__file__), lib_path))
         )

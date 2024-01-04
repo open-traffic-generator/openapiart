@@ -68,50 +68,25 @@ jobs:
       - name: Trigger dev workflow
         run: |
           python do.py build
-
-  #   dev_workflow_macos:
-  #     runs-on: macos-latest
-  #     steps:
-  #       - name: Checkout source
-  #         uses: actions/checkout@v2
-  #         with:
-  #           ref: ${{ github.head_ref }}
-  #       - name: Set up Python 3.10
-  #         uses: actions/setup-python@v2
-  #         with:
-  #           python-version: "3.10"
-  #       - uses: actions/setup-go@v2
-  #         with:
-  #           go-version: "1.20"
-  #       - name: Install Protoc
-  #         uses: arduino/setup-protoc@v2
-  #         with:
-  #           version: "23.3"
-  #       - name: Trigger dev workflow
-  #         run: |
-  #           python do.py build
-
-  #   dev_workflow_windows:
-  #     runs-on: windows-latest
-  #     steps:
-  #       - name: Checkout source
-  #         uses: actions/checkout@v2
-  #         with:
-  #           ref: ${{ github.head_ref }}
-  #       - name: Set up Python 3.10
-  #         uses: actions/setup-python@v2
-  #         with:
-  #           python-version: "3.10"
-  #       - uses: actions/setup-go@v2
-  #         with:
-  #           go-version: "1.20"
-  #       - name: Install Protoc
-  #         uses: arduino/setup-protoc@v2
-  #         with:
-  #           version: "23.3"
-  #       - name: Trigger dev workflow
-  #         run: |
-  #           python do.py build
+      - name: show artifacts
+        run: |
+          ls artifacts
+          ls artifacts/pyapi
+          ls artifacts/goapi
+      - name: Commit packages
+        run: |
+          git config user.name "Github Actions Bot"
+          git config user.email "actions@github.com"
+          git pull
+          git add --force artifacts/
+          git rm -r --cached artifacts/pyapi/__pycache__
+          if git status --porcelain | grep .
+            then
+              git commit -m "Update auto generated go code"
+              git push
+            else
+              echo "No change in auto generated go code"
+          fi
 
   dev_workflow_docker:
     runs-on: ubuntu-latest
@@ -166,7 +141,7 @@ jobs:
         with:
           name: generated_py_package
           path: |
-            art
+            artifacts
       - name: Display structure of downloaded files
         run: ls -R
       - name: Run python tests
@@ -214,7 +189,7 @@ jobs:
           name: generated_go_package
           path: |
             pkg
-            art
+            artifacts
       - uses: actions/download-artifact@v2
         with:
           name: python_package
@@ -255,7 +230,7 @@ jobs:
       - name: Check Genrated files
         uses: andstor/file-existence-action@v2
         with:
-          files: "art/openapi.json, art/openapi.yaml, art/sanity.proto"
+          files: "artifacts/openapi.json, artifacts/openapi.yaml, artifacts/openapi.proto"
           fail: true
 
   publish_python_package:

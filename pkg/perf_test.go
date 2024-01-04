@@ -1,25 +1,25 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPerf(t *testing.T) {
 	start := time.Now()
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
-	config.SetCase(openapiart.NewLayer1Ieee802X().SetFlowControl(true))
+	config.SetCase(goapi.NewLayer1Ieee802X().SetFlowControl(true))
 	config.SetSpace1(10)
 	config.OptionalObject().SetEA(10.1).SetEB(0.001)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
 	config.SetFullDuplex100Mb(2)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	config.F().SetFB(3.0)
 	config.G().Add().SetGA("a g_a value").SetGB(6).SetGC(77.7).SetGE(3.0)
@@ -71,19 +71,19 @@ func TestPerf(t *testing.T) {
 	assert.Nil(t, p_err)
 
 	jDStart := time.Now()
-	jsonconf := openapiart.NewPrefixConfig()
+	jsonconf := goapi.NewPrefixConfig()
 	jdErr := jsonconf.Unmarshal().FromJson(json)
 	assert.Nil(t, jdErr)
 	jDEnd := time.Now()
 
 	yDStart := time.Now()
-	yamlconf := openapiart.NewPrefixConfig()
+	yamlconf := goapi.NewPrefixConfig()
 	ydErr := yamlconf.Unmarshal().FromYaml(yaml)
 	assert.Nil(t, ydErr)
 	yDEnd := time.Now()
 
 	pDStart := time.Now()
-	pbConf := openapiart.NewPrefixConfig()
+	pbConf := goapi.NewPrefixConfig()
 	pdErr := pbConf.Unmarshal().FromPbText(pbText)
 	assert.Nil(t, pdErr)
 	pDEnd := time.Now()
