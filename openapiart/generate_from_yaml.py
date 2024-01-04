@@ -95,7 +95,7 @@ class GenerateFromYaml(object):
         artifact_dir = self._config.get("artifact_dir", "art")
         artifact_dir = os.path.normpath(os.path.abspath(artifact_dir))
         proto_service = self._config.get("proto_service", "Openapi")
-        protobuf_name = self._config.get("protobuf_name", "openpai")
+        protobuf_name = self._config.get("protobuf_name", "openapi")
         extension_prefix = self._config.get("extension_prefix", "openapi")
         generate_version_api = self._config.get("generate_version_api", True)
 
