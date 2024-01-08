@@ -53,6 +53,30 @@ def test_format_integer_pattern(default_config):
     assert dec._TYPES.get("count").get("format") == "uint32"
 
 
+def test_format_signed_integer_pattern(default_config):
+    pat = default_config.signed_integer_pattern.integer
+    val = pat._TYPES.get("value")
+    assert val.get("format") == "int32"
+    assert val.get("minimum") == -128
+    assert val.get("maximum") == 127
+    inc = pat.increment
+    assert inc._TYPES.get("start").get("format") == "int32"
+    assert inc._TYPES.get("step").get("format") == "int32"
+    assert inc._TYPES.get("count").get("format") == "int32"
+    dec = pat.decrement
+    assert dec._TYPES.get("start").get("format") == "int32"
+    assert dec._TYPES.get("step").get("format") == "int32"
+    assert dec._TYPES.get("count").get("format") == "int32"
+    pat.value = -456
+    error_msg = (
+        "got -456 of type <class 'int'> , expected min -128, expected max 127"
+    )
+    with pytest.raises(Exception) as execinfo:
+        default_config.serialize("dict")
+    error_value = execinfo.value.args[0]
+    assert error_msg in error_value
+
+
 def test_format_count_pattern(default_config):
     ipv4 = default_config.ipv4_pattern.ipv4
     assert ipv4.increment._TYPES.get("count").get("format") == "uint32"

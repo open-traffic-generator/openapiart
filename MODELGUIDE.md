@@ -181,6 +181,13 @@ x-field-pattern:
       Pre-processing will write minimum and maximum values based on the length.
       Length will be ignored for mac, ipv4, ipv6 formats.
     type: integer
+  signed:
+    description: >-
+      Valid only if the format is of type integer.
+      Indicates whether the integer value is signed or unsigned.
+      If the property is not specified the value is considered as unsigned.
+      Its a boolean value which is optional in nature.
+    type: boolean
   default:
     description: >-
       The default value of the pattern value. 

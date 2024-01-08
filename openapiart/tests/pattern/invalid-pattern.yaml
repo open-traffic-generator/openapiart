@@ -66,3 +66,18 @@ components:
             default: 0
             features: [count]
           x-field-uid: 7
+        signed_value_without_int:
+          x-field-pattern:
+            format: mac
+            default: "00:00:00:00:00:00"
+            features: [count, auto]
+            signed: true
+          x-field-uid: 8
+        wrong_int_signed_value:
+          x-field-pattern:
+            format: integer
+            length: 2
+            signed: 45
+            default: 0
+            features: [count]
+          x-field-uid: 9
