@@ -1063,18 +1063,21 @@ class Bundler(object):
                 schema["format"] = finalised_format
         if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
             min_val = (
-                -(2 ** int(xpattern["length"]))
+                -(2 ** (int(xpattern["length"]) - 1))
                 if xpattern.get("signed", False)
                 else None
             )
+            max_val = 2 ** int(xpattern["length"]) - 1
+            if xpattern.get("signed", False):
+                max_val = 2 ** (int(xpattern["length"]) - 1) - 1
             if property_name == "values":
                 if min_val is not None:
                     schema["items"]["minimum"] = min_val
-                schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+                schema["items"]["maximum"] = max_val
             else:
                 if min_val is not None:
                     schema["minimum"] = min_val
-                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+                schema["maximum"] = max_val
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:

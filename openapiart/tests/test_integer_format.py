@@ -57,8 +57,8 @@ def test_format_signed_integer_pattern(default_config):
     pat = default_config.signed_integer_pattern.integer
     val = pat._TYPES.get("value")
     assert val.get("format") == "int32"
-    assert val.get("minimum") == -256
-    assert val.get("maximum") == 255
+    assert val.get("minimum") == -128
+    assert val.get("maximum") == 127
     inc = pat.increment
     assert inc._TYPES.get("start").get("format") == "int32"
     assert inc._TYPES.get("step").get("format") == "int32"
@@ -69,7 +69,7 @@ def test_format_signed_integer_pattern(default_config):
     assert dec._TYPES.get("count").get("format") == "int32"
     pat.value = -456
     error_msg = (
-        "got -456 of type <class 'int'> , expected min -256, expected max 255"
+        "got -456 of type <class 'int'> , expected min -128, expected max 127"
     )
     with pytest.raises(Exception) as execinfo:
         default_config.serialize("dict")
