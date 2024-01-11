@@ -487,6 +487,17 @@ class OpenApiValidator(object):
             ]
         )
 
+    def validate_oid(self, value):
+        segments = value.split(".")
+        if len(segments) < 2:
+            return False
+        for segment in segments:
+            if not segment.isnumeric():
+                return False
+            if not (0 <= int(segment) <= 4294967295):
+                return False
+        return True
+
     def types_validation(
         self,
         value,

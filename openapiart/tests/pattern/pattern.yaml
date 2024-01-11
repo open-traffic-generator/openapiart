@@ -61,3 +61,12 @@ components:
             length: 8
             features: [count]
           x-field-uid: 1
+    OidPattern:
+      description: Test oid pattern
+      type: object
+      properties:
+        oid:
+          x-field-pattern:
+            format: oid
+            default: "0.1"
+          x-field-uid: 1

@@ -618,7 +618,7 @@ class Bundler(object):
             if (
                 len(intersect_keys) > 0
                 and "format" in value.keys()
-                and value["format"] in ["ipv4", "ipv6", "mac"]
+                and value["format"] in ["ipv4", "ipv6", "mac", "oid"]
             ):
                 stacks = inspect.stack()
                 property = "{}/{}/{}".format(
@@ -696,7 +696,7 @@ class Bundler(object):
                         str(xpattern["signed"]), str(xpattern_path.full_path)
                     )
                 )
-        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
+        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum", "oid"]
         if xpattern["format"] not in valid_formats:
             self._errors.append(
                 "%s has unspported format %s , valid formats are %s"
@@ -746,7 +746,7 @@ class Bundler(object):
             )
             fmt = None
             type_name = xpattern["format"]
-            if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
+            if type_name in ["ipv4", "ipv6", "mac", "x-enum", "oid"]:
                 fmt = type_name
                 type_name = "string"
             description = "TBD"
