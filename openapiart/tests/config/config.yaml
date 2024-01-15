@@ -313,6 +313,9 @@ components:
         oid_pattern:
           $ref: "../pattern/pattern.yaml#/components/schemas/OidPattern"
           x-field-uid: 54
+        choice_default:
+          $ref: "#/components/schemas/ChoiceObject"
+          x-field-uid: 55
 
     WObject:
       required: [w_name]

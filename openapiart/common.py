@@ -709,10 +709,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 "_DEFAULTS" in dir(self._properties[name])
                 and "choice" in self._properties[name]._DEFAULTS
             ):
-                getattr(
-                    self._properties[name],
-                    self._properties[name]._DEFAULTS["choice"],
-                )
+                choice_str = self._properties[name]._DEFAULTS["choice"]
+
+                if choice_str in self._properties[name]._TYPES:
+                    getattr(
+                        self._properties[name],
+                        self._properties[name]._DEFAULTS["choice"],
+                    )
         else:
             if default_value is None and name in self._DEFAULTS:
                 self._set_choice(name)
