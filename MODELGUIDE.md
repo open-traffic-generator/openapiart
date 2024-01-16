@@ -173,6 +173,7 @@ x-field-pattern:
       - ipv6
       - integer
       - checksum
+      - oid
   length:
     description: >-
       The length of integer values in bits.
@@ -287,6 +288,7 @@ x-field-pattern:
       - ipv6
       - integer
       - enum
+      - oid
   length:
     description: >-
       The length of integer values in bits.

@@ -2702,7 +2702,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 "ipv4",
                 "ipv6",
                 "hex",
-            ] or field.format in ["mac", "ipv4", "ipv6", "hex"]:
+                "oid",
+            ] or field.format in ["mac", "ipv4", "ipv6", "hex", "oid"]:
                 if field.format is None:
                     field.format = field.itemformat
                 inner_body = """
