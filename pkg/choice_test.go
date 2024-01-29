@@ -97,26 +97,26 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 }
 
 func TestChoiceWithNoPropertiesForChoiceDefault(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
 	// check default should be no_obj
-	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
+	assert.Equal(t, choiceObj.Choice(), goapi.ChoiceObjectChoice.NO_OBJ)
 	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 
 	fObj := choiceObj.FObj()
 
 	// check default for child obj
-	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.F_OBJ)
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
+	assert.Equal(t, choiceObj.Choice(), goapi.ChoiceObjectChoice.F_OBJ)
+	assert.Equal(t, fObj.Choice(), goapi.FObjectChoice.F_A)
 	assert.True(t, fObj.HasFA())
 	assert.Equal(t, fObj.FA(), "some string")
 
 	// set choice with no properties in child obj
 	fObj.FC()
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
+	assert.Equal(t, fObj.Choice(), goapi.FObjectChoice.F_C)
 	assert.False(t, fObj.HasFA())
 	assert.False(t, fObj.HasFB())
 
