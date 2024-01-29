@@ -1133,6 +1133,9 @@ type prefixConfig struct {
 	requiredChoiceObjectHolder RequiredChoiceParent
 	g1Holder                   PrefixConfigGObjectIter
 	g2Holder                   PrefixConfigGObjectIter
+	signedIntegerPatternHolder SignedIntegerPattern
+	oidPatternHolder           OidPattern
+	choiceDefaultHolder        ChoiceObject
 }
 
 func NewPrefixConfig() PrefixConfig {
@@ -1387,6 +1390,9 @@ func (obj *prefixConfig) setNil() {
 	obj.requiredChoiceObjectHolder = nil
 	obj.g1Holder = nil
 	obj.g2Holder = nil
+	obj.signedIntegerPatternHolder = nil
+	obj.oidPatternHolder = nil
+	obj.choiceDefaultHolder = nil
 	obj.validationErrors = nil
 	obj.warnings = nil
 	obj.constraints = make(map[string]map[string]Constraints)
@@ -1708,6 +1714,30 @@ type PrefixConfig interface {
 	AutoInt32ListParam() []int32
 	// SetAutoInt32ListParam assigns []int32 provided by user to PrefixConfig
 	SetAutoInt32ListParam(value []int32) PrefixConfig
+	// SignedIntegerPattern returns SignedIntegerPattern, set in PrefixConfig.
+	// SignedIntegerPattern is test signed integer pattern
+	SignedIntegerPattern() SignedIntegerPattern
+	// SetSignedIntegerPattern assigns SignedIntegerPattern provided by user to PrefixConfig.
+	// SignedIntegerPattern is test signed integer pattern
+	SetSignedIntegerPattern(value SignedIntegerPattern) PrefixConfig
+	// HasSignedIntegerPattern checks if SignedIntegerPattern has been set in PrefixConfig
+	HasSignedIntegerPattern() bool
+	// OidPattern returns OidPattern, set in PrefixConfig.
+	// OidPattern is test oid pattern
+	OidPattern() OidPattern
+	// SetOidPattern assigns OidPattern provided by user to PrefixConfig.
+	// OidPattern is test oid pattern
+	SetOidPattern(value OidPattern) PrefixConfig
+	// HasOidPattern checks if OidPattern has been set in PrefixConfig
+	HasOidPattern() bool
+	// ChoiceDefault returns ChoiceObject, set in PrefixConfig.
+	// ChoiceObject is description is TBD
+	ChoiceDefault() ChoiceObject
+	// SetChoiceDefault assigns ChoiceObject provided by user to PrefixConfig.
+	// ChoiceObject is description is TBD
+	SetChoiceDefault(value ChoiceObject) PrefixConfig
+	// HasChoiceDefault checks if ChoiceDefault has been set in PrefixConfig
+	HasChoiceDefault() bool
 	setNil()
 }
 
@@ -3301,6 +3331,90 @@ func (obj *prefixConfig) SetAutoInt32ListParam(value []int32) PrefixConfig {
 	return obj
 }
 
+// description is TBD
+// SignedIntegerPattern returns a SignedIntegerPattern
+func (obj *prefixConfig) SignedIntegerPattern() SignedIntegerPattern {
+	if obj.obj.SignedIntegerPattern == nil {
+		obj.obj.SignedIntegerPattern = NewSignedIntegerPattern().msg()
+	}
+	if obj.signedIntegerPatternHolder == nil {
+		obj.signedIntegerPatternHolder = &signedIntegerPattern{obj: obj.obj.SignedIntegerPattern}
+	}
+	return obj.signedIntegerPatternHolder
+}
+
+// description is TBD
+// SignedIntegerPattern returns a SignedIntegerPattern
+func (obj *prefixConfig) HasSignedIntegerPattern() bool {
+	return obj.obj.SignedIntegerPattern != nil
+}
+
+// description is TBD
+// SetSignedIntegerPattern sets the SignedIntegerPattern value in the PrefixConfig object
+func (obj *prefixConfig) SetSignedIntegerPattern(value SignedIntegerPattern) PrefixConfig {
+
+	obj.signedIntegerPatternHolder = nil
+	obj.obj.SignedIntegerPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// OidPattern returns a OidPattern
+func (obj *prefixConfig) OidPattern() OidPattern {
+	if obj.obj.OidPattern == nil {
+		obj.obj.OidPattern = NewOidPattern().msg()
+	}
+	if obj.oidPatternHolder == nil {
+		obj.oidPatternHolder = &oidPattern{obj: obj.obj.OidPattern}
+	}
+	return obj.oidPatternHolder
+}
+
+// description is TBD
+// OidPattern returns a OidPattern
+func (obj *prefixConfig) HasOidPattern() bool {
+	return obj.obj.OidPattern != nil
+}
+
+// description is TBD
+// SetOidPattern sets the OidPattern value in the PrefixConfig object
+func (obj *prefixConfig) SetOidPattern(value OidPattern) PrefixConfig {
+
+	obj.oidPatternHolder = nil
+	obj.obj.OidPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ChoiceDefault returns a ChoiceObject
+func (obj *prefixConfig) ChoiceDefault() ChoiceObject {
+	if obj.obj.ChoiceDefault == nil {
+		obj.obj.ChoiceDefault = NewChoiceObject().msg()
+	}
+	if obj.choiceDefaultHolder == nil {
+		obj.choiceDefaultHolder = &choiceObject{obj: obj.obj.ChoiceDefault}
+	}
+	return obj.choiceDefaultHolder
+}
+
+// description is TBD
+// ChoiceDefault returns a ChoiceObject
+func (obj *prefixConfig) HasChoiceDefault() bool {
+	return obj.obj.ChoiceDefault != nil
+}
+
+// description is TBD
+// SetChoiceDefault sets the ChoiceObject value in the PrefixConfig object
+func (obj *prefixConfig) SetChoiceDefault(value ChoiceObject) PrefixConfig {
+
+	obj.choiceDefaultHolder = nil
+	obj.obj.ChoiceDefault = value.msg()
+
+	return obj
+}
+
 func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if set_default {
 		obj.setDefault()
@@ -3639,6 +3753,21 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 
 		}
 
+	}
+
+	if obj.obj.SignedIntegerPattern != nil {
+
+		obj.SignedIntegerPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.OidPattern != nil {
+
+		obj.OidPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ChoiceDefault != nil {
+
+		obj.ChoiceDefault().validateObj(vObj, set_default)
 	}
 
 }
@@ -15234,6 +15363,12 @@ type MObject interface {
 	Hex() string
 	// SetHex assigns string provided by user to MObject
 	SetHex(value string) MObject
+	// Oid returns string, set in MObject.
+	Oid() string
+	// SetOid assigns string provided by user to MObject
+	SetOid(value string) MObject
+	// HasOid checks if Oid has been set in MObject
+	HasOid() bool
 }
 
 // description is TBD
@@ -15364,6 +15499,28 @@ func (obj *mObject) SetHex(value string) MObject {
 	return obj
 }
 
+// description is TBD
+// Oid returns a string
+func (obj *mObject) Oid() string {
+
+	return *obj.obj.Oid
+
+}
+
+// description is TBD
+// Oid returns a string
+func (obj *mObject) HasOid() bool {
+	return obj.obj.Oid != nil
+}
+
+// description is TBD
+// SetOid sets the string value in the MObject object
+func (obj *mObject) SetOid(value string) MObject {
+
+	obj.obj.Oid = &value
+	return obj
+}
+
 func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 	if set_default {
 		obj.setDefault()
@@ -15446,6 +15603,15 @@ func (obj *mObject) validateObj(vObj *validation, set_default bool) {
 		err := obj.validateHex(obj.Hex())
 		if err != nil {
 			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MObject.Hex"))
+		}
+
+	}
+
+	if obj.obj.Oid != nil {
+
+		err := obj.validateOid(obj.Oid())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on MObject.Oid"))
 		}
 
 	}
@@ -18091,6 +18257,640 @@ func (obj *requiredChoiceParent) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *requiredChoiceParent) setDefault() {
+
+}
+
+// ***** SignedIntegerPattern *****
+type signedIntegerPattern struct {
+	validation
+	obj           *openapi.SignedIntegerPattern
+	marshaller    marshalSignedIntegerPattern
+	unMarshaller  unMarshalSignedIntegerPattern
+	integerHolder PatternSignedIntegerPatternInteger
+}
+
+func NewSignedIntegerPattern() SignedIntegerPattern {
+	obj := signedIntegerPattern{obj: &openapi.SignedIntegerPattern{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *signedIntegerPattern) msg() *openapi.SignedIntegerPattern {
+	return obj.obj
+}
+
+func (obj *signedIntegerPattern) setMsg(msg *openapi.SignedIntegerPattern) SignedIntegerPattern {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalsignedIntegerPattern struct {
+	obj *signedIntegerPattern
+}
+
+type marshalSignedIntegerPattern interface {
+	// ToProto marshals SignedIntegerPattern to protobuf object *openapi.SignedIntegerPattern
+	ToProto() (*openapi.SignedIntegerPattern, error)
+	// ToPbText marshals SignedIntegerPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals SignedIntegerPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals SignedIntegerPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalsignedIntegerPattern struct {
+	obj *signedIntegerPattern
+}
+
+type unMarshalSignedIntegerPattern interface {
+	// FromProto unmarshals SignedIntegerPattern from protobuf object *openapi.SignedIntegerPattern
+	FromProto(msg *openapi.SignedIntegerPattern) (SignedIntegerPattern, error)
+	// FromPbText unmarshals SignedIntegerPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals SignedIntegerPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals SignedIntegerPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *signedIntegerPattern) Marshal() marshalSignedIntegerPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalsignedIntegerPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *signedIntegerPattern) Unmarshal() unMarshalSignedIntegerPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalsignedIntegerPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalsignedIntegerPattern) ToProto() (*openapi.SignedIntegerPattern, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalsignedIntegerPattern) FromProto(msg *openapi.SignedIntegerPattern) (SignedIntegerPattern, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalsignedIntegerPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalsignedIntegerPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalsignedIntegerPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalsignedIntegerPattern) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalsignedIntegerPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalsignedIntegerPattern) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *signedIntegerPattern) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *signedIntegerPattern) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *signedIntegerPattern) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *signedIntegerPattern) Clone() (SignedIntegerPattern, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewSignedIntegerPattern()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *signedIntegerPattern) setNil() {
+	obj.integerHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// SignedIntegerPattern is test signed integer pattern
+type SignedIntegerPattern interface {
+	Validation
+	// msg marshals SignedIntegerPattern to protobuf object *openapi.SignedIntegerPattern
+	// and doesn't set defaults
+	msg() *openapi.SignedIntegerPattern
+	// setMsg unmarshals SignedIntegerPattern from protobuf object *openapi.SignedIntegerPattern
+	// and doesn't set defaults
+	setMsg(*openapi.SignedIntegerPattern) SignedIntegerPattern
+	// provides marshal interface
+	Marshal() marshalSignedIntegerPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalSignedIntegerPattern
+	// validate validates SignedIntegerPattern
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (SignedIntegerPattern, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Integer returns PatternSignedIntegerPatternInteger, set in SignedIntegerPattern.
+	// PatternSignedIntegerPatternInteger is tBD
+	Integer() PatternSignedIntegerPatternInteger
+	// SetInteger assigns PatternSignedIntegerPatternInteger provided by user to SignedIntegerPattern.
+	// PatternSignedIntegerPatternInteger is tBD
+	SetInteger(value PatternSignedIntegerPatternInteger) SignedIntegerPattern
+	// HasInteger checks if Integer has been set in SignedIntegerPattern
+	HasInteger() bool
+	setNil()
+}
+
+// description is TBD
+// Integer returns a PatternSignedIntegerPatternInteger
+func (obj *signedIntegerPattern) Integer() PatternSignedIntegerPatternInteger {
+	if obj.obj.Integer == nil {
+		obj.obj.Integer = NewPatternSignedIntegerPatternInteger().msg()
+	}
+	if obj.integerHolder == nil {
+		obj.integerHolder = &patternSignedIntegerPatternInteger{obj: obj.obj.Integer}
+	}
+	return obj.integerHolder
+}
+
+// description is TBD
+// Integer returns a PatternSignedIntegerPatternInteger
+func (obj *signedIntegerPattern) HasInteger() bool {
+	return obj.obj.Integer != nil
+}
+
+// description is TBD
+// SetInteger sets the PatternSignedIntegerPatternInteger value in the SignedIntegerPattern object
+func (obj *signedIntegerPattern) SetInteger(value PatternSignedIntegerPatternInteger) SignedIntegerPattern {
+
+	obj.integerHolder = nil
+	obj.obj.Integer = value.msg()
+
+	return obj
+}
+
+func (obj *signedIntegerPattern) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Integer != nil {
+
+		obj.Integer().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *signedIntegerPattern) setDefault() {
+
+}
+
+// ***** OidPattern *****
+type oidPattern struct {
+	validation
+	obj          *openapi.OidPattern
+	marshaller   marshalOidPattern
+	unMarshaller unMarshalOidPattern
+	oidHolder    PatternOidPatternOid
+}
+
+func NewOidPattern() OidPattern {
+	obj := oidPattern{obj: &openapi.OidPattern{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *oidPattern) msg() *openapi.OidPattern {
+	return obj.obj
+}
+
+func (obj *oidPattern) setMsg(msg *openapi.OidPattern) OidPattern {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshaloidPattern struct {
+	obj *oidPattern
+}
+
+type marshalOidPattern interface {
+	// ToProto marshals OidPattern to protobuf object *openapi.OidPattern
+	ToProto() (*openapi.OidPattern, error)
+	// ToPbText marshals OidPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals OidPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals OidPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshaloidPattern struct {
+	obj *oidPattern
+}
+
+type unMarshalOidPattern interface {
+	// FromProto unmarshals OidPattern from protobuf object *openapi.OidPattern
+	FromProto(msg *openapi.OidPattern) (OidPattern, error)
+	// FromPbText unmarshals OidPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals OidPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals OidPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *oidPattern) Marshal() marshalOidPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshaloidPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *oidPattern) Unmarshal() unMarshalOidPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshaloidPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshaloidPattern) ToProto() (*openapi.OidPattern, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshaloidPattern) FromProto(msg *openapi.OidPattern) (OidPattern, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshaloidPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshaloidPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshaloidPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloidPattern) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshaloidPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshaloidPattern) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *oidPattern) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *oidPattern) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *oidPattern) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *oidPattern) Clone() (OidPattern, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewOidPattern()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *oidPattern) setNil() {
+	obj.oidHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// OidPattern is test oid pattern
+type OidPattern interface {
+	Validation
+	// msg marshals OidPattern to protobuf object *openapi.OidPattern
+	// and doesn't set defaults
+	msg() *openapi.OidPattern
+	// setMsg unmarshals OidPattern from protobuf object *openapi.OidPattern
+	// and doesn't set defaults
+	setMsg(*openapi.OidPattern) OidPattern
+	// provides marshal interface
+	Marshal() marshalOidPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalOidPattern
+	// validate validates OidPattern
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (OidPattern, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Oid returns PatternOidPatternOid, set in OidPattern.
+	// PatternOidPatternOid is tBD
+	Oid() PatternOidPatternOid
+	// SetOid assigns PatternOidPatternOid provided by user to OidPattern.
+	// PatternOidPatternOid is tBD
+	SetOid(value PatternOidPatternOid) OidPattern
+	// HasOid checks if Oid has been set in OidPattern
+	HasOid() bool
+	setNil()
+}
+
+// description is TBD
+// Oid returns a PatternOidPatternOid
+func (obj *oidPattern) Oid() PatternOidPatternOid {
+	if obj.obj.Oid == nil {
+		obj.obj.Oid = NewPatternOidPatternOid().msg()
+	}
+	if obj.oidHolder == nil {
+		obj.oidHolder = &patternOidPatternOid{obj: obj.obj.Oid}
+	}
+	return obj.oidHolder
+}
+
+// description is TBD
+// Oid returns a PatternOidPatternOid
+func (obj *oidPattern) HasOid() bool {
+	return obj.obj.Oid != nil
+}
+
+// description is TBD
+// SetOid sets the PatternOidPatternOid value in the OidPattern object
+func (obj *oidPattern) SetOid(value PatternOidPatternOid) OidPattern {
+
+	obj.oidHolder = nil
+	obj.obj.Oid = value.msg()
+
+	return obj
+}
+
+func (obj *oidPattern) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Oid != nil {
+
+		obj.Oid().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *oidPattern) setDefault() {
 
 }
 
@@ -25863,6 +26663,916 @@ func (obj *requiredChoiceIntermediate) validateObj(vObj *validation, set_default
 func (obj *requiredChoiceIntermediate) setDefault() {
 	if obj.obj.FA == nil {
 		obj.SetFA("some string")
+	}
+
+}
+
+// ***** PatternSignedIntegerPatternInteger *****
+type patternSignedIntegerPatternInteger struct {
+	validation
+	obj             *openapi.PatternSignedIntegerPatternInteger
+	marshaller      marshalPatternSignedIntegerPatternInteger
+	unMarshaller    unMarshalPatternSignedIntegerPatternInteger
+	incrementHolder PatternSignedIntegerPatternIntegerCounter
+	decrementHolder PatternSignedIntegerPatternIntegerCounter
+}
+
+func NewPatternSignedIntegerPatternInteger() PatternSignedIntegerPatternInteger {
+	obj := patternSignedIntegerPatternInteger{obj: &openapi.PatternSignedIntegerPatternInteger{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternSignedIntegerPatternInteger) msg() *openapi.PatternSignedIntegerPatternInteger {
+	return obj.obj
+}
+
+func (obj *patternSignedIntegerPatternInteger) setMsg(msg *openapi.PatternSignedIntegerPatternInteger) PatternSignedIntegerPatternInteger {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternSignedIntegerPatternInteger struct {
+	obj *patternSignedIntegerPatternInteger
+}
+
+type marshalPatternSignedIntegerPatternInteger interface {
+	// ToProto marshals PatternSignedIntegerPatternInteger to protobuf object *openapi.PatternSignedIntegerPatternInteger
+	ToProto() (*openapi.PatternSignedIntegerPatternInteger, error)
+	// ToPbText marshals PatternSignedIntegerPatternInteger to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternSignedIntegerPatternInteger to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternSignedIntegerPatternInteger to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternSignedIntegerPatternInteger struct {
+	obj *patternSignedIntegerPatternInteger
+}
+
+type unMarshalPatternSignedIntegerPatternInteger interface {
+	// FromProto unmarshals PatternSignedIntegerPatternInteger from protobuf object *openapi.PatternSignedIntegerPatternInteger
+	FromProto(msg *openapi.PatternSignedIntegerPatternInteger) (PatternSignedIntegerPatternInteger, error)
+	// FromPbText unmarshals PatternSignedIntegerPatternInteger from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternSignedIntegerPatternInteger from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternSignedIntegerPatternInteger from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternSignedIntegerPatternInteger) Marshal() marshalPatternSignedIntegerPatternInteger {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternSignedIntegerPatternInteger{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternSignedIntegerPatternInteger) Unmarshal() unMarshalPatternSignedIntegerPatternInteger {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternSignedIntegerPatternInteger{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternSignedIntegerPatternInteger) ToProto() (*openapi.PatternSignedIntegerPatternInteger, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternInteger) FromProto(msg *openapi.PatternSignedIntegerPatternInteger) (PatternSignedIntegerPatternInteger, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternSignedIntegerPatternInteger) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternInteger) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternSignedIntegerPatternInteger) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternInteger) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternSignedIntegerPatternInteger) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternInteger) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternSignedIntegerPatternInteger) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternSignedIntegerPatternInteger) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternSignedIntegerPatternInteger) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternSignedIntegerPatternInteger) Clone() (PatternSignedIntegerPatternInteger, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternSignedIntegerPatternInteger()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternSignedIntegerPatternInteger) setNil() {
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternSignedIntegerPatternInteger is tBD
+type PatternSignedIntegerPatternInteger interface {
+	Validation
+	// msg marshals PatternSignedIntegerPatternInteger to protobuf object *openapi.PatternSignedIntegerPatternInteger
+	// and doesn't set defaults
+	msg() *openapi.PatternSignedIntegerPatternInteger
+	// setMsg unmarshals PatternSignedIntegerPatternInteger from protobuf object *openapi.PatternSignedIntegerPatternInteger
+	// and doesn't set defaults
+	setMsg(*openapi.PatternSignedIntegerPatternInteger) PatternSignedIntegerPatternInteger
+	// provides marshal interface
+	Marshal() marshalPatternSignedIntegerPatternInteger
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternSignedIntegerPatternInteger
+	// validate validates PatternSignedIntegerPatternInteger
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternSignedIntegerPatternInteger, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternSignedIntegerPatternIntegerChoiceEnum, set in PatternSignedIntegerPatternInteger
+	Choice() PatternSignedIntegerPatternIntegerChoiceEnum
+	// setChoice assigns PatternSignedIntegerPatternIntegerChoiceEnum provided by user to PatternSignedIntegerPatternInteger
+	setChoice(value PatternSignedIntegerPatternIntegerChoiceEnum) PatternSignedIntegerPatternInteger
+	// HasChoice checks if Choice has been set in PatternSignedIntegerPatternInteger
+	HasChoice() bool
+	// Value returns int32, set in PatternSignedIntegerPatternInteger.
+	Value() int32
+	// SetValue assigns int32 provided by user to PatternSignedIntegerPatternInteger
+	SetValue(value int32) PatternSignedIntegerPatternInteger
+	// HasValue checks if Value has been set in PatternSignedIntegerPatternInteger
+	HasValue() bool
+	// Values returns []int32, set in PatternSignedIntegerPatternInteger.
+	Values() []int32
+	// SetValues assigns []int32 provided by user to PatternSignedIntegerPatternInteger
+	SetValues(value []int32) PatternSignedIntegerPatternInteger
+	// Increment returns PatternSignedIntegerPatternIntegerCounter, set in PatternSignedIntegerPatternInteger.
+	// PatternSignedIntegerPatternIntegerCounter is integer counter pattern
+	Increment() PatternSignedIntegerPatternIntegerCounter
+	// SetIncrement assigns PatternSignedIntegerPatternIntegerCounter provided by user to PatternSignedIntegerPatternInteger.
+	// PatternSignedIntegerPatternIntegerCounter is integer counter pattern
+	SetIncrement(value PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternInteger
+	// HasIncrement checks if Increment has been set in PatternSignedIntegerPatternInteger
+	HasIncrement() bool
+	// Decrement returns PatternSignedIntegerPatternIntegerCounter, set in PatternSignedIntegerPatternInteger.
+	// PatternSignedIntegerPatternIntegerCounter is integer counter pattern
+	Decrement() PatternSignedIntegerPatternIntegerCounter
+	// SetDecrement assigns PatternSignedIntegerPatternIntegerCounter provided by user to PatternSignedIntegerPatternInteger.
+	// PatternSignedIntegerPatternIntegerCounter is integer counter pattern
+	SetDecrement(value PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternInteger
+	// HasDecrement checks if Decrement has been set in PatternSignedIntegerPatternInteger
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternSignedIntegerPatternIntegerChoiceEnum string
+
+// Enum of Choice on PatternSignedIntegerPatternInteger
+var PatternSignedIntegerPatternIntegerChoice = struct {
+	VALUE     PatternSignedIntegerPatternIntegerChoiceEnum
+	VALUES    PatternSignedIntegerPatternIntegerChoiceEnum
+	INCREMENT PatternSignedIntegerPatternIntegerChoiceEnum
+	DECREMENT PatternSignedIntegerPatternIntegerChoiceEnum
+}{
+	VALUE:     PatternSignedIntegerPatternIntegerChoiceEnum("value"),
+	VALUES:    PatternSignedIntegerPatternIntegerChoiceEnum("values"),
+	INCREMENT: PatternSignedIntegerPatternIntegerChoiceEnum("increment"),
+	DECREMENT: PatternSignedIntegerPatternIntegerChoiceEnum("decrement"),
+}
+
+func (obj *patternSignedIntegerPatternInteger) Choice() PatternSignedIntegerPatternIntegerChoiceEnum {
+	return PatternSignedIntegerPatternIntegerChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternSignedIntegerPatternInteger) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternSignedIntegerPatternInteger) setChoice(value PatternSignedIntegerPatternIntegerChoiceEnum) PatternSignedIntegerPatternInteger {
+	intValue, ok := openapi.PatternSignedIntegerPatternInteger_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternSignedIntegerPatternIntegerChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternSignedIntegerPatternInteger_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternSignedIntegerPatternIntegerChoice.VALUE {
+		defaultValue := int32(0)
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternSignedIntegerPatternIntegerChoice.VALUES {
+		defaultValue := []int32{0}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternSignedIntegerPatternIntegerChoice.INCREMENT {
+		obj.obj.Increment = NewPatternSignedIntegerPatternIntegerCounter().msg()
+	}
+
+	if value == PatternSignedIntegerPatternIntegerChoice.DECREMENT {
+		obj.obj.Decrement = NewPatternSignedIntegerPatternIntegerCounter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a int32
+func (obj *patternSignedIntegerPatternInteger) Value() int32 {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a int32
+func (obj *patternSignedIntegerPatternInteger) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the int32 value in the PatternSignedIntegerPatternInteger object
+func (obj *patternSignedIntegerPatternInteger) SetValue(value int32) PatternSignedIntegerPatternInteger {
+	obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []int32
+func (obj *patternSignedIntegerPatternInteger) Values() []int32 {
+	if obj.obj.Values == nil {
+		obj.SetValues([]int32{0})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []int32 value in the PatternSignedIntegerPatternInteger object
+func (obj *patternSignedIntegerPatternInteger) SetValues(value []int32) PatternSignedIntegerPatternInteger {
+	obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]int32, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Increment returns a PatternSignedIntegerPatternIntegerCounter
+func (obj *patternSignedIntegerPatternInteger) Increment() PatternSignedIntegerPatternIntegerCounter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternSignedIntegerPatternIntegerCounter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternSignedIntegerPatternIntegerCounter
+func (obj *patternSignedIntegerPatternInteger) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternSignedIntegerPatternIntegerCounter value in the PatternSignedIntegerPatternInteger object
+func (obj *patternSignedIntegerPatternInteger) SetIncrement(value PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternInteger {
+	obj.setChoice(PatternSignedIntegerPatternIntegerChoice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternSignedIntegerPatternIntegerCounter
+func (obj *patternSignedIntegerPatternInteger) Decrement() PatternSignedIntegerPatternIntegerCounter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternSignedIntegerPatternIntegerCounter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternSignedIntegerPatternIntegerCounter
+func (obj *patternSignedIntegerPatternInteger) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternSignedIntegerPatternIntegerCounter value in the PatternSignedIntegerPatternInteger object
+func (obj *patternSignedIntegerPatternInteger) SetDecrement(value PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternInteger {
+	obj.setChoice(PatternSignedIntegerPatternIntegerChoice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternSignedIntegerPatternInteger) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		if *obj.obj.Value < -128 || *obj.obj.Value > 127 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("-128 <= PatternSignedIntegerPatternInteger.Value <= 127 but Got %d", *obj.obj.Value))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		for _, item := range obj.obj.Values {
+			if item < -128 || item > 127 {
+				vObj.validationErrors = append(
+					vObj.validationErrors,
+					fmt.Sprintf("-128 <= PatternSignedIntegerPatternInteger.Values <= 127 but Got %d", item))
+			}
+
+		}
+
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternSignedIntegerPatternInteger) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+
+	}
+
+}
+
+// ***** PatternOidPatternOid *****
+type patternOidPatternOid struct {
+	validation
+	obj          *openapi.PatternOidPatternOid
+	marshaller   marshalPatternOidPatternOid
+	unMarshaller unMarshalPatternOidPatternOid
+}
+
+func NewPatternOidPatternOid() PatternOidPatternOid {
+	obj := patternOidPatternOid{obj: &openapi.PatternOidPatternOid{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternOidPatternOid) msg() *openapi.PatternOidPatternOid {
+	return obj.obj
+}
+
+func (obj *patternOidPatternOid) setMsg(msg *openapi.PatternOidPatternOid) PatternOidPatternOid {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternOidPatternOid struct {
+	obj *patternOidPatternOid
+}
+
+type marshalPatternOidPatternOid interface {
+	// ToProto marshals PatternOidPatternOid to protobuf object *openapi.PatternOidPatternOid
+	ToProto() (*openapi.PatternOidPatternOid, error)
+	// ToPbText marshals PatternOidPatternOid to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternOidPatternOid to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternOidPatternOid to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternOidPatternOid struct {
+	obj *patternOidPatternOid
+}
+
+type unMarshalPatternOidPatternOid interface {
+	// FromProto unmarshals PatternOidPatternOid from protobuf object *openapi.PatternOidPatternOid
+	FromProto(msg *openapi.PatternOidPatternOid) (PatternOidPatternOid, error)
+	// FromPbText unmarshals PatternOidPatternOid from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternOidPatternOid from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternOidPatternOid from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternOidPatternOid) Marshal() marshalPatternOidPatternOid {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternOidPatternOid{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternOidPatternOid) Unmarshal() unMarshalPatternOidPatternOid {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternOidPatternOid{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternOidPatternOid) ToProto() (*openapi.PatternOidPatternOid, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternOidPatternOid) FromProto(msg *openapi.PatternOidPatternOid) (PatternOidPatternOid, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternOidPatternOid) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternOidPatternOid) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternOidPatternOid) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternOidPatternOid) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternOidPatternOid) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternOidPatternOid) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternOidPatternOid) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternOidPatternOid) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternOidPatternOid) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternOidPatternOid) Clone() (PatternOidPatternOid, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternOidPatternOid()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternOidPatternOid is tBD
+type PatternOidPatternOid interface {
+	Validation
+	// msg marshals PatternOidPatternOid to protobuf object *openapi.PatternOidPatternOid
+	// and doesn't set defaults
+	msg() *openapi.PatternOidPatternOid
+	// setMsg unmarshals PatternOidPatternOid from protobuf object *openapi.PatternOidPatternOid
+	// and doesn't set defaults
+	setMsg(*openapi.PatternOidPatternOid) PatternOidPatternOid
+	// provides marshal interface
+	Marshal() marshalPatternOidPatternOid
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternOidPatternOid
+	// validate validates PatternOidPatternOid
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternOidPatternOid, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternOidPatternOidChoiceEnum, set in PatternOidPatternOid
+	Choice() PatternOidPatternOidChoiceEnum
+	// setChoice assigns PatternOidPatternOidChoiceEnum provided by user to PatternOidPatternOid
+	setChoice(value PatternOidPatternOidChoiceEnum) PatternOidPatternOid
+	// HasChoice checks if Choice has been set in PatternOidPatternOid
+	HasChoice() bool
+	// Value returns string, set in PatternOidPatternOid.
+	Value() string
+	// SetValue assigns string provided by user to PatternOidPatternOid
+	SetValue(value string) PatternOidPatternOid
+	// HasValue checks if Value has been set in PatternOidPatternOid
+	HasValue() bool
+	// Values returns []string, set in PatternOidPatternOid.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternOidPatternOid
+	SetValues(value []string) PatternOidPatternOid
+}
+
+type PatternOidPatternOidChoiceEnum string
+
+// Enum of Choice on PatternOidPatternOid
+var PatternOidPatternOidChoice = struct {
+	VALUE  PatternOidPatternOidChoiceEnum
+	VALUES PatternOidPatternOidChoiceEnum
+}{
+	VALUE:  PatternOidPatternOidChoiceEnum("value"),
+	VALUES: PatternOidPatternOidChoiceEnum("values"),
+}
+
+func (obj *patternOidPatternOid) Choice() PatternOidPatternOidChoiceEnum {
+	return PatternOidPatternOidChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternOidPatternOid) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternOidPatternOid) setChoice(value PatternOidPatternOidChoiceEnum) PatternOidPatternOid {
+	intValue, ok := openapi.PatternOidPatternOid_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternOidPatternOidChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternOidPatternOid_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternOidPatternOidChoice.VALUE {
+		defaultValue := "0.1"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternOidPatternOidChoice.VALUES {
+		defaultValue := []string{"0.1"}
+		obj.obj.Values = defaultValue
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternOidPatternOid) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternOidPatternOidChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternOidPatternOid) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternOidPatternOid object
+func (obj *patternOidPatternOid) SetValue(value string) PatternOidPatternOid {
+	obj.setChoice(PatternOidPatternOidChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternOidPatternOid) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"0.1"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternOidPatternOid object
+func (obj *patternOidPatternOid) SetValues(value []string) PatternOidPatternOid {
+	obj.setChoice(PatternOidPatternOidChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+func (obj *patternOidPatternOid) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateOid(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternOidPatternOid.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateOidSlice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternOidPatternOid.Values"))
+		}
+
+	}
+
+}
+
+func (obj *patternOidPatternOid) setDefault() {
+	if obj.obj.Choice == nil {
+		obj.setChoice(PatternOidPatternOidChoice.VALUE)
+
 	}
 
 }
@@ -34406,6 +36116,396 @@ func (obj *requiredChoiceIntermeLeaf) validateObj(vObj *validation, set_default 
 }
 
 func (obj *requiredChoiceIntermeLeaf) setDefault() {
+
+}
+
+// ***** PatternSignedIntegerPatternIntegerCounter *****
+type patternSignedIntegerPatternIntegerCounter struct {
+	validation
+	obj          *openapi.PatternSignedIntegerPatternIntegerCounter
+	marshaller   marshalPatternSignedIntegerPatternIntegerCounter
+	unMarshaller unMarshalPatternSignedIntegerPatternIntegerCounter
+}
+
+func NewPatternSignedIntegerPatternIntegerCounter() PatternSignedIntegerPatternIntegerCounter {
+	obj := patternSignedIntegerPatternIntegerCounter{obj: &openapi.PatternSignedIntegerPatternIntegerCounter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) msg() *openapi.PatternSignedIntegerPatternIntegerCounter {
+	return obj.obj
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) setMsg(msg *openapi.PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternIntegerCounter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternSignedIntegerPatternIntegerCounter struct {
+	obj *patternSignedIntegerPatternIntegerCounter
+}
+
+type marshalPatternSignedIntegerPatternIntegerCounter interface {
+	// ToProto marshals PatternSignedIntegerPatternIntegerCounter to protobuf object *openapi.PatternSignedIntegerPatternIntegerCounter
+	ToProto() (*openapi.PatternSignedIntegerPatternIntegerCounter, error)
+	// ToPbText marshals PatternSignedIntegerPatternIntegerCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternSignedIntegerPatternIntegerCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternSignedIntegerPatternIntegerCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternSignedIntegerPatternIntegerCounter struct {
+	obj *patternSignedIntegerPatternIntegerCounter
+}
+
+type unMarshalPatternSignedIntegerPatternIntegerCounter interface {
+	// FromProto unmarshals PatternSignedIntegerPatternIntegerCounter from protobuf object *openapi.PatternSignedIntegerPatternIntegerCounter
+	FromProto(msg *openapi.PatternSignedIntegerPatternIntegerCounter) (PatternSignedIntegerPatternIntegerCounter, error)
+	// FromPbText unmarshals PatternSignedIntegerPatternIntegerCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternSignedIntegerPatternIntegerCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternSignedIntegerPatternIntegerCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) Marshal() marshalPatternSignedIntegerPatternIntegerCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternSignedIntegerPatternIntegerCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) Unmarshal() unMarshalPatternSignedIntegerPatternIntegerCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternSignedIntegerPatternIntegerCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternSignedIntegerPatternIntegerCounter) ToProto() (*openapi.PatternSignedIntegerPatternIntegerCounter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternIntegerCounter) FromProto(msg *openapi.PatternSignedIntegerPatternIntegerCounter) (PatternSignedIntegerPatternIntegerCounter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternSignedIntegerPatternIntegerCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternIntegerCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternSignedIntegerPatternIntegerCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternIntegerCounter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternSignedIntegerPatternIntegerCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternSignedIntegerPatternIntegerCounter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) Clone() (PatternSignedIntegerPatternIntegerCounter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternSignedIntegerPatternIntegerCounter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternSignedIntegerPatternIntegerCounter is integer counter pattern
+type PatternSignedIntegerPatternIntegerCounter interface {
+	Validation
+	// msg marshals PatternSignedIntegerPatternIntegerCounter to protobuf object *openapi.PatternSignedIntegerPatternIntegerCounter
+	// and doesn't set defaults
+	msg() *openapi.PatternSignedIntegerPatternIntegerCounter
+	// setMsg unmarshals PatternSignedIntegerPatternIntegerCounter from protobuf object *openapi.PatternSignedIntegerPatternIntegerCounter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternSignedIntegerPatternIntegerCounter) PatternSignedIntegerPatternIntegerCounter
+	// provides marshal interface
+	Marshal() marshalPatternSignedIntegerPatternIntegerCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternSignedIntegerPatternIntegerCounter
+	// validate validates PatternSignedIntegerPatternIntegerCounter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternSignedIntegerPatternIntegerCounter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns int32, set in PatternSignedIntegerPatternIntegerCounter.
+	Start() int32
+	// SetStart assigns int32 provided by user to PatternSignedIntegerPatternIntegerCounter
+	SetStart(value int32) PatternSignedIntegerPatternIntegerCounter
+	// HasStart checks if Start has been set in PatternSignedIntegerPatternIntegerCounter
+	HasStart() bool
+	// Step returns int32, set in PatternSignedIntegerPatternIntegerCounter.
+	Step() int32
+	// SetStep assigns int32 provided by user to PatternSignedIntegerPatternIntegerCounter
+	SetStep(value int32) PatternSignedIntegerPatternIntegerCounter
+	// HasStep checks if Step has been set in PatternSignedIntegerPatternIntegerCounter
+	HasStep() bool
+	// Count returns int32, set in PatternSignedIntegerPatternIntegerCounter.
+	Count() int32
+	// SetCount assigns int32 provided by user to PatternSignedIntegerPatternIntegerCounter
+	SetCount(value int32) PatternSignedIntegerPatternIntegerCounter
+	// HasCount checks if Count has been set in PatternSignedIntegerPatternIntegerCounter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) Start() int32 {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the int32 value in the PatternSignedIntegerPatternIntegerCounter object
+func (obj *patternSignedIntegerPatternIntegerCounter) SetStart(value int32) PatternSignedIntegerPatternIntegerCounter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) Step() int32 {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the int32 value in the PatternSignedIntegerPatternIntegerCounter object
+func (obj *patternSignedIntegerPatternIntegerCounter) SetStep(value int32) PatternSignedIntegerPatternIntegerCounter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) Count() int32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a int32
+func (obj *patternSignedIntegerPatternIntegerCounter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the int32 value in the PatternSignedIntegerPatternIntegerCounter object
+func (obj *patternSignedIntegerPatternIntegerCounter) SetCount(value int32) PatternSignedIntegerPatternIntegerCounter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		if *obj.obj.Start < -128 || *obj.obj.Start > 127 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("-128 <= PatternSignedIntegerPatternIntegerCounter.Start <= 127 but Got %d", *obj.obj.Start))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		if *obj.obj.Step < -128 || *obj.obj.Step > 127 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("-128 <= PatternSignedIntegerPatternIntegerCounter.Step <= 127 but Got %d", *obj.obj.Step))
+		}
+
+	}
+
+	if obj.obj.Count != nil {
+
+		if *obj.obj.Count < -128 || *obj.obj.Count > 127 {
+			vObj.validationErrors = append(
+				vObj.validationErrors,
+				fmt.Sprintf("-128 <= PatternSignedIntegerPatternIntegerCounter.Count <= 127 but Got %d", *obj.obj.Count))
+		}
+
+	}
+
+}
+
+func (obj *patternSignedIntegerPatternIntegerCounter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart(0)
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep(1)
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
 
 }
 

@@ -497,6 +497,17 @@ class OpenApiValidator(object):
             ]
         )
 
+    def validate_oid(self, value):
+        segments = value.split(".")
+        if len(segments) < 2:
+            return False
+        for segment in segments:
+            if not segment.isnumeric():
+                return False
+            if not (0 <= int(segment) <= 4294967295):
+                return False
+        return True
+
     def types_validation(
         self,
         value,
@@ -708,10 +719,13 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 "_DEFAULTS" in dir(self._properties[name])
                 and "choice" in self._properties[name]._DEFAULTS
             ):
-                getattr(
-                    self._properties[name],
-                    self._properties[name]._DEFAULTS["choice"],
-                )
+                choice_str = self._properties[name]._DEFAULTS["choice"]
+
+                if choice_str in self._properties[name]._TYPES:
+                    getattr(
+                        self._properties[name],
+                        self._properties[name]._DEFAULTS["choice"],
+                    )
         else:
             if default_value is None and name in self._DEFAULTS:
                 self._set_choice(name)
@@ -1304,6 +1318,9 @@ class PrefixConfig(OpenApiObject):
             "minimum": 64,
             "maximum": 9000,
         },
+        "signed_integer_pattern": {"type": "SignedIntegerPattern"},
+        "oid_pattern": {"type": "OidPattern"},
+        "choice_default": {"type": "ChoiceObject"},
     }  # type: Dict[str, str]
 
     _REQUIRED = ("a", "b", "c", "required_object")  # type: tuple(str)
@@ -2265,6 +2282,41 @@ class PrefixConfig(OpenApiObject):
         value: List[int]
         """
         self._set_property("auto_int32_list_param", value)
+
+    @property
+    def signed_integer_pattern(self):
+        # type: () -> SignedIntegerPattern
+        """signed_integer_pattern getter
+
+        Test signed integer patternTest signed integer patternTest signed integer pattern
+
+        Returns: SignedIntegerPattern
+        """
+        return self._get_property(
+            "signed_integer_pattern", SignedIntegerPattern
+        )
+
+    @property
+    def oid_pattern(self):
+        # type: () -> OidPattern
+        """oid_pattern getter
+
+        Test oid patternTest oid patternTest oid pattern
+
+        Returns: OidPattern
+        """
+        return self._get_property("oid_pattern", OidPattern)
+
+    @property
+    def choice_default(self):
+        # type: () -> ChoiceObject
+        """choice_default getter
+
+
+
+        Returns: ChoiceObject
+        """
+        return self._get_property("choice_default", ChoiceObject)
 
 
 class EObject(OpenApiObject):
@@ -4957,6 +5009,10 @@ class MObject(OpenApiObject):
             "type": str,
             "format": "hex",
         },
+        "oid": {
+            "type": str,
+            "format": "oid",
+        },
     }  # type: Dict[str, str]
 
     _REQUIRED = (
@@ -4985,6 +5041,7 @@ class MObject(OpenApiObject):
         ipv4=None,
         ipv6=None,
         hex=None,
+        oid=None,
     ):
         super(MObject, self).__init__()
         self._parent = parent
@@ -4996,6 +5053,7 @@ class MObject(OpenApiObject):
         self._set_property("ipv4", ipv4)
         self._set_property("ipv6", ipv6)
         self._set_property("hex", hex)
+        self._set_property("oid", oid)
 
     def set(
         self,
@@ -5007,6 +5065,7 @@ class MObject(OpenApiObject):
         ipv4=None,
         ipv6=None,
         hex=None,
+        oid=None,
     ):
         for property_name, property_value in locals().items():
             if property_name != "self" and property_value is not None:
@@ -5197,6 +5256,27 @@ class MObject(OpenApiObject):
         if value is None:
             raise TypeError("Cannot set required property hex as None")
         self._set_property("hex", value)
+
+    @property
+    def oid(self):
+        # type: () -> str
+        """oid getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("oid")
+
+    @oid.setter
+    def oid(self, value):
+        """oid setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("oid", value)
 
 
 class PatternPrefixConfigHeaderChecksum(OpenApiObject):
@@ -6247,6 +6327,454 @@ class RequiredChoiceIntermeLeaf(OpenApiObject):
         value: str
         """
         self._set_property("name", value)
+
+
+class SignedIntegerPattern(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "integer": {"type": "PatternSignedIntegerPatternInteger"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(SignedIntegerPattern, self).__init__()
+        self._parent = parent
+
+    @property
+    def integer(self):
+        # type: () -> PatternSignedIntegerPatternInteger
+        """integer getter
+
+        TBDTBDTBD
+
+        Returns: PatternSignedIntegerPatternInteger
+        """
+        return self._get_property(
+            "integer", PatternSignedIntegerPatternInteger
+        )
+
+
+class PatternSignedIntegerPatternInteger(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": int,
+            "format": "int32",
+            "minimum": -128,
+            "maximum": 127,
+        },
+        "values": {
+            "type": list,
+            "itemtype": int,
+            "itemformat": "int32",
+            "minimum": -128,
+            "maximum": 127,
+        },
+        "increment": {"type": "PatternSignedIntegerPatternIntegerCounter"},
+        "decrement": {"type": "PatternSignedIntegerPatternIntegerCounter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": 0,
+        "values": [0],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, value=0, values=[0]):
+        super(PatternSignedIntegerPatternInteger, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def increment(self):
+        # type: () -> PatternSignedIntegerPatternIntegerCounter
+        """Factory property that returns an instance of the PatternSignedIntegerPatternIntegerCounter class
+
+        integer counter pattern
+
+        Returns: PatternSignedIntegerPatternIntegerCounter
+        """
+        return self._get_property(
+            "increment",
+            PatternSignedIntegerPatternIntegerCounter,
+            self,
+            "increment",
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternSignedIntegerPatternIntegerCounter
+        """Factory property that returns an instance of the PatternSignedIntegerPatternIntegerCounter class
+
+        integer counter pattern
+
+        Returns: PatternSignedIntegerPatternIntegerCounter
+        """
+        return self._get_property(
+            "decrement",
+            PatternSignedIntegerPatternIntegerCounter,
+            self,
+            "decrement",
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> int
+        """value getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[int]
+        """values getter
+
+        TBD
+
+        Returns: List[int]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[int]
+        """
+        self._set_property("values", value, "values")
+
+
+class PatternSignedIntegerPatternIntegerCounter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": int,
+            "format": "int32",
+            "minimum": -128,
+            "maximum": 127,
+        },
+        "step": {
+            "type": int,
+            "format": "int32",
+            "minimum": -128,
+            "maximum": 127,
+        },
+        "count": {
+            "type": int,
+            "format": "int32",
+            "minimum": -128,
+            "maximum": 127,
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": 0,
+        "step": 1,
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start=0, step=1, count=1):
+        super(PatternSignedIntegerPatternIntegerCounter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> int
+        """start getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> int
+        """step getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class OidPattern(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "oid": {"type": "PatternOidPatternOid"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(OidPattern, self).__init__()
+        self._parent = parent
+
+    @property
+    def oid(self):
+        # type: () -> PatternOidPatternOid
+        """oid getter
+
+        TBDTBDTBD
+
+        Returns: PatternOidPatternOid
+        """
+        return self._get_property("oid", PatternOidPatternOid)
+
+
+class PatternOidPatternOid(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "oid",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "oid",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": "0.1",
+        "values": ["0.1"],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, value="0.1", values=["0.1"]):
+        super(PatternOidPatternOid, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
 
 
 class Error(OpenApiObject):

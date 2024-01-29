@@ -1056,6 +1056,18 @@
                         "minimum": 64,
                         "maximum": 9000,
                         "x-field-uid": 52
+                    },
+                    "signed_integer_pattern": {
+                        "$ref": "#/components/schemas/SignedIntegerPattern",
+                        "x-field-uid": 53
+                    },
+                    "oid_pattern": {
+                        "$ref": "#/components/schemas/OidPattern",
+                        "x-field-uid": 54
+                    },
+                    "choice_default": {
+                        "$ref": "#/components/schemas/ChoiceObject",
+                        "x-field-uid": 55
                     }
                 }
             },
@@ -1436,6 +1448,11 @@
                         "type": "string",
                         "format": "hex",
                         "x-field-uid": 8
+                    },
+                    "oid": {
+                        "type": "string",
+                        "format": "oid",
+                        "x-field-uid": 9
                     }
                 }
             },
@@ -1746,6 +1763,26 @@
                     "checksum": {
                         "x-field-uid": 1,
                         "$ref": "#/components/schemas/Pattern.ChecksumPattern.Checksum"
+                    }
+                }
+            },
+            "SignedIntegerPattern": {
+                "description": "Test signed integer pattern",
+                "type": "object",
+                "properties": {
+                    "integer": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.SignedIntegerPattern.Integer"
+                    }
+                }
+            },
+            "OidPattern": {
+                "description": "Test oid pattern",
+                "type": "object",
+                "properties": {
+                    "oid": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.OidPattern.Oid"
                     }
                 }
             },
@@ -3079,6 +3116,136 @@
                         "format": "uint32",
                         "maximum": 255,
                         "x-field-uid": 3
+                    }
+                }
+            },
+            "Pattern.SignedIntegerPattern.Integer.Counter": {
+                "description": "integer counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "x-field-uid": 1,
+                        "default": 0,
+                        "format": "int32",
+                        "minimum": -128,
+                        "maximum": 127
+                    },
+                    "step": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 1,
+                        "format": "int32",
+                        "minimum": -128,
+                        "maximum": 127
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "int32",
+                        "minimum": -128,
+                        "maximum": 127
+                    }
+                }
+            },
+            "Pattern.SignedIntegerPattern.Integer": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "integer",
+                        "x-field-uid": 2,
+                        "default": 0,
+                        "format": "int32",
+                        "minimum": -128,
+                        "maximum": 127
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32",
+                            "minimum": -128,
+                            "maximum": 127
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            0
+                        ]
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.SignedIntegerPattern.Integer.Counter",
+                        "x-field-uid": 5
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.SignedIntegerPattern.Integer.Counter",
+                        "x-field-uid": 6
+                    }
+                }
+            },
+            "Pattern.OidPattern.Oid": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.1",
+                        "format": "oid"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "oid"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "0.1"
+                        ]
                     }
                 }
             },

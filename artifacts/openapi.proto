@@ -242,6 +242,15 @@ message PrefixConfig {
 
   // should automatically set type to []int32
   repeated int32 auto_int32_list_param = 52;
+
+  // Description missing in models
+  SignedIntegerPattern signed_integer_pattern = 53;
+
+  // Description missing in models
+  OidPattern oid_pattern = 54;
+
+  // Description missing in models
+  ChoiceObject choice_default = 55;
 }
 
 // Description missing in models
@@ -493,6 +502,9 @@ message MObject {
   // Description missing in models
   // required = true
   optional string hex = 8;
+
+  // Description missing in models
+  optional string oid = 9;
 }
 
 // Object to Test required Parameter
@@ -697,6 +709,20 @@ message ChecksumPattern {
 
   // Description missing in models
   PatternChecksumPatternChecksum checksum = 1;
+}
+
+// Test signed integer pattern
+message SignedIntegerPattern {
+
+  // Description missing in models
+  PatternSignedIntegerPatternInteger integer = 1;
+}
+
+// Test oid pattern
+message OidPattern {
+
+  // Description missing in models
+  PatternOidPatternOid oid = 1;
 }
 
 // Under Review: the whole schema is being reviewed
@@ -1498,6 +1524,76 @@ message PatternChecksumPatternChecksum {
 
   // A custom checksum value
   optional uint32 custom = 3;
+}
+
+// integer counter pattern
+message PatternSignedIntegerPatternIntegerCounter {
+
+  // Description missing in models
+  // default = 0
+  optional int32 start = 1;
+
+  // Description missing in models
+  // default = 1
+  optional int32 step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional int32 count = 3;
+}
+
+// TBD
+message PatternSignedIntegerPatternInteger {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0
+  optional int32 value = 2;
+
+  // Description missing in models
+  // default = [0]
+  repeated int32 values = 3;
+
+  // Description missing in models
+  PatternSignedIntegerPatternIntegerCounter increment = 5;
+
+  // Description missing in models
+  PatternSignedIntegerPatternIntegerCounter decrement = 6;
+}
+
+// TBD
+message PatternOidPatternOid {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0.1
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['0.1']
+  repeated string values = 3;
 }
 
 // ipv4 counter pattern
