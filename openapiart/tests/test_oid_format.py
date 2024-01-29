@@ -1,8 +1,6 @@
 import importlib
 import pytest
 
-module = importlib.import_module("sanity")
-
 
 def test_oid_in_normal_attr(default_config):
     default_config.m_object.string_param = "abc"
