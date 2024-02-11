@@ -65,6 +65,19 @@ class OpenApiArtPlugin(object):
                 camel_case += piece[1:]
         return camel_case
 
+    def _get_file_name(self, name):
+        file_name = ""
+        for char in name:
+            if char.isupper():
+                file_name += "_" + char.lower()
+            else:
+                file_name += char.lower()
+        if file_name.startswith("_"):
+            file_name = file_name[1:]
+        elif file_name.endswith("test"):
+            file_name = file_name + "_intf"
+        return file_name
+
     def _justify_desc(self, text, indent=0, use_multi=False):
         indent = " " * (indent * 2)
         lines = []

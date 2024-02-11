@@ -62,6 +62,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
             package_dir="github.com/open-traffic-generator/goapi/pkg",
             package_name="goapi",
             sdk_version="0.0.1",
+            split=True,
         )
         open_api.GenerateGoServer(
             module_path="github.com/open-traffic-generator/goapi/pkg",

@@ -555,9 +555,10 @@ def build(sdk="all", env_setup=None):
         dirs_exist_ok=True,
     )
 
-    files = ["goapi.go", "go.mod", "go.sum"]
-    for file in files:
-        shutil.copy(os.path.join(base_dir, "pkg", file), go_path)
+    for file in os.listdir(os.path.join(base_dir, "pkg")):
+        if file.endswith(".go") or file in ["go.sum", "go.mod"]:
+            if not file.endswith("test.go"):
+                shutil.copy(os.path.join(base_dir, "pkg", file), go_path)
 
     if sdk == "python" or sdk == "all":
         print("\nSTEP 4: Perform Python lint\n")

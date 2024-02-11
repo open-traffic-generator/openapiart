@@ -220,13 +220,17 @@ class OpenApiArt(object):
             )
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name, sdk_version=""):
+    def GenerateGoSdk(
+        self, package_dir, package_name, sdk_version="", split=True
+    ):
         """Generates a Go UX Sdk
 
         Args
         ----
         - package_dir: Go mod package dir published under go.mod
         - package_name: Name of the Go package to generate
+        - sdk_version: If we want to generate SDk with a custom version
+        - split: true by default, it creates go files for each interfaces, otgherwise it creates a single go file contaiing all interfaces
 
         Example
         -------
@@ -298,6 +302,7 @@ class OpenApiArt(object):
                     "generate_version_api": self._generate_version_api,
                     "api_version": self._api_version,
                     "sdk_version": self._go_sdk_version,
+                    "split": split,
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))
