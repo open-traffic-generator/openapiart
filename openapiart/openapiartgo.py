@@ -959,7 +959,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 return_value = """ret := New{struct}()
                     if resp.Get{struct}() != nil {{
-                        ret.SetMsg(resp.Get{struct}())
+                        ret.setMsg(resp.Get{struct}())
                         api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", ret.String()))
                         return ret, nil
                     }}
@@ -1459,7 +1459,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     AllowPartial:    true,
                     EmitUnpopulated: false,
                 }}
-                data, err := opts.Marshal(m.obj.Msg())
+                data, err := opts.Marshal(m.obj.msg())
                 if err != nil {{
                     return "", err
                 }}
