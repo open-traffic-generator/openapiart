@@ -49,3 +49,24 @@ components:
           x-field-pattern:
             format: checksum
           x-field-uid: 1
+    SignedIntegerPattern:
+      description: Test signed integer pattern
+      type: object
+      properties:
+        integer:
+          x-field-pattern:
+            format: integer
+            default: 0
+            signed: true
+            length: 8
+            features: [count]
+          x-field-uid: 1
+    OidPattern:
+      description: Test oid pattern
+      type: object
+      properties:
+        oid:
+          x-field-pattern:
+            format: oid
+            default: "0.1"
+          x-field-uid: 1

@@ -12,12 +12,12 @@ func TestToAndFromProtoMsg(t *testing.T) {
 	fObj_proto := &sanity.FObject{}
 	fObj := openapiart.NewFObject()
 
-	obj, err := fObj.FromProto(fObj_proto)
+	obj, err := fObj.Unmarshal().FromProto(fObj_proto)
 	assert.Nil(t, err)
 
 	assert.Equal(t, obj.FA(), "some string")
 
-	proto_obj, err1 := obj.ToProto()
+	proto_obj, err1 := obj.Marshal().ToProto()
 	d := "some string"
 	var fa *string = &d
 

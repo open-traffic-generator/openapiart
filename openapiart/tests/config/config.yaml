@@ -310,6 +310,15 @@ components:
         choice_test:
           $ref: "#/components/schemas/ChoiceTestObj"
           x-field-uid: 53
+        signed_integer_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/SignedIntegerPattern"
+          x-field-uid: 54
+        oid_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/OidPattern"
+          x-field-uid: 55
+        choice_default:
+          $ref: "#/components/schemas/ChoiceObject"
+          x-field-uid: 56
 
     WObject:
       required: [w_name]
@@ -565,6 +574,10 @@ components:
           type: string
           format: hex
           x-field-uid: 8
+        oid:
+          type: string
+          format: oid
+          x-field-uid: 9
     Mandate:
       description: "Object to Test required Parameter"
       type: object

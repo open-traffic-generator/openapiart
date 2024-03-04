@@ -618,7 +618,7 @@ class Bundler(object):
             if (
                 len(intersect_keys) > 0
                 and "format" in value.keys()
-                and value["format"] in ["ipv4", "ipv6", "mac"]
+                and value["format"] in ["ipv4", "ipv6", "mac", "oid"]
             ):
                 stacks = inspect.stack()
                 property = "{}/{}/{}".format(
@@ -683,7 +683,20 @@ class Bundler(object):
                     str(xpattern_path.full_path)
                 )
             )
-        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum"]
+        if "signed" in xpattern:
+            if xpattern["format"] != "integer":
+                self._errors.append(
+                    "signed property can only be used if the format is set to integer in property {}".format(
+                        str(xpattern_path.full_path)
+                    )
+                )
+            if not isinstance(xpattern["signed"], bool):
+                self._errors.append(
+                    "invalid value {} in {}, signed property can either be true or false".format(
+                        str(xpattern["signed"]), str(xpattern_path.full_path)
+                    )
+                )
+        valid_formats = ["integer", "ipv4", "ipv6", "mac", "checksum", "oid"]
         if xpattern["format"] not in valid_formats:
             self._errors.append(
                 "%s has unspported format %s , valid formats are %s"
@@ -733,7 +746,7 @@ class Bundler(object):
             )
             fmt = None
             type_name = xpattern["format"]
-            if type_name in ["ipv4", "ipv6", "mac", "x-enum"]:
+            if type_name in ["ipv4", "ipv6", "mac", "x-enum", "oid"]:
                 fmt = type_name
                 type_name = "string"
             description = "TBD"
@@ -1038,6 +1051,8 @@ class Bundler(object):
             finalised_format = "uint32"
             if "length" in xpattern and xpattern["length"] > 32:
                 finalised_format = "uint64"
+            if xpattern.get("signed", False):
+                finalised_format = finalised_format[1:]
         elif fmt is not None:
             finalised_format = fmt
 
@@ -1047,10 +1062,22 @@ class Bundler(object):
             else:
                 schema["format"] = finalised_format
         if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
+            min_val = (
+                -(2 ** (int(xpattern["length"]) - 1))
+                if xpattern.get("signed", False)
+                else None
+            )
+            max_val = 2 ** int(xpattern["length"]) - 1
+            if xpattern.get("signed", False):
+                max_val = 2 ** (int(xpattern["length"]) - 1) - 1
             if property_name == "values":
-                schema["items"]["maximum"] = 2 ** int(xpattern["length"]) - 1
+                if min_val is not None:
+                    schema["items"]["minimum"] = min_val
+                schema["items"]["maximum"] = max_val
             else:
-                schema["maximum"] = 2 ** int(xpattern["length"]) - 1
+                if min_val is not None:
+                    schema["minimum"] = min_val
+                schema["maximum"] = max_val
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:

@@ -90,6 +90,34 @@ def test_choice_in_choice_heirarchy(api):
     assert c_obj.f_obj.choice == "f_c"
 
 
+def test_choice_in_choice_default(api):
+    config = api.prefix_config()
+
+    # default choice with no properties should be set properly
+    c_obj = config.choice_default
+    assert c_obj.choice == "no_obj"
+    assert len(c_obj._properties) == 1
+
+    # acesing of objects with choice set to choice with no property should work
+    f_obj = c_obj.f_obj
+
+    # check default in child
+    assert f_obj.choice == "f_a"
+    assert f_obj._properties.get("f_a", None) is not None
+
+    # setting choice with no properties in child as well
+    f_obj.choice = "f_c"
+    assert f_obj._properties.get("choice", None) == "f_c"
+    len(f_obj._properties) == 1
+
+    # serialize and deserialize should have no problem
+    s_c_obj = c_obj.serialize()
+    c_obj.deserialize(s_c_obj)
+    assert c_obj.choice == "f_obj"
+    assert c_obj._properties.get("f_obj") is not None
+    assert c_obj.f_obj.choice == "f_c"
+
+
 def test_choice_with_invalid_enum_and_none_value(api):
     config = api.prefix_config()
     f_obj = config.f

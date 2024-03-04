@@ -10,8 +10,7 @@ import (
 )
 
 func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	fObj := config.F()
 
 	// test default choice and values
@@ -31,22 +30,21 @@ func TestChoiceWithNoPropertiesForLeafNode(t *testing.T) {
 	assert.Equal(t, fObj.FA(), "str1")
 
 	// setting choice with no property
-	fObj.SetChoice(openapiart.FObjectChoice.F_C)
+	fObj.FC()
 	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
 
-	err := fObj.Validate()
+	_, err := fObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 
 	// rest of operation should not be impacted
@@ -61,7 +59,9 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 
 	config.ChoiceObject().Append(openapiart.NewChoiceObject())
 
-	config.ChoiceObject().Set(1, openapiart.NewChoiceObject().SetChoice("e_obj"))
+	chObj := openapiart.NewChoiceObject()
+	chObj.EObj()
+	config.ChoiceObject().Set(1, chObj)
 	assert.Len(t, config.ChoiceObject().Items(), 2)
 
 	config.ChoiceObject().Clear()
@@ -69,14 +69,13 @@ func TestChoiceWithNoPropertiesForIterNode(t *testing.T) {
 }
 
 func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 
 	choiceObj := config.ChoiceObject().Add()
 
 	// check default should be no_obj
 	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
-	err := choiceObj.Validate()
+	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 
 	fObj := choiceObj.FObj()
@@ -88,24 +87,52 @@ func TestChoiceWithNoPropertiesForChoiceHeirarchy(t *testing.T) {
 	assert.Equal(t, fObj.FA(), "some string")
 
 	// set choice with no properties in child obj
-	fObj.SetChoice(openapiart.FObjectChoice.F_C)
+	fObj.FC()
 	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
 	assert.False(t, fObj.HasFA())
 	assert.False(t, fObj.HasFB())
 
 	// validate the whole object
-	err = choiceObj.Validate()
+	_, err = choiceObj.Marshal().ToYaml()
+	assert.Nil(t, err)
+}
+
+func TestChoiceWithNoPropertiesForChoiceDefault(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+
+	choiceObj := config.ChoiceObject().Add()
+
+	// check default should be no_obj
+	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.NO_OBJ)
+	_, err := choiceObj.Marshal().ToYaml()
+	assert.Nil(t, err)
+
+	fObj := choiceObj.FObj()
+
+	// check default for child obj
+	assert.Equal(t, choiceObj.Choice(), openapiart.ChoiceObjectChoice.F_OBJ)
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
+	assert.True(t, fObj.HasFA())
+	assert.Equal(t, fObj.FA(), "some string")
+
+	// set choice with no properties in child obj
+	fObj.FC()
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
+	assert.False(t, fObj.HasFA())
+	assert.False(t, fObj.HasFB())
+
+	// validate the whole object
+	_, err = choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
 }
 
 func TestChoiceMarshall(t *testing.T) {
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
+	config := openapiart.NewPrefixConfig()
 	config.SetA("asd").SetB(1).SetC(22).RequiredObject().SetEA(1.23).SetEB(2.34)
 
 	choiceObj := config.ChoiceTest()
 	choiceObj.EObj().SetEA(1.23).SetEB(2.34)
-	s, err := config.ToJson()
+	s, err := config.Marshal().ToJson()
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json := `{
@@ -129,7 +156,7 @@ func TestChoiceMarshall(t *testing.T) {
 	require.JSONEq(t, exp_json, s)
 
 	choiceObj.FObj().SetFA("s1").SetFB(34.5678)
-	s, err = config.ToJson()
+	s, err = config.Marshal().ToJson()
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
@@ -152,8 +179,8 @@ func TestChoiceMarshall(t *testing.T) {
 		  }`
 	require.JSONEq(t, exp_json, s)
 
-	choiceObj.SetChoice(openapiart.ChoiceTestObjChoice.NO_OBJ)
-	s, err = config.ToJson()
+	choiceObj.NoObj()
+	s, err = config.Marshal().ToJson()
 	fmt.Println(s)
 	assert.Nil(t, err)
 	exp_json = `{
@@ -191,9 +218,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	api := openapiart.NewApi()
-	config := api.NewPrefixConfig()
-	err := config.FromJson(exp_json)
+	config := openapiart.NewPrefixConfig()
+	err := config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj := config.ChoiceTest()
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
@@ -217,8 +243,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.F_OBJ)
@@ -236,8 +262,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.NO_OBJ)
@@ -259,8 +285,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	fmt.Println(config)
@@ -282,8 +308,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	fmt.Println(config)
@@ -308,8 +334,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	r := config.RequiredChoiceObject()
 	fmt.Println(r)
@@ -334,8 +360,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	r = config.RequiredChoiceObject()
@@ -345,7 +371,7 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, ir.FA(), "name1")
 
 	// json without choice for checksum pattern with enum choice properties
-	config = api.NewPrefixConfig()
+	config = openapiart.NewPrefixConfig()
 	config.SetA("asd").RequiredObject()
 	config.HeaderChecksum().SetCustom(123)
 	fmt.Println(config)
@@ -362,8 +388,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 			"generated": "unspecified"
 		}
 	}`
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	hc := config.HeaderChecksum()
@@ -383,8 +409,8 @@ func TestChoiceUnMarshall(t *testing.T) {
 			"generated": "bad"
 		}
 	}`
-	config = api.NewPrefixConfig()
-	err = config.FromJson(exp_json)
+	config = openapiart.NewPrefixConfig()
+	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	hc = config.HeaderChecksum()
