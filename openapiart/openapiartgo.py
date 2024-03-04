@@ -3004,7 +3004,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         )
                     )
                 else:
-                    body += """if obj.obj.{name} == nil {{
+                    choice_cond = ""
+                    if field.name in choice_enum_map:
+                        choice_cond += (
+                            "&& choice == %s " % choice_enum_map[field.name]
+                        )
+                    body += """if obj.obj.{name} == nil {choice_check}{{
                         obj.Set{external_name}({value})
                     }}
                     """.format(
@@ -3015,6 +3020,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default)
                         if field.type == "string"
                         else field.default,
+                        choice_check=choice_cond,
                     )
             else:
                 if field.name in hasChoiceConfig:
@@ -3066,18 +3072,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     # signifies choice with no property
                     continue
 
-                enum_check_code = " && obj.obj.%s.Number() != 0 " % enum
-                choice_code += """
-                if obj.obj.{prop} != {val}{enum_check}{{
-                    choices_set += 1
-                    choice = {choice_val}
-                }}
-                """.format(
-                    prop=enum,
-                    val=value,
-                    choice_val=choice_enum_map[enum],
-                    enum_check=enum_check_code if field_type == "enum" else "",
-                )
+                if field_type.startswith("[]"):
+                    choice_code += """
+                    if len(obj.obj.{prop}) > 0{{
+                        choices_set += 1
+                        choice = {choice_val}
+                    }}
+                    """.format(
+                        prop=enum,
+                        choice_val=choice_enum_map[enum],
+                    )
+                else:
+                    enum_check_code = " && obj.obj.%s.Number() != 0 " % enum
+                    choice_code += """
+                    if obj.obj.{prop} != {val}{enum_check}{{
+                        choices_set += 1
+                        choice = {choice_val}
+                    }}
+                    """.format(
+                        prop=enum,
+                        val=value,
+                        choice_val=choice_enum_map[enum],
+                        enum_check=enum_check_code
+                        if field_type == "enum"
+                        else "",
+                    )
 
             # TODO: we need to throw error if more that one choice properties are set
             # choice_code += """

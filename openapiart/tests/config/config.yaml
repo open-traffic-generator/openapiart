@@ -319,6 +319,9 @@ components:
         choice_default:
           $ref: "#/components/schemas/ChoiceObject"
           x-field-uid: 56
+        choice_required_default:
+          $ref: "#/components/schemas/ChoiceRequiredAndDefault"
+          x-field-uid: 57
 
     WObject:
       required: [w_name]
@@ -738,3 +741,29 @@ components:
         ieee_802_3x:
           type: string
           x-field-uid: 5
+
+    ChoiceRequiredAndDefault:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            ipv4:
+              x-field-uid: 1
+            ipv6:
+              x-field-uid: 2
+        ipv4:
+          type: string
+          format: ipv4
+          default: "0.0.0.0"
+          x-field-uid: 2
+        ipv6:
+          description: |-
+            A list of ipv6
+          type: array
+          items:
+            type: string
+            format: ipv6
+          x-field-uid: 3

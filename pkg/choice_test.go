@@ -421,41 +421,33 @@ func TestChoiceUnMarshall(t *testing.T) {
 
 func TestDefaultChoiceOverwrite(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
-	fObj := config.F()
+	crd := config.ChoiceRequiredDefault()
+	crd.Ipv4()
 
 	// test default choice and values
-	fmt.Println(fObj)
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
-	assert.True(t, fObj.HasFA())
-	assert.Equal(t, fObj.FA(), "some string")
+	fmt.Println(crd)
+	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV4)
+	assert.True(t, crd.HasIpv4())
+	assert.Equal(t, crd.Ipv4(), "0.0.0.0")
 
 	// setting of other choices should work as usual
-	fObj.SetFB(5.67)
+	crd.SetIpv6([]string{"1::2"})
 
-	c, err := fObj.Marshal().ToYaml()
+	c, err := crd.Marshal().ToYaml()
 	fmt.Println(c)
 	assert.Nil(t, err)
 
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_B)
-	assert.True(t, fObj.HasFB())
-	assert.Equal(t, fObj.FB(), 5.67)
+	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV6)
+	assert.True(t, len(crd.Ipv6()) > 0)
+	assert.Equal(t, crd.Ipv6()[0], "1::2")
 
-	fObj.SetFA("str1")
+	crd.SetIpv4("1.2.3.4")
 
-	c, err = fObj.Marshal().ToYaml()
+	c, err = crd.Marshal().ToYaml()
 	fmt.Println(c)
 	assert.Nil(t, err)
 
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
-	assert.True(t, fObj.HasFA())
-	assert.Equal(t, fObj.FA(), "str1")
-
-	// setting choice with no property
-	fObj.FC()
-
-	c, err = fObj.Marshal().ToYaml()
-	fmt.Println(c)
-	assert.Nil(t, err)
-
-	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
+	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV4)
+	assert.True(t, crd.HasIpv4())
+	assert.Equal(t, crd.Ipv4(), "1.2.3.4")
 }
