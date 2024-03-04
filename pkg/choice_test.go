@@ -418,3 +418,44 @@ func TestChoiceUnMarshall(t *testing.T) {
 	assert.Equal(t, hc.Generated(), openapiart.PatternPrefixConfigHeaderChecksumGenerated.BAD)
 
 }
+
+func TestDefaultChoiceOverwrite(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	fObj := config.F()
+
+	// test default choice and values
+	fmt.Println(fObj)
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
+	assert.True(t, fObj.HasFA())
+	assert.Equal(t, fObj.FA(), "some string")
+
+	// setting of other choices should work as usual
+	fObj.SetFB(5.67)
+
+	c, err := fObj.Marshal().ToYaml()
+	fmt.Println(c)
+	assert.Nil(t, err)
+
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_B)
+	assert.True(t, fObj.HasFB())
+	assert.Equal(t, fObj.FB(), 5.67)
+
+	fObj.SetFA("str1")
+
+	c, err = fObj.Marshal().ToYaml()
+	fmt.Println(c)
+	assert.Nil(t, err)
+
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_A)
+	assert.True(t, fObj.HasFA())
+	assert.Equal(t, fObj.FA(), "str1")
+
+	// setting choice with no property
+	fObj.FC()
+
+	c, err = fObj.Marshal().ToYaml()
+	fmt.Println(c)
+	assert.Nil(t, err)
+
+	assert.Equal(t, fObj.Choice(), openapiart.FObjectChoice.F_C)
+}
