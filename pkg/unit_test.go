@@ -646,7 +646,7 @@ func TestRequiredEnumField(t *testing.T) {
 	rc.IntermediateObj()
 	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceParent")
 	_, err = rc.Marshal().ToYaml()
-	assert.Nil(t, err)
+	assert.Contains(t, err.Error(), "Choice is required field on interface RequiredChoiceIntermediate")
 }
 
 func TestOptionalDefault(t *testing.T) {
