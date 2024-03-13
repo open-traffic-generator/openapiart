@@ -18,11 +18,11 @@ type logInfo struct {
 
 var (
 	logSt       *logInfo
-	logger      *zerolog.Logger
+	Logger      *zerolog.Logger
 	logLevel    zerolog.Level = zerolog.InfoLevel
 	logToFile   bool          = false
 	logFileName string
-	GlobalCtx   string
+	ModuleName  string
 )
 
 func initlog() error {
@@ -38,18 +38,18 @@ func initlog() error {
 		*logSt.rootDir = "."
 	}
 	*logSt.logDir = path.Join(*logSt.rootDir, "logs")
-	logger = nil
-	GlobalCtx = ""
+	Logger = nil
+	ModuleName = ""
 	return nil
 }
 
 func SetLogger(usrDefinedLogger zerolog.Logger) {
-	logger = &usrDefinedLogger
+	Logger = &usrDefinedLogger
 }
 
 func SetLogOutputToFile(choice bool) zerolog.Logger {
 	logToFile = choice
-	return getLogger(GlobalCtx)
+	return getLogger(ModuleName)
 }
 
 func SetLogLevel(level zerolog.Level) {
@@ -61,14 +61,16 @@ func SetLogFileName(fileName string) {
 	logFileName = fileName
 }
 
-func getLogger(ctx string) zerolog.Logger {
-	if GlobalCtx == "" {
+func getLogger(name string) zerolog.Logger {
+	if ModuleName == "" {
 		if err := initlog(); err != nil {
 			panic(fmt.Errorf("Logger helper set failed: %v", err))
 		}
 	}
-	GlobalCtx = ctx
-	logFileName = ctx
+	ModuleName = name
+	if logFileName == "" {
+		logFileName = name
+	}
 	var localLogger zerolog.Logger
 	if !logToFile {
 		zerolog.TimestampFunc = func() time.Time {
@@ -76,16 +78,16 @@ func getLogger(ctx string) zerolog.Logger {
 		}
 		zerolog.TimeFieldFormat = time.RFC3339Nano
 		consoleWriter := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-1-02T15:04:05.000Z"}
-		localLogger = zerolog.New(consoleWriter).Level(logLevel).With().Timestamp().Str("Module", ctx).Logger()
+		localLogger = zerolog.New(consoleWriter).Level(logLevel).With().Timestamp().Str("Module", name).Logger()
 
 	} else {
 		if err := initFileLogger(); err != nil {
 			panic(fmt.Errorf("Logger init failed: %v", err))
 		}
-		localLogger = log.With().Str("Module", ctx).Logger()
+		localLogger = log.With().Str("Module", name).Logger()
 	}
-	logger = &localLogger
-	return *logger
+	Logger = &localLogger
+	return *Logger
 }
 
 func initLogger() (err error) {
