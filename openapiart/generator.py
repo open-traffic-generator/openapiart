@@ -1589,7 +1589,7 @@ class Generator:
         ):
             self._write(2, "return self._get_property('%s')" % (name))
             self._write()
-            if name == "auto":
+            if name == "auto" or name == "auto_dhcp":
                 return
             self._write(1, "@%s.setter" % name)
             self._write(1, "def %s(self, value):" % name)

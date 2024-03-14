@@ -81,3 +81,19 @@ components:
             default: 0
             features: [count]
           x-field-uid: 9
+        wrong_features_value:
+          x-field-pattern:
+            format: integer
+            length: 2
+            signed: 45
+            default: 0
+            features: [abc]
+          x-field-uid: 10
+        wrong_format_dhcp:
+          x-field-pattern:
+            format: integer
+            length: 2
+            signed: 45
+            default: 0
+            features: [auto_dhcp]
+          x-field-uid: 11

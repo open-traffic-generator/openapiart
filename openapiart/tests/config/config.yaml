@@ -322,7 +322,9 @@ components:
         choice_required_default:
           $ref: "#/components/schemas/ChoiceRequiredAndDefault"
           x-field-uid: 57
-
+        auto_dhcp_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/AutoDhcpPattern"
+          x-field-uid: 58
     WObject:
       required: [w_name]
       properties:

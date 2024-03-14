@@ -706,6 +706,18 @@ class Bundler(object):
                     str(valid_formats),
                 )
             )
+        valid_features = ["count", "auto", "auto_dhcp", "metric_tags"]
+        if "features" in xpattern:
+            for feature in xpattern["features"]:
+                if feature not in valid_features:
+                    self._errors.append(
+                        "%s has unspported feature %s , valid features are %s"
+                        % (
+                            str(xpattern_path.full_path),
+                            feature,
+                            str(valid_features),
+                        )
+                    )
 
     def _resolve_x_field_pattern(self):
         """Find all instances of pattern_extension in the openapi content
@@ -851,32 +863,47 @@ class Bundler(object):
         if xconstants is not None:
             schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
-            if "auto" in xpattern["features"]:
+            if (
+                "auto" in xpattern["features"]
+                or "auto_dhcp" in xpattern["features"]
+            ):
+                choice_name = (
+                    "auto" if "auto" in xpattern["features"] else "auto_dhcp"
+                )
                 if "default" not in xpattern:
                     self._errors.append(
-                        "default must be set for property {}, when auto feature is enabled".format(
-                            schema_name
+                        "default must be set for property {}, when {} feature is enabled".format(
+                            schema_name, choice_name
                         )
                     )
-                schema["properties"]["choice"]["x-enum"]["auto"] = {
+                if choice_name == "auto_dhcp" and xpattern["format"] not in [
+                    "ipv4",
+                    "ipv6",
+                ]:
+                    self._errors.append(
+                        "format must be either ipv4 or ipv6 for property {}, when {} feature is enabled".format(
+                            schema_name, choice_name
+                        )
+                    )
+                schema["properties"]["choice"]["x-enum"][choice_name] = {
                     "x-field-uid": 1
                 }
-                schema["properties"]["choice"]["default"] = "auto"
+                schema["properties"]["choice"]["default"] = choice_name
                 description = [
                     "The OTG implementation can provide a system generated",
                     "value for this property. If the OTG is unable to generate a value",
                     "the default value must be used.",
                 ]
-                schema["properties"]["auto"] = {
+                schema["properties"][choice_name] = {
                     "description": "\n".join(description),
                     "type": copy.deepcopy(type_name),
                     "x-field-uid": auto_field.uid,
                 }
                 self._apply_common_x_field_pattern_properties(
-                    schema["properties"]["auto"],
+                    schema["properties"][choice_name],
                     xpattern,
                     fmt,
-                    property_name="auto",
+                    property_name=choice_name,
                 )
 
             # skip this UID as it was previously being used for metric_groups

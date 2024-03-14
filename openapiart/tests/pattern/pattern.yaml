@@ -70,3 +70,13 @@ components:
             format: oid
             default: "0.1"
           x-field-uid: 1
+    AutoDhcpPattern:
+      description: Test auto dhcp pattern
+      type: object
+      properties:
+        dhcp:
+          x-field-pattern:
+            format: ipv4
+            default: 0.0.0.0
+            features: [count, auto_dhcp]
+          x-field-uid: 1

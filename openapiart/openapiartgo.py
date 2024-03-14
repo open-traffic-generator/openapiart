@@ -2479,7 +2479,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         "Warning: Default should not accept for this property ",
                         property_name,
                     )
-            if field.name.lower() == "auto":
+            if field.name.lower() == "auto" or field.name.lower() == "autodhcp":
                 field.setter_method = None
 
             fluent_new.interface_fields.append(field)
