@@ -355,7 +355,7 @@ func TestAutoDhcp(t *testing.T) {
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternAutoDhcpPatternDhcpChoiceEnum("auto_dhcp"),
+		openapiart.PatternAutoDhcpPatternDhcpChoiceEnum("value"),
 		config.AutoDhcpPattern().Dhcp().Choice())
 	assert.Equal(t, "0.0.0.0", config.AutoDhcpPattern().Dhcp().AutoDhcp())
 

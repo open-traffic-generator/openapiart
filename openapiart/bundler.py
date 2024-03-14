@@ -888,7 +888,8 @@ class Bundler(object):
                 schema["properties"]["choice"]["x-enum"][choice_name] = {
                     "x-field-uid": 1
                 }
-                schema["properties"]["choice"]["default"] = choice_name
+                if choice_name == "auto":
+                    schema["properties"]["choice"]["default"] = choice_name
                 description = [
                     "The OTG implementation can provide a system generated",
                     "value for this property. If the OTG is unable to generate a value",
