@@ -325,6 +325,10 @@ components:
         auto_dhcp_pattern:
           $ref: "../pattern/pattern.yaml#/components/schemas/AutoDhcpPattern"
           x-field-uid: 58
+        name_ending_with_number_234:
+          type: string
+          format: ipv4
+          x-field-uid: 59
     WObject:
       required: [w_name]
       properties:
