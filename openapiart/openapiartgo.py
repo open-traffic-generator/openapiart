@@ -2895,19 +2895,28 @@ class OpenApiArtGo(OpenApiArtPlugin):
         interface_fields = new.interface_fields
         hasChoiceConfig = []
         choice_enums = []
+        enum_map = {}
+        choice_enum_map = {}
         for index, field in enumerate(interface_fields):
-            if field.default is None:
-                continue
             if field.name == "Choice":
-                choice_enums = [
-                    self._get_external_struct_name(e)
-                    for e in field.enums
-                    if e != field.default
-                ]
-                hasChoiceConfig = [
-                    "Choice",
-                    self._get_external_struct_name(field.default),
-                ]
+                for enum in field.enums:
+                    enum_str = self._get_external_struct_name(enum)
+                    enum_map[enum_str] = ""
+                    enum_value = """{struct}Choice.{value}""".format(
+                        struct=self._get_external_struct_name(new.struct),
+                        value=enum.upper(),
+                    )
+                    choice_enum_map[enum_str] = enum_value
+                if field.default is not None:
+                    choice_enums = [
+                        self._get_external_struct_name(e)
+                        for e in field.enums
+                        if e != field.default
+                    ]
+                    hasChoiceConfig = [
+                        "Choice",
+                        self._get_external_struct_name(field.default),
+                    ]
                 interface_fields.insert(0, interface_fields.pop(index))
                 break
 
@@ -2916,6 +2925,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for field in interface_fields:
             # if hasChoiceConfig != [] and field.name not in hasChoiceConfig:
             #     continue
+            ext_name = self._get_external_struct_name(field.name)
+            if field.name in enum_map or ext_name in enum_map:
+                if field.name != ext_name and ext_name in enum_map:
+                    del enum_map[ext_name]
+                    enum_map[field.name] = ""
+                    choice_enum_map[field.name] = choice_enum_map[ext_name]
+                    del choice_enum_map[ext_name]
+                type = ""
+                if field.isEnum:
+                    type = "enum"
+                elif field.isPointer:
+                    type = "pointer"
+                else:
+                    type = field.type
+                enum_map[field.name] = type
+
             if (
                 field.default is None
                 or field.isOptional is False
@@ -3021,7 +3046,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         )
                     )
                 else:
-                    body += """if obj.obj.{name} == nil {{
+                    choice_cond = ""
+                    if field.name in choice_enum_map:
+                        choice_cond += (
+                            "&& choice == %s " % choice_enum_map[field.name]
+                        )
+                    body += """if obj.obj.{name} == nil {choice_check}{{
                         obj.Set{external_name}({value})
                     }}
                     """.format(
@@ -3032,6 +3062,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         value='"{0}"'.format(field.default)
                         if field.type == "string"
                         else field.default,
+                        choice_check=choice_cond,
                     )
             else:
                 if field.name in hasChoiceConfig:
@@ -3059,15 +3090,97 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         if field.type == "string"
                         else field.default,
                     )
-        if choice_body is not None:
-            enum_fields = []
-            body = (
-                choice_body.replace(
-                    "<choice_fields>",
-                    "\n".join(enum_fields) if enum_fields != [] else "",
-                )
-                + body
+
+        # write default case if object has choice property
+        choice_code = ""
+        # TODO: we need to propagate error from setdefault along the whole heirarchy
+        if len(enum_map) > 0:
+            choice_code = (
+                "var choices_set int = 0\nvar choice %sChoiceEnum\n"
+                % new.interface
             )
+            for enum in enum_map:
+                field_type = enum_map[enum]
+                value = "nil"
+                if field_type.startswith("int") or field_type.startswith(
+                    "float"
+                ):
+                    value = "0"
+                elif field_type == "string":
+                    value = '""'
+                elif field_type == "pointer":
+                    value = "nil"
+                elif field_type == "":
+                    # signifies choice with no property
+                    continue
+
+                if field_type.startswith("[]"):
+                    choice_code += """
+                    if len(obj.obj.{prop}) > 0{{
+                        choices_set += 1
+                        choice = {choice_val}
+                    }}
+                    """.format(
+                        prop=enum,
+                        choice_val=choice_enum_map[enum],
+                    )
+                else:
+                    enum_check_code = " && obj.obj.%s.Number() != 0 " % enum
+                    choice_code += """
+                    if obj.obj.{prop} != {val}{enum_check}{{
+                        choices_set += 1
+                        choice = {choice_val}
+                    }}
+                    """.format(
+                        prop=enum,
+                        val=value,
+                        choice_val=choice_enum_map[enum],
+                        enum_check=enum_check_code
+                        if field_type == "enum"
+                        else "",
+                    )
+
+            # TODO: we need to throw error if more that one choice properties are set
+            # choice_code += """
+            # if choices_set > 1 {{
+            #     obj.validationErrors = append(obj.validationErrors, "more than one choices are set in Interface {intf}")
+            # }}""".format(
+            #     intf=new.interface
+            # )
+
+            if choice_body is not None:
+                choice_code += """if choices_set == 0 {{
+                    {body}
+                }}""".format(
+                    body=choice_body.replace("<choice_fields>", "")
+                )
+                # enum_fields = []
+                # body = (
+                #     choice_body.replace(
+                #         "<choice_fields>",
+                #         "\n".join(enum_fields) if enum_fields != [] else "",
+                #     )
+                #     + body
+                # )
+
+            choice_code += """{el}if choices_set == 1 && choice != "" {{
+                if obj.obj.Choice != nil {{
+                    if obj.Choice() != choice {{
+                        obj.validationErrors = append(obj.validationErrors, "choice not matching with property in {intf}")
+                    }}
+                }} else {{
+                    intVal := {pb_pkg_name}.{intf}_Choice_Enum_value[string(choice)]
+                    enumValue := {pb_pkg_name}.{intf}_Choice_Enum(intVal)
+                    obj.obj.Choice = &enumValue
+                }}
+            }}
+            """.format(
+                intf=new.interface,
+                pb_pkg_name=self._protobuf_package_name,
+                el=" else " if choice_body is not None else "",
+            )
+
+            body = choice_code + "\n" + body
 
         body = body.replace("SetChoice", "setChoice")
         self._write(
