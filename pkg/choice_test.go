@@ -128,7 +128,7 @@ func TestChoiceWithNoPropertiesForChoiceDefault(t *testing.T) {
 }
 
 func TestChoiceMarshall(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asd").SetB(1).SetC(22).RequiredObject().SetEA(1.23).SetEB(2.34)
 
 	choiceObj := config.ChoiceTest()
@@ -219,11 +219,11 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	err := config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj := config.ChoiceTest()
-	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
+	assert.Equal(t, cObj.Choice(), goapi.ChoiceTestObjChoice.E_OBJ)
 	assert.Equal(t, cObj.EObj().EA(), float32(1.23))
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
 
@@ -244,11 +244,11 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
-	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.F_OBJ)
+	assert.Equal(t, cObj.Choice(), goapi.ChoiceTestObjChoice.F_OBJ)
 
 	exp_json = `{
 			"a": "asd",
@@ -263,11 +263,11 @@ func TestChoiceUnMarshall(t *testing.T) {
 			}
 		}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
-	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.NO_OBJ)
+	assert.Equal(t, cObj.Choice(), goapi.ChoiceTestObjChoice.NO_OBJ)
 
 	// json without choice
 	json := `{
@@ -286,14 +286,14 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	fmt.Println(config)
 	assert.Equal(t, cObj.EObj().EA(), float32(1.23))
 	assert.Equal(t, cObj.EObj().EB(), float64(22.3456))
-	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.E_OBJ)
+	assert.Equal(t, cObj.Choice(), goapi.ChoiceTestObjChoice.E_OBJ)
 
 	// json without choice
 	json = `{
@@ -309,12 +309,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(json)
 	assert.Nil(t, err)
 	cObj = config.ChoiceTest()
 	fmt.Println(config)
-	assert.Equal(t, cObj.Choice(), openapiart.ChoiceTestObjChoice.IEEE_802_1QBB)
+	assert.Equal(t, cObj.Choice(), goapi.ChoiceTestObjChoice.IEEE_802_1QBB)
 	assert.Equal(t, cObj.Ieee8021Qbb(), "hello!")
 
 	//json without choice in hierarchy with non-primitive type
@@ -335,14 +335,14 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	r := config.RequiredChoiceObject()
 	fmt.Println(r)
-	assert.Equal(t, r.Choice(), openapiart.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+	assert.Equal(t, r.Choice(), goapi.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
 	ir := r.IntermediateObj()
-	assert.Equal(t, ir.Choice(), openapiart.RequiredChoiceIntermediateChoice.LEAF)
+	assert.Equal(t, ir.Choice(), goapi.RequiredChoiceIntermediateChoice.LEAF)
 	assert.Equal(t, ir.Leaf().Name(), "name1")
 
 	// json without choice in hierarchy with primitive type
@@ -361,18 +361,18 @@ func TestChoiceUnMarshall(t *testing.T) {
 		}
 	}`
 
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	r = config.RequiredChoiceObject()
-	assert.Equal(t, r.Choice(), openapiart.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
+	assert.Equal(t, r.Choice(), goapi.RequiredChoiceParentChoice.INTERMEDIATE_OBJ)
 	ir = r.IntermediateObj()
-	assert.Equal(t, ir.Choice(), openapiart.RequiredChoiceIntermediateChoice.F_A)
+	assert.Equal(t, ir.Choice(), goapi.RequiredChoiceIntermediateChoice.F_A)
 	assert.Equal(t, ir.FA(), "name1")
 
 	// json without choice for checksum pattern with enum choice properties
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	config.SetA("asd").RequiredObject()
 	config.HeaderChecksum().SetCustom(123)
 	fmt.Println(config)
@@ -389,12 +389,12 @@ func TestChoiceUnMarshall(t *testing.T) {
 			"generated": "unspecified"
 		}
 	}`
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	hc := config.HeaderChecksum()
-	assert.Equal(t, hc.Choice(), openapiart.PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
+	assert.Equal(t, hc.Choice(), goapi.PatternPrefixConfigHeaderChecksumChoice.CUSTOM)
 	assert.Equal(t, hc.Custom(), uint32(12345))
 
 	// json without choice for checksum pattern with enum choice properties
@@ -410,24 +410,24 @@ func TestChoiceUnMarshall(t *testing.T) {
 			"generated": "bad"
 		}
 	}`
-	config = openapiart.NewPrefixConfig()
+	config = goapi.NewPrefixConfig()
 	err = config.Unmarshal().FromJson(exp_json)
 	assert.Nil(t, err)
 	fmt.Println(config)
 	hc = config.HeaderChecksum()
-	assert.Equal(t, hc.Choice(), openapiart.PatternPrefixConfigHeaderChecksumChoice.GENERATED)
-	assert.Equal(t, hc.Generated(), openapiart.PatternPrefixConfigHeaderChecksumGenerated.BAD)
+	assert.Equal(t, hc.Choice(), goapi.PatternPrefixConfigHeaderChecksumChoice.GENERATED)
+	assert.Equal(t, hc.Generated(), goapi.PatternPrefixConfigHeaderChecksumGenerated.BAD)
 
 }
 
 func TestDefaultChoiceOverwrite(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	crd := config.ChoiceRequiredDefault()
 	crd.Ipv4()
 
 	// test default choice and values
 	fmt.Println(crd)
-	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV4)
+	assert.Equal(t, crd.Choice(), goapi.ChoiceRequiredAndDefaultChoice.IPV4)
 	assert.True(t, crd.HasIpv4())
 	assert.Equal(t, crd.Ipv4(), "0.0.0.0")
 
@@ -438,7 +438,7 @@ func TestDefaultChoiceOverwrite(t *testing.T) {
 	fmt.Println(c)
 	assert.Nil(t, err)
 
-	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV6)
+	assert.Equal(t, crd.Choice(), goapi.ChoiceRequiredAndDefaultChoice.IPV6)
 	assert.True(t, len(crd.Ipv6()) > 0)
 	assert.Equal(t, crd.Ipv6()[0], "1::2")
 
@@ -448,7 +448,7 @@ func TestDefaultChoiceOverwrite(t *testing.T) {
 	fmt.Println(c)
 	assert.Nil(t, err)
 
-	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV4)
+	assert.Equal(t, crd.Choice(), goapi.ChoiceRequiredAndDefaultChoice.IPV4)
 	assert.True(t, crd.HasIpv4())
 	assert.Equal(t, crd.Ipv4(), "1.2.3.4")
 }
