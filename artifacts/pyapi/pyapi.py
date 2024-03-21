@@ -1318,9 +1318,11 @@ class PrefixConfig(OpenApiObject):
             "minimum": 64,
             "maximum": 9000,
         },
+        "choice_test": {"type": "ChoiceTestObj"},
         "signed_integer_pattern": {"type": "SignedIntegerPattern"},
         "oid_pattern": {"type": "OidPattern"},
         "choice_default": {"type": "ChoiceObject"},
+        "choice_required_default": {"type": "ChoiceRequiredAndDefault"},
     }  # type: Dict[str, str]
 
     _REQUIRED = ("a", "b", "c", "required_object")  # type: tuple(str)
@@ -2284,6 +2286,17 @@ class PrefixConfig(OpenApiObject):
         self._set_property("auto_int32_list_param", value)
 
     @property
+    def choice_test(self):
+        # type: () -> ChoiceTestObj
+        """choice_test getter
+
+
+
+        Returns: ChoiceTestObj
+        """
+        return self._get_property("choice_test", ChoiceTestObj)
+
+    @property
     def signed_integer_pattern(self):
         # type: () -> SignedIntegerPattern
         """signed_integer_pattern getter
@@ -2317,6 +2330,19 @@ class PrefixConfig(OpenApiObject):
         Returns: ChoiceObject
         """
         return self._get_property("choice_default", ChoiceObject)
+
+    @property
+    def choice_required_default(self):
+        # type: () -> ChoiceRequiredAndDefault
+        """choice_required_default getter
+
+
+
+        Returns: ChoiceRequiredAndDefault
+        """
+        return self._get_property(
+            "choice_required_default", ChoiceRequiredAndDefault
+        )
 
 
 class EObject(OpenApiObject):
@@ -6199,16 +6225,14 @@ class RequiredChoiceIntermediate(OpenApiObject):
 
     _REQUIRED = ("choice",)  # type: tuple(str)
 
-    _DEFAULTS = {
-        "f_a": "some string",
-    }  # type: Dict[str, Union(type)]
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
 
     F_A = "f_a"  # type: str
     LEAF = "leaf"  # type: str
 
     _STATUS = {}  # type: Dict[str, Union(type)]
 
-    def __init__(self, parent=None, choice=None, f_a="some string"):
+    def __init__(self, parent=None, choice=None, f_a=None):
         super(RequiredChoiceIntermediate, self).__init__()
         self._parent = parent
         self._set_property("f_a", f_a)
@@ -6327,6 +6351,145 @@ class RequiredChoiceIntermeLeaf(OpenApiObject):
         value: str
         """
         self._set_property("name", value)
+
+
+class ChoiceTestObj(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "e_obj",
+                "f_obj",
+                "no_obj",
+                "ieee_802_1qbb",
+                "ieee_802_3x",
+            ],
+        },
+        "e_obj": {"type": "EObject"},
+        "f_obj": {"type": "FObject"},
+        "ieee_802_1qbb": {"type": str},
+        "ieee_802_3x": {"type": str},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    E_OBJ = "e_obj"  # type: str
+    F_OBJ = "f_obj"  # type: str
+    NO_OBJ = "no_obj"  # type: str
+    IEEE_802_1QBB = "ieee_802_1qbb"  # type: str
+    IEEE_802_3X = "ieee_802_3x"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self, parent=None, choice=None, ieee_802_1qbb=None, ieee_802_3x=None
+    ):
+        super(ChoiceTestObj, self).__init__()
+        self._parent = parent
+        self._set_property("ieee_802_1qbb", ieee_802_1qbb)
+        self._set_property("ieee_802_3x", ieee_802_3x)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, ieee_802_1qbb=None, ieee_802_3x=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def e_obj(self):
+        # type: () -> EObject
+        """Factory property that returns an instance of the EObject class
+
+        TBD
+
+        Returns: EObject
+        """
+        return self._get_property("e_obj", EObject, self, "e_obj")
+
+    @property
+    def f_obj(self):
+        # type: () -> FObject
+        """Factory property that returns an instance of the FObject class
+
+        TBD
+
+        Returns: FObject
+        """
+        return self._get_property("f_obj", FObject, self, "f_obj")
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["e_obj"], Literal["f_obj"], Literal["ieee_802_1qbb"], Literal["ieee_802_3x"], Literal["no_obj"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["e_obj"], Literal["f_obj"], Literal["ieee_802_1qbb"], Literal["ieee_802_3x"], Literal["no_obj"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["e_obj"], Literal["f_obj"], Literal["ieee_802_1qbb"], Literal["ieee_802_3x"], Literal["no_obj"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def ieee_802_1qbb(self):
+        # type: () -> str
+        """ieee_802_1qbb getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("ieee_802_1qbb")
+
+    @ieee_802_1qbb.setter
+    def ieee_802_1qbb(self, value):
+        """ieee_802_1qbb setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("ieee_802_1qbb", value, "ieee_802_1qbb")
+
+    @property
+    def ieee_802_3x(self):
+        # type: () -> str
+        """ieee_802_3x getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("ieee_802_3x")
+
+    @ieee_802_3x.setter
+    def ieee_802_3x(self, value):
+        """ieee_802_3x setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("ieee_802_3x", value, "ieee_802_3x")
 
 
 class SignedIntegerPattern(OpenApiObject):
@@ -6775,6 +6938,124 @@ class PatternOidPatternOid(OpenApiObject):
         value: List[str]
         """
         self._set_property("values", value, "values")
+
+
+class ChoiceRequiredAndDefault(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "ipv4",
+                "ipv6",
+            ],
+        },
+        "ipv4": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "ipv6": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "ipv6",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ("choice",)  # type: tuple(str)
+
+    _DEFAULTS = {
+        "ipv4": "0.0.0.0",
+    }  # type: Dict[str, Union(type)]
+
+    IPV4 = "ipv4"  # type: str
+    IPV6 = "ipv6"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None, ipv4="0.0.0.0", ipv6=None):
+        super(ChoiceRequiredAndDefault, self).__init__()
+        self._parent = parent
+        self._set_property("ipv4", ipv4)
+        self._set_property("ipv6", ipv6)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, ipv4=None, ipv6=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["ipv4"], Literal["ipv6"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["ipv4"], Literal["ipv6"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["ipv4"], Literal["ipv6"]]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property choice as None")
+        self._set_property("choice", value)
+
+    @property
+    def ipv4(self):
+        # type: () -> str
+        """ipv4 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("ipv4")
+
+    @ipv4.setter
+    def ipv4(self, value):
+        """ipv4 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("ipv4", value, "ipv4")
+
+    @property
+    def ipv6(self):
+        # type: () -> List[str]
+        """ipv6 getter
+
+        A list of ipv6
+
+        Returns: List[str]
+        """
+        return self._get_property("ipv6")
+
+    @ipv6.setter
+    def ipv6(self, value):
+        """ipv6 setter
+
+        A list of ipv6
+
+        value: List[str]
+        """
+        self._set_property("ipv6", value, "ipv6")
 
 
 class Error(OpenApiObject):

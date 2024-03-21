@@ -244,13 +244,19 @@ message PrefixConfig {
   repeated int32 auto_int32_list_param = 52;
 
   // Description missing in models
-  SignedIntegerPattern signed_integer_pattern = 53;
+  ChoiceTestObj choice_test = 53;
 
   // Description missing in models
-  OidPattern oid_pattern = 54;
+  SignedIntegerPattern signed_integer_pattern = 54;
 
   // Description missing in models
-  ChoiceObject choice_default = 55;
+  OidPattern oid_pattern = 55;
+
+  // Description missing in models
+  ChoiceObject choice_default = 56;
+
+  // Description missing in models
+  ChoiceRequiredAndDefault choice_required_default = 57;
 }
 
 // Description missing in models
@@ -631,7 +637,6 @@ message RequiredChoiceIntermediate {
   optional Choice.Enum choice = 1;
 
   // Description missing in models
-  // default = some string
   optional string f_a = 2;
 
   // Description missing in models
@@ -643,6 +648,57 @@ message RequiredChoiceIntermeLeaf {
 
   // Description missing in models
   optional string name = 1;
+}
+
+// Description missing in models
+message ChoiceTestObj {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      e_obj = 1;
+      f_obj = 2;
+      no_obj = 3;
+      ieee_802_1qbb = 4;
+      ieee_802_3x = 5;
+    }
+  }
+  // Description missing in models
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  EObject e_obj = 2;
+
+  // Description missing in models
+  FObject f_obj = 3;
+
+  // Description missing in models
+  optional string ieee_802_1qbb = 4;
+
+  // Description missing in models
+  optional string ieee_802_3x = 5;
+}
+
+// Description missing in models
+message ChoiceRequiredAndDefault {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      ipv4 = 1;
+      ipv6 = 2;
+    }
+  }
+  // Description missing in models
+  // required = true
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string ipv4 = 2;
+
+  // A list of ipv6
+  repeated string ipv6 = 3;
 }
 
 // To Test Multi level non-primitive types

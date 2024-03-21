@@ -41,11 +41,13 @@ from .pyapi import ChoiceObjectIter
 from .pyapi import RequiredChoiceParent
 from .pyapi import RequiredChoiceIntermediate
 from .pyapi import RequiredChoiceIntermeLeaf
+from .pyapi import ChoiceTestObj
 from .pyapi import SignedIntegerPattern
 from .pyapi import PatternSignedIntegerPatternInteger
 from .pyapi import PatternSignedIntegerPatternIntegerCounter
 from .pyapi import OidPattern
 from .pyapi import PatternOidPatternOid
+from .pyapi import ChoiceRequiredAndDefault
 from .pyapi import Error
 from .pyapi import UpdateConfig
 from .pyapi import MetricsRequest

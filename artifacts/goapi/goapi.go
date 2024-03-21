@@ -1103,39 +1103,41 @@ func (api *goapiApi) httpGetVersion() (Version, error) {
 // ***** PrefixConfig *****
 type prefixConfig struct {
 	validation
-	obj                        *openapi.PrefixConfig
-	marshaller                 marshalPrefixConfig
-	unMarshaller               unMarshalPrefixConfig
-	requiredObjectHolder       EObject
-	optionalObjectHolder       EObject
-	eHolder                    EObject
-	fHolder                    FObject
-	gHolder                    PrefixConfigGObjectIter
-	jHolder                    PrefixConfigJObjectIter
-	kHolder                    KObject
-	lHolder                    LObject
-	levelHolder                LevelOne
-	mandatoryHolder            Mandate
-	ipv4PatternHolder          Ipv4Pattern
-	ipv6PatternHolder          Ipv6Pattern
-	macPatternHolder           MacPattern
-	integerPatternHolder       IntegerPattern
-	checksumPatternHolder      ChecksumPattern
-	caseHolder                 Layer1Ieee802X
-	mObjectHolder              MObject
-	headerChecksumHolder       PatternPrefixConfigHeaderChecksum
-	autoFieldTestHolder        PatternPrefixConfigAutoFieldTest
-	wListHolder                PrefixConfigWObjectIter
-	xListHolder                PrefixConfigZObjectIter
-	zObjectHolder              ZObject
-	yObjectHolder              YObject
-	choiceObjectHolder         PrefixConfigChoiceObjectIter
-	requiredChoiceObjectHolder RequiredChoiceParent
-	g1Holder                   PrefixConfigGObjectIter
-	g2Holder                   PrefixConfigGObjectIter
-	signedIntegerPatternHolder SignedIntegerPattern
-	oidPatternHolder           OidPattern
-	choiceDefaultHolder        ChoiceObject
+	obj                         *openapi.PrefixConfig
+	marshaller                  marshalPrefixConfig
+	unMarshaller                unMarshalPrefixConfig
+	requiredObjectHolder        EObject
+	optionalObjectHolder        EObject
+	eHolder                     EObject
+	fHolder                     FObject
+	gHolder                     PrefixConfigGObjectIter
+	jHolder                     PrefixConfigJObjectIter
+	kHolder                     KObject
+	lHolder                     LObject
+	levelHolder                 LevelOne
+	mandatoryHolder             Mandate
+	ipv4PatternHolder           Ipv4Pattern
+	ipv6PatternHolder           Ipv6Pattern
+	macPatternHolder            MacPattern
+	integerPatternHolder        IntegerPattern
+	checksumPatternHolder       ChecksumPattern
+	caseHolder                  Layer1Ieee802X
+	mObjectHolder               MObject
+	headerChecksumHolder        PatternPrefixConfigHeaderChecksum
+	autoFieldTestHolder         PatternPrefixConfigAutoFieldTest
+	wListHolder                 PrefixConfigWObjectIter
+	xListHolder                 PrefixConfigZObjectIter
+	zObjectHolder               ZObject
+	yObjectHolder               YObject
+	choiceObjectHolder          PrefixConfigChoiceObjectIter
+	requiredChoiceObjectHolder  RequiredChoiceParent
+	g1Holder                    PrefixConfigGObjectIter
+	g2Holder                    PrefixConfigGObjectIter
+	choiceTestHolder            ChoiceTestObj
+	signedIntegerPatternHolder  SignedIntegerPattern
+	oidPatternHolder            OidPattern
+	choiceDefaultHolder         ChoiceObject
+	choiceRequiredDefaultHolder ChoiceRequiredAndDefault
 }
 
 func NewPrefixConfig() PrefixConfig {
@@ -1390,9 +1392,11 @@ func (obj *prefixConfig) setNil() {
 	obj.requiredChoiceObjectHolder = nil
 	obj.g1Holder = nil
 	obj.g2Holder = nil
+	obj.choiceTestHolder = nil
 	obj.signedIntegerPatternHolder = nil
 	obj.oidPatternHolder = nil
 	obj.choiceDefaultHolder = nil
+	obj.choiceRequiredDefaultHolder = nil
 	obj.validationErrors = nil
 	obj.warnings = nil
 	obj.constraints = make(map[string]map[string]Constraints)
@@ -1714,6 +1718,14 @@ type PrefixConfig interface {
 	AutoInt32ListParam() []int32
 	// SetAutoInt32ListParam assigns []int32 provided by user to PrefixConfig
 	SetAutoInt32ListParam(value []int32) PrefixConfig
+	// ChoiceTest returns ChoiceTestObj, set in PrefixConfig.
+	// ChoiceTestObj is description is TBD
+	ChoiceTest() ChoiceTestObj
+	// SetChoiceTest assigns ChoiceTestObj provided by user to PrefixConfig.
+	// ChoiceTestObj is description is TBD
+	SetChoiceTest(value ChoiceTestObj) PrefixConfig
+	// HasChoiceTest checks if ChoiceTest has been set in PrefixConfig
+	HasChoiceTest() bool
 	// SignedIntegerPattern returns SignedIntegerPattern, set in PrefixConfig.
 	// SignedIntegerPattern is test signed integer pattern
 	SignedIntegerPattern() SignedIntegerPattern
@@ -1738,6 +1750,14 @@ type PrefixConfig interface {
 	SetChoiceDefault(value ChoiceObject) PrefixConfig
 	// HasChoiceDefault checks if ChoiceDefault has been set in PrefixConfig
 	HasChoiceDefault() bool
+	// ChoiceRequiredDefault returns ChoiceRequiredAndDefault, set in PrefixConfig.
+	// ChoiceRequiredAndDefault is description is TBD
+	ChoiceRequiredDefault() ChoiceRequiredAndDefault
+	// SetChoiceRequiredDefault assigns ChoiceRequiredAndDefault provided by user to PrefixConfig.
+	// ChoiceRequiredAndDefault is description is TBD
+	SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig
+	// HasChoiceRequiredDefault checks if ChoiceRequiredDefault has been set in PrefixConfig
+	HasChoiceRequiredDefault() bool
 	setNil()
 }
 
@@ -3332,6 +3352,34 @@ func (obj *prefixConfig) SetAutoInt32ListParam(value []int32) PrefixConfig {
 }
 
 // description is TBD
+// ChoiceTest returns a ChoiceTestObj
+func (obj *prefixConfig) ChoiceTest() ChoiceTestObj {
+	if obj.obj.ChoiceTest == nil {
+		obj.obj.ChoiceTest = NewChoiceTestObj().msg()
+	}
+	if obj.choiceTestHolder == nil {
+		obj.choiceTestHolder = &choiceTestObj{obj: obj.obj.ChoiceTest}
+	}
+	return obj.choiceTestHolder
+}
+
+// description is TBD
+// ChoiceTest returns a ChoiceTestObj
+func (obj *prefixConfig) HasChoiceTest() bool {
+	return obj.obj.ChoiceTest != nil
+}
+
+// description is TBD
+// SetChoiceTest sets the ChoiceTestObj value in the PrefixConfig object
+func (obj *prefixConfig) SetChoiceTest(value ChoiceTestObj) PrefixConfig {
+
+	obj.choiceTestHolder = nil
+	obj.obj.ChoiceTest = value.msg()
+
+	return obj
+}
+
+// description is TBD
 // SignedIntegerPattern returns a SignedIntegerPattern
 func (obj *prefixConfig) SignedIntegerPattern() SignedIntegerPattern {
 	if obj.obj.SignedIntegerPattern == nil {
@@ -3411,6 +3459,34 @@ func (obj *prefixConfig) SetChoiceDefault(value ChoiceObject) PrefixConfig {
 
 	obj.choiceDefaultHolder = nil
 	obj.obj.ChoiceDefault = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ChoiceRequiredDefault returns a ChoiceRequiredAndDefault
+func (obj *prefixConfig) ChoiceRequiredDefault() ChoiceRequiredAndDefault {
+	if obj.obj.ChoiceRequiredDefault == nil {
+		obj.obj.ChoiceRequiredDefault = NewChoiceRequiredAndDefault().msg()
+	}
+	if obj.choiceRequiredDefaultHolder == nil {
+		obj.choiceRequiredDefaultHolder = &choiceRequiredAndDefault{obj: obj.obj.ChoiceRequiredDefault}
+	}
+	return obj.choiceRequiredDefaultHolder
+}
+
+// description is TBD
+// ChoiceRequiredDefault returns a ChoiceRequiredAndDefault
+func (obj *prefixConfig) HasChoiceRequiredDefault() bool {
+	return obj.obj.ChoiceRequiredDefault != nil
+}
+
+// description is TBD
+// SetChoiceRequiredDefault sets the ChoiceRequiredAndDefault value in the PrefixConfig object
+func (obj *prefixConfig) SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig {
+
+	obj.choiceRequiredDefaultHolder = nil
+	obj.obj.ChoiceRequiredDefault = value.msg()
 
 	return obj
 }
@@ -3755,6 +3831,11 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 
 	}
 
+	if obj.obj.ChoiceTest != nil {
+
+		obj.ChoiceTest().validateObj(vObj, set_default)
+	}
+
 	if obj.obj.SignedIntegerPattern != nil {
 
 		obj.SignedIntegerPattern().validateObj(vObj, set_default)
@@ -3768,6 +3849,11 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if obj.obj.ChoiceDefault != nil {
 
 		obj.ChoiceDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ChoiceRequiredDefault != nil {
+
+		obj.ChoiceRequiredDefault().validateObj(vObj, set_default)
 	}
 
 }
@@ -4535,9 +4621,34 @@ func (obj *metricsRequest) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *metricsRequest) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(MetricsRequestChoice.PORT)
+	var choices_set int = 0
+	var choice MetricsRequestChoiceEnum
 
+	if obj.obj.Port != nil {
+		choices_set += 1
+		choice = MetricsRequestChoice.PORT
+	}
+
+	if obj.obj.Flow != nil {
+		choices_set += 1
+		choice = MetricsRequestChoice.FLOW
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(MetricsRequestChoice.PORT)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in MetricsRequest")
+			}
+		} else {
+			intVal := openapi.MetricsRequest_Choice_Enum_value[string(choice)]
+			enumValue := openapi.MetricsRequest_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -10653,9 +10764,34 @@ func (obj *fObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *fObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(FObjectChoice.F_A)
+	var choices_set int = 0
+	var choice FObjectChoiceEnum
 
+	if obj.obj.FA != nil {
+		choices_set += 1
+		choice = FObjectChoice.F_A
+	}
+
+	if obj.obj.FB != nil {
+		choices_set += 1
+		choice = FObjectChoice.F_B
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(FObjectChoice.F_A)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in FObject")
+			}
+		} else {
+			intVal := openapi.FObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.FObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -11209,10 +11345,36 @@ func (obj *gObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *gObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(GObjectChoice.G_D)
+	var choices_set int = 0
+	var choice GObjectChoiceEnum
 
+	if obj.obj.GD != nil {
+		choices_set += 1
+		choice = GObjectChoice.G_D
 	}
+
+	if obj.obj.GE != nil {
+		choices_set += 1
+		choice = GObjectChoice.G_E
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(GObjectChoice.G_D)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in GObject")
+			}
+		} else {
+			intVal := openapi.GObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.GObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
 	if obj.obj.GA == nil {
 		obj.SetGA("asdf")
 	}
@@ -11642,9 +11804,34 @@ func (obj *jObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *jObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(JObjectChoice.J_A)
+	var choices_set int = 0
+	var choice JObjectChoiceEnum
 
+	if obj.obj.JA != nil {
+		choices_set += 1
+		choice = JObjectChoice.J_A
+	}
+
+	if obj.obj.JB != nil {
+		choices_set += 1
+		choice = JObjectChoice.J_B
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(JObjectChoice.J_A)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in JObject")
+			}
+		} else {
+			intVal := openapi.JObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.JObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -16009,13 +16196,38 @@ func (obj *patternPrefixConfigHeaderChecksum) validateObj(vObj *validation, set_
 }
 
 func (obj *patternPrefixConfigHeaderChecksum) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
-		if obj.obj.Generated.Number() == 0 {
-			obj.SetGenerated(PatternPrefixConfigHeaderChecksumGenerated.GOOD)
+	var choices_set int = 0
+	var choice PatternPrefixConfigHeaderChecksumChoiceEnum
+
+	if obj.obj.Generated != nil && obj.obj.Generated.Number() != 0 {
+		choices_set += 1
+		choice = PatternPrefixConfigHeaderChecksumChoice.GENERATED
+	}
+
+	if obj.obj.Custom != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigHeaderChecksumChoice.CUSTOM
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
+			if obj.obj.Generated.Number() == 0 {
+				obj.SetGenerated(PatternPrefixConfigHeaderChecksumGenerated.GOOD)
+
+			}
 
 		}
 
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternPrefixConfigHeaderChecksum")
+			}
+		} else {
+			intVal := openapi.PatternPrefixConfigHeaderChecksum_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternPrefixConfigHeaderChecksum_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -16569,9 +16781,49 @@ func (obj *patternPrefixConfigAutoFieldTest) validateObj(vObj *validation, set_d
 }
 
 func (obj *patternPrefixConfigAutoFieldTest) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+	var choices_set int = 0
+	var choice PatternPrefixConfigAutoFieldTestChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternPrefixConfigAutoFieldTest")
+			}
+		} else {
+			intVal := openapi.PatternPrefixConfigAutoFieldTest_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternPrefixConfigAutoFieldTest_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -17886,9 +18138,34 @@ func (obj *choiceObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *choiceObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(ChoiceObjectChoice.NO_OBJ)
+	var choices_set int = 0
+	var choice ChoiceObjectChoiceEnum
 
+	if obj.obj.EObj != nil {
+		choices_set += 1
+		choice = ChoiceObjectChoice.E_OBJ
+	}
+
+	if obj.obj.FObj != nil {
+		choices_set += 1
+		choice = ChoiceObjectChoice.F_OBJ
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(ChoiceObjectChoice.NO_OBJ)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceObject")
+			}
+		} else {
+			intVal := openapi.ChoiceObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -18257,6 +18534,548 @@ func (obj *requiredChoiceParent) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *requiredChoiceParent) setDefault() {
+	var choices_set int = 0
+	var choice RequiredChoiceParentChoiceEnum
+
+	if obj.obj.IntermediateObj != nil {
+		choices_set += 1
+		choice = RequiredChoiceParentChoice.INTERMEDIATE_OBJ
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoiceParent")
+			}
+		} else {
+			intVal := openapi.RequiredChoiceParent_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoiceParent_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+}
+
+// ***** ChoiceTestObj *****
+type choiceTestObj struct {
+	validation
+	obj          *openapi.ChoiceTestObj
+	marshaller   marshalChoiceTestObj
+	unMarshaller unMarshalChoiceTestObj
+	eObjHolder   EObject
+	fObjHolder   FObject
+}
+
+func NewChoiceTestObj() ChoiceTestObj {
+	obj := choiceTestObj{obj: &openapi.ChoiceTestObj{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *choiceTestObj) msg() *openapi.ChoiceTestObj {
+	return obj.obj
+}
+
+func (obj *choiceTestObj) setMsg(msg *openapi.ChoiceTestObj) ChoiceTestObj {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalchoiceTestObj struct {
+	obj *choiceTestObj
+}
+
+type marshalChoiceTestObj interface {
+	// ToProto marshals ChoiceTestObj to protobuf object *openapi.ChoiceTestObj
+	ToProto() (*openapi.ChoiceTestObj, error)
+	// ToPbText marshals ChoiceTestObj to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChoiceTestObj to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChoiceTestObj to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchoiceTestObj struct {
+	obj *choiceTestObj
+}
+
+type unMarshalChoiceTestObj interface {
+	// FromProto unmarshals ChoiceTestObj from protobuf object *openapi.ChoiceTestObj
+	FromProto(msg *openapi.ChoiceTestObj) (ChoiceTestObj, error)
+	// FromPbText unmarshals ChoiceTestObj from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChoiceTestObj from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChoiceTestObj from JSON text
+	FromJson(value string) error
+}
+
+func (obj *choiceTestObj) Marshal() marshalChoiceTestObj {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchoiceTestObj{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *choiceTestObj) Unmarshal() unMarshalChoiceTestObj {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchoiceTestObj{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchoiceTestObj) ToProto() (*openapi.ChoiceTestObj, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalchoiceTestObj) FromProto(msg *openapi.ChoiceTestObj) (ChoiceTestObj, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalchoiceTestObj) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalchoiceTestObj) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalchoiceTestObj) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceTestObj) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalchoiceTestObj) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceTestObj) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *choiceTestObj) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *choiceTestObj) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *choiceTestObj) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *choiceTestObj) Clone() (ChoiceTestObj, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewChoiceTestObj()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *choiceTestObj) setNil() {
+	obj.eObjHolder = nil
+	obj.fObjHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// ChoiceTestObj is description is TBD
+type ChoiceTestObj interface {
+	Validation
+	// msg marshals ChoiceTestObj to protobuf object *openapi.ChoiceTestObj
+	// and doesn't set defaults
+	msg() *openapi.ChoiceTestObj
+	// setMsg unmarshals ChoiceTestObj from protobuf object *openapi.ChoiceTestObj
+	// and doesn't set defaults
+	setMsg(*openapi.ChoiceTestObj) ChoiceTestObj
+	// provides marshal interface
+	Marshal() marshalChoiceTestObj
+	// provides unmarshal interface
+	Unmarshal() unMarshalChoiceTestObj
+	// validate validates ChoiceTestObj
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ChoiceTestObj, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns ChoiceTestObjChoiceEnum, set in ChoiceTestObj
+	Choice() ChoiceTestObjChoiceEnum
+	// setChoice assigns ChoiceTestObjChoiceEnum provided by user to ChoiceTestObj
+	setChoice(value ChoiceTestObjChoiceEnum) ChoiceTestObj
+	// HasChoice checks if Choice has been set in ChoiceTestObj
+	HasChoice() bool
+	// getter for NoObj to set choice.
+	NoObj()
+	// EObj returns EObject, set in ChoiceTestObj.
+	// EObject is description is TBD
+	EObj() EObject
+	// SetEObj assigns EObject provided by user to ChoiceTestObj.
+	// EObject is description is TBD
+	SetEObj(value EObject) ChoiceTestObj
+	// HasEObj checks if EObj has been set in ChoiceTestObj
+	HasEObj() bool
+	// FObj returns FObject, set in ChoiceTestObj.
+	// FObject is description is TBD
+	FObj() FObject
+	// SetFObj assigns FObject provided by user to ChoiceTestObj.
+	// FObject is description is TBD
+	SetFObj(value FObject) ChoiceTestObj
+	// HasFObj checks if FObj has been set in ChoiceTestObj
+	HasFObj() bool
+	// Ieee8021Qbb returns string, set in ChoiceTestObj.
+	Ieee8021Qbb() string
+	// SetIeee8021Qbb assigns string provided by user to ChoiceTestObj
+	SetIeee8021Qbb(value string) ChoiceTestObj
+	// HasIeee8021Qbb checks if Ieee8021Qbb has been set in ChoiceTestObj
+	HasIeee8021Qbb() bool
+	// Ieee8023X returns string, set in ChoiceTestObj.
+	Ieee8023X() string
+	// SetIeee8023X assigns string provided by user to ChoiceTestObj
+	SetIeee8023X(value string) ChoiceTestObj
+	// HasIeee8023X checks if Ieee8023X has been set in ChoiceTestObj
+	HasIeee8023X() bool
+	setNil()
+}
+
+type ChoiceTestObjChoiceEnum string
+
+// Enum of Choice on ChoiceTestObj
+var ChoiceTestObjChoice = struct {
+	E_OBJ         ChoiceTestObjChoiceEnum
+	F_OBJ         ChoiceTestObjChoiceEnum
+	NO_OBJ        ChoiceTestObjChoiceEnum
+	IEEE_802_1QBB ChoiceTestObjChoiceEnum
+	IEEE_802_3X   ChoiceTestObjChoiceEnum
+}{
+	E_OBJ:         ChoiceTestObjChoiceEnum("e_obj"),
+	F_OBJ:         ChoiceTestObjChoiceEnum("f_obj"),
+	NO_OBJ:        ChoiceTestObjChoiceEnum("no_obj"),
+	IEEE_802_1QBB: ChoiceTestObjChoiceEnum("ieee_802_1qbb"),
+	IEEE_802_3X:   ChoiceTestObjChoiceEnum("ieee_802_3x"),
+}
+
+func (obj *choiceTestObj) Choice() ChoiceTestObjChoiceEnum {
+	return ChoiceTestObjChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// getter for NoObj to set choice
+func (obj *choiceTestObj) NoObj() {
+	obj.setChoice(ChoiceTestObjChoice.NO_OBJ)
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *choiceTestObj) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *choiceTestObj) setChoice(value ChoiceTestObjChoiceEnum) ChoiceTestObj {
+	intValue, ok := openapi.ChoiceTestObj_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on ChoiceTestObjChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.ChoiceTestObj_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Ieee_802_3X = nil
+	obj.obj.Ieee_802_1Qbb = nil
+	obj.obj.FObj = nil
+	obj.fObjHolder = nil
+	obj.obj.EObj = nil
+	obj.eObjHolder = nil
+
+	if value == ChoiceTestObjChoice.E_OBJ {
+		obj.obj.EObj = NewEObject().msg()
+	}
+
+	if value == ChoiceTestObjChoice.F_OBJ {
+		obj.obj.FObj = NewFObject().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// EObj returns a EObject
+func (obj *choiceTestObj) EObj() EObject {
+	if obj.obj.EObj == nil {
+		obj.setChoice(ChoiceTestObjChoice.E_OBJ)
+	}
+	if obj.eObjHolder == nil {
+		obj.eObjHolder = &eObject{obj: obj.obj.EObj}
+	}
+	return obj.eObjHolder
+}
+
+// description is TBD
+// EObj returns a EObject
+func (obj *choiceTestObj) HasEObj() bool {
+	return obj.obj.EObj != nil
+}
+
+// description is TBD
+// SetEObj sets the EObject value in the ChoiceTestObj object
+func (obj *choiceTestObj) SetEObj(value EObject) ChoiceTestObj {
+	obj.setChoice(ChoiceTestObjChoice.E_OBJ)
+	obj.eObjHolder = nil
+	obj.obj.EObj = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// FObj returns a FObject
+func (obj *choiceTestObj) FObj() FObject {
+	if obj.obj.FObj == nil {
+		obj.setChoice(ChoiceTestObjChoice.F_OBJ)
+	}
+	if obj.fObjHolder == nil {
+		obj.fObjHolder = &fObject{obj: obj.obj.FObj}
+	}
+	return obj.fObjHolder
+}
+
+// description is TBD
+// FObj returns a FObject
+func (obj *choiceTestObj) HasFObj() bool {
+	return obj.obj.FObj != nil
+}
+
+// description is TBD
+// SetFObj sets the FObject value in the ChoiceTestObj object
+func (obj *choiceTestObj) SetFObj(value FObject) ChoiceTestObj {
+	obj.setChoice(ChoiceTestObjChoice.F_OBJ)
+	obj.fObjHolder = nil
+	obj.obj.FObj = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Ieee8021Qbb returns a string
+func (obj *choiceTestObj) Ieee8021Qbb() string {
+
+	if obj.obj.Ieee_802_1Qbb == nil {
+		obj.setChoice(ChoiceTestObjChoice.IEEE_802_1QBB)
+	}
+
+	return *obj.obj.Ieee_802_1Qbb
+
+}
+
+// description is TBD
+// Ieee8021Qbb returns a string
+func (obj *choiceTestObj) HasIeee8021Qbb() bool {
+	return obj.obj.Ieee_802_1Qbb != nil
+}
+
+// description is TBD
+// SetIeee8021Qbb sets the string value in the ChoiceTestObj object
+func (obj *choiceTestObj) SetIeee8021Qbb(value string) ChoiceTestObj {
+	obj.setChoice(ChoiceTestObjChoice.IEEE_802_1QBB)
+	obj.obj.Ieee_802_1Qbb = &value
+	return obj
+}
+
+// description is TBD
+// Ieee8023X returns a string
+func (obj *choiceTestObj) Ieee8023X() string {
+
+	if obj.obj.Ieee_802_3X == nil {
+		obj.setChoice(ChoiceTestObjChoice.IEEE_802_3X)
+	}
+
+	return *obj.obj.Ieee_802_3X
+
+}
+
+// description is TBD
+// Ieee8023X returns a string
+func (obj *choiceTestObj) HasIeee8023X() bool {
+	return obj.obj.Ieee_802_3X != nil
+}
+
+// description is TBD
+// SetIeee8023X sets the string value in the ChoiceTestObj object
+func (obj *choiceTestObj) SetIeee8023X(value string) ChoiceTestObj {
+	obj.setChoice(ChoiceTestObjChoice.IEEE_802_3X)
+	obj.obj.Ieee_802_3X = &value
+	return obj
+}
+
+func (obj *choiceTestObj) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.EObj != nil {
+
+		obj.EObj().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.FObj != nil {
+
+		obj.FObj().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *choiceTestObj) setDefault() {
+	var choices_set int = 0
+	var choice ChoiceTestObjChoiceEnum
+
+	if obj.obj.EObj != nil {
+		choices_set += 1
+		choice = ChoiceTestObjChoice.E_OBJ
+	}
+
+	if obj.obj.FObj != nil {
+		choices_set += 1
+		choice = ChoiceTestObjChoice.F_OBJ
+	}
+
+	if obj.obj.Ieee_802_1Qbb != nil {
+		choices_set += 1
+		choice = ChoiceTestObjChoice.IEEE_802_1QBB
+	}
+
+	if obj.obj.Ieee_802_3X != nil {
+		choices_set += 1
+		choice = ChoiceTestObjChoice.IEEE_802_3X
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceTestObj")
+			}
+		} else {
+			intVal := openapi.ChoiceTestObj_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceTestObj_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
 
 }
 
@@ -18891,6 +19710,421 @@ func (obj *oidPattern) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *oidPattern) setDefault() {
+
+}
+
+// ***** ChoiceRequiredAndDefault *****
+type choiceRequiredAndDefault struct {
+	validation
+	obj          *openapi.ChoiceRequiredAndDefault
+	marshaller   marshalChoiceRequiredAndDefault
+	unMarshaller unMarshalChoiceRequiredAndDefault
+}
+
+func NewChoiceRequiredAndDefault() ChoiceRequiredAndDefault {
+	obj := choiceRequiredAndDefault{obj: &openapi.ChoiceRequiredAndDefault{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *choiceRequiredAndDefault) msg() *openapi.ChoiceRequiredAndDefault {
+	return obj.obj
+}
+
+func (obj *choiceRequiredAndDefault) setMsg(msg *openapi.ChoiceRequiredAndDefault) ChoiceRequiredAndDefault {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalchoiceRequiredAndDefault struct {
+	obj *choiceRequiredAndDefault
+}
+
+type marshalChoiceRequiredAndDefault interface {
+	// ToProto marshals ChoiceRequiredAndDefault to protobuf object *openapi.ChoiceRequiredAndDefault
+	ToProto() (*openapi.ChoiceRequiredAndDefault, error)
+	// ToPbText marshals ChoiceRequiredAndDefault to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals ChoiceRequiredAndDefault to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals ChoiceRequiredAndDefault to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalchoiceRequiredAndDefault struct {
+	obj *choiceRequiredAndDefault
+}
+
+type unMarshalChoiceRequiredAndDefault interface {
+	// FromProto unmarshals ChoiceRequiredAndDefault from protobuf object *openapi.ChoiceRequiredAndDefault
+	FromProto(msg *openapi.ChoiceRequiredAndDefault) (ChoiceRequiredAndDefault, error)
+	// FromPbText unmarshals ChoiceRequiredAndDefault from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals ChoiceRequiredAndDefault from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals ChoiceRequiredAndDefault from JSON text
+	FromJson(value string) error
+}
+
+func (obj *choiceRequiredAndDefault) Marshal() marshalChoiceRequiredAndDefault {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalchoiceRequiredAndDefault{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *choiceRequiredAndDefault) Unmarshal() unMarshalChoiceRequiredAndDefault {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalchoiceRequiredAndDefault{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalchoiceRequiredAndDefault) ToProto() (*openapi.ChoiceRequiredAndDefault, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalchoiceRequiredAndDefault) FromProto(msg *openapi.ChoiceRequiredAndDefault) (ChoiceRequiredAndDefault, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalchoiceRequiredAndDefault) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalchoiceRequiredAndDefault) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalchoiceRequiredAndDefault) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceRequiredAndDefault) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalchoiceRequiredAndDefault) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalchoiceRequiredAndDefault) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *choiceRequiredAndDefault) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *choiceRequiredAndDefault) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *choiceRequiredAndDefault) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *choiceRequiredAndDefault) Clone() (ChoiceRequiredAndDefault, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewChoiceRequiredAndDefault()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// ChoiceRequiredAndDefault is description is TBD
+type ChoiceRequiredAndDefault interface {
+	Validation
+	// msg marshals ChoiceRequiredAndDefault to protobuf object *openapi.ChoiceRequiredAndDefault
+	// and doesn't set defaults
+	msg() *openapi.ChoiceRequiredAndDefault
+	// setMsg unmarshals ChoiceRequiredAndDefault from protobuf object *openapi.ChoiceRequiredAndDefault
+	// and doesn't set defaults
+	setMsg(*openapi.ChoiceRequiredAndDefault) ChoiceRequiredAndDefault
+	// provides marshal interface
+	Marshal() marshalChoiceRequiredAndDefault
+	// provides unmarshal interface
+	Unmarshal() unMarshalChoiceRequiredAndDefault
+	// validate validates ChoiceRequiredAndDefault
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (ChoiceRequiredAndDefault, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns ChoiceRequiredAndDefaultChoiceEnum, set in ChoiceRequiredAndDefault
+	Choice() ChoiceRequiredAndDefaultChoiceEnum
+	// setChoice assigns ChoiceRequiredAndDefaultChoiceEnum provided by user to ChoiceRequiredAndDefault
+	setChoice(value ChoiceRequiredAndDefaultChoiceEnum) ChoiceRequiredAndDefault
+	// Ipv4 returns string, set in ChoiceRequiredAndDefault.
+	Ipv4() string
+	// SetIpv4 assigns string provided by user to ChoiceRequiredAndDefault
+	SetIpv4(value string) ChoiceRequiredAndDefault
+	// HasIpv4 checks if Ipv4 has been set in ChoiceRequiredAndDefault
+	HasIpv4() bool
+	// Ipv6 returns []string, set in ChoiceRequiredAndDefault.
+	Ipv6() []string
+	// SetIpv6 assigns []string provided by user to ChoiceRequiredAndDefault
+	SetIpv6(value []string) ChoiceRequiredAndDefault
+}
+
+type ChoiceRequiredAndDefaultChoiceEnum string
+
+// Enum of Choice on ChoiceRequiredAndDefault
+var ChoiceRequiredAndDefaultChoice = struct {
+	IPV4 ChoiceRequiredAndDefaultChoiceEnum
+	IPV6 ChoiceRequiredAndDefaultChoiceEnum
+}{
+	IPV4: ChoiceRequiredAndDefaultChoiceEnum("ipv4"),
+	IPV6: ChoiceRequiredAndDefaultChoiceEnum("ipv6"),
+}
+
+func (obj *choiceRequiredAndDefault) Choice() ChoiceRequiredAndDefaultChoiceEnum {
+	return ChoiceRequiredAndDefaultChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+func (obj *choiceRequiredAndDefault) setChoice(value ChoiceRequiredAndDefaultChoiceEnum) ChoiceRequiredAndDefault {
+	intValue, ok := openapi.ChoiceRequiredAndDefault_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on ChoiceRequiredAndDefaultChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.ChoiceRequiredAndDefault_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Ipv6 = nil
+	obj.obj.Ipv4 = nil
+
+	if value == ChoiceRequiredAndDefaultChoice.IPV4 {
+		defaultValue := "0.0.0.0"
+		obj.obj.Ipv4 = &defaultValue
+	}
+
+	return obj
+}
+
+// description is TBD
+// Ipv4 returns a string
+func (obj *choiceRequiredAndDefault) Ipv4() string {
+
+	if obj.obj.Ipv4 == nil {
+		obj.setChoice(ChoiceRequiredAndDefaultChoice.IPV4)
+	}
+
+	return *obj.obj.Ipv4
+
+}
+
+// description is TBD
+// Ipv4 returns a string
+func (obj *choiceRequiredAndDefault) HasIpv4() bool {
+	return obj.obj.Ipv4 != nil
+}
+
+// description is TBD
+// SetIpv4 sets the string value in the ChoiceRequiredAndDefault object
+func (obj *choiceRequiredAndDefault) SetIpv4(value string) ChoiceRequiredAndDefault {
+	obj.setChoice(ChoiceRequiredAndDefaultChoice.IPV4)
+	obj.obj.Ipv4 = &value
+	return obj
+}
+
+// A list of ipv6
+// Ipv6 returns a []string
+func (obj *choiceRequiredAndDefault) Ipv6() []string {
+	if obj.obj.Ipv6 == nil {
+
+		obj.setChoice(ChoiceRequiredAndDefaultChoice.IPV6)
+
+	}
+	return obj.obj.Ipv6
+}
+
+// A list of ipv6
+// SetIpv6 sets the []string value in the ChoiceRequiredAndDefault object
+func (obj *choiceRequiredAndDefault) SetIpv6(value []string) ChoiceRequiredAndDefault {
+	obj.setChoice(ChoiceRequiredAndDefaultChoice.IPV6)
+	if obj.obj.Ipv6 == nil {
+		obj.obj.Ipv6 = make([]string, 0)
+	}
+	obj.obj.Ipv6 = value
+
+	return obj
+}
+
+func (obj *choiceRequiredAndDefault) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	// Choice is required
+	if obj.obj.Choice == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface ChoiceRequiredAndDefault")
+	}
+
+	if obj.obj.Ipv4 != nil {
+
+		err := obj.validateIpv4(obj.Ipv4())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on ChoiceRequiredAndDefault.Ipv4"))
+		}
+
+	}
+
+	if obj.obj.Ipv6 != nil {
+
+		err := obj.validateIpv6Slice(obj.Ipv6())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on ChoiceRequiredAndDefault.Ipv6"))
+		}
+
+	}
+
+}
+
+func (obj *choiceRequiredAndDefault) setDefault() {
+	var choices_set int = 0
+	var choice ChoiceRequiredAndDefaultChoiceEnum
+
+	if obj.obj.Ipv4 != nil {
+		choices_set += 1
+		choice = ChoiceRequiredAndDefaultChoice.IPV4
+	}
+
+	if len(obj.obj.Ipv6) > 0 {
+		choices_set += 1
+		choice = ChoiceRequiredAndDefaultChoice.IPV6
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceRequiredAndDefault")
+			}
+		} else {
+			intVal := openapi.ChoiceRequiredAndDefault_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceRequiredAndDefault_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+	if obj.obj.Ipv4 == nil && choice == ChoiceRequiredAndDefaultChoice.IPV4 {
+		obj.SetIpv4("0.0.0.0")
+	}
 
 }
 
@@ -21056,9 +22290,34 @@ func (obj *metrics) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *metrics) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(MetricsChoice.PORTS)
+	var choices_set int = 0
+	var choice MetricsChoiceEnum
 
+	if len(obj.obj.Ports) > 0 {
+		choices_set += 1
+		choice = MetricsChoice.PORTS
+	}
+
+	if len(obj.obj.Flows) > 0 {
+		choices_set += 1
+		choice = MetricsChoice.FLOWS
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(MetricsChoice.PORTS)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in Metrics")
+			}
+		} else {
+			intVal := openapi.Metrics_Choice_Enum_value[string(choice)]
+			enumValue := openapi.Metrics_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -23902,9 +25161,44 @@ func (obj *patternIpv4PatternIpv4) validateObj(vObj *validation, set_default boo
 }
 
 func (obj *patternIpv4PatternIpv4) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIpv4PatternIpv4Choice.VALUE)
+	var choices_set int = 0
+	var choice PatternIpv4PatternIpv4ChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternIpv4Choice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIpv4PatternIpv4Choice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternIpv4Choice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternIpv4Choice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIpv4PatternIpv4Choice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIpv4PatternIpv4")
+			}
+		} else {
+			intVal := openapi.PatternIpv4PatternIpv4_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIpv4PatternIpv4_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -24409,9 +25703,44 @@ func (obj *patternIpv6PatternIpv6) validateObj(vObj *validation, set_default boo
 }
 
 func (obj *patternIpv6PatternIpv6) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
+	var choices_set int = 0
+	var choice PatternIpv6PatternIpv6ChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIpv6PatternIpv6")
+			}
+		} else {
+			intVal := openapi.PatternIpv6PatternIpv6_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIpv6PatternIpv6_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -24959,9 +26288,49 @@ func (obj *patternMacPatternMac) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *patternMacPatternMac) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternMacPatternMacChoice.AUTO)
+	var choices_set int = 0
+	var choice PatternMacPatternMacChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternMacPatternMacChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternMacPatternMacChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternMacPatternMacChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternMacPatternMacChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternMacPatternMacChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternMacPatternMacChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternMacPatternMac")
+			}
+		} else {
+			intVal := openapi.PatternMacPatternMac_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternMacPatternMac_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -25471,9 +26840,44 @@ func (obj *patternIntegerPatternInteger) validateObj(vObj *validation, set_defau
 }
 
 func (obj *patternIntegerPatternInteger) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIntegerPatternIntegerChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternIntegerPatternIntegerChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternIntegerChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIntegerPatternIntegerChoice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternIntegerChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternIntegerChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIntegerPatternIntegerChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIntegerPatternInteger")
+			}
+		} else {
+			intVal := openapi.PatternIntegerPatternInteger_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIntegerPatternInteger_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -25865,13 +27269,38 @@ func (obj *patternChecksumPatternChecksum) validateObj(vObj *validation, set_def
 }
 
 func (obj *patternChecksumPatternChecksum) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternChecksumPatternChecksumChoice.GENERATED)
-		if obj.obj.Generated.Number() == 0 {
-			obj.SetGenerated(PatternChecksumPatternChecksumGenerated.GOOD)
+	var choices_set int = 0
+	var choice PatternChecksumPatternChecksumChoiceEnum
+
+	if obj.obj.Generated != nil && obj.obj.Generated.Number() != 0 {
+		choices_set += 1
+		choice = PatternChecksumPatternChecksumChoice.GENERATED
+	}
+
+	if obj.obj.Custom != nil {
+		choices_set += 1
+		choice = PatternChecksumPatternChecksumChoice.CUSTOM
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternChecksumPatternChecksumChoice.GENERATED)
+			if obj.obj.Generated.Number() == 0 {
+				obj.SetGenerated(PatternChecksumPatternChecksumGenerated.GOOD)
+
+			}
 
 		}
 
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternChecksumPatternChecksum")
+			}
+		} else {
+			intVal := openapi.PatternChecksumPatternChecksum_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternChecksumPatternChecksum_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -26577,11 +28006,6 @@ func (obj *requiredChoiceIntermediate) setChoice(value RequiredChoiceIntermediat
 	obj.leafHolder = nil
 	obj.obj.FA = nil
 
-	if value == RequiredChoiceIntermediateChoice.F_A {
-		defaultValue := "some string"
-		obj.obj.FA = &defaultValue
-	}
-
 	if value == RequiredChoiceIntermediateChoice.LEAF {
 		obj.obj.Leaf = NewRequiredChoiceIntermeLeaf().msg()
 	}
@@ -26661,8 +28085,28 @@ func (obj *requiredChoiceIntermediate) validateObj(vObj *validation, set_default
 }
 
 func (obj *requiredChoiceIntermediate) setDefault() {
-	if obj.obj.FA == nil {
-		obj.SetFA("some string")
+	var choices_set int = 0
+	var choice RequiredChoiceIntermediateChoiceEnum
+
+	if obj.obj.FA != nil {
+		choices_set += 1
+		choice = RequiredChoiceIntermediateChoice.F_A
+	}
+
+	if obj.obj.Leaf != nil {
+		choices_set += 1
+		choice = RequiredChoiceIntermediateChoice.LEAF
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoiceIntermediate")
+			}
+		} else {
+			intVal := openapi.RequiredChoiceIntermediate_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoiceIntermediate_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -27172,9 +28616,44 @@ func (obj *patternSignedIntegerPatternInteger) validateObj(vObj *validation, set
 }
 
 func (obj *patternSignedIntegerPatternInteger) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternSignedIntegerPatternIntegerChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternSignedIntegerPatternInteger")
+			}
+		} else {
+			intVal := openapi.PatternSignedIntegerPatternInteger_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternSignedIntegerPatternInteger_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -27570,9 +29049,34 @@ func (obj *patternOidPatternOid) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *patternOidPatternOid) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternOidPatternOidChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternOidPatternOidChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternOidPatternOidChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternOidPatternOidChoice.VALUES
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternOidPatternOidChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternOidPatternOid")
+			}
+		} else {
+			intVal := openapi.PatternOidPatternOid_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternOidPatternOid_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -32037,6 +33541,24 @@ func (obj *choiceValWithNoProperties) validateObj(vObj *validation, set_default 
 }
 
 func (obj *choiceValWithNoProperties) setDefault() {
+	var choices_set int = 0
+	var choice ChoiceValWithNoPropertiesChoiceEnum
+
+	if obj.obj.IntermediateObj != nil {
+		choices_set += 1
+		choice = ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceValWithNoProperties")
+			}
+		} else {
+			intVal := openapi.ChoiceValWithNoProperties_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceValWithNoProperties_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
 
 }
 
@@ -37314,9 +38836,44 @@ func (obj *mixedVal) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *mixedVal) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(MixedValChoice.INT_VAL)
+	var choices_set int = 0
+	var choice MixedValChoiceEnum
 
+	if obj.obj.IntVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.INT_VAL
+	}
+
+	if obj.obj.NumVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.NUM_VAL
+	}
+
+	if obj.obj.StrVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.STR_VAL
+	}
+
+	if obj.obj.BoolVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.BOOL_VAL
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(MixedValChoice.INT_VAL)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in MixedVal")
+			}
+		} else {
+			intVal := openapi.MixedVal_Choice_Enum_value[string(choice)]
+			enumValue := openapi.MixedVal_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -37716,7 +39273,31 @@ func (obj *requiredChoice) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *requiredChoice) setDefault() {
-	if obj.obj.StrVal == nil {
+	var choices_set int = 0
+	var choice RequiredChoiceChoiceEnum
+
+	if obj.obj.StrVal != nil {
+		choices_set += 1
+		choice = RequiredChoiceChoice.STR_VAL
+	}
+
+	if obj.obj.Leaf != nil {
+		choices_set += 1
+		choice = RequiredChoiceChoice.LEAF
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoice")
+			}
+		} else {
+			intVal := openapi.RequiredChoice_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoice_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+	if obj.obj.StrVal == nil && choice == RequiredChoiceChoice.STR_VAL {
 		obj.SetStrVal("some string")
 	}
 
@@ -40130,9 +41711,44 @@ func (obj *patternIpv4PatternObjectIpv4) validateObj(vObj *validation, set_defau
 }
 
 func (obj *patternIpv4PatternObjectIpv4) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUE)
+	var choices_set int = 0
+	var choice PatternIpv4PatternObjectIpv4ChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternObjectIpv4Choice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIpv4PatternObjectIpv4Choice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternObjectIpv4Choice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIpv4PatternObjectIpv4Choice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIpv4PatternObjectIpv4Choice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIpv4PatternObjectIpv4")
+			}
+		} else {
+			intVal := openapi.PatternIpv4PatternObjectIpv4_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIpv4PatternObjectIpv4_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -40637,9 +42253,44 @@ func (obj *patternIpv6PatternObjectIpv6) validateObj(vObj *validation, set_defau
 }
 
 func (obj *patternIpv6PatternObjectIpv6) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUE)
+	var choices_set int = 0
+	var choice PatternIpv6PatternObjectIpv6ChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternObjectIpv6Choice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIpv6PatternObjectIpv6Choice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternObjectIpv6Choice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternObjectIpv6Choice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIpv6PatternObjectIpv6Choice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIpv6PatternObjectIpv6")
+			}
+		} else {
+			intVal := openapi.PatternIpv6PatternObjectIpv6_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIpv6PatternObjectIpv6_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -41187,9 +42838,49 @@ func (obj *patternMacPatternObjectMac) validateObj(vObj *validation, set_default
 }
 
 func (obj *patternMacPatternObjectMac) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+	var choices_set int = 0
+	var choice PatternMacPatternObjectMacChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternMacPatternObjectMac")
+			}
+		} else {
+			intVal := openapi.PatternMacPatternObjectMac_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternMacPatternObjectMac_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -41699,9 +43390,44 @@ func (obj *patternIntegerPatternObjectInteger) validateObj(vObj *validation, set
 }
 
 func (obj *patternIntegerPatternObjectInteger) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternIntegerPatternObjectIntegerChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternObjectIntegerChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIntegerPatternObjectIntegerChoice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternObjectIntegerChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIntegerPatternObjectIntegerChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIntegerPatternObjectIntegerChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIntegerPatternObjectInteger")
+			}
+		} else {
+			intVal := openapi.PatternIntegerPatternObjectInteger_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIntegerPatternObjectInteger_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
@@ -42093,13 +43819,38 @@ func (obj *patternChecksumPatternObjectChecksum) validateObj(vObj *validation, s
 }
 
 func (obj *patternChecksumPatternObjectChecksum) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternChecksumPatternObjectChecksumChoice.GENERATED)
-		if obj.obj.Generated.Number() == 0 {
-			obj.SetGenerated(PatternChecksumPatternObjectChecksumGenerated.GOOD)
+	var choices_set int = 0
+	var choice PatternChecksumPatternObjectChecksumChoiceEnum
+
+	if obj.obj.Generated != nil && obj.obj.Generated.Number() != 0 {
+		choices_set += 1
+		choice = PatternChecksumPatternObjectChecksumChoice.GENERATED
+	}
+
+	if obj.obj.Custom != nil {
+		choices_set += 1
+		choice = PatternChecksumPatternObjectChecksumChoice.CUSTOM
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternChecksumPatternObjectChecksumChoice.GENERATED)
+			if obj.obj.Generated.Number() == 0 {
+				obj.SetGenerated(PatternChecksumPatternObjectChecksumGenerated.GOOD)
+
+			}
 
 		}
 
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternChecksumPatternObjectChecksum")
+			}
+		} else {
+			intVal := openapi.PatternChecksumPatternObjectChecksum_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternChecksumPatternObjectChecksum_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }
