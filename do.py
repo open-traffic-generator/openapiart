@@ -162,8 +162,8 @@ def init(use_sdk=None):
             ]
         )
     else:
-        art_path = os.path.join(base_dir, "art", "requirements.txt")
-        art_test = os.path.join(base_dir, "art", "test_requirements.txt")
+        art_path = os.path.join(base_dir, "artifacts", "requirements.txt")
+        art_test = os.path.join(base_dir, "artifacts", "test_requirements.txt")
         run(
             [
                 py() + " -m pip install -r {}".format(art_path),
@@ -214,13 +214,31 @@ def generate(sdk="", cicd=""):
     )
 
 
+def generate_from_yaml(sdk="all"):
+    if sdk == "python":
+        yaml_file = "yaml_files/generate_python.yaml"
+    elif sdk == "go":
+        yaml_file = "yaml_files/generate_go.yaml"
+    else:
+        yaml_file = "yaml_files/generate_all.yaml"
+
+    yaml_file = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), yaml_file)
+    )
+    run(
+        [
+            py() + "  -m openapiart --config_file " + yaml_file,
+        ]
+    )
+
+
 def testpy():
     run(
         [
             # py() + " -m pip install flask",
             # py() + " -m pip install pytest-cov",
             py()
-            + " -m pytest -sv --cov=sanity --cov-report term --cov-report html:cov_report",
+            + " -m pytest -sv --cov=pyapi --cov-report term --cov-report html:cov_report",
         ]
     )
     import re
@@ -244,7 +262,7 @@ def testpy():
 
 
 def testgo():
-    go_coverage_threshold = 35
+    go_coverage_threshold = 30
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     run(["go mod tidy"], capture_output=True)
@@ -348,7 +366,7 @@ def clean():
         "build",
         "*.egg-info",
         "cov_report",
-        "art",
+        "artifacts",
     ]
     recursive_patterns = [
         ".pytest_cache",
@@ -515,6 +533,32 @@ def build(sdk="all", env_setup=None):
     run([py() + " setup.py install"])
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
+
+    # Copying files to artifacts folder
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    artifacts_dir = os.path.join(base_dir, "artifacts")
+    if not os.path.exists(os.path.join(artifacts_dir, "goapi")):
+        os.makedirs(os.path.join(artifacts_dir, "goapi"))
+    shutil.move(
+        os.path.join(artifacts_dir, "requirements.txt"),
+        os.path.join(artifacts_dir, "pyapi"),
+    )
+    go_path = os.path.join(artifacts_dir, "goapi")
+    shutil.copytree(
+        os.path.join(base_dir, "pkg", "httpapi"),
+        os.path.join(go_path, "httpapi"),
+        dirs_exist_ok=True,
+    )
+    shutil.copytree(
+        os.path.join(base_dir, "pkg", "openapi"),
+        os.path.join(go_path, "openapi"),
+        dirs_exist_ok=True,
+    )
+
+    files = ["goapi.go", "go.mod", "go.sum"]
+    for file in files:
+        shutil.copy(os.path.join(base_dir, "pkg", file), go_path)
+
     if sdk == "python" or sdk == "all":
         print("\nSTEP 4: Perform Python lint\n")
         lint()

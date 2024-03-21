@@ -1,14 +1,14 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOid(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	m := config.MObject()
 	m.SetDouble(1.23)
 	m.SetFloat(3.45)
@@ -40,7 +40,7 @@ func TestOid(t *testing.T) {
 }
 
 func TestOidSlice(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	oid := config.OidPattern().Oid()
 
 	oid.SetValues([]string{"1.2.3.4", "3.4.5.6"})

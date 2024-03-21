@@ -1,7 +1,7 @@
 import importlib
 import pytest
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyapi")
 
 
 @pytest.mark.skip(reason="shall be restored")

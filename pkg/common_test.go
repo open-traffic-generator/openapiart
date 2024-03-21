@@ -1,4 +1,4 @@
-package openapiart
+package goapi
 
 import "testing"
 
