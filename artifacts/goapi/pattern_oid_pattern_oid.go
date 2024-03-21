@@ -401,9 +401,34 @@ func (obj *patternOidPatternOid) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *patternOidPatternOid) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternOidPatternOidChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternOidPatternOidChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternOidPatternOidChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternOidPatternOidChoice.VALUES
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternOidPatternOidChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternOidPatternOid")
+			}
+		} else {
+			intVal := openapi.PatternOidPatternOid_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternOidPatternOid_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

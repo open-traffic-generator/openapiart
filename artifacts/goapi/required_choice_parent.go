@@ -374,5 +374,23 @@ func (obj *requiredChoiceParent) validateObj(vObj *validation, set_default bool)
 }
 
 func (obj *requiredChoiceParent) setDefault() {
+	var choices_set int = 0
+	var choice RequiredChoiceParentChoiceEnum
+
+	if obj.obj.IntermediateObj != nil {
+		choices_set += 1
+		choice = RequiredChoiceParentChoice.INTERMEDIATE_OBJ
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoiceParent")
+			}
+		} else {
+			intVal := openapi.RequiredChoiceParent_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoiceParent_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
 
 }

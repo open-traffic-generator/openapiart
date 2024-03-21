@@ -515,9 +515,44 @@ func (obj *patternSignedIntegerPatternInteger) validateObj(vObj *validation, set
 }
 
 func (obj *patternSignedIntegerPatternInteger) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+	var choices_set int = 0
+	var choice PatternSignedIntegerPatternIntegerChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternSignedIntegerPatternIntegerChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternSignedIntegerPatternIntegerChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternSignedIntegerPatternInteger")
+			}
+		} else {
+			intVal := openapi.PatternSignedIntegerPatternInteger_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternSignedIntegerPatternInteger_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

@@ -397,13 +397,38 @@ func (obj *patternPrefixConfigHeaderChecksum) validateObj(vObj *validation, set_
 }
 
 func (obj *patternPrefixConfigHeaderChecksum) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
-		if obj.obj.Generated.Number() == 0 {
-			obj.SetGenerated(PatternPrefixConfigHeaderChecksumGenerated.GOOD)
+	var choices_set int = 0
+	var choice PatternPrefixConfigHeaderChecksumChoiceEnum
+
+	if obj.obj.Generated != nil && obj.obj.Generated.Number() != 0 {
+		choices_set += 1
+		choice = PatternPrefixConfigHeaderChecksumChoice.GENERATED
+	}
+
+	if obj.obj.Custom != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigHeaderChecksumChoice.CUSTOM
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternPrefixConfigHeaderChecksumChoice.GENERATED)
+			if obj.obj.Generated.Number() == 0 {
+				obj.SetGenerated(PatternPrefixConfigHeaderChecksumGenerated.GOOD)
+
+			}
 
 		}
 
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternPrefixConfigHeaderChecksum")
+			}
+		} else {
+			intVal := openapi.PatternPrefixConfigHeaderChecksum_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternPrefixConfigHeaderChecksum_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

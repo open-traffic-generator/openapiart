@@ -321,11 +321,6 @@ func (obj *requiredChoiceIntermediate) setChoice(value RequiredChoiceIntermediat
 	obj.leafHolder = nil
 	obj.obj.FA = nil
 
-	if value == RequiredChoiceIntermediateChoice.F_A {
-		defaultValue := "some string"
-		obj.obj.FA = &defaultValue
-	}
-
 	if value == RequiredChoiceIntermediateChoice.LEAF {
 		obj.obj.Leaf = NewRequiredChoiceIntermeLeaf().msg()
 	}
@@ -405,8 +400,28 @@ func (obj *requiredChoiceIntermediate) validateObj(vObj *validation, set_default
 }
 
 func (obj *requiredChoiceIntermediate) setDefault() {
-	if obj.obj.FA == nil {
-		obj.SetFA("some string")
+	var choices_set int = 0
+	var choice RequiredChoiceIntermediateChoiceEnum
+
+	if obj.obj.FA != nil {
+		choices_set += 1
+		choice = RequiredChoiceIntermediateChoice.F_A
+	}
+
+	if obj.obj.Leaf != nil {
+		choices_set += 1
+		choice = RequiredChoiceIntermediateChoice.LEAF
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoiceIntermediate")
+			}
+		} else {
+			intVal := openapi.RequiredChoiceIntermediate_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoiceIntermediate_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

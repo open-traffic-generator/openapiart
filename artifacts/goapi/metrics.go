@@ -543,9 +543,34 @@ func (obj *metrics) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *metrics) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(MetricsChoice.PORTS)
+	var choices_set int = 0
+	var choice MetricsChoiceEnum
 
+	if len(obj.obj.Ports) > 0 {
+		choices_set += 1
+		choice = MetricsChoice.PORTS
+	}
+
+	if len(obj.obj.Flows) > 0 {
+		choices_set += 1
+		choice = MetricsChoice.FLOWS
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(MetricsChoice.PORTS)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in Metrics")
+			}
+		} else {
+			intVal := openapi.Metrics_Choice_Enum_value[string(choice)]
+			enumValue := openapi.Metrics_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

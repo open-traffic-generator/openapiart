@@ -553,9 +553,49 @@ func (obj *patternMacPatternObjectMac) validateObj(vObj *validation, set_default
 }
 
 func (obj *patternMacPatternObjectMac) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+	var choices_set int = 0
+	var choice PatternMacPatternObjectMacChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternMacPatternObjectMacChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternMacPatternObjectMacChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternMacPatternObjectMac")
+			}
+		} else {
+			intVal := openapi.PatternMacPatternObjectMac_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternMacPatternObjectMac_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

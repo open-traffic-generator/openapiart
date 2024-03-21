@@ -510,9 +510,44 @@ func (obj *patternIpv6PatternIpv6) validateObj(vObj *validation, set_default boo
 }
 
 func (obj *patternIpv6PatternIpv6) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
+	var choices_set int = 0
+	var choice PatternIpv6PatternIpv6ChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.VALUES
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternIpv6PatternIpv6Choice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternIpv6PatternIpv6Choice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternIpv6PatternIpv6")
+			}
+		} else {
+			intVal := openapi.PatternIpv6PatternIpv6_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternIpv6PatternIpv6_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

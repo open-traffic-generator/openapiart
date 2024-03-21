@@ -559,9 +559,49 @@ func (obj *patternPrefixConfigAutoFieldTest) validateObj(vObj *validation, set_d
 }
 
 func (obj *patternPrefixConfigAutoFieldTest) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+	var choices_set int = 0
+	var choice PatternPrefixConfigAutoFieldTestChoiceEnum
 
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternPrefixConfigAutoFieldTestChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternPrefixConfigAutoFieldTestChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternPrefixConfigAutoFieldTest")
+			}
+		} else {
+			intVal := openapi.PatternPrefixConfigAutoFieldTest_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternPrefixConfigAutoFieldTest_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

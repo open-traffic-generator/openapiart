@@ -13,39 +13,41 @@ import (
 // ***** PrefixConfig *****
 type prefixConfig struct {
 	validation
-	obj                        *openapi.PrefixConfig
-	marshaller                 marshalPrefixConfig
-	unMarshaller               unMarshalPrefixConfig
-	requiredObjectHolder       EObject
-	optionalObjectHolder       EObject
-	eHolder                    EObject
-	fHolder                    FObject
-	gHolder                    PrefixConfigGObjectIter
-	jHolder                    PrefixConfigJObjectIter
-	kHolder                    KObject
-	lHolder                    LObject
-	levelHolder                LevelOne
-	mandatoryHolder            Mandate
-	ipv4PatternHolder          Ipv4Pattern
-	ipv6PatternHolder          Ipv6Pattern
-	macPatternHolder           MacPattern
-	integerPatternHolder       IntegerPattern
-	checksumPatternHolder      ChecksumPattern
-	caseHolder                 Layer1Ieee802X
-	mObjectHolder              MObject
-	headerChecksumHolder       PatternPrefixConfigHeaderChecksum
-	autoFieldTestHolder        PatternPrefixConfigAutoFieldTest
-	wListHolder                PrefixConfigWObjectIter
-	xListHolder                PrefixConfigZObjectIter
-	zObjectHolder              ZObject
-	yObjectHolder              YObject
-	choiceObjectHolder         PrefixConfigChoiceObjectIter
-	requiredChoiceObjectHolder RequiredChoiceParent
-	g1Holder                   PrefixConfigGObjectIter
-	g2Holder                   PrefixConfigGObjectIter
-	signedIntegerPatternHolder SignedIntegerPattern
-	oidPatternHolder           OidPattern
-	choiceDefaultHolder        ChoiceObject
+	obj                         *openapi.PrefixConfig
+	marshaller                  marshalPrefixConfig
+	unMarshaller                unMarshalPrefixConfig
+	requiredObjectHolder        EObject
+	optionalObjectHolder        EObject
+	eHolder                     EObject
+	fHolder                     FObject
+	gHolder                     PrefixConfigGObjectIter
+	jHolder                     PrefixConfigJObjectIter
+	kHolder                     KObject
+	lHolder                     LObject
+	levelHolder                 LevelOne
+	mandatoryHolder             Mandate
+	ipv4PatternHolder           Ipv4Pattern
+	ipv6PatternHolder           Ipv6Pattern
+	macPatternHolder            MacPattern
+	integerPatternHolder        IntegerPattern
+	checksumPatternHolder       ChecksumPattern
+	caseHolder                  Layer1Ieee802X
+	mObjectHolder               MObject
+	headerChecksumHolder        PatternPrefixConfigHeaderChecksum
+	autoFieldTestHolder         PatternPrefixConfigAutoFieldTest
+	wListHolder                 PrefixConfigWObjectIter
+	xListHolder                 PrefixConfigZObjectIter
+	zObjectHolder               ZObject
+	yObjectHolder               YObject
+	choiceObjectHolder          PrefixConfigChoiceObjectIter
+	requiredChoiceObjectHolder  RequiredChoiceParent
+	g1Holder                    PrefixConfigGObjectIter
+	g2Holder                    PrefixConfigGObjectIter
+	choiceTestHolder            ChoiceTestObj
+	signedIntegerPatternHolder  SignedIntegerPattern
+	oidPatternHolder            OidPattern
+	choiceDefaultHolder         ChoiceObject
+	choiceRequiredDefaultHolder ChoiceRequiredAndDefault
 }
 
 func NewPrefixConfig() PrefixConfig {
@@ -300,9 +302,11 @@ func (obj *prefixConfig) setNil() {
 	obj.requiredChoiceObjectHolder = nil
 	obj.g1Holder = nil
 	obj.g2Holder = nil
+	obj.choiceTestHolder = nil
 	obj.signedIntegerPatternHolder = nil
 	obj.oidPatternHolder = nil
 	obj.choiceDefaultHolder = nil
+	obj.choiceRequiredDefaultHolder = nil
 	obj.validationErrors = nil
 	obj.warnings = nil
 	obj.constraints = make(map[string]map[string]Constraints)
@@ -624,6 +628,14 @@ type PrefixConfig interface {
 	AutoInt32ListParam() []int32
 	// SetAutoInt32ListParam assigns []int32 provided by user to PrefixConfig
 	SetAutoInt32ListParam(value []int32) PrefixConfig
+	// ChoiceTest returns ChoiceTestObj, set in PrefixConfig.
+	// ChoiceTestObj is description is TBD
+	ChoiceTest() ChoiceTestObj
+	// SetChoiceTest assigns ChoiceTestObj provided by user to PrefixConfig.
+	// ChoiceTestObj is description is TBD
+	SetChoiceTest(value ChoiceTestObj) PrefixConfig
+	// HasChoiceTest checks if ChoiceTest has been set in PrefixConfig
+	HasChoiceTest() bool
 	// SignedIntegerPattern returns SignedIntegerPattern, set in PrefixConfig.
 	// SignedIntegerPattern is test signed integer pattern
 	SignedIntegerPattern() SignedIntegerPattern
@@ -648,6 +660,14 @@ type PrefixConfig interface {
 	SetChoiceDefault(value ChoiceObject) PrefixConfig
 	// HasChoiceDefault checks if ChoiceDefault has been set in PrefixConfig
 	HasChoiceDefault() bool
+	// ChoiceRequiredDefault returns ChoiceRequiredAndDefault, set in PrefixConfig.
+	// ChoiceRequiredAndDefault is description is TBD
+	ChoiceRequiredDefault() ChoiceRequiredAndDefault
+	// SetChoiceRequiredDefault assigns ChoiceRequiredAndDefault provided by user to PrefixConfig.
+	// ChoiceRequiredAndDefault is description is TBD
+	SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig
+	// HasChoiceRequiredDefault checks if ChoiceRequiredDefault has been set in PrefixConfig
+	HasChoiceRequiredDefault() bool
 	setNil()
 }
 
@@ -2242,6 +2262,34 @@ func (obj *prefixConfig) SetAutoInt32ListParam(value []int32) PrefixConfig {
 }
 
 // description is TBD
+// ChoiceTest returns a ChoiceTestObj
+func (obj *prefixConfig) ChoiceTest() ChoiceTestObj {
+	if obj.obj.ChoiceTest == nil {
+		obj.obj.ChoiceTest = NewChoiceTestObj().msg()
+	}
+	if obj.choiceTestHolder == nil {
+		obj.choiceTestHolder = &choiceTestObj{obj: obj.obj.ChoiceTest}
+	}
+	return obj.choiceTestHolder
+}
+
+// description is TBD
+// ChoiceTest returns a ChoiceTestObj
+func (obj *prefixConfig) HasChoiceTest() bool {
+	return obj.obj.ChoiceTest != nil
+}
+
+// description is TBD
+// SetChoiceTest sets the ChoiceTestObj value in the PrefixConfig object
+func (obj *prefixConfig) SetChoiceTest(value ChoiceTestObj) PrefixConfig {
+
+	obj.choiceTestHolder = nil
+	obj.obj.ChoiceTest = value.msg()
+
+	return obj
+}
+
+// description is TBD
 // SignedIntegerPattern returns a SignedIntegerPattern
 func (obj *prefixConfig) SignedIntegerPattern() SignedIntegerPattern {
 	if obj.obj.SignedIntegerPattern == nil {
@@ -2321,6 +2369,34 @@ func (obj *prefixConfig) SetChoiceDefault(value ChoiceObject) PrefixConfig {
 
 	obj.choiceDefaultHolder = nil
 	obj.obj.ChoiceDefault = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// ChoiceRequiredDefault returns a ChoiceRequiredAndDefault
+func (obj *prefixConfig) ChoiceRequiredDefault() ChoiceRequiredAndDefault {
+	if obj.obj.ChoiceRequiredDefault == nil {
+		obj.obj.ChoiceRequiredDefault = NewChoiceRequiredAndDefault().msg()
+	}
+	if obj.choiceRequiredDefaultHolder == nil {
+		obj.choiceRequiredDefaultHolder = &choiceRequiredAndDefault{obj: obj.obj.ChoiceRequiredDefault}
+	}
+	return obj.choiceRequiredDefaultHolder
+}
+
+// description is TBD
+// ChoiceRequiredDefault returns a ChoiceRequiredAndDefault
+func (obj *prefixConfig) HasChoiceRequiredDefault() bool {
+	return obj.obj.ChoiceRequiredDefault != nil
+}
+
+// description is TBD
+// SetChoiceRequiredDefault sets the ChoiceRequiredAndDefault value in the PrefixConfig object
+func (obj *prefixConfig) SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig {
+
+	obj.choiceRequiredDefaultHolder = nil
+	obj.obj.ChoiceRequiredDefault = value.msg()
 
 	return obj
 }
@@ -2665,6 +2741,11 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 
 	}
 
+	if obj.obj.ChoiceTest != nil {
+
+		obj.ChoiceTest().validateObj(vObj, set_default)
+	}
+
 	if obj.obj.SignedIntegerPattern != nil {
 
 		obj.SignedIntegerPattern().validateObj(vObj, set_default)
@@ -2678,6 +2759,11 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if obj.obj.ChoiceDefault != nil {
 
 		obj.ChoiceDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.ChoiceRequiredDefault != nil {
+
+		obj.ChoiceRequiredDefault().validateObj(vObj, set_default)
 	}
 
 }

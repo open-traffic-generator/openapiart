@@ -428,9 +428,34 @@ func (obj *choiceObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *choiceObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(ChoiceObjectChoice.NO_OBJ)
+	var choices_set int = 0
+	var choice ChoiceObjectChoiceEnum
 
+	if obj.obj.EObj != nil {
+		choices_set += 1
+		choice = ChoiceObjectChoice.E_OBJ
+	}
+
+	if obj.obj.FObj != nil {
+		choices_set += 1
+		choice = ChoiceObjectChoice.F_OBJ
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(ChoiceObjectChoice.NO_OBJ)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceObject")
+			}
+		} else {
+			intVal := openapi.ChoiceObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

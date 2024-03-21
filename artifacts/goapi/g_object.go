@@ -559,10 +559,36 @@ func (obj *gObject) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *gObject) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(GObjectChoice.G_D)
+	var choices_set int = 0
+	var choice GObjectChoiceEnum
 
+	if obj.obj.GD != nil {
+		choices_set += 1
+		choice = GObjectChoice.G_D
 	}
+
+	if obj.obj.GE != nil {
+		choices_set += 1
+		choice = GObjectChoice.G_E
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(GObjectChoice.G_D)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in GObject")
+			}
+		} else {
+			intVal := openapi.GObject_Choice_Enum_value[string(choice)]
+			enumValue := openapi.GObject_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
 	if obj.obj.GA == nil {
 		obj.SetGA("asdf")
 	}

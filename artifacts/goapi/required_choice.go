@@ -405,7 +405,31 @@ func (obj *requiredChoice) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *requiredChoice) setDefault() {
-	if obj.obj.StrVal == nil {
+	var choices_set int = 0
+	var choice RequiredChoiceChoiceEnum
+
+	if obj.obj.StrVal != nil {
+		choices_set += 1
+		choice = RequiredChoiceChoice.STR_VAL
+	}
+
+	if obj.obj.Leaf != nil {
+		choices_set += 1
+		choice = RequiredChoiceChoice.LEAF
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in RequiredChoice")
+			}
+		} else {
+			intVal := openapi.RequiredChoice_Choice_Enum_value[string(choice)]
+			enumValue := openapi.RequiredChoice_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+	if obj.obj.StrVal == nil && choice == RequiredChoiceChoice.STR_VAL {
 		obj.SetStrVal("some string")
 	}
 

@@ -835,15 +835,21 @@ components:
           minimum: 64
           maximum: 9000
           x-field-uid: 52
+        choice_test:
+          $ref: '#/components/schemas/ChoiceTestObj'
+          x-field-uid: 53
         signed_integer_pattern:
           $ref: '#/components/schemas/SignedIntegerPattern'
-          x-field-uid: 53
+          x-field-uid: 54
         oid_pattern:
           $ref: '#/components/schemas/OidPattern'
-          x-field-uid: 54
+          x-field-uid: 55
         choice_default:
           $ref: '#/components/schemas/ChoiceObject'
-          x-field-uid: 55
+          x-field-uid: 56
+        choice_required_default:
+          $ref: '#/components/schemas/ChoiceRequiredAndDefault'
+          x-field-uid: 57
     WObject:
       required:
       - w_name
@@ -1292,7 +1298,6 @@ components:
           - leaf
         f_a:
           type: string
-          default: some string
           x-field-uid: 2
         leaf:
           $ref: '#/components/schemas/RequiredChoiceIntermeLeaf'
@@ -1303,6 +1308,69 @@ components:
         name:
           type: string
           x-field-uid: 1
+    ChoiceTestObj:
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            e_obj:
+              x-field-uid: 1
+            f_obj:
+              x-field-uid: 2
+            no_obj:
+              x-field-uid: 3
+            ieee_802_1qbb:
+              x-field-uid: 4
+            ieee_802_3x:
+              x-field-uid: 5
+          enum:
+          - e_obj
+          - f_obj
+          - no_obj
+          - ieee_802_1qbb
+          - ieee_802_3x
+        e_obj:
+          $ref: '#/components/schemas/EObject'
+          x-field-uid: 2
+        f_obj:
+          $ref: '#/components/schemas/FObject'
+          x-field-uid: 3
+        ieee_802_1qbb:
+          type: string
+          x-field-uid: 4
+        ieee_802_3x:
+          type: string
+          x-field-uid: 5
+    ChoiceRequiredAndDefault:
+      type: object
+      required:
+      - choice
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            ipv4:
+              x-field-uid: 1
+            ipv6:
+              x-field-uid: 2
+          enum:
+          - ipv4
+          - ipv6
+        ipv4:
+          type: string
+          format: ipv4
+          default: 0.0.0.0
+          x-field-uid: 2
+        ipv6:
+          description: |-
+            A list of ipv6
+          type: array
+          items:
+            type: string
+            format: ipv6
+          x-field-uid: 3
     Level.One:
       description: |-
         To Test Multi level non-primitive types

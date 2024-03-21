@@ -470,9 +470,44 @@ func (obj *mixedVal) validateObj(vObj *validation, set_default bool) {
 }
 
 func (obj *mixedVal) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(MixedValChoice.INT_VAL)
+	var choices_set int = 0
+	var choice MixedValChoiceEnum
 
+	if obj.obj.IntVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.INT_VAL
+	}
+
+	if obj.obj.NumVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.NUM_VAL
+	}
+
+	if obj.obj.StrVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.STR_VAL
+	}
+
+	if obj.obj.BoolVal != nil {
+		choices_set += 1
+		choice = MixedValChoice.BOOL_VAL
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(MixedValChoice.INT_VAL)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in MixedVal")
+			}
+		} else {
+			intVal := openapi.MixedVal_Choice_Enum_value[string(choice)]
+			enumValue := openapi.MixedVal_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

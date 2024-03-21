@@ -397,13 +397,38 @@ func (obj *patternChecksumPatternChecksum) validateObj(vObj *validation, set_def
 }
 
 func (obj *patternChecksumPatternChecksum) setDefault() {
-	if obj.obj.Choice == nil {
-		obj.setChoice(PatternChecksumPatternChecksumChoice.GENERATED)
-		if obj.obj.Generated.Number() == 0 {
-			obj.SetGenerated(PatternChecksumPatternChecksumGenerated.GOOD)
+	var choices_set int = 0
+	var choice PatternChecksumPatternChecksumChoiceEnum
+
+	if obj.obj.Generated != nil && obj.obj.Generated.Number() != 0 {
+		choices_set += 1
+		choice = PatternChecksumPatternChecksumChoice.GENERATED
+	}
+
+	if obj.obj.Custom != nil {
+		choices_set += 1
+		choice = PatternChecksumPatternChecksumChoice.CUSTOM
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternChecksumPatternChecksumChoice.GENERATED)
+			if obj.obj.Generated.Number() == 0 {
+				obj.SetGenerated(PatternChecksumPatternChecksumGenerated.GOOD)
+
+			}
 
 		}
 
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternChecksumPatternChecksum")
+			}
+		} else {
+			intVal := openapi.PatternChecksumPatternChecksum_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternChecksumPatternChecksum_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
 	}
 
 }

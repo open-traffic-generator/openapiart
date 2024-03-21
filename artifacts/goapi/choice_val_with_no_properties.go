@@ -374,5 +374,23 @@ func (obj *choiceValWithNoProperties) validateObj(vObj *validation, set_default 
 }
 
 func (obj *choiceValWithNoProperties) setDefault() {
+	var choices_set int = 0
+	var choice ChoiceValWithNoPropertiesChoiceEnum
+
+	if obj.obj.IntermediateObj != nil {
+		choices_set += 1
+		choice = ChoiceValWithNoPropertiesChoice.INTERMEDIATE_OBJ
+	}
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in ChoiceValWithNoProperties")
+			}
+		} else {
+			intVal := openapi.ChoiceValWithNoProperties_Choice_Enum_value[string(choice)]
+			enumValue := openapi.ChoiceValWithNoProperties_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
 
 }
