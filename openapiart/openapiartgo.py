@@ -2479,7 +2479,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         "Warning: Default should not accept for this property ",
                         property_name,
                     )
-            if field.name.lower() == "auto":
+            if (
+                field.name.lower() == "auto"
+                or field.name.lower() == "autodhcp"
+            ):
                 field.setter_method = None
 
             fluent_new.interface_fields.append(field)
@@ -2712,7 +2715,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
                     }}
                 """.format(
-                    name=field.name,
+                    name=self._get_external_struct_name(field.name),
                     interface=new.interface,
                     format=field.format.capitalize()
                     if field.isArray is False
