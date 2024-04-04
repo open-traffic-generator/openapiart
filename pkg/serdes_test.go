@@ -348,3 +348,39 @@ func TestAuto(t *testing.T) {
 		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
 		config.AutoFieldTest().Choice())
 }
+
+func TestAutoHeirarchy(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	assert.Equal(
+		t,
+		openapiart.PatternAutoPatternAutoIpChoice.VALUE,
+		config.AutoPattern().AutoIp().Choice())
+
+	config.AutoPattern().AutoIp().Auto().Static()
+	assert.Equal(
+		t,
+		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		config.AutoPattern().AutoIp().Choice())
+	assert.Equal(
+		t,
+		openapiart.AutoIpOptionsChoice.STATIC,
+		config.AutoPattern().AutoIp().Auto().Choice())
+
+	config.AutoPattern().AutoIp().Auto().Dhcp()
+	assert.Equal(
+		t,
+		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		config.AutoPattern().AutoIp().Choice())
+	assert.Equal(
+		t,
+		openapiart.AutoIpOptionsChoice.DHCP,
+		config.AutoPattern().AutoIp().Auto().Choice())
+
+	config.AutoPattern().AutoIp().SetValues([]string{"10"})
+	assert.Equal(
+		t,
+		openapiart.PatternAutoPatternAutoIpChoice.VALUES,
+		config.AutoPattern().AutoIp().Choice())
+}

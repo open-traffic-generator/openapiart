@@ -322,6 +322,13 @@ components:
         choice_required_default:
           $ref: "#/components/schemas/ChoiceRequiredAndDefault"
           x-field-uid: 57
+        auto_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/AutoPattern"
+          x-field-uid: 58
+        name_ending_with_number_234:
+          type: string
+          format: ipv4
+          x-field-uid: 59
 
     WObject:
       required: [w_name]
@@ -767,3 +774,16 @@ components:
             type: string
             format: ipv6
           x-field-uid: 3
+
+    AutoIpOptions:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            static:
+              x-field-uid: 1
+            dhcp:
+              x-field-uid: 2

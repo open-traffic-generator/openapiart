@@ -70,3 +70,15 @@ components:
             format: oid
             default: "0.1"
           x-field-uid: 1
+    AutoPattern:
+      description: Test mac pattern
+      type: object
+      properties:
+        auto_ip:
+          x-field-pattern:
+            format: ipv4
+            default: "0.0.0.0"
+            features: [count, auto]
+            auto:
+              $ref: "../config/config.yaml#/components/schemas/AutoIpOptions"
+          x-field-uid: 1

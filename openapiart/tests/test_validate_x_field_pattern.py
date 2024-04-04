@@ -28,6 +28,8 @@ def test_validate_pattern():
         "components.schemas.Config.properties.int_128.x-field-pattern property using x-field-pattern with format integer cannot have length greater than 64",
         "signed property can only be used if the format is set to integer in property components.schemas.Config.properties.signed_value_without_int.x-field-pattern",
         "invalid value 45 in components.schemas.Config.properties.wrong_int_signed_value.x-field-pattern, signed property can either be true or false",
+        "components.schemas.Config.properties.wrong_features_value.x-field-pattern has unspported feature abc , valid features are ['count', 'auto', 'metric_tags']",
+        "ref is a mandatory property in Pattern.Config.WrongAutoValue, when auto property is specified",
     ]
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(
