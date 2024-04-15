@@ -49,3 +49,38 @@ def test_auto_hierarchy(config):
     config.deserialize(dt)
     assert config.auto_pattern.auto_ip.choice == "auto"
     assert config.auto_pattern.auto_ip.auto.choice == "dhcp"
+
+
+def test_auto_hierarchy_with_default(config):
+    at = config.auto_pattern_default.auto_ip_default
+    try:
+        at.auto = 10
+        pytest.fail("able to set the auto field")
+    except Exception:
+        pass
+
+    dt = config.serialize(config.DICT)
+    print(dt)
+    assert (
+        dt.get("auto_pattern_default", {}).get("auto_ip_default").get("choice")
+        == "auto"
+    )
+
+    at.auto.choice = "static"
+    assert config.auto_pattern_default.auto_ip_default.auto.choice == "static"
+
+    at.auto.choice = "dhcp"
+    assert config.auto_pattern_default.auto_ip_default.auto.choice == "dhcp"
+
+    dt = config.serialize(config.DICT)
+    assert (
+        dt.get("auto_pattern_default", {})
+        .get("auto_ip_default")
+        .get("auto")
+        .get("choice")
+        == "dhcp"
+    )
+
+    config.deserialize(dt)
+    assert config.auto_pattern_default.auto_ip_default.choice == "auto"
+    assert config.auto_pattern_default.auto_ip_default.auto.choice == "dhcp"

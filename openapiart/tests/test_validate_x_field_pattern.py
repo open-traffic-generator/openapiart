@@ -30,6 +30,8 @@ def test_validate_pattern():
         "invalid value 45 in components.schemas.Config.properties.wrong_int_signed_value.x-field-pattern, signed property can either be true or false",
         "components.schemas.Config.properties.wrong_features_value.x-field-pattern has unspported feature abc , valid features are ['count', 'auto', 'metric_tags']",
         "ref is a mandatory property in Pattern.Config.WrongAutoValue, when auto property is specified",
+        "default is a mandatory property in Pattern.Config.WrongAutoValue, when auto property is specified",
+        "only boolean values are allowed for default in Pattern.Config.WrongAutoDefaultValue",
     ]
     with pytest.raises(Exception) as execinfo:
         create_openapi_artifacts(

@@ -99,3 +99,14 @@ components:
             auto:
               prop: 123
           x-field-uid: 10
+        wrong_auto_default_value:
+          x-field-pattern:
+            format: integer
+            length: 2
+            signed: 45
+            default: 0
+            features: [auto]
+            auto:
+              prop: 123
+              default: truely
+          x-field-uid: 10

@@ -868,20 +868,38 @@ class Bundler(object):
                 if "auto" in xpattern:
                     # new enhance for auto hierarchy
                     auto_prop = xpattern["auto"]
-                    if "$ref" in auto_prop:
-                        schema["properties"]["choice"]["x-enum"]["auto"] = {
-                            "x-field-uid": 1
-                        }
-                        schema["properties"]["auto"] = {
-                            "$ref": auto_prop["$ref"],
-                            "x-field-uid": auto_field.uid,
-                        }
-                    else:
+                    if "$ref" not in auto_prop:
                         self._errors.append(
                             "ref is a mandatory property in {}, when auto property is specified".format(
                                 schema_name
                             )
                         )
+                    if "default" not in auto_prop:
+                        self._errors.append(
+                            "default is a mandatory property in {}, when auto property is specified".format(
+                                schema_name
+                            )
+                        )
+                    elif not isinstance(auto_prop["default"], bool):
+                        self._errors.append(
+                            "only boolean values are allowed for default in {}".format(
+                                schema_name
+                            )
+                        )
+                    if "$ref" in auto_prop:
+                        schema["properties"]["choice"]["x-enum"]["auto"] = {
+                            "x-field-uid": 1
+                        }
+                        if (
+                            "default" in auto_prop
+                            and auto_prop["default"] is True
+                        ):
+                            schema["properties"]["choice"]["default"] = "auto"
+                        schema["properties"]["auto"] = {
+                            "$ref": auto_prop["$ref"],
+                            "x-field-uid": auto_field.uid,
+                        }
+
                 else:
                     if "default" not in xpattern:
                         self._errors.append(
