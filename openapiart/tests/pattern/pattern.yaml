@@ -70,3 +70,40 @@ components:
             format: oid
             default: "0.1"
           x-field-uid: 1
+    MacUdsPattern:
+      description: Test uds mac pattern
+      type: object
+      properties:
+        mac:
+          x-field-uds:
+            format: mac
+            default: "00:00:00:00:00:00"
+          x-field-uid: 1
+    Ipv4UdsPattern:
+      description: Test uds mac pattern
+      type: object
+      properties:
+        ipv4:
+          x-field-uds:
+            format: ipv4
+            default: "0.0.0.0"
+          x-field-uid: 1
+    Ipv6UdsPattern:
+      description: Test uds mac pattern
+      type: object
+      properties:
+        ipv6:
+          x-field-uds:
+            format: ipv6
+            default: "::0"
+          x-field-uid: 1
+    IntegerUdsPattern:
+      description: Test uds mac pattern
+      type: object
+      properties:
+        integer:
+          x-field-uds:
+            format: integer
+            default: 0
+            length: 2
+          x-field-uid: 1

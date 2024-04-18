@@ -322,6 +322,18 @@ components:
         choice_required_default:
           $ref: "#/components/schemas/ChoiceRequiredAndDefault"
           x-field-uid: 57
+        field_uds_mac:
+          $ref: "../pattern/pattern.yaml#/components/schemas/MacUdsPattern"
+          x-field-uid: 58
+        field_uds_ipv4:
+          $ref: "../pattern/pattern.yaml#/components/schemas/Ipv4UdsPattern"
+          x-field-uid: 59
+        field_uds_ipv6:
+          $ref: "../pattern/pattern.yaml#/components/schemas/Ipv6UdsPattern"
+          x-field-uid: 60
+        field_uds_int:
+          $ref: "../pattern/pattern.yaml#/components/schemas/IntegerUdsPattern"
+          x-field-uid: 61
 
     WObject:
       required: [w_name]

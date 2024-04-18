@@ -94,6 +94,7 @@ class Bundler(object):
 
         self._resolve_x_include()
         self._resolve_x_field_pattern()
+        self._resolve_x_field_uds()
         self._resolve_x_constraint()
         self._resolve_x_status()
         self._remove_x_include()
@@ -1279,6 +1280,139 @@ class Bundler(object):
         for key, value in changes.items():
             content[str(key)] = value
             del content[key]
+
+    def _validate_x_field_uds(self, uds):
+        uds_field = uds.value
+
+        if "format" not in uds_field:
+            self._errors.append(
+                "{} is not valid, format is mandatory for x-field-uds".format(
+                    str(uds.full_path)
+                )
+            )
+        elif uds_field["format"] == "integer" and "length" not in uds_field:
+            self._errors.append(
+                "{} property using x-field-uds with format integer must contain length property".format(
+                    str(uds.full_path)
+                )
+            )
+        elif uds_field["format"] == "integer" and uds_field["length"] > 64:
+            self._errors.append(
+                "{} property using x-field-uds with format integer cannot have length greater than 64".format(
+                    str(uds_field.full_path)
+                )
+            )
+        valid_formats = ["integer", "ipv4", "ipv6", "mac"]
+        if uds_field["format"] not in valid_formats:
+            self._errors.append(
+                "%s has unspported format %s , valid formats are %s"
+                % (
+                    str(uds.full_path),
+                    uds_field["format"],
+                    str(valid_formats),
+                )
+            )
+
+    def _resolve_x_field_uds(self):
+        """Find all instances of uds_pattern_extension in the openapi content
+        and generate a #/components/schemas/... pattern schema object that is
+        specific to the property hosting the pattern extension content.
+        Replace the x-field-uds schema with a $ref to the generated schema.
+        """
+        import jsonpath_ng
+
+        pattern_extension = "x-field-uds"
+        for xpattern_path in self._get_parser(
+            "$..{}".format(pattern_extension)
+        ).find(self._content):
+
+            self._validate_x_field_uds(xpattern_path)
+
+            print("generating %s..." % (str(xpattern_path.full_path)))
+            object_name = xpattern_path.full_path.left.left.left.right.fields[
+                0
+            ]
+            property_name = xpattern_path.full_path.left.right.fields[0]
+            property_schema = jsonpath_ng.Parent().find(xpattern_path)[0].value
+            xpattern = xpattern_path.value
+
+            schema_name = "Filter.{}.{}".format(
+                "".join(
+                    [
+                        piece[0].upper() + piece[1:]
+                        for piece in object_name.split("_")
+                    ]
+                ),
+                "".join(
+                    [
+                        piece[0].upper() + piece[1:]
+                        for piece in property_name.split("_")
+                    ]
+                ),
+            )
+            fmt = None
+            type_name = xpattern["format"]
+            if type_name in ["ipv4", "ipv6", "mac"]:
+                fmt = type_name
+                type_name = "string"
+            description = "Configuration settings for checking values within a particular field in bin_filters."
+            if "description" in xpattern:
+                description = xpattern["description"]
+            elif "description" in property_schema:
+                description = property_schema["description"]
+
+            schema = {
+                "description": description,
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "description": "The value to be considered for the filtering criteria.",
+                        "x-field-uid": 1,
+                        "type": type_name,
+                    },
+                    "mask": {
+                        "description": "The corresponding mask configuration for the value to be considered in order to check for a range of allowed values.",
+                        "x-field-uid": 2,
+                        "type": "string",
+                        "format": "hex",
+                        "minLength": 1,
+                    },
+                },
+            }
+
+            if "default" in xpattern:
+                schema["properties"]["value"]["default"] = xpattern["default"]
+
+            if fmt is not None:
+                schema["properties"]["value"]["format"] = fmt
+                if fmt == "mac":
+                    schema["properties"]["mask"]["maxLength"] = 12
+                    schema["properties"]["mask"]["default"] = "ffffffffffff"
+                elif fmt == "ipv4":
+                    schema["properties"]["mask"]["maxLength"] = 8
+                    schema["properties"]["mask"]["default"] = "ffffffff"
+                elif fmt == "ipv6":
+                    schema["properties"]["mask"]["maxLength"] = 32
+                    schema["properties"]["mask"][
+                        "default"
+                    ] = "ffffffffffffffffffffffffffffffff"
+
+            if xpattern["format"] == "integer":
+                schema["properties"]["value"]["format"] = "uint32"
+                if "length" in xpattern:
+                    length = int(xpattern["length"])
+                    if length > 32:
+                        schema["properties"]["value"]["format"] = "uint64"
+                    max_val = 2**length - 1
+                    schema["properties"]["value"]["maximum"] = max_val
+                    schema["properties"]["mask"]["maxLength"] = length
+                    schema["properties"]["mask"]["default"] = "f" * length
+
+            self._content["components"]["schemas"][schema_name] = schema
+            property_schema["$ref"] = "#/components/schemas/{}".format(
+                schema_name
+            )
+            del property_schema[pattern_extension]
 
 
 if __name__ == "__main__":
