@@ -10,7 +10,7 @@ def test_field_uds_default(default_config):
     assert mac._TYPES["mask"]["minLength"] == 1
     assert mac._TYPES["mask"]["maxLength"] == 12
     assert mac._DEFAULTS["value"] == "00:00:00:00:00:00"
-    assert mac._DEFAULTS["mask"] == "ffffffffffff"
+    assert mac._DEFAULTS["mask"] == "000000000000"
 
     ipv4 = default_config.field_uds_ipv4.ipv4
     assert ipv4._TYPES["value"]["format"] == "ipv4"
@@ -20,7 +20,7 @@ def test_field_uds_default(default_config):
     assert ipv4._TYPES["mask"]["minLength"] == 1
     assert ipv4._TYPES["mask"]["maxLength"] == 8
     assert ipv4._DEFAULTS["value"] == "0.0.0.0"
-    assert ipv4._DEFAULTS["mask"] == "ffffffff"
+    assert ipv4._DEFAULTS["mask"] == "00000000"
 
     ipv6 = default_config.field_uds_ipv6.ipv6
     assert ipv6._TYPES["value"]["format"] == "ipv6"
@@ -30,7 +30,7 @@ def test_field_uds_default(default_config):
     assert ipv6._TYPES["mask"]["minLength"] == 1
     assert ipv6._TYPES["mask"]["maxLength"] == 32
     assert ipv6._DEFAULTS["value"] == "::0"
-    assert ipv6._DEFAULTS["mask"] == "ffffffffffffffffffffffffffffffff"
+    assert ipv6._DEFAULTS["mask"] == "00000000000000000000000000000000"
 
     integer = default_config.field_uds_int.integer
     assert integer._TYPES["value"]["format"] == "uint32"
@@ -39,9 +39,9 @@ def test_field_uds_default(default_config):
     assert integer._TYPES["mask"]["format"] == "hex"
     assert integer._TYPES["mask"]["type"] == str
     assert integer._TYPES["mask"]["minLength"] == 1
-    assert integer._TYPES["mask"]["maxLength"] == 2
+    assert integer._TYPES["mask"]["maxLength"] == 1
     assert integer._DEFAULTS["value"] == 0
-    assert integer._DEFAULTS["mask"] == "ff"
+    assert integer._DEFAULTS["mask"] == "0"
 
     default_config.serialize()
 

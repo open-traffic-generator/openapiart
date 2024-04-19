@@ -1372,7 +1372,7 @@ class Bundler(object):
                         "type": type_name,
                     },
                     "mask": {
-                        "description": "The corresponding mask configuration for the value to be considered in order to check for a range of allowed values.",
+                        "description": "The corresponding mask configuration for the value to be considered in order to check for a range of allowed values.\n\n 0 bit signifies exact match and f signifies ignore for masking.",
                         "x-field-uid": 2,
                         "type": "string",
                         "format": "hex",
@@ -1388,15 +1388,15 @@ class Bundler(object):
                 schema["properties"]["value"]["format"] = fmt
                 if fmt == "mac":
                     schema["properties"]["mask"]["maxLength"] = 12
-                    schema["properties"]["mask"]["default"] = "ffffffffffff"
+                    schema["properties"]["mask"]["default"] = "000000000000"
                 elif fmt == "ipv4":
                     schema["properties"]["mask"]["maxLength"] = 8
-                    schema["properties"]["mask"]["default"] = "ffffffff"
+                    schema["properties"]["mask"]["default"] = "00000000"
                 elif fmt == "ipv6":
                     schema["properties"]["mask"]["maxLength"] = 32
                     schema["properties"]["mask"][
                         "default"
-                    ] = "ffffffffffffffffffffffffffffffff"
+                    ] = "00000000000000000000000000000000"
 
             if xpattern["format"] == "integer":
                 schema["properties"]["value"]["format"] = "uint32"
@@ -1406,10 +1406,11 @@ class Bundler(object):
                         schema["properties"]["value"]["format"] = "uint64"
                     max_val = 2**length - 1
                     schema["properties"]["value"]["maximum"] = max_val
-                    byte_length = math.ceil(length / 8)
-                    mask_length = byte_length * 2
-                    schema["properties"]["mask"]["maxLength"] = mask_length
-                    schema["properties"]["mask"]["default"] = "f" * mask_length
+                    mask_value = f"{max_val:x}"
+                    schema["properties"]["mask"]["maxLength"] = len(mask_value)
+                    schema["properties"]["mask"]["default"] = "0" * len(
+                        mask_value
+                    )
 
             self._content["components"]["schemas"][schema_name] = schema
             property_schema["$ref"] = "#/components/schemas/{}".format(
