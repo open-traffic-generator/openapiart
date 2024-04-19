@@ -9,6 +9,7 @@ import yaml
 import openapi_spec_validator
 import jsonpath_ng
 import inspect
+import math
 
 try:
     from typing import Union, Dict, Literal
@@ -1405,8 +1406,10 @@ class Bundler(object):
                         schema["properties"]["value"]["format"] = "uint64"
                     max_val = 2**length - 1
                     schema["properties"]["value"]["maximum"] = max_val
-                    schema["properties"]["mask"]["maxLength"] = length
-                    schema["properties"]["mask"]["default"] = "f" * length
+                    byte_length = math.ceil(length / 8)
+                    mask_length = byte_length * 2
+                    schema["properties"]["mask"]["maxLength"] = mask_length
+                    schema["properties"]["mask"]["default"] = "f" * mask_length
 
             self._content["components"]["schemas"][schema_name] = schema
             property_schema["$ref"] = "#/components/schemas/{}".format(
