@@ -1411,6 +1411,11 @@ class Bundler(object):
                     schema["properties"]["mask"]["default"] = "0" * len(
                         mask_value
                     )
+                    schema["properties"]["mask"]["description"] = (
+                        schema["properties"]["mask"]["description"]
+                        + "\n Allowed hex values are within the range of 0 to %s"
+                        % mask_value
+                    )
 
             self._content["components"]["schemas"][schema_name] = schema
             property_schema["$ref"] = "#/components/schemas/{}".format(
