@@ -10,7 +10,7 @@ def test_warnings_with_api(api, capfd):
     print(out, err)
     assert (
         "[WARNING]: update_configuration api is deprecated, please use post instead"
-        in out
+        in err
     )
     assert api.__warnings__ != []
     assert len(api.__warnings__) == 1
@@ -34,42 +34,42 @@ def test_warning_for_primitive_attr(api, capsys):
     s_obj = conf.serialize(conf.DICT)
 
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: space_1 property in schema PrefixConfig is deprecated, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: a property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: str_len property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: hex_slice property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: space_1 property in schema PrefixConfig is deprecated, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: a property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: str_len property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
     assert (
         "[WARNING]: hex_slice property in schema PrefixConfig is under_review, Information TBD"
-        in out
+        in err
     )
 
 
@@ -87,18 +87,18 @@ def test_warnings_for_non_primitive_attr(api, capsys):
     s_obj = conf.serialize(conf.DICT)
     out, err = capsys.readouterr()
 
-    assert err == ""
+    assert out == ""
     assert (
         "e property in schema PrefixConfig is deprecated, Information TBD"
-        in out
+        in err
     )
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "e property in schema PrefixConfig is deprecated, Information TBD"
-        in out
+        in err
     )
 
 
@@ -117,9 +117,9 @@ def test_warnings_for_iter_items(api, capsys):
     s_obj = conf.serialize(conf.DICT)
     out, err = capsys.readouterr()
 
-    assert err == ""
+    assert out == ""
     assert (
-        out.count(
+        err.count(
             "[WARNING]: g_c property in schema GObject is deprecated, Information TBD"
         )
         == 3
@@ -127,9 +127,9 @@ def test_warnings_for_iter_items(api, capsys):
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
-        out.count(
+        err.count(
             "[WARNING]: g_c property in schema GObject is deprecated, Information TBD"
         )
         == 3
@@ -148,18 +148,18 @@ def test_warnings_for_x_enmu_attr(api, capsys):
     s_obj = conf.serialize(conf.DICT)
 
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: STATUS_404 enum in property response is deprecated, new code will be coming soon"
-        in out
+        in err
     )
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: STATUS_404 enum in property response is deprecated, new code will be coming soon"
-        in out
+        in err
     )
 
 
@@ -176,18 +176,18 @@ def test_warnings_for_choice_attr(api, capsys):
     s_obj = conf.serialize(conf.DICT)
 
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: J_B enum in property choice is deprecated, use j_a instead"
-        in out
+        in err
     )
 
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
         "[WARNING]: J_B enum in property choice is deprecated, use j_a instead"
-        in out
+        in err
     )
 
 
@@ -198,21 +198,21 @@ def test_warnings_for_schema(api, capsys):
     s_obj = conf.serialize(conf.DICT)
 
     out, err = capsys.readouterr()
-    assert err == ""
+    assert out == ""
     assert (
-        out.count(
+        err.count(
             "[WARNING]: UpdateConfig is under_review, the whole schema is being reviewed"
         )
         == 1
     )
     assert (
-        out.count(
+        err.count(
             "[WARNING]: GObject is deprecated, new schema Jobject to be used"
         )
         == 2
     )
     assert (
-        out.count(
+        err.count(
             "[WARNING]: g_c property in schema GObject is deprecated, Information TBD"
         )
         == 2
@@ -221,21 +221,21 @@ def test_warnings_for_schema(api, capsys):
     conf.deserialize(s_obj)
     out, err = capsys.readouterr()
 
-    assert err == ""
+    assert out == ""
     assert (
-        out.count(
+        err.count(
             "[WARNING]: UpdateConfig is under_review, the whole schema is being reviewed"
         )
         == 1
     )
     assert (
-        out.count(
+        err.count(
             "[WARNING]: GObject is deprecated, new schema Jobject to be used"
         )
         == 2
     )
     assert (
-        out.count(
+        err.count(
             "[WARNING]: g_c property in schema GObject is deprecated, Information TBD"
         )
         == 2

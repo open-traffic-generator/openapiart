@@ -322,6 +322,16 @@ components:
         choice_required_default:
           $ref: "#/components/schemas/ChoiceRequiredAndDefault"
           x-field-uid: 57
+        auto_pattern:
+          $ref: "../pattern/pattern.yaml#/components/schemas/AutoPattern"
+          x-field-uid: 58
+        auto_pattern_default:
+          $ref: "../pattern/pattern.yaml#/components/schemas/AutoPatternDefault"
+          x-field-uid: 59
+        name_ending_with_number_234:
+          type: string
+          format: ipv4
+          x-field-uid: 60
 
     WObject:
       required: [w_name]
@@ -767,3 +777,37 @@ components:
             type: string
             format: ipv6
           x-field-uid: 3
+
+    AutoIpOptions:
+      description: |-
+        The OTG implementation can provide a system generated,
+        value for this property. If the OTG is unable to generate a value,
+        the default value must be used.
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          x-field-uid: 1
+          x-enum:
+            static:
+              x-field-uid: 1
+            dhcp:
+              x-field-uid: 2
+
+    AutoIpDefault:
+      description: |-
+        The OTG implementation can provide a system generated,
+        value for this property. If the OTG is unable to generate a value,
+        the default value must be used.
+      type: object
+      properties:
+        choice:
+          type: string
+          default: dhcp
+          x-field-uid: 1
+          x-enum:
+            static:
+              x-field-uid: 1
+            dhcp:
+              x-field-uid: 2

@@ -2754,7 +2754,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on {interface}.{name}"))
                     }}
                 """.format(
-                    name=field.name,
+                    name=self._get_external_struct_name(field.name),
                     interface=new.interface,
                     format=field.format.capitalize()
                     if field.isArray is False
