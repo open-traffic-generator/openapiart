@@ -706,6 +706,18 @@ class Bundler(object):
                     str(valid_formats),
                 )
             )
+        valid_features = ["count", "auto", "metric_tags"]
+        if "features" in xpattern:
+            for feature in xpattern["features"]:
+                if feature not in valid_features:
+                    self._errors.append(
+                        "%s has unspported feature %s , valid features are %s"
+                        % (
+                            str(xpattern_path.full_path),
+                            feature,
+                            str(valid_features),
+                        )
+                    )
 
     def _resolve_x_field_pattern(self):
         """Find all instances of pattern_extension in the openapi content
@@ -851,33 +863,70 @@ class Bundler(object):
         if xconstants is not None:
             schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
+
             if "auto" in xpattern["features"]:
-                if "default" not in xpattern:
-                    self._errors.append(
-                        "default must be set for property {}, when auto feature is enabled".format(
-                            schema_name
+                if "auto" in xpattern:
+                    # new enhance for auto hierarchy
+                    auto_prop = xpattern["auto"]
+                    if "$ref" not in auto_prop:
+                        self._errors.append(
+                            "ref is a mandatory property in {}, when auto property is specified".format(
+                                schema_name
+                            )
                         )
+                    if "default" not in auto_prop:
+                        self._errors.append(
+                            "default is a mandatory property in {}, when auto property is specified".format(
+                                schema_name
+                            )
+                        )
+                    elif not isinstance(auto_prop["default"], bool):
+                        self._errors.append(
+                            "only boolean values are allowed for default in {}".format(
+                                schema_name
+                            )
+                        )
+                    if "$ref" in auto_prop:
+                        schema["properties"]["choice"]["x-enum"]["auto"] = {
+                            "x-field-uid": 1
+                        }
+                        if (
+                            "default" in auto_prop
+                            and auto_prop["default"] is True
+                        ):
+                            schema["properties"]["choice"]["default"] = "auto"
+                        schema["properties"]["auto"] = {
+                            "$ref": auto_prop["$ref"],
+                            "x-field-uid": auto_field.uid,
+                        }
+
+                else:
+                    if "default" not in xpattern:
+                        self._errors.append(
+                            "default must be set for property {}, when auto feature is enabled".format(
+                                schema_name
+                            )
+                        )
+                    schema["properties"]["choice"]["x-enum"]["auto"] = {
+                        "x-field-uid": 1
+                    }
+                    schema["properties"]["choice"]["default"] = "auto"
+                    description = [
+                        "The OTG implementation can provide a system generated",
+                        "value for this property. If the OTG is unable to generate a value",
+                        "the default value must be used.",
+                    ]
+                    schema["properties"]["auto"] = {
+                        "description": "\n".join(description),
+                        "type": copy.deepcopy(type_name),
+                        "x-field-uid": auto_field.uid,
+                    }
+                    self._apply_common_x_field_pattern_properties(
+                        schema["properties"]["auto"],
+                        xpattern,
+                        fmt,
+                        property_name="auto",
                     )
-                schema["properties"]["choice"]["x-enum"]["auto"] = {
-                    "x-field-uid": 1
-                }
-                schema["properties"]["choice"]["default"] = "auto"
-                description = [
-                    "The OTG implementation can provide a system generated",
-                    "value for this property. If the OTG is unable to generate a value",
-                    "the default value must be used.",
-                ]
-                schema["properties"]["auto"] = {
-                    "description": "\n".join(description),
-                    "type": copy.deepcopy(type_name),
-                    "x-field-uid": auto_field.uid,
-                }
-                self._apply_common_x_field_pattern_properties(
-                    schema["properties"]["auto"],
-                    xpattern,
-                    fmt,
-                    property_name="auto",
-                )
 
             # skip this UID as it was previously being used for metric_groups
             _ = auto_field.uid
