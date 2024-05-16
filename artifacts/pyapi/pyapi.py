@@ -1034,15 +1034,22 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
             if isinstance(property_name, OpenApiObject):
                 if "self" in self._STATUS and property_value is None:
-                    print("[WARNING]: %s" % self._STATUS["self"])
+                    print(
+                        "[WARNING]: %s" % self._STATUS["self"], file=sys.stderr
+                    )
 
                 return
 
             enum_key = "%s.%s" % (property_name, property_value)
             if property_name in self._STATUS:
-                print("[WARNING]: %s" % self._STATUS[property_name])
+                print(
+                    "[WARNING]: %s" % self._STATUS[property_name],
+                    file=sys.stderr,
+                )
             elif enum_key in self._STATUS:
-                print("[WARNING]: %s" % self._STATUS[enum_key])
+                print(
+                    "[WARNING]: %s" % self._STATUS[enum_key], file=sys.stderr
+                )
 
 
 class OpenApiIter(OpenApiBase):
@@ -1323,6 +1330,12 @@ class PrefixConfig(OpenApiObject):
         "oid_pattern": {"type": "OidPattern"},
         "choice_default": {"type": "ChoiceObject"},
         "choice_required_default": {"type": "ChoiceRequiredAndDefault"},
+        "auto_pattern": {"type": "AutoPattern"},
+        "auto_pattern_default": {"type": "AutoPatternDefault"},
+        "name_ending_with_number_234": {
+            "type": str,
+            "format": "ipv4",
+        },
     }  # type: Dict[str, str]
 
     _REQUIRED = ("a", "b", "c", "required_object")  # type: tuple(str)
@@ -1380,6 +1393,7 @@ class PrefixConfig(OpenApiObject):
         uint64_list_param=None,
         auto_int32_param=None,
         auto_int32_list_param=None,
+        name_ending_with_number_234=None,
     ):
         super(PrefixConfig, self).__init__()
         self._parent = parent
@@ -1408,6 +1422,9 @@ class PrefixConfig(OpenApiObject):
         self._set_property("uint64_list_param", uint64_list_param)
         self._set_property("auto_int32_param", auto_int32_param)
         self._set_property("auto_int32_list_param", auto_int32_list_param)
+        self._set_property(
+            "name_ending_with_number_234", name_ending_with_number_234
+        )
 
     def set(
         self,
@@ -1436,6 +1453,7 @@ class PrefixConfig(OpenApiObject):
         uint64_list_param=None,
         auto_int32_param=None,
         auto_int32_list_param=None,
+        name_ending_with_number_234=None,
     ):
         for property_name, property_value in locals().items():
             if property_name != "self" and property_value is not None:
@@ -2343,6 +2361,49 @@ class PrefixConfig(OpenApiObject):
         return self._get_property(
             "choice_required_default", ChoiceRequiredAndDefault
         )
+
+    @property
+    def auto_pattern(self):
+        # type: () -> AutoPattern
+        """auto_pattern getter
+
+        Test auto patternTest auto patternTest auto pattern
+
+        Returns: AutoPattern
+        """
+        return self._get_property("auto_pattern", AutoPattern)
+
+    @property
+    def auto_pattern_default(self):
+        # type: () -> AutoPatternDefault
+        """auto_pattern_default getter
+
+        Test auto pattern with defaultTest auto pattern with defaultTest auto pattern with default
+
+        Returns: AutoPatternDefault
+        """
+        return self._get_property("auto_pattern_default", AutoPatternDefault)
+
+    @property
+    def name_ending_with_number_234(self):
+        # type: () -> str
+        """name_ending_with_number_234 getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("name_ending_with_number_234")
+
+    @name_ending_with_number_234.setter
+    def name_ending_with_number_234(self, value):
+        """name_ending_with_number_234 setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("name_ending_with_number_234", value)
 
 
 class EObject(OpenApiObject):
@@ -7056,6 +7117,728 @@ class ChoiceRequiredAndDefault(OpenApiObject):
         value: List[str]
         """
         self._set_property("ipv6", value, "ipv6")
+
+
+class AutoPattern(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "auto_ip": {"type": "PatternAutoPatternAutoIp"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(AutoPattern, self).__init__()
+        self._parent = parent
+
+    @property
+    def auto_ip(self):
+        # type: () -> PatternAutoPatternAutoIp
+        """auto_ip getter
+
+        TBDTBDTBD
+
+        Returns: PatternAutoPatternAutoIp
+        """
+        return self._get_property("auto_ip", PatternAutoPatternAutoIp)
+
+
+class PatternAutoPatternAutoIp(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "auto",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "ipv4",
+        },
+        "auto": {"type": "AutoIpOptions"},
+        "increment": {"type": "PatternAutoPatternAutoIpCounter"},
+        "decrement": {"type": "PatternAutoPatternAutoIpCounter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "value",
+        "value": "0.0.0.0",
+        "values": ["0.0.0.0"],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    AUTO = "auto"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self, parent=None, choice=None, value="0.0.0.0", values=["0.0.0.0"]
+    ):
+        super(PatternAutoPatternAutoIp, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def auto(self):
+        # type: () -> AutoIpOptions
+        """Factory property that returns an instance of the AutoIpOptions class
+
+        The OTG implementation can provide system generated,. value for this property. If the OTG is unable to generate value,. the default value must be used.
+
+        Returns: AutoIpOptions
+        """
+        return self._get_property("auto", AutoIpOptions, self, "auto")
+
+    @property
+    def increment(self):
+        # type: () -> PatternAutoPatternAutoIpCounter
+        """Factory property that returns an instance of the PatternAutoPatternAutoIpCounter class
+
+        ipv4 counter pattern
+
+        Returns: PatternAutoPatternAutoIpCounter
+        """
+        return self._get_property(
+            "increment", PatternAutoPatternAutoIpCounter, self, "increment"
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternAutoPatternAutoIpCounter
+        """Factory property that returns an instance of the PatternAutoPatternAutoIpCounter class
+
+        ipv4 counter pattern
+
+        Returns: PatternAutoPatternAutoIpCounter
+        """
+        return self._get_property(
+            "decrement", PatternAutoPatternAutoIpCounter, self, "decrement"
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
+
+
+class AutoIpOptions(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "static",
+                "dhcp",
+            ],
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ("choice",)  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    STATIC = "static"  # type: str
+    DHCP = "dhcp"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None):
+        super(AutoIpOptions, self).__init__()
+        self._parent = parent
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["dhcp"], Literal["static"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["dhcp"], Literal["static"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["dhcp"], Literal["static"]]
+        """
+        if value is None:
+            raise TypeError("Cannot set required property choice as None")
+        self._set_property("choice", value)
+
+
+class PatternAutoPatternAutoIpCounter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "step": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": "0.0.0.0",
+        "step": "0.0.0.1",
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start="0.0.0.0", step="0.0.0.1", count=1):
+        super(PatternAutoPatternAutoIpCounter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> str
+        """start getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> str
+        """step getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
+
+
+class AutoPatternDefault(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "auto_ip_default": {"type": "PatternAutoPatternDefaultAutoIpDefault"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {}  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None):
+        super(AutoPatternDefault, self).__init__()
+        self._parent = parent
+
+    @property
+    def auto_ip_default(self):
+        # type: () -> PatternAutoPatternDefaultAutoIpDefault
+        """auto_ip_default getter
+
+        TBDTBDTBD
+
+        Returns: PatternAutoPatternDefaultAutoIpDefault
+        """
+        return self._get_property(
+            "auto_ip_default", PatternAutoPatternDefaultAutoIpDefault
+        )
+
+
+class PatternAutoPatternDefaultAutoIpDefault(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "value",
+                "values",
+                "auto",
+                "increment",
+                "decrement",
+            ],
+        },
+        "value": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "values": {
+            "type": list,
+            "itemtype": str,
+            "itemformat": "ipv4",
+        },
+        "auto": {"type": "AutoIpDefault"},
+        "increment": {"type": "PatternAutoPatternDefaultAutoIpDefaultCounter"},
+        "decrement": {"type": "PatternAutoPatternDefaultAutoIpDefaultCounter"},
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "auto",
+        "value": "0.0.0.0",
+        "values": ["0.0.0.0"],
+    }  # type: Dict[str, Union(type)]
+
+    VALUE = "value"  # type: str
+    VALUES = "values"  # type: str
+    AUTO = "auto"  # type: str
+    INCREMENT = "increment"  # type: str
+    DECREMENT = "decrement"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(
+        self, parent=None, choice=None, value="0.0.0.0", values=["0.0.0.0"]
+    ):
+        super(PatternAutoPatternDefaultAutoIpDefault, self).__init__()
+        self._parent = parent
+        self._set_property("value", value)
+        self._set_property("values", values)
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    def set(self, value=None, values=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def auto(self):
+        # type: () -> AutoIpDefault
+        """Factory property that returns an instance of the AutoIpDefault class
+
+        The OTG implementation can provide system generated,. value for this property. If the OTG is unable to generate value,. the default value must be used.
+
+        Returns: AutoIpDefault
+        """
+        return self._get_property("auto", AutoIpDefault, self, "auto")
+
+    @property
+    def increment(self):
+        # type: () -> PatternAutoPatternDefaultAutoIpDefaultCounter
+        """Factory property that returns an instance of the PatternAutoPatternDefaultAutoIpDefaultCounter class
+
+        ipv4 counter pattern
+
+        Returns: PatternAutoPatternDefaultAutoIpDefaultCounter
+        """
+        return self._get_property(
+            "increment",
+            PatternAutoPatternDefaultAutoIpDefaultCounter,
+            self,
+            "increment",
+        )
+
+    @property
+    def decrement(self):
+        # type: () -> PatternAutoPatternDefaultAutoIpDefaultCounter
+        """Factory property that returns an instance of the PatternAutoPatternDefaultAutoIpDefaultCounter class
+
+        ipv4 counter pattern
+
+        Returns: PatternAutoPatternDefaultAutoIpDefaultCounter
+        """
+        return self._get_property(
+            "decrement",
+            PatternAutoPatternDefaultAutoIpDefaultCounter,
+            self,
+            "decrement",
+        )
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["auto"], Literal["decrement"], Literal["increment"], Literal["value"], Literal["values"]]
+        """
+        self._set_property("choice", value)
+
+    @property
+    def value(self):
+        # type: () -> str
+        """value getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("value")
+
+    @value.setter
+    def value(self, value):
+        """value setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("value", value, "value")
+
+    @property
+    def values(self):
+        # type: () -> List[str]
+        """values getter
+
+        TBD
+
+        Returns: List[str]
+        """
+        return self._get_property("values")
+
+    @values.setter
+    def values(self, value):
+        """values setter
+
+        TBD
+
+        value: List[str]
+        """
+        self._set_property("values", value, "values")
+
+
+class AutoIpDefault(OpenApiObject):
+    __slots__ = ("_parent", "_choice")
+
+    _TYPES = {
+        "choice": {
+            "type": str,
+            "enum": [
+                "static",
+                "dhcp",
+            ],
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "choice": "dhcp",
+    }  # type: Dict[str, Union(type)]
+
+    STATIC = "static"  # type: str
+    DHCP = "dhcp"  # type: str
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, choice=None):
+        super(AutoIpDefault, self).__init__()
+        self._parent = parent
+        if (
+            "choice" in self._DEFAULTS
+            and choice is None
+            and self._DEFAULTS["choice"] in self._TYPES
+        ):
+            getattr(self, self._DEFAULTS["choice"])
+        else:
+            self._set_property("choice", choice)
+
+    @property
+    def choice(self):
+        # type: () -> Union[Literal["dhcp"], Literal["static"]]
+        """choice getter
+
+        TBD
+
+        Returns: Union[Literal["dhcp"], Literal["static"]]
+        """
+        return self._get_property("choice")
+
+    @choice.setter
+    def choice(self, value):
+        """choice setter
+
+        TBD
+
+        value: Union[Literal["dhcp"], Literal["static"]]
+        """
+        self._set_property("choice", value)
+
+
+class PatternAutoPatternDefaultAutoIpDefaultCounter(OpenApiObject):
+    __slots__ = "_parent"
+
+    _TYPES = {
+        "start": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "step": {
+            "type": str,
+            "format": "ipv4",
+        },
+        "count": {
+            "type": int,
+            "format": "uint32",
+        },
+    }  # type: Dict[str, str]
+
+    _REQUIRED = ()  # type: tuple(str)
+
+    _DEFAULTS = {
+        "start": "0.0.0.0",
+        "step": "0.0.0.1",
+        "count": 1,
+    }  # type: Dict[str, Union(type)]
+
+    _STATUS = {}  # type: Dict[str, Union(type)]
+
+    def __init__(self, parent=None, start="0.0.0.0", step="0.0.0.1", count=1):
+        super(PatternAutoPatternDefaultAutoIpDefaultCounter, self).__init__()
+        self._parent = parent
+        self._set_property("start", start)
+        self._set_property("step", step)
+        self._set_property("count", count)
+
+    def set(self, start=None, step=None, count=None):
+        for property_name, property_value in locals().items():
+            if property_name != "self" and property_value is not None:
+                self._set_property(property_name, property_value)
+
+    @property
+    def start(self):
+        # type: () -> str
+        """start getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("start")
+
+    @start.setter
+    def start(self, value):
+        """start setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("start", value)
+
+    @property
+    def step(self):
+        # type: () -> str
+        """step getter
+
+        TBD
+
+        Returns: str
+        """
+        return self._get_property("step")
+
+    @step.setter
+    def step(self, value):
+        """step setter
+
+        TBD
+
+        value: str
+        """
+        self._set_property("step", value)
+
+    @property
+    def count(self):
+        # type: () -> int
+        """count getter
+
+        TBD
+
+        Returns: int
+        """
+        return self._get_property("count")
+
+    @count.setter
+    def count(self, value):
+        """count setter
+
+        TBD
+
+        value: int
+        """
+        self._set_property("count", value)
 
 
 class Error(OpenApiObject):
@@ -12156,7 +12939,7 @@ class Api(object):
         self._version_check_err = None
 
     def add_warnings(self, msg):
-        print("[WARNING]: %s" % msg)
+        print("[WARNING]: %s" % msg, file=sys.stderr)
         self.__warnings__.append(msg)
 
     def _deserialize_error(self, err_string):

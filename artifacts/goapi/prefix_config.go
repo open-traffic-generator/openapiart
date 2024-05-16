@@ -48,6 +48,8 @@ type prefixConfig struct {
 	oidPatternHolder            OidPattern
 	choiceDefaultHolder         ChoiceObject
 	choiceRequiredDefaultHolder ChoiceRequiredAndDefault
+	autoPatternHolder           AutoPattern
+	autoPatternDefaultHolder    AutoPatternDefault
 }
 
 func NewPrefixConfig() PrefixConfig {
@@ -307,6 +309,8 @@ func (obj *prefixConfig) setNil() {
 	obj.oidPatternHolder = nil
 	obj.choiceDefaultHolder = nil
 	obj.choiceRequiredDefaultHolder = nil
+	obj.autoPatternHolder = nil
+	obj.autoPatternDefaultHolder = nil
 	obj.validationErrors = nil
 	obj.warnings = nil
 	obj.constraints = make(map[string]map[string]Constraints)
@@ -668,6 +672,28 @@ type PrefixConfig interface {
 	SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig
 	// HasChoiceRequiredDefault checks if ChoiceRequiredDefault has been set in PrefixConfig
 	HasChoiceRequiredDefault() bool
+	// AutoPattern returns AutoPattern, set in PrefixConfig.
+	// AutoPattern is test auto pattern
+	AutoPattern() AutoPattern
+	// SetAutoPattern assigns AutoPattern provided by user to PrefixConfig.
+	// AutoPattern is test auto pattern
+	SetAutoPattern(value AutoPattern) PrefixConfig
+	// HasAutoPattern checks if AutoPattern has been set in PrefixConfig
+	HasAutoPattern() bool
+	// AutoPatternDefault returns AutoPatternDefault, set in PrefixConfig.
+	// AutoPatternDefault is test auto pattern with default
+	AutoPatternDefault() AutoPatternDefault
+	// SetAutoPatternDefault assigns AutoPatternDefault provided by user to PrefixConfig.
+	// AutoPatternDefault is test auto pattern with default
+	SetAutoPatternDefault(value AutoPatternDefault) PrefixConfig
+	// HasAutoPatternDefault checks if AutoPatternDefault has been set in PrefixConfig
+	HasAutoPatternDefault() bool
+	// NameEndingWithNumber234 returns string, set in PrefixConfig.
+	NameEndingWithNumber234() string
+	// SetNameEndingWithNumber234 assigns string provided by user to PrefixConfig
+	SetNameEndingWithNumber234(value string) PrefixConfig
+	// HasNameEndingWithNumber234 checks if NameEndingWithNumber234 has been set in PrefixConfig
+	HasNameEndingWithNumber234() bool
 	setNil()
 }
 
@@ -2401,6 +2427,84 @@ func (obj *prefixConfig) SetChoiceRequiredDefault(value ChoiceRequiredAndDefault
 	return obj
 }
 
+// description is TBD
+// AutoPattern returns a AutoPattern
+func (obj *prefixConfig) AutoPattern() AutoPattern {
+	if obj.obj.AutoPattern == nil {
+		obj.obj.AutoPattern = NewAutoPattern().msg()
+	}
+	if obj.autoPatternHolder == nil {
+		obj.autoPatternHolder = &autoPattern{obj: obj.obj.AutoPattern}
+	}
+	return obj.autoPatternHolder
+}
+
+// description is TBD
+// AutoPattern returns a AutoPattern
+func (obj *prefixConfig) HasAutoPattern() bool {
+	return obj.obj.AutoPattern != nil
+}
+
+// description is TBD
+// SetAutoPattern sets the AutoPattern value in the PrefixConfig object
+func (obj *prefixConfig) SetAutoPattern(value AutoPattern) PrefixConfig {
+
+	obj.autoPatternHolder = nil
+	obj.obj.AutoPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// AutoPatternDefault returns a AutoPatternDefault
+func (obj *prefixConfig) AutoPatternDefault() AutoPatternDefault {
+	if obj.obj.AutoPatternDefault == nil {
+		obj.obj.AutoPatternDefault = NewAutoPatternDefault().msg()
+	}
+	if obj.autoPatternDefaultHolder == nil {
+		obj.autoPatternDefaultHolder = &autoPatternDefault{obj: obj.obj.AutoPatternDefault}
+	}
+	return obj.autoPatternDefaultHolder
+}
+
+// description is TBD
+// AutoPatternDefault returns a AutoPatternDefault
+func (obj *prefixConfig) HasAutoPatternDefault() bool {
+	return obj.obj.AutoPatternDefault != nil
+}
+
+// description is TBD
+// SetAutoPatternDefault sets the AutoPatternDefault value in the PrefixConfig object
+func (obj *prefixConfig) SetAutoPatternDefault(value AutoPatternDefault) PrefixConfig {
+
+	obj.autoPatternDefaultHolder = nil
+	obj.obj.AutoPatternDefault = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// NameEndingWithNumber234 returns a string
+func (obj *prefixConfig) NameEndingWithNumber234() string {
+
+	return *obj.obj.NameEndingWithNumber_234
+
+}
+
+// description is TBD
+// NameEndingWithNumber234 returns a string
+func (obj *prefixConfig) HasNameEndingWithNumber234() bool {
+	return obj.obj.NameEndingWithNumber_234 != nil
+}
+
+// description is TBD
+// SetNameEndingWithNumber234 sets the string value in the PrefixConfig object
+func (obj *prefixConfig) SetNameEndingWithNumber234(value string) PrefixConfig {
+
+	obj.obj.NameEndingWithNumber_234 = &value
+	return obj
+}
+
 func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if set_default {
 		obj.setDefault()
@@ -2764,6 +2868,25 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if obj.obj.ChoiceRequiredDefault != nil {
 
 		obj.ChoiceRequiredDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.AutoPattern != nil {
+
+		obj.AutoPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.AutoPatternDefault != nil {
+
+		obj.AutoPatternDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.NameEndingWithNumber_234 != nil {
+
+		err := obj.validateIpv4(obj.NameEndingWithNumber234())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PrefixConfig.NameEndingWithNumber234"))
+		}
+
 	}
 
 }

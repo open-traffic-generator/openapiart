@@ -1076,6 +1076,19 @@
                     "choice_required_default": {
                         "$ref": "#/components/schemas/ChoiceRequiredAndDefault",
                         "x-field-uid": 57
+                    },
+                    "auto_pattern": {
+                        "$ref": "#/components/schemas/AutoPattern",
+                        "x-field-uid": 58
+                    },
+                    "auto_pattern_default": {
+                        "$ref": "#/components/schemas/AutoPatternDefault",
+                        "x-field-uid": 59
+                    },
+                    "name_ending_with_number_234": {
+                        "type": "string",
+                        "format": "ipv4",
+                        "x-field-uid": 60
                     }
                 }
             },
@@ -1765,6 +1778,54 @@
                     }
                 }
             },
+            "AutoIpOptions": {
+                "description": "The OTG implementation can provide a system generated,\nvalue for this property. If the OTG is unable to generate a value,\nthe default value must be used.",
+                "type": "object",
+                "required": [
+                    "choice"
+                ],
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "static": {
+                                "x-field-uid": 1
+                            },
+                            "dhcp": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "static",
+                            "dhcp"
+                        ]
+                    }
+                }
+            },
+            "AutoIpDefault": {
+                "description": "The OTG implementation can provide a system generated,\nvalue for this property. If the OTG is unable to generate a value,\nthe default value must be used.",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "default": "dhcp",
+                        "x-field-uid": 1,
+                        "x-enum": {
+                            "static": {
+                                "x-field-uid": 1
+                            },
+                            "dhcp": {
+                                "x-field-uid": 2
+                            }
+                        },
+                        "enum": [
+                            "static",
+                            "dhcp"
+                        ]
+                    }
+                }
+            },
             "Level.One": {
                 "description": "To Test Multi level non-primitive types",
                 "properties": {
@@ -1877,6 +1938,26 @@
                     "oid": {
                         "x-field-uid": 1,
                         "$ref": "#/components/schemas/Pattern.OidPattern.Oid"
+                    }
+                }
+            },
+            "AutoPattern": {
+                "description": "Test auto pattern",
+                "type": "object",
+                "properties": {
+                    "auto_ip": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.AutoPattern.AutoIp"
+                    }
+                }
+            },
+            "AutoPatternDefault": {
+                "description": "Test auto pattern with default",
+                "type": "object",
+                "properties": {
+                    "auto_ip_default": {
+                        "x-field-uid": 1,
+                        "$ref": "#/components/schemas/Pattern.AutoPatternDefault.AutoIpDefault"
                     }
                 }
             },
@@ -3340,6 +3421,182 @@
                         "default": [
                             "0.1"
                         ]
+                    }
+                }
+            },
+            "Pattern.AutoPattern.AutoIp.Counter": {
+                "description": "ipv4 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.1",
+                        "format": "ipv4"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.AutoPattern.AutoIp": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "auto": {
+                                "x-field-uid": 1
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "value",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "auto",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv4"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "0.0.0.0"
+                        ]
+                    },
+                    "auto": {
+                        "$ref": "#/components/schemas/AutoIpOptions",
+                        "x-field-uid": 4
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.AutoPattern.AutoIp.Counter",
+                        "x-field-uid": 6
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.AutoPattern.AutoIp.Counter",
+                        "x-field-uid": 7
+                    }
+                }
+            },
+            "Pattern.AutoPatternDefault.AutoIpDefault.Counter": {
+                "description": "ipv4 counter pattern",
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "x-field-uid": 1,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "step": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.1",
+                        "format": "ipv4"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": 3,
+                        "default": 1,
+                        "format": "uint32"
+                    }
+                }
+            },
+            "Pattern.AutoPatternDefault.AutoIpDefault": {
+                "description": "TBD",
+                "type": "object",
+                "properties": {
+                    "choice": {
+                        "type": "string",
+                        "x-enum": {
+                            "value": {
+                                "x-field-uid": 2
+                            },
+                            "values": {
+                                "x-field-uid": 3
+                            },
+                            "auto": {
+                                "x-field-uid": 1
+                            },
+                            "increment": {
+                                "x-field-uid": 4
+                            },
+                            "decrement": {
+                                "x-field-uid": 5
+                            }
+                        },
+                        "default": "auto",
+                        "x-field-uid": 1,
+                        "enum": [
+                            "value",
+                            "values",
+                            "auto",
+                            "increment",
+                            "decrement"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "x-field-uid": 2,
+                        "default": "0.0.0.0",
+                        "format": "ipv4"
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "ipv4"
+                        },
+                        "x-field-uid": 3,
+                        "default": [
+                            "0.0.0.0"
+                        ]
+                    },
+                    "auto": {
+                        "$ref": "#/components/schemas/AutoIpDefault",
+                        "x-field-uid": 4
+                    },
+                    "increment": {
+                        "$ref": "#/components/schemas/Pattern.AutoPatternDefault.AutoIpDefault.Counter",
+                        "x-field-uid": 6
+                    },
+                    "decrement": {
+                        "$ref": "#/components/schemas/Pattern.AutoPatternDefault.AutoIpDefault.Counter",
+                        "x-field-uid": 7
                     }
                 }
             },
