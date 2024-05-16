@@ -2,6 +2,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -174,18 +175,18 @@ func (api *apiSt) getWarnings() string {
 }
 
 func (api *apiSt) addWarnings(message string) {
-	fmt.Printf("[WARNING]: %s\n", message)
+	fmt.Fprintf(os.Stderr, "[WARNING]: %s\n", message)
 	api.warnings = message
 }
 
 func (api *apiSt) deprecated(message string) {
 	api.warnings = message
-	fmt.Printf("warning: %s\n", message)
+	fmt.Fprintf(os.Stderr, "warning: %s\n", message)
 }
 
 func (api *apiSt) under_review(message string) {
 	api.warnings = message
-	fmt.Printf("warning: %s\n", message)
+	fmt.Fprintf(os.Stderr, "warning: %s\n", message)
 }
 
 // HttpRequestDoer will return True for HTTP transport
@@ -238,17 +239,17 @@ func (obj *validation) Warnings() []string {
 }
 
 func (obj *validation) addWarnings(message string) {
-	fmt.Printf("[WARNING]: %s\n", message)
+	fmt.Fprintf(os.Stderr, "[WARNING]: %s\n", message)
 	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) deprecated(message string) {
-	fmt.Printf("warning: %s\n", message)
+	fmt.Fprintf(os.Stderr, "warning: %s\n", message)
 	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) under_review(message string) {
-	fmt.Printf("warning: %s\n", message)
+	fmt.Fprintf(os.Stderr, "warning: %s\n", message)
 	obj.warnings = append(obj.warnings, message)
 }
 
