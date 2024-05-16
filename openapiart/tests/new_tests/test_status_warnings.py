@@ -40,7 +40,7 @@ def test_warnings_for_non_primitive_attr(api, capsys):
     s_obj = config.serialize(config.DICT)
     out, err = capsys.readouterr()
 
-    assert err == ""
+    assert out == ""
     assert (
         "x_status_object property in schema ExtendedFeatures is under_review, test under_review"
         in err
