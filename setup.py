@@ -5,7 +5,7 @@ import os
 import setuptools
 
 pkg_name = "openapiart"
-version = "0.3.11"
+version = "0.3.13"
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(base_dir, "readme.md")) as fid:

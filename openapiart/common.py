@@ -1024,15 +1024,22 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
 
             if isinstance(property_name, OpenApiObject):
                 if "self" in self._STATUS and property_value is None:
-                    print("[WARNING]: %s" % self._STATUS["self"])
+                    print(
+                        "[WARNING]: %s" % self._STATUS["self"], file=sys.stderr
+                    )
 
                 return
 
             enum_key = "%s.%s" % (property_name, property_value)
             if property_name in self._STATUS:
-                print("[WARNING]: %s" % self._STATUS[property_name])
+                print(
+                    "[WARNING]: %s" % self._STATUS[property_name],
+                    file=sys.stderr,
+                )
             elif enum_key in self._STATUS:
-                print("[WARNING]: %s" % self._STATUS[enum_key])
+                print(
+                    "[WARNING]: %s" % self._STATUS[enum_key], file=sys.stderr
+                )
 
 
 class OpenApiIter(OpenApiBase):

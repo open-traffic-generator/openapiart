@@ -70,3 +70,30 @@ components:
             format: oid
             default: "0.1"
           x-field-uid: 1
+    AutoPattern:
+      description: Test auto pattern
+      type: object
+      properties:
+        auto_ip:
+          x-field-pattern:
+            format: ipv4
+            default: "0.0.0.0"
+            features: [count, auto]
+            auto:
+              $ref: "../config/config.yaml#/components/schemas/AutoIpOptions"
+              default: false
+          x-field-uid: 1
+
+    AutoPatternDefault:
+      description: Test auto pattern with default
+      type: object
+      properties:
+        auto_ip_default:
+          x-field-pattern:
+            format: ipv4
+            default: "0.0.0.0"
+            features: [count, auto]
+            auto:
+              $ref: "../config/config.yaml#/components/schemas/AutoIpDefault"
+              default: true
+          x-field-uid: 1

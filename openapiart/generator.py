@@ -731,7 +731,7 @@ class Generator:
 
             self._write()
             self._write(1, "def add_warnings(self, msg):")
-            self._write(2, "print('[WARNING]: %s' % msg)")
+            self._write(2, "print('[WARNING]: %s' % msg, file=sys.stderr)")
             self._write(2, "self.__warnings__.append(msg)")
 
             self._write()
