@@ -350,77 +350,77 @@ func TestAuto(t *testing.T) {
 }
 
 func TestAutoHeirarchy(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.VALUE,
+		goapi.PatternAutoPatternAutoIpChoice.VALUE,
 		config.AutoPattern().AutoIp().Choice())
 
 	config.AutoPattern().AutoIp().Auto().Static()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		goapi.PatternAutoPatternAutoIpChoice.AUTO,
 		config.AutoPattern().AutoIp().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpOptionsChoice.STATIC,
+		goapi.AutoIpOptionsChoice.STATIC,
 		config.AutoPattern().AutoIp().Auto().Choice())
 
 	config.AutoPattern().AutoIp().Auto().Dhcp()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		goapi.PatternAutoPatternAutoIpChoice.AUTO,
 		config.AutoPattern().AutoIp().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpOptionsChoice.DHCP,
+		goapi.AutoIpOptionsChoice.DHCP,
 		config.AutoPattern().AutoIp().Auto().Choice())
 
 	config.AutoPattern().AutoIp().SetValues([]string{"10"})
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.VALUES,
+		goapi.PatternAutoPatternAutoIpChoice.VALUES,
 		config.AutoPattern().AutoIp().Choice())
 }
 
 func TestAutoHeirarchyDefault(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.DHCP,
+		goapi.AutoIpDefaultChoice.DHCP,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().Auto().Static()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.STATIC,
+		goapi.AutoIpDefaultChoice.STATIC,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().Auto().Dhcp()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.DHCP,
+		goapi.AutoIpDefaultChoice.DHCP,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().SetValues([]string{"10"})
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 }
