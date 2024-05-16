@@ -1138,6 +1138,8 @@ type prefixConfig struct {
 	oidPatternHolder            OidPattern
 	choiceDefaultHolder         ChoiceObject
 	choiceRequiredDefaultHolder ChoiceRequiredAndDefault
+	autoPatternHolder           AutoPattern
+	autoPatternDefaultHolder    AutoPatternDefault
 }
 
 func NewPrefixConfig() PrefixConfig {
@@ -1397,6 +1399,8 @@ func (obj *prefixConfig) setNil() {
 	obj.oidPatternHolder = nil
 	obj.choiceDefaultHolder = nil
 	obj.choiceRequiredDefaultHolder = nil
+	obj.autoPatternHolder = nil
+	obj.autoPatternDefaultHolder = nil
 	obj.validationErrors = nil
 	obj.warnings = nil
 	obj.constraints = make(map[string]map[string]Constraints)
@@ -1758,6 +1762,28 @@ type PrefixConfig interface {
 	SetChoiceRequiredDefault(value ChoiceRequiredAndDefault) PrefixConfig
 	// HasChoiceRequiredDefault checks if ChoiceRequiredDefault has been set in PrefixConfig
 	HasChoiceRequiredDefault() bool
+	// AutoPattern returns AutoPattern, set in PrefixConfig.
+	// AutoPattern is test auto pattern
+	AutoPattern() AutoPattern
+	// SetAutoPattern assigns AutoPattern provided by user to PrefixConfig.
+	// AutoPattern is test auto pattern
+	SetAutoPattern(value AutoPattern) PrefixConfig
+	// HasAutoPattern checks if AutoPattern has been set in PrefixConfig
+	HasAutoPattern() bool
+	// AutoPatternDefault returns AutoPatternDefault, set in PrefixConfig.
+	// AutoPatternDefault is test auto pattern with default
+	AutoPatternDefault() AutoPatternDefault
+	// SetAutoPatternDefault assigns AutoPatternDefault provided by user to PrefixConfig.
+	// AutoPatternDefault is test auto pattern with default
+	SetAutoPatternDefault(value AutoPatternDefault) PrefixConfig
+	// HasAutoPatternDefault checks if AutoPatternDefault has been set in PrefixConfig
+	HasAutoPatternDefault() bool
+	// NameEndingWithNumber234 returns string, set in PrefixConfig.
+	NameEndingWithNumber234() string
+	// SetNameEndingWithNumber234 assigns string provided by user to PrefixConfig
+	SetNameEndingWithNumber234(value string) PrefixConfig
+	// HasNameEndingWithNumber234 checks if NameEndingWithNumber234 has been set in PrefixConfig
+	HasNameEndingWithNumber234() bool
 	setNil()
 }
 
@@ -3491,6 +3517,84 @@ func (obj *prefixConfig) SetChoiceRequiredDefault(value ChoiceRequiredAndDefault
 	return obj
 }
 
+// description is TBD
+// AutoPattern returns a AutoPattern
+func (obj *prefixConfig) AutoPattern() AutoPattern {
+	if obj.obj.AutoPattern == nil {
+		obj.obj.AutoPattern = NewAutoPattern().msg()
+	}
+	if obj.autoPatternHolder == nil {
+		obj.autoPatternHolder = &autoPattern{obj: obj.obj.AutoPattern}
+	}
+	return obj.autoPatternHolder
+}
+
+// description is TBD
+// AutoPattern returns a AutoPattern
+func (obj *prefixConfig) HasAutoPattern() bool {
+	return obj.obj.AutoPattern != nil
+}
+
+// description is TBD
+// SetAutoPattern sets the AutoPattern value in the PrefixConfig object
+func (obj *prefixConfig) SetAutoPattern(value AutoPattern) PrefixConfig {
+
+	obj.autoPatternHolder = nil
+	obj.obj.AutoPattern = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// AutoPatternDefault returns a AutoPatternDefault
+func (obj *prefixConfig) AutoPatternDefault() AutoPatternDefault {
+	if obj.obj.AutoPatternDefault == nil {
+		obj.obj.AutoPatternDefault = NewAutoPatternDefault().msg()
+	}
+	if obj.autoPatternDefaultHolder == nil {
+		obj.autoPatternDefaultHolder = &autoPatternDefault{obj: obj.obj.AutoPatternDefault}
+	}
+	return obj.autoPatternDefaultHolder
+}
+
+// description is TBD
+// AutoPatternDefault returns a AutoPatternDefault
+func (obj *prefixConfig) HasAutoPatternDefault() bool {
+	return obj.obj.AutoPatternDefault != nil
+}
+
+// description is TBD
+// SetAutoPatternDefault sets the AutoPatternDefault value in the PrefixConfig object
+func (obj *prefixConfig) SetAutoPatternDefault(value AutoPatternDefault) PrefixConfig {
+
+	obj.autoPatternDefaultHolder = nil
+	obj.obj.AutoPatternDefault = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// NameEndingWithNumber234 returns a string
+func (obj *prefixConfig) NameEndingWithNumber234() string {
+
+	return *obj.obj.NameEndingWithNumber_234
+
+}
+
+// description is TBD
+// NameEndingWithNumber234 returns a string
+func (obj *prefixConfig) HasNameEndingWithNumber234() bool {
+	return obj.obj.NameEndingWithNumber_234 != nil
+}
+
+// description is TBD
+// SetNameEndingWithNumber234 sets the string value in the PrefixConfig object
+func (obj *prefixConfig) SetNameEndingWithNumber234(value string) PrefixConfig {
+
+	obj.obj.NameEndingWithNumber_234 = &value
+	return obj
+}
+
 func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if set_default {
 		obj.setDefault()
@@ -3854,6 +3958,25 @@ func (obj *prefixConfig) validateObj(vObj *validation, set_default bool) {
 	if obj.obj.ChoiceRequiredDefault != nil {
 
 		obj.ChoiceRequiredDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.AutoPattern != nil {
+
+		obj.AutoPattern().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.AutoPatternDefault != nil {
+
+		obj.AutoPatternDefault().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.NameEndingWithNumber_234 != nil {
+
+		err := obj.validateIpv4(obj.NameEndingWithNumber234())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PrefixConfig.NameEndingWithNumber234"))
+		}
+
 	}
 
 }
@@ -20128,6 +20251,640 @@ func (obj *choiceRequiredAndDefault) setDefault() {
 
 }
 
+// ***** AutoPattern *****
+type autoPattern struct {
+	validation
+	obj          *openapi.AutoPattern
+	marshaller   marshalAutoPattern
+	unMarshaller unMarshalAutoPattern
+	autoIpHolder PatternAutoPatternAutoIp
+}
+
+func NewAutoPattern() AutoPattern {
+	obj := autoPattern{obj: &openapi.AutoPattern{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *autoPattern) msg() *openapi.AutoPattern {
+	return obj.obj
+}
+
+func (obj *autoPattern) setMsg(msg *openapi.AutoPattern) AutoPattern {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalautoPattern struct {
+	obj *autoPattern
+}
+
+type marshalAutoPattern interface {
+	// ToProto marshals AutoPattern to protobuf object *openapi.AutoPattern
+	ToProto() (*openapi.AutoPattern, error)
+	// ToPbText marshals AutoPattern to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals AutoPattern to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals AutoPattern to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalautoPattern struct {
+	obj *autoPattern
+}
+
+type unMarshalAutoPattern interface {
+	// FromProto unmarshals AutoPattern from protobuf object *openapi.AutoPattern
+	FromProto(msg *openapi.AutoPattern) (AutoPattern, error)
+	// FromPbText unmarshals AutoPattern from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals AutoPattern from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals AutoPattern from JSON text
+	FromJson(value string) error
+}
+
+func (obj *autoPattern) Marshal() marshalAutoPattern {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalautoPattern{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *autoPattern) Unmarshal() unMarshalAutoPattern {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalautoPattern{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalautoPattern) ToProto() (*openapi.AutoPattern, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalautoPattern) FromProto(msg *openapi.AutoPattern) (AutoPattern, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalautoPattern) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalautoPattern) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalautoPattern) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoPattern) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalautoPattern) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoPattern) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *autoPattern) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *autoPattern) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *autoPattern) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *autoPattern) Clone() (AutoPattern, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewAutoPattern()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *autoPattern) setNil() {
+	obj.autoIpHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// AutoPattern is test auto pattern
+type AutoPattern interface {
+	Validation
+	// msg marshals AutoPattern to protobuf object *openapi.AutoPattern
+	// and doesn't set defaults
+	msg() *openapi.AutoPattern
+	// setMsg unmarshals AutoPattern from protobuf object *openapi.AutoPattern
+	// and doesn't set defaults
+	setMsg(*openapi.AutoPattern) AutoPattern
+	// provides marshal interface
+	Marshal() marshalAutoPattern
+	// provides unmarshal interface
+	Unmarshal() unMarshalAutoPattern
+	// validate validates AutoPattern
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (AutoPattern, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// AutoIp returns PatternAutoPatternAutoIp, set in AutoPattern.
+	// PatternAutoPatternAutoIp is tBD
+	AutoIp() PatternAutoPatternAutoIp
+	// SetAutoIp assigns PatternAutoPatternAutoIp provided by user to AutoPattern.
+	// PatternAutoPatternAutoIp is tBD
+	SetAutoIp(value PatternAutoPatternAutoIp) AutoPattern
+	// HasAutoIp checks if AutoIp has been set in AutoPattern
+	HasAutoIp() bool
+	setNil()
+}
+
+// description is TBD
+// AutoIp returns a PatternAutoPatternAutoIp
+func (obj *autoPattern) AutoIp() PatternAutoPatternAutoIp {
+	if obj.obj.AutoIp == nil {
+		obj.obj.AutoIp = NewPatternAutoPatternAutoIp().msg()
+	}
+	if obj.autoIpHolder == nil {
+		obj.autoIpHolder = &patternAutoPatternAutoIp{obj: obj.obj.AutoIp}
+	}
+	return obj.autoIpHolder
+}
+
+// description is TBD
+// AutoIp returns a PatternAutoPatternAutoIp
+func (obj *autoPattern) HasAutoIp() bool {
+	return obj.obj.AutoIp != nil
+}
+
+// description is TBD
+// SetAutoIp sets the PatternAutoPatternAutoIp value in the AutoPattern object
+func (obj *autoPattern) SetAutoIp(value PatternAutoPatternAutoIp) AutoPattern {
+
+	obj.autoIpHolder = nil
+	obj.obj.AutoIp = value.msg()
+
+	return obj
+}
+
+func (obj *autoPattern) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.AutoIp != nil {
+
+		obj.AutoIp().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *autoPattern) setDefault() {
+
+}
+
+// ***** AutoPatternDefault *****
+type autoPatternDefault struct {
+	validation
+	obj                 *openapi.AutoPatternDefault
+	marshaller          marshalAutoPatternDefault
+	unMarshaller        unMarshalAutoPatternDefault
+	autoIpDefaultHolder PatternAutoPatternDefaultAutoIpDefault
+}
+
+func NewAutoPatternDefault() AutoPatternDefault {
+	obj := autoPatternDefault{obj: &openapi.AutoPatternDefault{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *autoPatternDefault) msg() *openapi.AutoPatternDefault {
+	return obj.obj
+}
+
+func (obj *autoPatternDefault) setMsg(msg *openapi.AutoPatternDefault) AutoPatternDefault {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalautoPatternDefault struct {
+	obj *autoPatternDefault
+}
+
+type marshalAutoPatternDefault interface {
+	// ToProto marshals AutoPatternDefault to protobuf object *openapi.AutoPatternDefault
+	ToProto() (*openapi.AutoPatternDefault, error)
+	// ToPbText marshals AutoPatternDefault to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals AutoPatternDefault to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals AutoPatternDefault to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalautoPatternDefault struct {
+	obj *autoPatternDefault
+}
+
+type unMarshalAutoPatternDefault interface {
+	// FromProto unmarshals AutoPatternDefault from protobuf object *openapi.AutoPatternDefault
+	FromProto(msg *openapi.AutoPatternDefault) (AutoPatternDefault, error)
+	// FromPbText unmarshals AutoPatternDefault from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals AutoPatternDefault from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals AutoPatternDefault from JSON text
+	FromJson(value string) error
+}
+
+func (obj *autoPatternDefault) Marshal() marshalAutoPatternDefault {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalautoPatternDefault{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *autoPatternDefault) Unmarshal() unMarshalAutoPatternDefault {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalautoPatternDefault{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalautoPatternDefault) ToProto() (*openapi.AutoPatternDefault, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalautoPatternDefault) FromProto(msg *openapi.AutoPatternDefault) (AutoPatternDefault, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalautoPatternDefault) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalautoPatternDefault) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalautoPatternDefault) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoPatternDefault) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalautoPatternDefault) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoPatternDefault) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *autoPatternDefault) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *autoPatternDefault) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *autoPatternDefault) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *autoPatternDefault) Clone() (AutoPatternDefault, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewAutoPatternDefault()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *autoPatternDefault) setNil() {
+	obj.autoIpDefaultHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// AutoPatternDefault is test auto pattern with default
+type AutoPatternDefault interface {
+	Validation
+	// msg marshals AutoPatternDefault to protobuf object *openapi.AutoPatternDefault
+	// and doesn't set defaults
+	msg() *openapi.AutoPatternDefault
+	// setMsg unmarshals AutoPatternDefault from protobuf object *openapi.AutoPatternDefault
+	// and doesn't set defaults
+	setMsg(*openapi.AutoPatternDefault) AutoPatternDefault
+	// provides marshal interface
+	Marshal() marshalAutoPatternDefault
+	// provides unmarshal interface
+	Unmarshal() unMarshalAutoPatternDefault
+	// validate validates AutoPatternDefault
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (AutoPatternDefault, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// AutoIpDefault returns PatternAutoPatternDefaultAutoIpDefault, set in AutoPatternDefault.
+	// PatternAutoPatternDefaultAutoIpDefault is tBD
+	AutoIpDefault() PatternAutoPatternDefaultAutoIpDefault
+	// SetAutoIpDefault assigns PatternAutoPatternDefaultAutoIpDefault provided by user to AutoPatternDefault.
+	// PatternAutoPatternDefaultAutoIpDefault is tBD
+	SetAutoIpDefault(value PatternAutoPatternDefaultAutoIpDefault) AutoPatternDefault
+	// HasAutoIpDefault checks if AutoIpDefault has been set in AutoPatternDefault
+	HasAutoIpDefault() bool
+	setNil()
+}
+
+// description is TBD
+// AutoIpDefault returns a PatternAutoPatternDefaultAutoIpDefault
+func (obj *autoPatternDefault) AutoIpDefault() PatternAutoPatternDefaultAutoIpDefault {
+	if obj.obj.AutoIpDefault == nil {
+		obj.obj.AutoIpDefault = NewPatternAutoPatternDefaultAutoIpDefault().msg()
+	}
+	if obj.autoIpDefaultHolder == nil {
+		obj.autoIpDefaultHolder = &patternAutoPatternDefaultAutoIpDefault{obj: obj.obj.AutoIpDefault}
+	}
+	return obj.autoIpDefaultHolder
+}
+
+// description is TBD
+// AutoIpDefault returns a PatternAutoPatternDefaultAutoIpDefault
+func (obj *autoPatternDefault) HasAutoIpDefault() bool {
+	return obj.obj.AutoIpDefault != nil
+}
+
+// description is TBD
+// SetAutoIpDefault sets the PatternAutoPatternDefaultAutoIpDefault value in the AutoPatternDefault object
+func (obj *autoPatternDefault) SetAutoIpDefault(value PatternAutoPatternDefaultAutoIpDefault) AutoPatternDefault {
+
+	obj.autoIpDefaultHolder = nil
+	obj.obj.AutoIpDefault = value.msg()
+
+	return obj
+}
+
+func (obj *autoPatternDefault) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.AutoIpDefault != nil {
+
+		obj.AutoIpDefault().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *autoPatternDefault) setDefault() {
+
+}
+
 // ***** NativeFeatures *****
 type nativeFeatures struct {
 	validation
@@ -29081,6 +29838,1180 @@ func (obj *patternOidPatternOid) setDefault() {
 
 }
 
+// ***** PatternAutoPatternAutoIp *****
+type patternAutoPatternAutoIp struct {
+	validation
+	obj             *openapi.PatternAutoPatternAutoIp
+	marshaller      marshalPatternAutoPatternAutoIp
+	unMarshaller    unMarshalPatternAutoPatternAutoIp
+	autoHolder      AutoIpOptions
+	incrementHolder PatternAutoPatternAutoIpCounter
+	decrementHolder PatternAutoPatternAutoIpCounter
+}
+
+func NewPatternAutoPatternAutoIp() PatternAutoPatternAutoIp {
+	obj := patternAutoPatternAutoIp{obj: &openapi.PatternAutoPatternAutoIp{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternAutoPatternAutoIp) msg() *openapi.PatternAutoPatternAutoIp {
+	return obj.obj
+}
+
+func (obj *patternAutoPatternAutoIp) setMsg(msg *openapi.PatternAutoPatternAutoIp) PatternAutoPatternAutoIp {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternAutoPatternAutoIp struct {
+	obj *patternAutoPatternAutoIp
+}
+
+type marshalPatternAutoPatternAutoIp interface {
+	// ToProto marshals PatternAutoPatternAutoIp to protobuf object *openapi.PatternAutoPatternAutoIp
+	ToProto() (*openapi.PatternAutoPatternAutoIp, error)
+	// ToPbText marshals PatternAutoPatternAutoIp to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternAutoPatternAutoIp to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternAutoPatternAutoIp to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternAutoPatternAutoIp struct {
+	obj *patternAutoPatternAutoIp
+}
+
+type unMarshalPatternAutoPatternAutoIp interface {
+	// FromProto unmarshals PatternAutoPatternAutoIp from protobuf object *openapi.PatternAutoPatternAutoIp
+	FromProto(msg *openapi.PatternAutoPatternAutoIp) (PatternAutoPatternAutoIp, error)
+	// FromPbText unmarshals PatternAutoPatternAutoIp from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternAutoPatternAutoIp from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternAutoPatternAutoIp from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternAutoPatternAutoIp) Marshal() marshalPatternAutoPatternAutoIp {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternAutoPatternAutoIp{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternAutoPatternAutoIp) Unmarshal() unMarshalPatternAutoPatternAutoIp {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternAutoPatternAutoIp{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternAutoPatternAutoIp) ToProto() (*openapi.PatternAutoPatternAutoIp, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIp) FromProto(msg *openapi.PatternAutoPatternAutoIp) (PatternAutoPatternAutoIp, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternAutoPatternAutoIp) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIp) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternAutoPatternAutoIp) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIp) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternAutoPatternAutoIp) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIp) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternAutoPatternAutoIp) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternAutoIp) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternAutoIp) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternAutoPatternAutoIp) Clone() (PatternAutoPatternAutoIp, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternAutoPatternAutoIp()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternAutoPatternAutoIp) setNil() {
+	obj.autoHolder = nil
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternAutoPatternAutoIp is tBD
+type PatternAutoPatternAutoIp interface {
+	Validation
+	// msg marshals PatternAutoPatternAutoIp to protobuf object *openapi.PatternAutoPatternAutoIp
+	// and doesn't set defaults
+	msg() *openapi.PatternAutoPatternAutoIp
+	// setMsg unmarshals PatternAutoPatternAutoIp from protobuf object *openapi.PatternAutoPatternAutoIp
+	// and doesn't set defaults
+	setMsg(*openapi.PatternAutoPatternAutoIp) PatternAutoPatternAutoIp
+	// provides marshal interface
+	Marshal() marshalPatternAutoPatternAutoIp
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternAutoPatternAutoIp
+	// validate validates PatternAutoPatternAutoIp
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternAutoPatternAutoIp, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternAutoPatternAutoIpChoiceEnum, set in PatternAutoPatternAutoIp
+	Choice() PatternAutoPatternAutoIpChoiceEnum
+	// setChoice assigns PatternAutoPatternAutoIpChoiceEnum provided by user to PatternAutoPatternAutoIp
+	setChoice(value PatternAutoPatternAutoIpChoiceEnum) PatternAutoPatternAutoIp
+	// HasChoice checks if Choice has been set in PatternAutoPatternAutoIp
+	HasChoice() bool
+	// Value returns string, set in PatternAutoPatternAutoIp.
+	Value() string
+	// SetValue assigns string provided by user to PatternAutoPatternAutoIp
+	SetValue(value string) PatternAutoPatternAutoIp
+	// HasValue checks if Value has been set in PatternAutoPatternAutoIp
+	HasValue() bool
+	// Values returns []string, set in PatternAutoPatternAutoIp.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternAutoPatternAutoIp
+	SetValues(value []string) PatternAutoPatternAutoIp
+	// Auto returns AutoIpOptions, set in PatternAutoPatternAutoIp.
+	// AutoIpOptions is the OTG implementation can provide a system generated,
+	// value for this property. If the OTG is unable to generate a value,
+	// the default value must be used.
+	Auto() AutoIpOptions
+	// HasAuto checks if Auto has been set in PatternAutoPatternAutoIp
+	HasAuto() bool
+	// Increment returns PatternAutoPatternAutoIpCounter, set in PatternAutoPatternAutoIp.
+	// PatternAutoPatternAutoIpCounter is ipv4 counter pattern
+	Increment() PatternAutoPatternAutoIpCounter
+	// SetIncrement assigns PatternAutoPatternAutoIpCounter provided by user to PatternAutoPatternAutoIp.
+	// PatternAutoPatternAutoIpCounter is ipv4 counter pattern
+	SetIncrement(value PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIp
+	// HasIncrement checks if Increment has been set in PatternAutoPatternAutoIp
+	HasIncrement() bool
+	// Decrement returns PatternAutoPatternAutoIpCounter, set in PatternAutoPatternAutoIp.
+	// PatternAutoPatternAutoIpCounter is ipv4 counter pattern
+	Decrement() PatternAutoPatternAutoIpCounter
+	// SetDecrement assigns PatternAutoPatternAutoIpCounter provided by user to PatternAutoPatternAutoIp.
+	// PatternAutoPatternAutoIpCounter is ipv4 counter pattern
+	SetDecrement(value PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIp
+	// HasDecrement checks if Decrement has been set in PatternAutoPatternAutoIp
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternAutoPatternAutoIpChoiceEnum string
+
+// Enum of Choice on PatternAutoPatternAutoIp
+var PatternAutoPatternAutoIpChoice = struct {
+	VALUE     PatternAutoPatternAutoIpChoiceEnum
+	VALUES    PatternAutoPatternAutoIpChoiceEnum
+	AUTO      PatternAutoPatternAutoIpChoiceEnum
+	INCREMENT PatternAutoPatternAutoIpChoiceEnum
+	DECREMENT PatternAutoPatternAutoIpChoiceEnum
+}{
+	VALUE:     PatternAutoPatternAutoIpChoiceEnum("value"),
+	VALUES:    PatternAutoPatternAutoIpChoiceEnum("values"),
+	AUTO:      PatternAutoPatternAutoIpChoiceEnum("auto"),
+	INCREMENT: PatternAutoPatternAutoIpChoiceEnum("increment"),
+	DECREMENT: PatternAutoPatternAutoIpChoiceEnum("decrement"),
+}
+
+func (obj *patternAutoPatternAutoIp) Choice() PatternAutoPatternAutoIpChoiceEnum {
+	return PatternAutoPatternAutoIpChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternAutoPatternAutoIp) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternAutoPatternAutoIp) setChoice(value PatternAutoPatternAutoIpChoiceEnum) PatternAutoPatternAutoIp {
+	intValue, ok := openapi.PatternAutoPatternAutoIp_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternAutoPatternAutoIpChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternAutoPatternAutoIp_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Auto = nil
+	obj.autoHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternAutoPatternAutoIpChoice.VALUE {
+		defaultValue := "0.0.0.0"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternAutoPatternAutoIpChoice.VALUES {
+		defaultValue := []string{"0.0.0.0"}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternAutoPatternAutoIpChoice.AUTO {
+		obj.obj.Auto = NewAutoIpOptions().msg()
+	}
+
+	if value == PatternAutoPatternAutoIpChoice.INCREMENT {
+		obj.obj.Increment = NewPatternAutoPatternAutoIpCounter().msg()
+	}
+
+	if value == PatternAutoPatternAutoIpChoice.DECREMENT {
+		obj.obj.Decrement = NewPatternAutoPatternAutoIpCounter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternAutoPatternAutoIp) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternAutoPatternAutoIpChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternAutoPatternAutoIp) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternAutoPatternAutoIp object
+func (obj *patternAutoPatternAutoIp) SetValue(value string) PatternAutoPatternAutoIp {
+	obj.setChoice(PatternAutoPatternAutoIpChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternAutoPatternAutoIp) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"0.0.0.0"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternAutoPatternAutoIp object
+func (obj *patternAutoPatternAutoIp) SetValues(value []string) PatternAutoPatternAutoIp {
+	obj.setChoice(PatternAutoPatternAutoIpChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Auto returns a AutoIpOptions
+func (obj *patternAutoPatternAutoIp) Auto() AutoIpOptions {
+	if obj.obj.Auto == nil {
+		obj.setChoice(PatternAutoPatternAutoIpChoice.AUTO)
+	}
+	if obj.autoHolder == nil {
+		obj.autoHolder = &autoIpOptions{obj: obj.obj.Auto}
+	}
+	return obj.autoHolder
+}
+
+// description is TBD
+// Auto returns a AutoIpOptions
+func (obj *patternAutoPatternAutoIp) HasAuto() bool {
+	return obj.obj.Auto != nil
+}
+
+// description is TBD
+// Increment returns a PatternAutoPatternAutoIpCounter
+func (obj *patternAutoPatternAutoIp) Increment() PatternAutoPatternAutoIpCounter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternAutoPatternAutoIpChoice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternAutoPatternAutoIpCounter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternAutoPatternAutoIpCounter
+func (obj *patternAutoPatternAutoIp) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternAutoPatternAutoIpCounter value in the PatternAutoPatternAutoIp object
+func (obj *patternAutoPatternAutoIp) SetIncrement(value PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIp {
+	obj.setChoice(PatternAutoPatternAutoIpChoice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternAutoPatternAutoIpCounter
+func (obj *patternAutoPatternAutoIp) Decrement() PatternAutoPatternAutoIpCounter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternAutoPatternAutoIpChoice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternAutoPatternAutoIpCounter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternAutoPatternAutoIpCounter
+func (obj *patternAutoPatternAutoIp) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternAutoPatternAutoIpCounter value in the PatternAutoPatternAutoIp object
+func (obj *patternAutoPatternAutoIp) SetDecrement(value PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIp {
+	obj.setChoice(PatternAutoPatternAutoIpChoice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternAutoPatternAutoIp) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateIpv4(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternAutoIp.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateIpv4Slice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternAutoIp.Values"))
+		}
+
+	}
+
+	if obj.obj.Auto != nil {
+
+		obj.Auto().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternAutoPatternAutoIp) setDefault() {
+	var choices_set int = 0
+	var choice PatternAutoPatternAutoIpChoiceEnum
+
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternAutoPatternAutoIpChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternAutoPatternAutoIpChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternAutoPatternAutoIpChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternAutoPatternAutoIpChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternAutoPatternAutoIpChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternAutoPatternAutoIpChoice.VALUE)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternAutoPatternAutoIp")
+			}
+		} else {
+			intVal := openapi.PatternAutoPatternAutoIp_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternAutoPatternAutoIp_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+}
+
+// ***** PatternAutoPatternDefaultAutoIpDefault *****
+type patternAutoPatternDefaultAutoIpDefault struct {
+	validation
+	obj             *openapi.PatternAutoPatternDefaultAutoIpDefault
+	marshaller      marshalPatternAutoPatternDefaultAutoIpDefault
+	unMarshaller    unMarshalPatternAutoPatternDefaultAutoIpDefault
+	autoHolder      AutoIpDefault
+	incrementHolder PatternAutoPatternDefaultAutoIpDefaultCounter
+	decrementHolder PatternAutoPatternDefaultAutoIpDefaultCounter
+}
+
+func NewPatternAutoPatternDefaultAutoIpDefault() PatternAutoPatternDefaultAutoIpDefault {
+	obj := patternAutoPatternDefaultAutoIpDefault{obj: &openapi.PatternAutoPatternDefaultAutoIpDefault{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) msg() *openapi.PatternAutoPatternDefaultAutoIpDefault {
+	return obj.obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) setMsg(msg *openapi.PatternAutoPatternDefaultAutoIpDefault) PatternAutoPatternDefaultAutoIpDefault {
+	obj.setNil()
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternAutoPatternDefaultAutoIpDefault struct {
+	obj *patternAutoPatternDefaultAutoIpDefault
+}
+
+type marshalPatternAutoPatternDefaultAutoIpDefault interface {
+	// ToProto marshals PatternAutoPatternDefaultAutoIpDefault to protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefault
+	ToProto() (*openapi.PatternAutoPatternDefaultAutoIpDefault, error)
+	// ToPbText marshals PatternAutoPatternDefaultAutoIpDefault to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternAutoPatternDefaultAutoIpDefault to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternAutoPatternDefaultAutoIpDefault to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternAutoPatternDefaultAutoIpDefault struct {
+	obj *patternAutoPatternDefaultAutoIpDefault
+}
+
+type unMarshalPatternAutoPatternDefaultAutoIpDefault interface {
+	// FromProto unmarshals PatternAutoPatternDefaultAutoIpDefault from protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefault
+	FromProto(msg *openapi.PatternAutoPatternDefaultAutoIpDefault) (PatternAutoPatternDefaultAutoIpDefault, error)
+	// FromPbText unmarshals PatternAutoPatternDefaultAutoIpDefault from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternAutoPatternDefaultAutoIpDefault from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternAutoPatternDefaultAutoIpDefault from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) Marshal() marshalPatternAutoPatternDefaultAutoIpDefault {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternAutoPatternDefaultAutoIpDefault{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) Unmarshal() unMarshalPatternAutoPatternDefaultAutoIpDefault {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternAutoPatternDefaultAutoIpDefault{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefault) ToProto() (*openapi.PatternAutoPatternDefaultAutoIpDefault, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefault) FromProto(msg *openapi.PatternAutoPatternDefaultAutoIpDefault) (PatternAutoPatternDefaultAutoIpDefault, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefault) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefault) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefault) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefault) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefault) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefault) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+	m.obj.setNil()
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) Clone() (PatternAutoPatternDefaultAutoIpDefault, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternAutoPatternDefaultAutoIpDefault()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) setNil() {
+	obj.autoHolder = nil
+	obj.incrementHolder = nil
+	obj.decrementHolder = nil
+	obj.validationErrors = nil
+	obj.warnings = nil
+	obj.constraints = make(map[string]map[string]Constraints)
+}
+
+// PatternAutoPatternDefaultAutoIpDefault is tBD
+type PatternAutoPatternDefaultAutoIpDefault interface {
+	Validation
+	// msg marshals PatternAutoPatternDefaultAutoIpDefault to protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefault
+	// and doesn't set defaults
+	msg() *openapi.PatternAutoPatternDefaultAutoIpDefault
+	// setMsg unmarshals PatternAutoPatternDefaultAutoIpDefault from protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefault
+	// and doesn't set defaults
+	setMsg(*openapi.PatternAutoPatternDefaultAutoIpDefault) PatternAutoPatternDefaultAutoIpDefault
+	// provides marshal interface
+	Marshal() marshalPatternAutoPatternDefaultAutoIpDefault
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternAutoPatternDefaultAutoIpDefault
+	// validate validates PatternAutoPatternDefaultAutoIpDefault
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternAutoPatternDefaultAutoIpDefault, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns PatternAutoPatternDefaultAutoIpDefaultChoiceEnum, set in PatternAutoPatternDefaultAutoIpDefault
+	Choice() PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+	// setChoice assigns PatternAutoPatternDefaultAutoIpDefaultChoiceEnum provided by user to PatternAutoPatternDefaultAutoIpDefault
+	setChoice(value PatternAutoPatternDefaultAutoIpDefaultChoiceEnum) PatternAutoPatternDefaultAutoIpDefault
+	// HasChoice checks if Choice has been set in PatternAutoPatternDefaultAutoIpDefault
+	HasChoice() bool
+	// Value returns string, set in PatternAutoPatternDefaultAutoIpDefault.
+	Value() string
+	// SetValue assigns string provided by user to PatternAutoPatternDefaultAutoIpDefault
+	SetValue(value string) PatternAutoPatternDefaultAutoIpDefault
+	// HasValue checks if Value has been set in PatternAutoPatternDefaultAutoIpDefault
+	HasValue() bool
+	// Values returns []string, set in PatternAutoPatternDefaultAutoIpDefault.
+	Values() []string
+	// SetValues assigns []string provided by user to PatternAutoPatternDefaultAutoIpDefault
+	SetValues(value []string) PatternAutoPatternDefaultAutoIpDefault
+	// Auto returns AutoIpDefault, set in PatternAutoPatternDefaultAutoIpDefault.
+	// AutoIpDefault is the OTG implementation can provide a system generated,
+	// value for this property. If the OTG is unable to generate a value,
+	// the default value must be used.
+	Auto() AutoIpDefault
+	// HasAuto checks if Auto has been set in PatternAutoPatternDefaultAutoIpDefault
+	HasAuto() bool
+	// Increment returns PatternAutoPatternDefaultAutoIpDefaultCounter, set in PatternAutoPatternDefaultAutoIpDefault.
+	// PatternAutoPatternDefaultAutoIpDefaultCounter is ipv4 counter pattern
+	Increment() PatternAutoPatternDefaultAutoIpDefaultCounter
+	// SetIncrement assigns PatternAutoPatternDefaultAutoIpDefaultCounter provided by user to PatternAutoPatternDefaultAutoIpDefault.
+	// PatternAutoPatternDefaultAutoIpDefaultCounter is ipv4 counter pattern
+	SetIncrement(value PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefault
+	// HasIncrement checks if Increment has been set in PatternAutoPatternDefaultAutoIpDefault
+	HasIncrement() bool
+	// Decrement returns PatternAutoPatternDefaultAutoIpDefaultCounter, set in PatternAutoPatternDefaultAutoIpDefault.
+	// PatternAutoPatternDefaultAutoIpDefaultCounter is ipv4 counter pattern
+	Decrement() PatternAutoPatternDefaultAutoIpDefaultCounter
+	// SetDecrement assigns PatternAutoPatternDefaultAutoIpDefaultCounter provided by user to PatternAutoPatternDefaultAutoIpDefault.
+	// PatternAutoPatternDefaultAutoIpDefaultCounter is ipv4 counter pattern
+	SetDecrement(value PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefault
+	// HasDecrement checks if Decrement has been set in PatternAutoPatternDefaultAutoIpDefault
+	HasDecrement() bool
+	setNil()
+}
+
+type PatternAutoPatternDefaultAutoIpDefaultChoiceEnum string
+
+// Enum of Choice on PatternAutoPatternDefaultAutoIpDefault
+var PatternAutoPatternDefaultAutoIpDefaultChoice = struct {
+	VALUE     PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+	VALUES    PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+	AUTO      PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+	INCREMENT PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+	DECREMENT PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+}{
+	VALUE:     PatternAutoPatternDefaultAutoIpDefaultChoiceEnum("value"),
+	VALUES:    PatternAutoPatternDefaultAutoIpDefaultChoiceEnum("values"),
+	AUTO:      PatternAutoPatternDefaultAutoIpDefaultChoiceEnum("auto"),
+	INCREMENT: PatternAutoPatternDefaultAutoIpDefaultChoiceEnum("increment"),
+	DECREMENT: PatternAutoPatternDefaultAutoIpDefaultChoiceEnum("decrement"),
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) Choice() PatternAutoPatternDefaultAutoIpDefaultChoiceEnum {
+	return PatternAutoPatternDefaultAutoIpDefaultChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefault) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) setChoice(value PatternAutoPatternDefaultAutoIpDefaultChoiceEnum) PatternAutoPatternDefaultAutoIpDefault {
+	intValue, ok := openapi.PatternAutoPatternDefaultAutoIpDefault_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on PatternAutoPatternDefaultAutoIpDefaultChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.PatternAutoPatternDefaultAutoIpDefault_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+	obj.obj.Decrement = nil
+	obj.decrementHolder = nil
+	obj.obj.Increment = nil
+	obj.incrementHolder = nil
+	obj.obj.Auto = nil
+	obj.autoHolder = nil
+	obj.obj.Values = nil
+	obj.obj.Value = nil
+
+	if value == PatternAutoPatternDefaultAutoIpDefaultChoice.VALUE {
+		defaultValue := "0.0.0.0"
+		obj.obj.Value = &defaultValue
+	}
+
+	if value == PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES {
+		defaultValue := []string{"0.0.0.0"}
+		obj.obj.Values = defaultValue
+	}
+
+	if value == PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO {
+		obj.obj.Auto = NewAutoIpDefault().msg()
+	}
+
+	if value == PatternAutoPatternDefaultAutoIpDefaultChoice.INCREMENT {
+		obj.obj.Increment = NewPatternAutoPatternDefaultAutoIpDefaultCounter().msg()
+	}
+
+	if value == PatternAutoPatternDefaultAutoIpDefaultChoice.DECREMENT {
+		obj.obj.Decrement = NewPatternAutoPatternDefaultAutoIpDefaultCounter().msg()
+	}
+
+	return obj
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefault) Value() string {
+
+	if obj.obj.Value == nil {
+		obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.VALUE)
+	}
+
+	return *obj.obj.Value
+
+}
+
+// description is TBD
+// Value returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefault) HasValue() bool {
+	return obj.obj.Value != nil
+}
+
+// description is TBD
+// SetValue sets the string value in the PatternAutoPatternDefaultAutoIpDefault object
+func (obj *patternAutoPatternDefaultAutoIpDefault) SetValue(value string) PatternAutoPatternDefaultAutoIpDefault {
+	obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.VALUE)
+	obj.obj.Value = &value
+	return obj
+}
+
+// description is TBD
+// Values returns a []string
+func (obj *patternAutoPatternDefaultAutoIpDefault) Values() []string {
+	if obj.obj.Values == nil {
+		obj.SetValues([]string{"0.0.0.0"})
+	}
+	return obj.obj.Values
+}
+
+// description is TBD
+// SetValues sets the []string value in the PatternAutoPatternDefaultAutoIpDefault object
+func (obj *patternAutoPatternDefaultAutoIpDefault) SetValues(value []string) PatternAutoPatternDefaultAutoIpDefault {
+	obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES)
+	if obj.obj.Values == nil {
+		obj.obj.Values = make([]string, 0)
+	}
+	obj.obj.Values = value
+
+	return obj
+}
+
+// description is TBD
+// Auto returns a AutoIpDefault
+func (obj *patternAutoPatternDefaultAutoIpDefault) Auto() AutoIpDefault {
+	if obj.obj.Auto == nil {
+		obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO)
+	}
+	if obj.autoHolder == nil {
+		obj.autoHolder = &autoIpDefault{obj: obj.obj.Auto}
+	}
+	return obj.autoHolder
+}
+
+// description is TBD
+// Auto returns a AutoIpDefault
+func (obj *patternAutoPatternDefaultAutoIpDefault) HasAuto() bool {
+	return obj.obj.Auto != nil
+}
+
+// description is TBD
+// Increment returns a PatternAutoPatternDefaultAutoIpDefaultCounter
+func (obj *patternAutoPatternDefaultAutoIpDefault) Increment() PatternAutoPatternDefaultAutoIpDefaultCounter {
+	if obj.obj.Increment == nil {
+		obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.INCREMENT)
+	}
+	if obj.incrementHolder == nil {
+		obj.incrementHolder = &patternAutoPatternDefaultAutoIpDefaultCounter{obj: obj.obj.Increment}
+	}
+	return obj.incrementHolder
+}
+
+// description is TBD
+// Increment returns a PatternAutoPatternDefaultAutoIpDefaultCounter
+func (obj *patternAutoPatternDefaultAutoIpDefault) HasIncrement() bool {
+	return obj.obj.Increment != nil
+}
+
+// description is TBD
+// SetIncrement sets the PatternAutoPatternDefaultAutoIpDefaultCounter value in the PatternAutoPatternDefaultAutoIpDefault object
+func (obj *patternAutoPatternDefaultAutoIpDefault) SetIncrement(value PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefault {
+	obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.INCREMENT)
+	obj.incrementHolder = nil
+	obj.obj.Increment = value.msg()
+
+	return obj
+}
+
+// description is TBD
+// Decrement returns a PatternAutoPatternDefaultAutoIpDefaultCounter
+func (obj *patternAutoPatternDefaultAutoIpDefault) Decrement() PatternAutoPatternDefaultAutoIpDefaultCounter {
+	if obj.obj.Decrement == nil {
+		obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.DECREMENT)
+	}
+	if obj.decrementHolder == nil {
+		obj.decrementHolder = &patternAutoPatternDefaultAutoIpDefaultCounter{obj: obj.obj.Decrement}
+	}
+	return obj.decrementHolder
+}
+
+// description is TBD
+// Decrement returns a PatternAutoPatternDefaultAutoIpDefaultCounter
+func (obj *patternAutoPatternDefaultAutoIpDefault) HasDecrement() bool {
+	return obj.obj.Decrement != nil
+}
+
+// description is TBD
+// SetDecrement sets the PatternAutoPatternDefaultAutoIpDefaultCounter value in the PatternAutoPatternDefaultAutoIpDefault object
+func (obj *patternAutoPatternDefaultAutoIpDefault) SetDecrement(value PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefault {
+	obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.DECREMENT)
+	obj.decrementHolder = nil
+	obj.obj.Decrement = value.msg()
+
+	return obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Value != nil {
+
+		err := obj.validateIpv4(obj.Value())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternDefaultAutoIpDefault.Value"))
+		}
+
+	}
+
+	if obj.obj.Values != nil {
+
+		err := obj.validateIpv4Slice(obj.Values())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternDefaultAutoIpDefault.Values"))
+		}
+
+	}
+
+	if obj.obj.Auto != nil {
+
+		obj.Auto().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Increment != nil {
+
+		obj.Increment().validateObj(vObj, set_default)
+	}
+
+	if obj.obj.Decrement != nil {
+
+		obj.Decrement().validateObj(vObj, set_default)
+	}
+
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefault) setDefault() {
+	var choices_set int = 0
+	var choice PatternAutoPatternDefaultAutoIpDefaultChoiceEnum
+
+	if obj.obj.Value != nil {
+		choices_set += 1
+		choice = PatternAutoPatternDefaultAutoIpDefaultChoice.VALUE
+	}
+
+	if len(obj.obj.Values) > 0 {
+		choices_set += 1
+		choice = PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES
+	}
+
+	if obj.obj.Auto != nil {
+		choices_set += 1
+		choice = PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO
+	}
+
+	if obj.obj.Increment != nil {
+		choices_set += 1
+		choice = PatternAutoPatternDefaultAutoIpDefaultChoice.INCREMENT
+	}
+
+	if obj.obj.Decrement != nil {
+		choices_set += 1
+		choice = PatternAutoPatternDefaultAutoIpDefaultChoice.DECREMENT
+	}
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in PatternAutoPatternDefaultAutoIpDefault")
+			}
+		} else {
+			intVal := openapi.PatternAutoPatternDefaultAutoIpDefault_Choice_Enum_value[string(choice)]
+			enumValue := openapi.PatternAutoPatternDefaultAutoIpDefault_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+}
+
 // ***** RequiredVal *****
 type requiredVal struct {
 	validation
@@ -38024,6 +39955,1436 @@ func (obj *patternSignedIntegerPatternIntegerCounter) setDefault() {
 	}
 	if obj.obj.Step == nil {
 		obj.SetStep(1)
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
+
+}
+
+// ***** AutoIpOptions *****
+type autoIpOptions struct {
+	validation
+	obj          *openapi.AutoIpOptions
+	marshaller   marshalAutoIpOptions
+	unMarshaller unMarshalAutoIpOptions
+}
+
+func NewAutoIpOptions() AutoIpOptions {
+	obj := autoIpOptions{obj: &openapi.AutoIpOptions{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *autoIpOptions) msg() *openapi.AutoIpOptions {
+	return obj.obj
+}
+
+func (obj *autoIpOptions) setMsg(msg *openapi.AutoIpOptions) AutoIpOptions {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalautoIpOptions struct {
+	obj *autoIpOptions
+}
+
+type marshalAutoIpOptions interface {
+	// ToProto marshals AutoIpOptions to protobuf object *openapi.AutoIpOptions
+	ToProto() (*openapi.AutoIpOptions, error)
+	// ToPbText marshals AutoIpOptions to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals AutoIpOptions to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals AutoIpOptions to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalautoIpOptions struct {
+	obj *autoIpOptions
+}
+
+type unMarshalAutoIpOptions interface {
+	// FromProto unmarshals AutoIpOptions from protobuf object *openapi.AutoIpOptions
+	FromProto(msg *openapi.AutoIpOptions) (AutoIpOptions, error)
+	// FromPbText unmarshals AutoIpOptions from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals AutoIpOptions from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals AutoIpOptions from JSON text
+	FromJson(value string) error
+}
+
+func (obj *autoIpOptions) Marshal() marshalAutoIpOptions {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalautoIpOptions{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *autoIpOptions) Unmarshal() unMarshalAutoIpOptions {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalautoIpOptions{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalautoIpOptions) ToProto() (*openapi.AutoIpOptions, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalautoIpOptions) FromProto(msg *openapi.AutoIpOptions) (AutoIpOptions, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalautoIpOptions) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalautoIpOptions) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalautoIpOptions) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoIpOptions) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalautoIpOptions) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoIpOptions) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *autoIpOptions) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *autoIpOptions) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *autoIpOptions) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *autoIpOptions) Clone() (AutoIpOptions, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewAutoIpOptions()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// AutoIpOptions is the OTG implementation can provide a system generated,
+// value for this property. If the OTG is unable to generate a value,
+// the default value must be used.
+type AutoIpOptions interface {
+	Validation
+	// msg marshals AutoIpOptions to protobuf object *openapi.AutoIpOptions
+	// and doesn't set defaults
+	msg() *openapi.AutoIpOptions
+	// setMsg unmarshals AutoIpOptions from protobuf object *openapi.AutoIpOptions
+	// and doesn't set defaults
+	setMsg(*openapi.AutoIpOptions) AutoIpOptions
+	// provides marshal interface
+	Marshal() marshalAutoIpOptions
+	// provides unmarshal interface
+	Unmarshal() unMarshalAutoIpOptions
+	// validate validates AutoIpOptions
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (AutoIpOptions, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns AutoIpOptionsChoiceEnum, set in AutoIpOptions
+	Choice() AutoIpOptionsChoiceEnum
+	// setChoice assigns AutoIpOptionsChoiceEnum provided by user to AutoIpOptions
+	setChoice(value AutoIpOptionsChoiceEnum) AutoIpOptions
+	// getter for Dhcp to set choice.
+	Dhcp()
+	// getter for Static to set choice.
+	Static()
+}
+
+type AutoIpOptionsChoiceEnum string
+
+// Enum of Choice on AutoIpOptions
+var AutoIpOptionsChoice = struct {
+	STATIC AutoIpOptionsChoiceEnum
+	DHCP   AutoIpOptionsChoiceEnum
+}{
+	STATIC: AutoIpOptionsChoiceEnum("static"),
+	DHCP:   AutoIpOptionsChoiceEnum("dhcp"),
+}
+
+func (obj *autoIpOptions) Choice() AutoIpOptionsChoiceEnum {
+	return AutoIpOptionsChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// getter for Dhcp to set choice
+func (obj *autoIpOptions) Dhcp() {
+	obj.setChoice(AutoIpOptionsChoice.DHCP)
+}
+
+// getter for Static to set choice
+func (obj *autoIpOptions) Static() {
+	obj.setChoice(AutoIpOptionsChoice.STATIC)
+}
+
+func (obj *autoIpOptions) setChoice(value AutoIpOptionsChoiceEnum) AutoIpOptions {
+	intValue, ok := openapi.AutoIpOptions_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on AutoIpOptionsChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.AutoIpOptions_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+
+	return obj
+}
+
+func (obj *autoIpOptions) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	// Choice is required
+	if obj.obj.Choice == nil {
+		vObj.validationErrors = append(vObj.validationErrors, "Choice is required field on interface AutoIpOptions")
+	}
+}
+
+func (obj *autoIpOptions) setDefault() {
+	var choices_set int = 0
+	var choice AutoIpOptionsChoiceEnum
+	if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in AutoIpOptions")
+			}
+		} else {
+			intVal := openapi.AutoIpOptions_Choice_Enum_value[string(choice)]
+			enumValue := openapi.AutoIpOptions_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+}
+
+// ***** PatternAutoPatternAutoIpCounter *****
+type patternAutoPatternAutoIpCounter struct {
+	validation
+	obj          *openapi.PatternAutoPatternAutoIpCounter
+	marshaller   marshalPatternAutoPatternAutoIpCounter
+	unMarshaller unMarshalPatternAutoPatternAutoIpCounter
+}
+
+func NewPatternAutoPatternAutoIpCounter() PatternAutoPatternAutoIpCounter {
+	obj := patternAutoPatternAutoIpCounter{obj: &openapi.PatternAutoPatternAutoIpCounter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternAutoPatternAutoIpCounter) msg() *openapi.PatternAutoPatternAutoIpCounter {
+	return obj.obj
+}
+
+func (obj *patternAutoPatternAutoIpCounter) setMsg(msg *openapi.PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIpCounter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternAutoPatternAutoIpCounter struct {
+	obj *patternAutoPatternAutoIpCounter
+}
+
+type marshalPatternAutoPatternAutoIpCounter interface {
+	// ToProto marshals PatternAutoPatternAutoIpCounter to protobuf object *openapi.PatternAutoPatternAutoIpCounter
+	ToProto() (*openapi.PatternAutoPatternAutoIpCounter, error)
+	// ToPbText marshals PatternAutoPatternAutoIpCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternAutoPatternAutoIpCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternAutoPatternAutoIpCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternAutoPatternAutoIpCounter struct {
+	obj *patternAutoPatternAutoIpCounter
+}
+
+type unMarshalPatternAutoPatternAutoIpCounter interface {
+	// FromProto unmarshals PatternAutoPatternAutoIpCounter from protobuf object *openapi.PatternAutoPatternAutoIpCounter
+	FromProto(msg *openapi.PatternAutoPatternAutoIpCounter) (PatternAutoPatternAutoIpCounter, error)
+	// FromPbText unmarshals PatternAutoPatternAutoIpCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternAutoPatternAutoIpCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternAutoPatternAutoIpCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternAutoPatternAutoIpCounter) Marshal() marshalPatternAutoPatternAutoIpCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternAutoPatternAutoIpCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternAutoPatternAutoIpCounter) Unmarshal() unMarshalPatternAutoPatternAutoIpCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternAutoPatternAutoIpCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternAutoPatternAutoIpCounter) ToProto() (*openapi.PatternAutoPatternAutoIpCounter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIpCounter) FromProto(msg *openapi.PatternAutoPatternAutoIpCounter) (PatternAutoPatternAutoIpCounter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternAutoPatternAutoIpCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIpCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternAutoPatternAutoIpCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIpCounter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternAutoPatternAutoIpCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternAutoIpCounter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternAutoPatternAutoIpCounter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternAutoIpCounter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternAutoIpCounter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternAutoPatternAutoIpCounter) Clone() (PatternAutoPatternAutoIpCounter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternAutoPatternAutoIpCounter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternAutoPatternAutoIpCounter is ipv4 counter pattern
+type PatternAutoPatternAutoIpCounter interface {
+	Validation
+	// msg marshals PatternAutoPatternAutoIpCounter to protobuf object *openapi.PatternAutoPatternAutoIpCounter
+	// and doesn't set defaults
+	msg() *openapi.PatternAutoPatternAutoIpCounter
+	// setMsg unmarshals PatternAutoPatternAutoIpCounter from protobuf object *openapi.PatternAutoPatternAutoIpCounter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternAutoPatternAutoIpCounter) PatternAutoPatternAutoIpCounter
+	// provides marshal interface
+	Marshal() marshalPatternAutoPatternAutoIpCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternAutoPatternAutoIpCounter
+	// validate validates PatternAutoPatternAutoIpCounter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternAutoPatternAutoIpCounter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns string, set in PatternAutoPatternAutoIpCounter.
+	Start() string
+	// SetStart assigns string provided by user to PatternAutoPatternAutoIpCounter
+	SetStart(value string) PatternAutoPatternAutoIpCounter
+	// HasStart checks if Start has been set in PatternAutoPatternAutoIpCounter
+	HasStart() bool
+	// Step returns string, set in PatternAutoPatternAutoIpCounter.
+	Step() string
+	// SetStep assigns string provided by user to PatternAutoPatternAutoIpCounter
+	SetStep(value string) PatternAutoPatternAutoIpCounter
+	// HasStep checks if Step has been set in PatternAutoPatternAutoIpCounter
+	HasStep() bool
+	// Count returns uint32, set in PatternAutoPatternAutoIpCounter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternAutoPatternAutoIpCounter
+	SetCount(value uint32) PatternAutoPatternAutoIpCounter
+	// HasCount checks if Count has been set in PatternAutoPatternAutoIpCounter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternAutoPatternAutoIpCounter) Start() string {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternAutoPatternAutoIpCounter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the string value in the PatternAutoPatternAutoIpCounter object
+func (obj *patternAutoPatternAutoIpCounter) SetStart(value string) PatternAutoPatternAutoIpCounter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternAutoPatternAutoIpCounter) Step() string {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternAutoPatternAutoIpCounter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the string value in the PatternAutoPatternAutoIpCounter object
+func (obj *patternAutoPatternAutoIpCounter) SetStep(value string) PatternAutoPatternAutoIpCounter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternAutoPatternAutoIpCounter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternAutoPatternAutoIpCounter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternAutoPatternAutoIpCounter object
+func (obj *patternAutoPatternAutoIpCounter) SetCount(value uint32) PatternAutoPatternAutoIpCounter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternAutoPatternAutoIpCounter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		err := obj.validateIpv4(obj.Start())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternAutoIpCounter.Start"))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		err := obj.validateIpv4(obj.Step())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternAutoIpCounter.Step"))
+		}
+
+	}
+
+}
+
+func (obj *patternAutoPatternAutoIpCounter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart("0.0.0.0")
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep("0.0.0.1")
+	}
+	if obj.obj.Count == nil {
+		obj.SetCount(1)
+	}
+
+}
+
+// ***** AutoIpDefault *****
+type autoIpDefault struct {
+	validation
+	obj          *openapi.AutoIpDefault
+	marshaller   marshalAutoIpDefault
+	unMarshaller unMarshalAutoIpDefault
+}
+
+func NewAutoIpDefault() AutoIpDefault {
+	obj := autoIpDefault{obj: &openapi.AutoIpDefault{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *autoIpDefault) msg() *openapi.AutoIpDefault {
+	return obj.obj
+}
+
+func (obj *autoIpDefault) setMsg(msg *openapi.AutoIpDefault) AutoIpDefault {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalautoIpDefault struct {
+	obj *autoIpDefault
+}
+
+type marshalAutoIpDefault interface {
+	// ToProto marshals AutoIpDefault to protobuf object *openapi.AutoIpDefault
+	ToProto() (*openapi.AutoIpDefault, error)
+	// ToPbText marshals AutoIpDefault to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals AutoIpDefault to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals AutoIpDefault to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalautoIpDefault struct {
+	obj *autoIpDefault
+}
+
+type unMarshalAutoIpDefault interface {
+	// FromProto unmarshals AutoIpDefault from protobuf object *openapi.AutoIpDefault
+	FromProto(msg *openapi.AutoIpDefault) (AutoIpDefault, error)
+	// FromPbText unmarshals AutoIpDefault from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals AutoIpDefault from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals AutoIpDefault from JSON text
+	FromJson(value string) error
+}
+
+func (obj *autoIpDefault) Marshal() marshalAutoIpDefault {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalautoIpDefault{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *autoIpDefault) Unmarshal() unMarshalAutoIpDefault {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalautoIpDefault{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalautoIpDefault) ToProto() (*openapi.AutoIpDefault, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalautoIpDefault) FromProto(msg *openapi.AutoIpDefault) (AutoIpDefault, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalautoIpDefault) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalautoIpDefault) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalautoIpDefault) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoIpDefault) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalautoIpDefault) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalautoIpDefault) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *autoIpDefault) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *autoIpDefault) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *autoIpDefault) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *autoIpDefault) Clone() (AutoIpDefault, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewAutoIpDefault()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// AutoIpDefault is the OTG implementation can provide a system generated,
+// value for this property. If the OTG is unable to generate a value,
+// the default value must be used.
+type AutoIpDefault interface {
+	Validation
+	// msg marshals AutoIpDefault to protobuf object *openapi.AutoIpDefault
+	// and doesn't set defaults
+	msg() *openapi.AutoIpDefault
+	// setMsg unmarshals AutoIpDefault from protobuf object *openapi.AutoIpDefault
+	// and doesn't set defaults
+	setMsg(*openapi.AutoIpDefault) AutoIpDefault
+	// provides marshal interface
+	Marshal() marshalAutoIpDefault
+	// provides unmarshal interface
+	Unmarshal() unMarshalAutoIpDefault
+	// validate validates AutoIpDefault
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (AutoIpDefault, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Choice returns AutoIpDefaultChoiceEnum, set in AutoIpDefault
+	Choice() AutoIpDefaultChoiceEnum
+	// setChoice assigns AutoIpDefaultChoiceEnum provided by user to AutoIpDefault
+	setChoice(value AutoIpDefaultChoiceEnum) AutoIpDefault
+	// HasChoice checks if Choice has been set in AutoIpDefault
+	HasChoice() bool
+	// getter for Dhcp to set choice.
+	Dhcp()
+	// getter for Static to set choice.
+	Static()
+}
+
+type AutoIpDefaultChoiceEnum string
+
+// Enum of Choice on AutoIpDefault
+var AutoIpDefaultChoice = struct {
+	STATIC AutoIpDefaultChoiceEnum
+	DHCP   AutoIpDefaultChoiceEnum
+}{
+	STATIC: AutoIpDefaultChoiceEnum("static"),
+	DHCP:   AutoIpDefaultChoiceEnum("dhcp"),
+}
+
+func (obj *autoIpDefault) Choice() AutoIpDefaultChoiceEnum {
+	return AutoIpDefaultChoiceEnum(obj.obj.Choice.Enum().String())
+}
+
+// getter for Dhcp to set choice
+func (obj *autoIpDefault) Dhcp() {
+	obj.setChoice(AutoIpDefaultChoice.DHCP)
+}
+
+// getter for Static to set choice
+func (obj *autoIpDefault) Static() {
+	obj.setChoice(AutoIpDefaultChoice.STATIC)
+}
+
+// description is TBD
+// Choice returns a string
+func (obj *autoIpDefault) HasChoice() bool {
+	return obj.obj.Choice != nil
+}
+
+func (obj *autoIpDefault) setChoice(value AutoIpDefaultChoiceEnum) AutoIpDefault {
+	intValue, ok := openapi.AutoIpDefault_Choice_Enum_value[string(value)]
+	if !ok {
+		obj.validationErrors = append(obj.validationErrors, fmt.Sprintf(
+			"%s is not a valid choice on AutoIpDefaultChoiceEnum", string(value)))
+		return obj
+	}
+	enumValue := openapi.AutoIpDefault_Choice_Enum(intValue)
+	obj.obj.Choice = &enumValue
+
+	return obj
+}
+
+func (obj *autoIpDefault) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+}
+
+func (obj *autoIpDefault) setDefault() {
+	var choices_set int = 0
+	var choice AutoIpDefaultChoiceEnum
+	if choices_set == 0 {
+		if obj.obj.Choice == nil {
+			obj.setChoice(AutoIpDefaultChoice.DHCP)
+
+		}
+
+	} else if choices_set == 1 && choice != "" {
+		if obj.obj.Choice != nil {
+			if obj.Choice() != choice {
+				obj.validationErrors = append(obj.validationErrors, "choice not matching with property in AutoIpDefault")
+			}
+		} else {
+			intVal := openapi.AutoIpDefault_Choice_Enum_value[string(choice)]
+			enumValue := openapi.AutoIpDefault_Choice_Enum(intVal)
+			obj.obj.Choice = &enumValue
+		}
+	}
+
+}
+
+// ***** PatternAutoPatternDefaultAutoIpDefaultCounter *****
+type patternAutoPatternDefaultAutoIpDefaultCounter struct {
+	validation
+	obj          *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	marshaller   marshalPatternAutoPatternDefaultAutoIpDefaultCounter
+	unMarshaller unMarshalPatternAutoPatternDefaultAutoIpDefaultCounter
+}
+
+func NewPatternAutoPatternDefaultAutoIpDefaultCounter() PatternAutoPatternDefaultAutoIpDefaultCounter {
+	obj := patternAutoPatternDefaultAutoIpDefaultCounter{obj: &openapi.PatternAutoPatternDefaultAutoIpDefaultCounter{}}
+	obj.setDefault()
+	return &obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) msg() *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter {
+	return obj.obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) setMsg(msg *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefaultCounter {
+
+	proto.Merge(obj.obj, msg)
+	return obj
+}
+
+type marshalpatternAutoPatternDefaultAutoIpDefaultCounter struct {
+	obj *patternAutoPatternDefaultAutoIpDefaultCounter
+}
+
+type marshalPatternAutoPatternDefaultAutoIpDefaultCounter interface {
+	// ToProto marshals PatternAutoPatternDefaultAutoIpDefaultCounter to protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	ToProto() (*openapi.PatternAutoPatternDefaultAutoIpDefaultCounter, error)
+	// ToPbText marshals PatternAutoPatternDefaultAutoIpDefaultCounter to protobuf text
+	ToPbText() (string, error)
+	// ToYaml marshals PatternAutoPatternDefaultAutoIpDefaultCounter to YAML text
+	ToYaml() (string, error)
+	// ToJson marshals PatternAutoPatternDefaultAutoIpDefaultCounter to JSON text
+	ToJson() (string, error)
+}
+
+type unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter struct {
+	obj *patternAutoPatternDefaultAutoIpDefaultCounter
+}
+
+type unMarshalPatternAutoPatternDefaultAutoIpDefaultCounter interface {
+	// FromProto unmarshals PatternAutoPatternDefaultAutoIpDefaultCounter from protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	FromProto(msg *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter) (PatternAutoPatternDefaultAutoIpDefaultCounter, error)
+	// FromPbText unmarshals PatternAutoPatternDefaultAutoIpDefaultCounter from protobuf text
+	FromPbText(value string) error
+	// FromYaml unmarshals PatternAutoPatternDefaultAutoIpDefaultCounter from YAML text
+	FromYaml(value string) error
+	// FromJson unmarshals PatternAutoPatternDefaultAutoIpDefaultCounter from JSON text
+	FromJson(value string) error
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Marshal() marshalPatternAutoPatternDefaultAutoIpDefaultCounter {
+	if obj.marshaller == nil {
+		obj.marshaller = &marshalpatternAutoPatternDefaultAutoIpDefaultCounter{obj: obj}
+	}
+	return obj.marshaller
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Unmarshal() unMarshalPatternAutoPatternDefaultAutoIpDefaultCounter {
+	if obj.unMarshaller == nil {
+		obj.unMarshaller = &unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter{obj: obj}
+	}
+	return obj.unMarshaller
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefaultCounter) ToProto() (*openapi.PatternAutoPatternDefaultAutoIpDefaultCounter, error) {
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return m.obj.msg(), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter) FromProto(msg *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter) (PatternAutoPatternDefaultAutoIpDefaultCounter, error) {
+	newObj := m.obj.setMsg(msg)
+	err := newObj.validateToAndFrom()
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefaultCounter) ToPbText() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	protoMarshal, err := proto.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(protoMarshal), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter) FromPbText(value string) error {
+	retObj := proto.Unmarshal([]byte(value), m.obj.msg())
+	if retObj != nil {
+		return retObj
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return retObj
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefaultCounter) ToYaml() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	data, err = yaml.JSONToYAML(data)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter) FromYaml(value string) error {
+	if value == "" {
+		value = "{}"
+	}
+	data, err := yaml.YAMLToJSON([]byte(value))
+	if err != nil {
+		return err
+	}
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	uError := opts.Unmarshal([]byte(data), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return vErr
+	}
+	return nil
+}
+
+func (m *marshalpatternAutoPatternDefaultAutoIpDefaultCounter) ToJson() (string, error) {
+	vErr := m.obj.validateToAndFrom()
+	if vErr != nil {
+		return "", vErr
+	}
+	opts := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		AllowPartial:    true,
+		EmitUnpopulated: false,
+		Indent:          "  ",
+	}
+	data, err := opts.Marshal(m.obj.msg())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func (m *unMarshalpatternAutoPatternDefaultAutoIpDefaultCounter) FromJson(value string) error {
+	opts := protojson.UnmarshalOptions{
+		AllowPartial:   true,
+		DiscardUnknown: false,
+	}
+	if value == "" {
+		value = "{}"
+	}
+	uError := opts.Unmarshal([]byte(value), m.obj.msg())
+	if uError != nil {
+		return fmt.Errorf("unmarshal error %s", strings.Replace(
+			uError.Error(), "\u00a0", " ", -1)[7:])
+	}
+
+	err := m.obj.validateToAndFrom()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) validateToAndFrom() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, true)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) validate() error {
+	// emptyVars()
+	obj.validateObj(&obj.validation, false)
+	return obj.validationResult()
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) String() string {
+	str, err := obj.Marshal().ToYaml()
+	if err != nil {
+		return err.Error()
+	}
+	return str
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Clone() (PatternAutoPatternDefaultAutoIpDefaultCounter, error) {
+	vErr := obj.validate()
+	if vErr != nil {
+		return nil, vErr
+	}
+	newObj := NewPatternAutoPatternDefaultAutoIpDefaultCounter()
+	data, err := proto.Marshal(obj.msg())
+	if err != nil {
+		return nil, err
+	}
+	pbErr := proto.Unmarshal(data, newObj.msg())
+	if pbErr != nil {
+		return nil, pbErr
+	}
+	return newObj, nil
+}
+
+// PatternAutoPatternDefaultAutoIpDefaultCounter is ipv4 counter pattern
+type PatternAutoPatternDefaultAutoIpDefaultCounter interface {
+	Validation
+	// msg marshals PatternAutoPatternDefaultAutoIpDefaultCounter to protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	// and doesn't set defaults
+	msg() *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	// setMsg unmarshals PatternAutoPatternDefaultAutoIpDefaultCounter from protobuf object *openapi.PatternAutoPatternDefaultAutoIpDefaultCounter
+	// and doesn't set defaults
+	setMsg(*openapi.PatternAutoPatternDefaultAutoIpDefaultCounter) PatternAutoPatternDefaultAutoIpDefaultCounter
+	// provides marshal interface
+	Marshal() marshalPatternAutoPatternDefaultAutoIpDefaultCounter
+	// provides unmarshal interface
+	Unmarshal() unMarshalPatternAutoPatternDefaultAutoIpDefaultCounter
+	// validate validates PatternAutoPatternDefaultAutoIpDefaultCounter
+	validate() error
+	// A stringer function
+	String() string
+	// Clones the object
+	Clone() (PatternAutoPatternDefaultAutoIpDefaultCounter, error)
+	validateToAndFrom() error
+	validateObj(vObj *validation, set_default bool)
+	setDefault()
+	// Start returns string, set in PatternAutoPatternDefaultAutoIpDefaultCounter.
+	Start() string
+	// SetStart assigns string provided by user to PatternAutoPatternDefaultAutoIpDefaultCounter
+	SetStart(value string) PatternAutoPatternDefaultAutoIpDefaultCounter
+	// HasStart checks if Start has been set in PatternAutoPatternDefaultAutoIpDefaultCounter
+	HasStart() bool
+	// Step returns string, set in PatternAutoPatternDefaultAutoIpDefaultCounter.
+	Step() string
+	// SetStep assigns string provided by user to PatternAutoPatternDefaultAutoIpDefaultCounter
+	SetStep(value string) PatternAutoPatternDefaultAutoIpDefaultCounter
+	// HasStep checks if Step has been set in PatternAutoPatternDefaultAutoIpDefaultCounter
+	HasStep() bool
+	// Count returns uint32, set in PatternAutoPatternDefaultAutoIpDefaultCounter.
+	Count() uint32
+	// SetCount assigns uint32 provided by user to PatternAutoPatternDefaultAutoIpDefaultCounter
+	SetCount(value uint32) PatternAutoPatternDefaultAutoIpDefaultCounter
+	// HasCount checks if Count has been set in PatternAutoPatternDefaultAutoIpDefaultCounter
+	HasCount() bool
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Start() string {
+
+	return *obj.obj.Start
+
+}
+
+// description is TBD
+// Start returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) HasStart() bool {
+	return obj.obj.Start != nil
+}
+
+// description is TBD
+// SetStart sets the string value in the PatternAutoPatternDefaultAutoIpDefaultCounter object
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) SetStart(value string) PatternAutoPatternDefaultAutoIpDefaultCounter {
+
+	obj.obj.Start = &value
+	return obj
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Step() string {
+
+	return *obj.obj.Step
+
+}
+
+// description is TBD
+// Step returns a string
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) HasStep() bool {
+	return obj.obj.Step != nil
+}
+
+// description is TBD
+// SetStep sets the string value in the PatternAutoPatternDefaultAutoIpDefaultCounter object
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) SetStep(value string) PatternAutoPatternDefaultAutoIpDefaultCounter {
+
+	obj.obj.Step = &value
+	return obj
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) Count() uint32 {
+
+	return *obj.obj.Count
+
+}
+
+// description is TBD
+// Count returns a uint32
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) HasCount() bool {
+	return obj.obj.Count != nil
+}
+
+// description is TBD
+// SetCount sets the uint32 value in the PatternAutoPatternDefaultAutoIpDefaultCounter object
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) SetCount(value uint32) PatternAutoPatternDefaultAutoIpDefaultCounter {
+
+	obj.obj.Count = &value
+	return obj
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) validateObj(vObj *validation, set_default bool) {
+	if set_default {
+		obj.setDefault()
+	}
+
+	if obj.obj.Start != nil {
+
+		err := obj.validateIpv4(obj.Start())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternDefaultAutoIpDefaultCounter.Start"))
+		}
+
+	}
+
+	if obj.obj.Step != nil {
+
+		err := obj.validateIpv4(obj.Step())
+		if err != nil {
+			vObj.validationErrors = append(vObj.validationErrors, fmt.Sprintf("%s %s", err.Error(), "on PatternAutoPatternDefaultAutoIpDefaultCounter.Step"))
+		}
+
+	}
+
+}
+
+func (obj *patternAutoPatternDefaultAutoIpDefaultCounter) setDefault() {
+	if obj.obj.Start == nil {
+		obj.SetStart("0.0.0.0")
+	}
+	if obj.obj.Step == nil {
+		obj.SetStep("0.0.0.1")
 	}
 	if obj.obj.Count == nil {
 		obj.SetCount(1)

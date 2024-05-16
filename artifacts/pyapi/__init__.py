@@ -48,6 +48,14 @@ from .pyapi import PatternSignedIntegerPatternIntegerCounter
 from .pyapi import OidPattern
 from .pyapi import PatternOidPatternOid
 from .pyapi import ChoiceRequiredAndDefault
+from .pyapi import AutoPattern
+from .pyapi import PatternAutoPatternAutoIp
+from .pyapi import AutoIpOptions
+from .pyapi import PatternAutoPatternAutoIpCounter
+from .pyapi import AutoPatternDefault
+from .pyapi import PatternAutoPatternDefaultAutoIpDefault
+from .pyapi import AutoIpDefault
+from .pyapi import PatternAutoPatternDefaultAutoIpDefaultCounter
 from .pyapi import Error
 from .pyapi import UpdateConfig
 from .pyapi import MetricsRequest

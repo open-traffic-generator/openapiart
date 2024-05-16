@@ -257,6 +257,15 @@ message PrefixConfig {
 
   // Description missing in models
   ChoiceRequiredAndDefault choice_required_default = 57;
+
+  // Description missing in models
+  AutoPattern auto_pattern = 58;
+
+  // Description missing in models
+  AutoPatternDefault auto_pattern_default = 59;
+
+  // Description missing in models
+  optional string name_ending_with_number_234 = 60;
 }
 
 // Description missing in models
@@ -701,6 +710,40 @@ message ChoiceRequiredAndDefault {
   repeated string ipv6 = 3;
 }
 
+// The OTG implementation can provide a system generated,
+// value for this property. If the OTG is unable to generate a value,
+// the default value must be used.
+message AutoIpOptions {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      static = 1;
+      dhcp = 2;
+    }
+  }
+  // Description missing in models
+  // required = true
+  optional Choice.Enum choice = 1;
+}
+
+// The OTG implementation can provide a system generated,
+// value for this property. If the OTG is unable to generate a value,
+// the default value must be used.
+message AutoIpDefault {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      static = 1;
+      dhcp = 2;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.dhcp
+  optional Choice.Enum choice = 1;
+}
+
 // To Test Multi level non-primitive types
 message LevelOne {
 
@@ -779,6 +822,20 @@ message OidPattern {
 
   // Description missing in models
   PatternOidPatternOid oid = 1;
+}
+
+// Test auto pattern
+message AutoPattern {
+
+  // Description missing in models
+  PatternAutoPatternAutoIp auto_ip = 1;
+}
+
+// Test auto pattern with default
+message AutoPatternDefault {
+
+  // Description missing in models
+  PatternAutoPatternDefaultAutoIpDefault auto_ip_default = 1;
 }
 
 // Under Review: the whole schema is being reviewed
@@ -1650,6 +1707,108 @@ message PatternOidPatternOid {
   // Description missing in models
   // default = ['0.1']
   repeated string values = 3;
+}
+
+// ipv4 counter pattern
+message PatternAutoPatternAutoIpCounter {
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string start = 1;
+
+  // Description missing in models
+  // default = 0.0.0.1
+  optional string step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternAutoPatternAutoIp {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      auto = 1;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.value
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['0.0.0.0']
+  repeated string values = 3;
+
+  // Description missing in models
+  AutoIpOptions auto = 4;
+
+  // Description missing in models
+  PatternAutoPatternAutoIpCounter increment = 6;
+
+  // Description missing in models
+  PatternAutoPatternAutoIpCounter decrement = 7;
+}
+
+// ipv4 counter pattern
+message PatternAutoPatternDefaultAutoIpDefaultCounter {
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string start = 1;
+
+  // Description missing in models
+  // default = 0.0.0.1
+  optional string step = 2;
+
+  // Description missing in models
+  // default = 1
+  optional uint32 count = 3;
+}
+
+// TBD
+message PatternAutoPatternDefaultAutoIpDefault {
+
+  message Choice {
+    enum Enum {
+      unspecified = 0;
+      value = 2;
+      values = 3;
+      auto = 1;
+      increment = 4;
+      decrement = 5;
+    }
+  }
+  // Description missing in models
+  // default = Choice.Enum.auto
+  optional Choice.Enum choice = 1;
+
+  // Description missing in models
+  // default = 0.0.0.0
+  optional string value = 2;
+
+  // Description missing in models
+  // default = ['0.0.0.0']
+  repeated string values = 3;
+
+  // Description missing in models
+  AutoIpDefault auto = 4;
+
+  // Description missing in models
+  PatternAutoPatternDefaultAutoIpDefaultCounter increment = 6;
+
+  // Description missing in models
+  PatternAutoPatternDefaultAutoIpDefaultCounter decrement = 7;
 }
 
 // ipv4 counter pattern
