@@ -42,10 +42,10 @@ class OpenApiArt(object):
         )
         self._go_sdk_package_dir = None
         self._protobuf_package_name = (
-            protobuf_name if protobuf_name is not None else "sanity"
+            protobuf_name if protobuf_name is not None else "openapi"
         )
         self._extension_prefix = (
-            extension_prefix if extension_prefix is not None else "sanity"
+            extension_prefix if extension_prefix is not None else "openapi"
         )
         self._proto_service = (
             proto_service if proto_service is not None else "Openapi"
@@ -137,17 +137,17 @@ class OpenApiArt(object):
         -------
         ```
         art = Openapiart(api_files=["<list of open_api_file_path>"], artifact_dir="./")
-        art.GeneratePythonSdk(package_name="sanity")
+        art.GeneratePythonSdk(package_name="pyapi")
         ```
 
         Output
         ------
         ```
-        ./sanity
+        ./pyapi
                 |_ __init__.py
-                |_ sanity.py
-                |_ sanity_pb.py
-                |_ sanity_grpc_pb.py
+                |_ pyapi.py
+                |_ openapi_pb.py
+                |_ openapi_grpc_pb.py
         ```
         """
         self._python_module_name = package_name
@@ -220,13 +220,17 @@ class OpenApiArt(object):
             )
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name, sdk_version=""):
+    def GenerateGoSdk(
+        self, package_dir, package_name, sdk_version="", split=True
+    ):
         """Generates a Go UX Sdk
 
         Args
         ----
         - package_dir: Go mod package dir published under go.mod
         - package_name: Name of the Go package to generate
+        - sdk_version: If we want to generate SDk with a custom version
+        - split: true by default, it creates go files for each interfaces, otgherwise it creates a single go file contaiing all interfaces
 
         Example
         -------
@@ -298,6 +302,7 @@ class OpenApiArt(object):
                     "generate_version_api": self._generate_version_api,
                     "api_version": self._api_version,
                     "sdk_version": self._go_sdk_version,
+                    "split": split,
                 }
             )
             print("Generating go ux sdk: {}".format(" ".join(process_args)))

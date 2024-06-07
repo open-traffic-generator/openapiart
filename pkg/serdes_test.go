@@ -1,22 +1,22 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func NewFullyPopulatedPrefixConfig(api openapiart.Api) openapiart.PrefixConfig {
-	config := openapiart.NewPrefixConfig()
+func NewFullyPopulatedPrefixConfig(api goapi.Api) goapi.PrefixConfig {
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
 	config.RequiredObject().SetEA(1).SetEB(2)
 	config.SetIeee8021Qbb(true)
 	config.SetFullDuplex100Mb(2)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
 	config.F().SetFB(3.0)
 	config.G().Add().SetGA("a g_a value").SetGB(6).SetGC(77.7).SetGE(3.0)
@@ -58,12 +58,12 @@ func NewFullyPopulatedPrefixConfig(api openapiart.Api) openapiart.PrefixConfig {
 }
 
 func TestPrefixConfigYamlSerDes(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
 	yaml1, err := c1.Marshal().ToYaml()
 	assert.Nil(t, err)
-	c2 := openapiart.NewPrefixConfig()
+	c2 := goapi.NewPrefixConfig()
 	yaml_err := c2.Unmarshal().FromYaml(yaml1)
 	assert.Nil(t, yaml_err)
 	yaml2, err := c2.Marshal().ToYaml()
@@ -72,12 +72,12 @@ func TestPrefixConfigYamlSerDes(t *testing.T) {
 }
 
 func TestPrefixConfigJsonSerDes(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
 	json1, err := c1.Marshal().ToJson()
 	assert.Nil(t, err)
-	c2 := openapiart.NewPrefixConfig()
+	c2 := goapi.NewPrefixConfig()
 	json_err := c2.Unmarshal().FromJson(json1)
 	assert.Nil(t, json_err)
 	json2, err := c2.Marshal().ToJson()
@@ -86,7 +86,7 @@ func TestPrefixConfigJsonSerDes(t *testing.T) {
 }
 
 func TestPartialSerDes(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 
 	// convert the configuration to a map[string]interface{}
@@ -103,7 +103,7 @@ func TestPartialSerDes(t *testing.T) {
 	data2, _ := json.Marshal(jsonMap["g"].([]interface{})[0].(map[string]interface{}))
 
 	// create a new config that consists of just the e object and the g object
-	c2 := openapiart.NewPrefixConfig()
+	c2 := goapi.NewPrefixConfig()
 	json_err := c2.E().Unmarshal().FromJson(string(data1))
 	assert.Nil(t, json_err)
 	json_err1 := c2.G().Add().Unmarshal().FromJson(string(data2))
@@ -117,11 +117,11 @@ func TestPartialSerDes(t *testing.T) {
 }
 
 func TestPrefixConfigPbTextSerDes(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	c1 := NewFullyPopulatedPrefixConfig(api)
 	pbString, err := c1.Marshal().ToPbText()
 	assert.Nil(t, err)
-	c2 := openapiart.NewPrefixConfig()
+	c2 := goapi.NewPrefixConfig()
 	pbtext_err := c2.Unmarshal().FromPbText(pbString)
 	assert.Nil(t, pbtext_err)
 	c1json, err := c1.Marshal().ToJson()
@@ -132,7 +132,7 @@ func TestPrefixConfigPbTextSerDes(t *testing.T) {
 }
 
 func TestArrayOfStringsSetGet(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.ListOfStringValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfStringValues([]string{"one", "two", "three"}).ListOfStringValues()
@@ -140,20 +140,20 @@ func TestArrayOfStringsSetGet(t *testing.T) {
 }
 
 func TestArrayOfEnumsSetGet(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.DValues()
 	assert.Equal(t, 0, len(values))
-	enums := []openapiart.PrefixConfigDValuesEnum{
-		openapiart.PrefixConfigDValues.A,
-		openapiart.PrefixConfigDValues.B,
-		openapiart.PrefixConfigDValues.C,
+	enums := []goapi.PrefixConfigDValuesEnum{
+		goapi.PrefixConfigDValues.A,
+		goapi.PrefixConfigDValues.B,
+		goapi.PrefixConfigDValues.C,
 	}
 	values = config.SetDValues(enums).DValues()
 	assert.Equal(t, 3, len(values))
 }
 
 func TestArrayOfIntegersSetGet(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	values := config.ListOfIntegerValues()
 	assert.Equal(t, 0, len(values))
 	values = config.SetListOfIntegerValues([]int32{1, 5, 23, 6}).ListOfIntegerValues()
@@ -162,7 +162,7 @@ func TestArrayOfIntegersSetGet(t *testing.T) {
 
 func TestValidJsonDecode(t *testing.T) {
 	// Valid Unmarshal().FromJson
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.Nil(t, err)
@@ -170,7 +170,7 @@ func TestValidJsonDecode(t *testing.T) {
 
 func TestBadKeyJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "bz" : 8.8, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
@@ -179,7 +179,7 @@ func TestBadKeyJsonDecode(t *testing.T) {
 
 func TestBadEnumJsonDecode(t *testing.T) {
 	// Valid Wrong key
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
@@ -188,7 +188,7 @@ func TestBadEnumJsonDecode(t *testing.T) {
 
 func TestBadDatatypeJsonDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
@@ -197,7 +197,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 
 func TestBadDatastructureJsonDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
@@ -206,7 +206,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 
 func TestWithoutValueJsonDecode(t *testing.T) {
 	// Valid without value
-	c1 := openapiart.NewPrefixConfig()
+	c1 := goapi.NewPrefixConfig()
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
@@ -214,7 +214,7 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 }
 
 func TestValidYamlDecode(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -233,7 +233,7 @@ response: status_200
 
 func TestBadKeyYamlDecode(t *testing.T) {
 	// Valid Wrong key
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 bz: 12.2
 c: 2
@@ -248,7 +248,7 @@ required_object:
 }
 
 func TestBadEnumYamlDecode(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: 12.2
 c: 2
@@ -265,7 +265,7 @@ response: status_800
 
 func TestBadDatatypeYamlDecode(t *testing.T) {
 	// Valid Wrong data type. configure "b" with string
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: Easy
 b: abc
 c: 2
@@ -281,7 +281,7 @@ required_object:
 
 func TestBadDatastructureYamlDecode(t *testing.T) {
 	// Valid Wrong data structure. configure "a" with array
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	var data = `a: [Make It Easy]
 b: 9.9
 c: 2
@@ -296,9 +296,9 @@ required_object:
 }
 
 func TestSetMsg(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	config := NewFullyPopulatedPrefixConfig(api)
-	copy := openapiart.NewPrefixConfig()
+	copy := goapi.NewPrefixConfig()
 	p, err := config.Marshal().ToProto()
 	assert.Nil(t, err)
 	_, err = copy.Unmarshal().FromProto(p)
@@ -311,11 +311,11 @@ func TestSetMsg(t *testing.T) {
 }
 
 func TestNestedSetMsg(t *testing.T) {
-	eObject := openapiart.NewPrefixConfig().K().EObject()
+	eObject := goapi.NewPrefixConfig().K().EObject()
 	eObject.SetEA(23423.22)
 	eObject.SetEB(10.24)
 	eObject.SetName("asdfasdf")
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	p, _ := eObject.Marshal().ToProto()
 	_, err := config.K().EObject().Unmarshal().FromProto(p)
 	assert.Nil(t, err)
@@ -327,100 +327,100 @@ func TestNestedSetMsg(t *testing.T) {
 }
 
 func TestAuto(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
+		goapi.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
 		config.AutoFieldTest().Choice())
 	assert.Equal(t, uint32(0), config.AutoFieldTest().Auto())
 
 	config.AutoFieldTest().SetValue(10)
 	assert.Equal(
 		t,
-		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("value"),
+		goapi.PatternPrefixConfigAutoFieldTestChoiceEnum("value"),
 		config.AutoFieldTest().Choice())
 
 	config.AutoFieldTest().Auto()
 	assert.Equal(
 		t,
-		openapiart.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
+		goapi.PatternPrefixConfigAutoFieldTestChoiceEnum("auto"),
 		config.AutoFieldTest().Choice())
 }
 
 func TestAutoHeirarchy(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.VALUE,
+		goapi.PatternAutoPatternAutoIpChoice.VALUE,
 		config.AutoPattern().AutoIp().Choice())
 
 	config.AutoPattern().AutoIp().Auto().Static()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		goapi.PatternAutoPatternAutoIpChoice.AUTO,
 		config.AutoPattern().AutoIp().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpOptionsChoice.STATIC,
+		goapi.AutoIpOptionsChoice.STATIC,
 		config.AutoPattern().AutoIp().Auto().Choice())
 
 	config.AutoPattern().AutoIp().Auto().Dhcp()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.AUTO,
+		goapi.PatternAutoPatternAutoIpChoice.AUTO,
 		config.AutoPattern().AutoIp().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpOptionsChoice.DHCP,
+		goapi.AutoIpOptionsChoice.DHCP,
 		config.AutoPattern().AutoIp().Auto().Choice())
 
 	config.AutoPattern().AutoIp().SetValues([]string{"10"})
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternAutoIpChoice.VALUES,
+		goapi.PatternAutoPatternAutoIpChoice.VALUES,
 		config.AutoPattern().AutoIp().Choice())
 }
 
 func TestAutoHeirarchyDefault(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("asdf").SetB(12.2).SetC(1)
 	config.RequiredObject().SetEA(1).SetEB(2)
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.DHCP,
+		goapi.AutoIpDefaultChoice.DHCP,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().Auto().Static()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.STATIC,
+		goapi.AutoIpDefaultChoice.STATIC,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().Auto().Dhcp()
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.AUTO,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 	assert.Equal(
 		t,
-		openapiart.AutoIpDefaultChoice.DHCP,
+		goapi.AutoIpDefaultChoice.DHCP,
 		config.AutoPatternDefault().AutoIpDefault().Auto().Choice())
 
 	config.AutoPatternDefault().AutoIpDefault().SetValues([]string{"10"})
 	assert.Equal(
 		t,
-		openapiart.PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES,
+		goapi.PatternAutoPatternDefaultAutoIpDefaultChoice.VALUES,
 		config.AutoPatternDefault().AutoIpDefault().Choice())
 }

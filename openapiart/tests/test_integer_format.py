@@ -1,7 +1,7 @@
 import importlib
 import pytest
 
-module = importlib.import_module("sanity")
+module = importlib.import_module("pyapi")
 
 
 def test_int64(default_config):
@@ -23,14 +23,14 @@ def test_int64(default_config):
     assert isinstance(config.integer64_list[0], int)
 
     # negative test case
-    error_msg = "Invalid -12319 format, expected int64 at <class 'sanity.sanity.PrefixConfig'>"
+    error_msg = "Invalid -12319 format, expected int64 at <class 'pyapi.pyapi.PrefixConfig'>"
     default_config.full_duplex_100_mb = -12319
     with pytest.raises(Exception) as execinfo:
         default_config.serialize("dict")
     error_value = execinfo.value.args[0]
     assert error_msg in error_value
 
-    error_msg = "property integer64_list shall be of type <class 'list'> at <class 'sanity.sanity.PrefixConfig'> \n [-2000] are not valid"
+    error_msg = "property integer64_list shall be of type <class 'list'> at <class 'pyapi.pyapi.PrefixConfig'> \n [-2000] are not valid"
     default_config.full_duplex_100_mb = 100
     default_config.integer64_list = [-2000]
     with pytest.raises(Exception) as execinfo:
@@ -107,14 +107,14 @@ def test_int32(default_config):
     assert isinstance(config.int32_list_param[0], int)
 
     # negative test case
-    error_msg = "Invalid 2147483648 format, expected int32 at <class 'sanity.sanity.PrefixConfig'>"
+    error_msg = "Invalid 2147483648 format, expected int32 at <class 'pyapi.pyapi.PrefixConfig'>"
     default_config.int32_param = 2147483648
     with pytest.raises(Exception) as execinfo:
         default_config.serialize("dict")
     error_value = execinfo.value.args[0]
     assert error_msg in error_value
 
-    error_msg = "property int32_list_param shall be of type <class 'list'> at <class 'sanity.sanity.PrefixConfig'> \n [-2147483649] are not valid"
+    error_msg = "property int32_list_param shall be of type <class 'list'> at <class 'pyapi.pyapi.PrefixConfig'> \n [-2147483649] are not valid"
     default_config.int32_param = 100
     default_config.int32_list_param = [-2147483649]
     with pytest.raises(Exception) as execinfo:
@@ -141,14 +141,14 @@ def test_uint32(default_config):
     assert isinstance(config.uint32_list_param[0], int)
 
     # negative test case
-    error_msg = "Invalid -1 format, expected uint32 at <class 'sanity.sanity.PrefixConfig'>"
+    error_msg = "Invalid -1 format, expected uint32 at <class 'pyapi.pyapi.PrefixConfig'>"
     default_config.uint32_param = -1
     with pytest.raises(Exception) as execinfo:
         default_config.serialize("dict")
     error_value = execinfo.value.args[0]
     assert error_msg in error_value
 
-    error_msg = "property uint32_list_param shall be of type <class 'list'> at <class 'sanity.sanity.PrefixConfig'> \n [4294967300] are not valid"
+    error_msg = "property uint32_list_param shall be of type <class 'list'> at <class 'pyapi.pyapi.PrefixConfig'> \n [4294967300] are not valid"
     default_config.uint32_param = 100
     default_config.uint32_list_param = [4294967300]
     with pytest.raises(Exception) as execinfo:
@@ -177,7 +177,7 @@ def test_uint64(default_config):
     assert isinstance(config.uint64_list_param[0], int)
 
     # negative test case
-    error_msg = "Invalid -1 format, expected uint64 at <class 'sanity.sanity.PrefixConfig'>"
+    error_msg = "Invalid -1 format, expected uint64 at <class 'pyapi.pyapi.PrefixConfig'>"
     default_config.uint64_param = -1
     with pytest.raises(Exception) as execinfo:
         default_config.serialize("dict")
