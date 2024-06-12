@@ -706,7 +706,7 @@ class Bundler(object):
                     str(valid_formats),
                 )
             )
-        valid_features = ["count", "auto", "metric_tags"]
+        valid_features = ["count", "auto", "metric_tags", "random"]
         if "features" in xpattern:
             for feature in xpattern["features"]:
                 if feature not in valid_features:
@@ -1060,6 +1060,72 @@ class Bundler(object):
                 metric_tags_schema_name
             ] = metric_tags_schema
 
+        if "features" in xpattern and "random" in xpattern["features"]:
+            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+                random_pattern_name = "{}.Random".format(schema_name)
+                schema["properties"]["choice"]["x-enum"]["random"] = {
+                    "x-field-uid": 6
+                }
+                schema["properties"]["random"] = {
+                    "$ref": "#/components/schemas/{}".format(
+                        random_pattern_name
+                    )
+                }
+                schema["properties"]["random"]["x-field-uid"] = auto_field.uid
+                random_auto_field = AutoFieldUid()
+                random_schema = {
+                    "description": "{} random pattern".format(
+                        xpattern["format"]
+                    ),
+                    "type": "object",
+                    "properties": {
+                        "min": {
+                            "type": type_name,
+                            "x-field-uid": random_auto_field.uid,
+                        },
+                        "max": {
+                            "type": type_name,
+                            "x-field-uid": random_auto_field.uid,
+                        },
+                        "seed": {
+                            "type": "integer",
+                            "x-field-uid": random_auto_field.uid,
+                        },
+                        "count": {
+                            "type": "integer",
+                            "x-field-uid": random_auto_field.uid,
+                        },
+                    },
+                }
+                self._apply_common_x_field_pattern_properties(
+                    random_schema["properties"]["min"],
+                    xpattern,
+                    fmt,
+                    property_name="min",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    random_schema["properties"]["max"],
+                    xpattern,
+                    fmt,
+                    property_name="max",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    random_schema["properties"]["seed"],
+                    xpattern,
+                    pattern_fmt,
+                    property_name="seed",
+                )
+                self._apply_common_x_field_pattern_properties(
+                    random_schema["properties"]["count"],
+                    xpattern,
+                    pattern_fmt,
+                    property_name="count",
+                )
+
+                self._content["components"]["schemas"][
+                    random_pattern_name
+                ] = random_schema
+
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
             xpattern,
@@ -1083,6 +1149,15 @@ class Bundler(object):
             "ipv4": "0.0.0.1",
             "ipv6": "::1",
         }
+        min_defaults = {
+            "mac": "00:00:00:00:00:00",
+            "ipv4": "0.0.0.0",
+            "ipv6": "::0",
+        }
+        max_defaults = {
+            "mac": "ff:ff:ff:ff:ff:ff",
+            "ipv4": "255.255.255.255",
+        }
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
             if property_name == "step":
@@ -1090,10 +1165,18 @@ class Bundler(object):
                     schema["default"] = step_defaults[fmt]
                 else:
                     schema["default"] = 1
-            elif property_name == "count":
+            elif property_name == "count" or property_name == "seed":
                 schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
+            elif property_name == "min":
+                if fmt in min_defaults:
+                    schema["default"] = min_defaults[fmt]
+                else:
+                    schema["default"] = 0
+            elif property_name == "max":
+                if fmt in max_defaults:
+                    schema["default"] = max_defaults[fmt]
 
         finalised_format = None
         if xpattern["format"] == "integer":
@@ -1119,6 +1202,7 @@ class Bundler(object):
             max_val = 2 ** int(xpattern["length"]) - 1
             if xpattern.get("signed", False):
                 max_val = 2 ** (int(xpattern["length"]) - 1) - 1
+
             if property_name == "values":
                 if min_val is not None:
                     schema["items"]["minimum"] = min_val
@@ -1127,6 +1211,9 @@ class Bundler(object):
                 if min_val is not None:
                     schema["minimum"] = min_val
                 schema["maximum"] = max_val
+
+            if property_name == "max":
+                schema["default"] = max_val
 
     def _resolve_recursive_x_include(self, include_value):
         if "x-include" in include_value:
