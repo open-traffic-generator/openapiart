@@ -60,7 +60,7 @@ func TestRandomPatternForAllFormat(t *testing.T) {
 	assert.Equal(t, pat2.Seed(), uint32(1))
 
 	pat3 := config2.Ipv6Pattern().Ipv6().Random()
-	assert.Equal(t, pat3.Min(), "::0")
+	assert.Equal(t, pat3.Min(), "::")
 	assert.Equal(t, pat3.Max(), "::")
 	assert.Equal(t, pat3.Count(), uint32(1))
 	assert.Equal(t, pat3.Seed(), uint32(1))

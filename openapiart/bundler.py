@@ -1080,18 +1080,22 @@ class Bundler(object):
                     "type": "object",
                     "properties": {
                         "min": {
+                            "description": "The minimum value to be provided for the random range.",
                             "type": type_name,
                             "x-field-uid": random_auto_field.uid,
                         },
                         "max": {
+                            "description": "The maximum value to be provided for the random range.",
                             "type": type_name,
                             "x-field-uid": random_auto_field.uid,
                         },
                         "seed": {
+                            "description": "The seed value to be provided for the random number generation.",
                             "type": "integer",
                             "x-field-uid": random_auto_field.uid,
                         },
                         "count": {
+                            "description": "The numbere of values to be genrated.",
                             "type": "integer",
                             "x-field-uid": random_auto_field.uid,
                         },
@@ -1149,11 +1153,6 @@ class Bundler(object):
             "ipv4": "0.0.0.1",
             "ipv6": "::1",
         }
-        min_defaults = {
-            "mac": "00:00:00:00:00:00",
-            "ipv4": "0.0.0.0",
-            "ipv6": "::0",
-        }
         max_defaults = {
             "mac": "ff:ff:ff:ff:ff:ff",
             "ipv4": "255.255.255.255",
@@ -1169,11 +1168,6 @@ class Bundler(object):
                 schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
-            elif property_name == "min":
-                if fmt in min_defaults:
-                    schema["default"] = min_defaults[fmt]
-                else:
-                    schema["default"] = 0
             elif property_name == "max":
                 if fmt in max_defaults:
                     schema["default"] = max_defaults[fmt]

@@ -100,7 +100,7 @@ def test_random_pattern_ipv6_format(default_config):
 
     assert rnd._TYPES.get("min").get("type") == str
     assert rnd._TYPES.get("min").get("format") == "ipv6"
-    assert rnd._DEFAULTS.get("min") == "::0"
+    assert rnd._DEFAULTS.get("min") == "::"
 
     assert rnd._TYPES.get("max").get("format") == "ipv6"
     assert rnd._TYPES.get("max").get("type") == str
@@ -120,7 +120,7 @@ def test_random_pattern_ipv6_format(default_config):
     pat = intp["random"]
     assert pat["count"] == 1
     assert pat["max"] == "::"
-    assert pat["min"] == "::0"
+    assert pat["min"] == "::"
     assert pat["seed"] == 1
 
     config = module.Api().prefix_config()
@@ -131,7 +131,7 @@ def test_random_pattern_ipv6_format(default_config):
     assert pat.count == 1
     assert pat.seed == 1
     assert pat.max == "::"
-    assert pat.min == "::0"
+    assert pat.min == "::"
 
 
 def test_random_pattern_mac_format(default_config):
