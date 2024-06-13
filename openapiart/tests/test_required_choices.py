@@ -17,7 +17,7 @@ def test_req_choice_validation_errors(api):
     conf.c = 30
 
     conf.required_choice_object
-    parent_exception = "choice is a mandatory property of <class 'sanity.sanity.RequiredChoiceParent'> and should not be set to None"
+    parent_exception = "choice is a mandatory property of <class 'pyapi.pyapi.RequiredChoiceParent'> and should not be set to None"
 
     with pytest.raises(Exception) as execinfo:
         conf.serialize(conf.DICT)

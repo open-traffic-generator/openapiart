@@ -14,13 +14,14 @@ __pycache__
 /cov_report
 /**/art
 /**/art_go
+/artifacts/pyapi/__pycache__
 .local
 /pkg/coverage.txt
 /pkg/coverage.out
-/pkg/sanity
+/pkg/openapi
 /pkg/go.mod
 /pkg/go.sum
-/pkg/openapiart.go
+/pkg/goapi.go
 /pkg/httpapi
 /pkg/log.txt
 _debug_bin

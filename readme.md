@@ -15,7 +15,7 @@ The `OpenAPIArt` (OpenAPI Artifact Generator) python package does the following:
 - optionally generates a `python ux sdk` from the openapi file
 - optionally generates a `go ux sdk` from the openapi file
 
-## Getting started
+## Getting started 
 Install the package
 ```
 pip install openapiart

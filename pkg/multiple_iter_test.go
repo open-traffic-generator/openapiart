@@ -1,22 +1,22 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"testing"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMultipleIter(t *testing.T) {
-	config := openapiart.NewPrefixConfig()
+	config := goapi.NewPrefixConfig()
 	config.SetA("test")
 	config.SetB(1.234)
 	config.SetC(32)
 	config.RequiredObject().SetEA(3.45).SetEB(6.78)
-	enums := []openapiart.PrefixConfigDValuesEnum{
-		openapiart.PrefixConfigDValues.A,
-		openapiart.PrefixConfigDValues.B,
-		openapiart.PrefixConfigDValues.C,
+	enums := []goapi.PrefixConfigDValuesEnum{
+		goapi.PrefixConfigDValues.A,
+		goapi.PrefixConfigDValues.B,
+		goapi.PrefixConfigDValues.C,
 	}
 	config.SetDValues(enums)
 	config.SetStrLen("1234")

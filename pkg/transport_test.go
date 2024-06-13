@@ -1,4 +1,4 @@
-package openapiart_test
+package goapi_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
 
 	"runtime"
 
@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var apis []openapiart.Api
+var apis []goapi.Api
 
 func init() {
 	err := StartMockGrpcServer()
@@ -28,11 +28,11 @@ func init() {
 		log.Printf("error: %s", err.Error())
 	}
 	StartMockHttpServer()
-	grpcApi := openapiart.NewApi()
+	grpcApi := goapi.NewApi()
 	grpcApi.NewGrpcTransport().SetLocation(grpcServer.Location)
 	apis = append(apis, grpcApi)
 
-	httpApi := openapiart.NewApi()
+	httpApi := goapi.NewApi()
 	httpApi.NewHttpTransport().SetLocation(httpServer.Location)
 	apis = append(apis, httpApi)
 
@@ -42,7 +42,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed grpc dialcontext due to %s", err.Error())
 	}
-	clientConnApi := openapiart.NewApi()
+	clientConnApi := goapi.NewApi()
 	clientConnApi.NewGrpcTransport().SetClientConnection(conn)
 	apis = append(apis, clientConnApi)
 }
@@ -50,7 +50,7 @@ func init() {
 func TestSetConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+		config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 		resp, err := api.SetConfig(config)
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
@@ -60,7 +60,7 @@ func TestSetConfigSuccess(t *testing.T) {
 func TestSetConfig400(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+		config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
 		resp, err := api.SetConfig(config)
 		assert.Nil(t, resp)
 		assert.NotNil(t, err)
@@ -71,7 +71,7 @@ func TestSetConfig400(t *testing.T) {
 func TestSetConfig404(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+		config.SetResponse(goapi.PrefixConfigResponse.STATUS_404)
 		resp, err := api.SetConfig(config)
 		assert.Nil(t, resp)
 		assert.NotNil(t, err)
@@ -81,7 +81,7 @@ func TestSetConfig404(t *testing.T) {
 func TestSetConfig500(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+		config.SetResponse(goapi.PrefixConfigResponse.STATUS_500)
 		resp, err := api.SetConfig(config)
 		assert.Nil(t, resp)
 		assert.NotNil(t, err)
@@ -91,7 +91,7 @@ func TestSetConfig500(t *testing.T) {
 func TestGetConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config := NewFullyPopulatedPrefixConfig(api)
-		config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+		config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 		_, err := api.SetConfig(config)
 		if err != nil {
 			log.Printf("error: %s", err.Error())
@@ -106,12 +106,12 @@ func TestGetConfigSuccess(t *testing.T) {
 func TestUpdateConfigSuccess(t *testing.T) {
 	for _, api := range apis {
 		config1 := NewFullyPopulatedPrefixConfig(api)
-		config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+		config1.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 		_, err := api.SetConfig(config1)
 		if err != nil {
 			log.Printf("error: %s", err.Error())
 		}
-		config2 := openapiart.NewUpdateConfig()
+		config2 := goapi.NewUpdateConfig()
 		config2.G().Add().SetName("G1").SetGA("ga string").SetGB(232)
 		config3, err := api.UpdateConfiguration(config2)
 		assert.Nil(t, err)
@@ -121,7 +121,7 @@ func TestUpdateConfigSuccess(t *testing.T) {
 
 func TestGetMetrics(t *testing.T) {
 	for _, api := range apis {
-		metReq := openapiart.NewMetricsRequest()
+		metReq := goapi.NewMetricsRequest()
 		metReq.SetPort("p1")
 		metrics, err := api.GetMetrics(metReq)
 		assert.Nil(t, err)
@@ -129,11 +129,11 @@ func TestGetMetrics(t *testing.T) {
 		assert.Len(t, metrics.Ports().Items(), 2)
 		_, m_err := metrics.Marshal().ToYaml()
 		assert.Nil(t, m_err)
-		assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
+		assert.Equal(t, goapi.MetricsChoice.PORTS, metrics.Choice())
 		for _, row := range metrics.Ports().Items() {
 			log.Println(row.Marshal().ToYaml())
 		}
-		metReqflow := openapiart.NewMetricsRequest()
+		metReqflow := goapi.NewMetricsRequest()
 		metReqflow.SetFlow("f1")
 		metResp, err := api.GetMetrics(metReqflow)
 		assert.Nil(t, err)
@@ -141,7 +141,7 @@ func TestGetMetrics(t *testing.T) {
 		assert.Len(t, metResp.Flows().Items(), 2)
 		_, m_err1 := metResp.Marshal().ToYaml()
 		assert.Nil(t, m_err1)
-		assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
+		assert.Equal(t, goapi.MetricsChoice.FLOWS, metResp.Choice())
 		for _, row := range metResp.Flows().Items() {
 			log.Println(row.Marshal().ToYaml())
 		}
@@ -159,7 +159,7 @@ func TestGetWarnings(t *testing.T) {
 
 func TestClearWarnings(t *testing.T) {
 	for _, api := range apis {
-		openapiart.NewClearWarningsResponse()
+		goapi.NewClearWarningsResponse()
 		res, err := api.ClearWarnings()
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -202,18 +202,18 @@ func NetStat(t *testing.T) []string {
 }
 
 func TestConnectionClose(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
-	// httpApi := openapiart.NewApi()
+	// httpApi := goapi.NewApi()
 	// httpApi.NewHttpTransport().SetLocation(httpServer.Location)
 	// config1 := NewFullyPopulatedPrefixConfig(httpApi)
-	// config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	// config1.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	// resp1, err1 := httpApi.SetConfig(config1)
 	// assert.Nil(t, err1)
 	// assert.NotNil(t, resp1)
@@ -240,24 +240,24 @@ func TestGrpcClientConnection(t *testing.T) {
 	if err != nil {
 		log.Fatalf("failed grpc dialcontext due to %s", err.Error())
 	}
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	grpc := api.NewGrpcTransport()
 	grpc.SetClientConnection(conn)
 	assert.NotNil(t, grpc.ClientConnection())
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
 
 func TestValidVersionCheckHttp(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	api.SetVersionCompatibilityCheck(true)
 	api.NewHttpTransport().SetLocation(httpServer.Location)
 
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	log.Println(resp)
 	assert.Nil(t, err)
@@ -265,38 +265,38 @@ func TestValidVersionCheckHttp(t *testing.T) {
 }
 
 func TestInvalidVersionCheckHttp(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	api.SetVersionCompatibilityCheck(true)
 	api.NewHttpTransport().SetLocation(httpServer.Location)
 	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
 
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
 }
 
 func TestValidVersionCheckGrpc(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	api.SetVersionCompatibilityCheck(true)
 	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 }
 
 func TestInvalidVersionCheckGrpc(t *testing.T) {
-	api := openapiart.NewApi()
+	api := goapi.NewApi()
 	api.SetVersionCompatibilityCheck(true)
 	api.NewGrpcTransport().SetLocation(grpcServer.Location)
 	api.GetLocalVersion().SetApiSpecVersion("0.2.0")
 
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	resp, err := api.SetConfig(config)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
@@ -305,13 +305,13 @@ func TestInvalidVersionCheckGrpc(t *testing.T) {
 func TestGrpcErrorStructSetConfig(t *testing.T) {
 	api := apis[0]
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_404)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_404)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(13))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "returning err1")
@@ -321,15 +321,15 @@ func TestGrpcErrorStructSetConfig(t *testing.T) {
 func TestHttpErrorStructSetConfig(t *testing.T) {
 	api := apis[1]
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_500)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(500))
-	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
+	assert.Equal(t, errSt.Kind(), goapi.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "internal err 1")
 	assert.Equal(t, errSt.Errors()[1], "internal err 2")
 	assert.Equal(t, errSt.Errors()[2], "internal err 3")
@@ -338,13 +338,13 @@ func TestHttpErrorStructSetConfig(t *testing.T) {
 func TestGrpcErrorStringSetConfig(t *testing.T) {
 	api := apis[0]
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(2))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "SetConfig has detected configuration errors")
@@ -353,49 +353,49 @@ func TestGrpcErrorStringSetConfig(t *testing.T) {
 func TestHttpErrorStringSetConfig(t *testing.T) {
 	api := apis[1]
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_400)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_400)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(500))
-	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
+	assert.Equal(t, errSt.Kind(), goapi.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "client error !!!!")
 }
 
 func TestGrpcErrorkindSetConfig(t *testing.T) {
 	api := apis[0]
 	config := NewFullyPopulatedPrefixConfig(api)
-	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_500)
+	config.SetResponse(goapi.PrefixConfigResponse.STATUS_500)
 	resp, err := api.SetConfig(config)
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(3))
-	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.INTERNAL)
+	assert.Equal(t, errSt.Kind(), goapi.ErrorKind.INTERNAL)
 	assert.Equal(t, errSt.Errors()[0], "internal err 1")
 }
 
 func TestGrpcErrorStringUpdate(t *testing.T) {
 	api := apis[2]
 	config1 := NewFullyPopulatedPrefixConfig(api)
-	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config1.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	_, err := api.SetConfig(config1)
 	if err != nil {
 		log.Printf("error: %s", err.Error())
 	}
-	config2 := openapiart.NewUpdateConfig()
+	config2 := goapi.NewUpdateConfig()
 	config2.G().Add().SetName("ErStr").SetGA("ga string").SetGB(232)
 	config3, err := api.UpdateConfiguration(config2)
 	assert.Nil(t, config3)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(2))
 	assert.False(t, errSt.HasKind())
 	assert.Equal(t, errSt.Errors()[0], "unit test error")
@@ -404,20 +404,20 @@ func TestGrpcErrorStringUpdate(t *testing.T) {
 func TestGrpcErrorStructUpdate(t *testing.T) {
 	api := apis[2]
 	config1 := NewFullyPopulatedPrefixConfig(api)
-	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config1.SetResponse(goapi.PrefixConfigResponse.STATUS_200)
 	_, err := api.SetConfig(config1)
 	if err != nil {
 		log.Printf("error: %s", err.Error())
 	}
-	config2 := openapiart.NewUpdateConfig()
+	config2 := goapi.NewUpdateConfig()
 	config2.G().Add().SetName("Erkind").SetGA("ga string").SetGB(232)
 	config3, err := api.UpdateConfiguration(config2)
 	assert.Nil(t, config3)
 	assert.NotNil(t, err)
 
 	// if user wants to get the json now
-	errSt, _ := openapiart.FromError(err)
+	errSt, _ := goapi.FromError(err)
 	assert.Equal(t, errSt.Code(), int32(6))
-	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.VALIDATION)
+	assert.Equal(t, errSt.Kind(), goapi.ErrorKind.VALIDATION)
 	assert.Equal(t, errSt.Errors()[0], "invalid1")
 }
