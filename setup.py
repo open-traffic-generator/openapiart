@@ -49,6 +49,10 @@ setuptools.setup(
     packages=[pkg_name],
     python_requires=">=2.7, <4",
     install_requires=installation_requires,
+    entry_points="""
+    [console_scripts]
+    openapiart=openapiart.openapiartcli:generate
+    """,
     extras_require={"testing": test_requires},
     test_suite="tests",
 )

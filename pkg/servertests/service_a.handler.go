@@ -3,9 +3,9 @@ package test
 import (
 	"net/http"
 
-	openapiart "github.com/open-traffic-generator/openapiart/pkg"
-	"github.com/open-traffic-generator/openapiart/pkg/httpapi/controllers"
-	"github.com/open-traffic-generator/openapiart/pkg/httpapi/interfaces"
+	goapi "github.com/open-traffic-generator/goapi/pkg"
+	"github.com/open-traffic-generator/goapi/pkg/httpapi/controllers"
+	"github.com/open-traffic-generator/goapi/pkg/httpapi/interfaces"
 )
 
 type apiTestHandler struct {
@@ -21,14 +21,14 @@ func NewApiTestHandler() interfaces.ApiTestHandler {
 func (h *apiTestHandler) GetController() interfaces.ApiTestController {
 	return h.controller
 }
-func (h *apiTestHandler) GetRootResponse(r *http.Request) (openapiart.GetRootResponseResponse, error) {
-	result := openapiart.NewGetRootResponseResponse()
+func (h *apiTestHandler) GetRootResponse(r *http.Request) (goapi.GetRootResponseResponse, error) {
+	result := goapi.NewGetRootResponseResponse()
 	result.CommonResponseSuccess().SetMessage("from GetRootResponse")
 	return result, nil
 }
 
-func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBody, r *http.Request) (openapiart.PostRootResponseResponse, error) {
-	result := openapiart.NewPostRootResponseResponse()
+func (h *apiTestHandler) PostRootResponse(requestbody goapi.ApiTestInputBody, r *http.Request) (goapi.PostRootResponseResponse, error) {
+	result := goapi.NewPostRootResponseResponse()
 	if requestbody != nil {
 		result.CommonResponseSuccess().SetMessage(requestbody.SomeString())
 		return result, nil
@@ -36,8 +36,8 @@ func (h *apiTestHandler) PostRootResponse(requestbody openapiart.ApiTestInputBod
 	// result.StatusCode500().SetMessage("missing input")
 	return result, nil
 }
-func (h *apiTestHandler) DummyResponseTest(r *http.Request) (openapiart.DummyResponseTestResponse, error) {
-	result := openapiart.NewDummyResponseTestResponse()
+func (h *apiTestHandler) DummyResponseTest(r *http.Request) (goapi.DummyResponseTestResponse, error) {
+	result := goapi.NewDummyResponseTestResponse()
 	result.SetResponseString("this is a string response")
 	return result, nil
 }
