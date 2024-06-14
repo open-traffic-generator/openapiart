@@ -2379,11 +2379,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             ].description.lstrip("// "),
                         )
                     )
-            if (
-                field.isOptional
-                and field.isPointer
-                or "status_code" in property_name
-            ):
+            if field.isPointer or "status_code" in property_name:
                 field.has_method = """Has{fieldname}() bool""".format(
                     fieldname=self._get_external_struct_name(field.name),
                 )
