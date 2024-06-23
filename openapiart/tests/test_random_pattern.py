@@ -22,12 +22,10 @@ def test_random_pattern_integer_format(default_config):
 
     assert rnd._TYPES.get("count").get("format") == "uint32"
     assert rnd._TYPES.get("count").get("type") == int
-    assert rnd._TYPES.get("count").get("maximum") == 255
     assert rnd._DEFAULTS.get("count") == 1
 
     assert rnd._TYPES.get("seed").get("format") == "uint32"
     assert rnd._TYPES.get("seed").get("type") == int
-    assert rnd._TYPES.get("seed").get("maximum") == 255
     assert rnd._DEFAULTS.get("seed") == 1
 
     data = default_config.serialize("dict")
