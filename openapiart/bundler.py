@@ -863,7 +863,7 @@ class Bundler(object):
         if xconstants is not None:
             schema["x-constants"] = copy.deepcopy(xconstants)
         if "features" in xpattern:
-
+            auto_heirarchy = False
             if "auto" in xpattern["features"]:
                 if "auto" in xpattern:
                     # new enhance for auto hierarchy
@@ -899,6 +899,7 @@ class Bundler(object):
                             "$ref": auto_prop["$ref"],
                             "x-field-uid": auto_field.uid,
                         }
+                    auto_heirarchy = True
 
                 else:
                     if "default" not in xpattern:
@@ -929,7 +930,8 @@ class Bundler(object):
                     )
 
             # skip this UID as it was previously being used for metric_groups
-            _ = auto_field.uid
+            if not auto_heirarchy:
+                _ = auto_field.uid
 
         if "features" in xpattern and "count" in xpattern["features"]:
             if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
