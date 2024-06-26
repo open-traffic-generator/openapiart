@@ -862,8 +862,12 @@ class Bundler(object):
         }
         if xconstants is not None:
             schema["x-constants"] = copy.deepcopy(xconstants)
+
+        # TODO: part of temporary auto hack, to be removed later
+        auto_heirarchy = False
+        auto_prop = None
+
         if "features" in xpattern:
-            auto_heirarchy = False
             if "auto" in xpattern["features"]:
                 if "auto" in xpattern:
                     # new enhance for auto hierarchy
@@ -895,11 +899,7 @@ class Bundler(object):
                             and auto_prop["default"] is True
                         ):
                             schema["properties"]["choice"]["default"] = "auto"
-                        schema["properties"]["auto"] = {
-                            "$ref": auto_prop["$ref"],
-                            "x-field-uid": auto_field.uid,
-                        }
-                    auto_heirarchy = True
+                        auto_heirarchy = True
 
                 else:
                     if "default" not in xpattern:
@@ -929,8 +929,7 @@ class Bundler(object):
                         property_name="auto",
                     )
 
-            # skip this UID as it was previously being used for metric_groups
-            if not auto_heirarchy:
+                # skip this UID as it was previously being used for metric_groups
                 _ = auto_field.uid
 
         if "features" in xpattern and "count" in xpattern["features"]:
@@ -1061,6 +1060,13 @@ class Bundler(object):
             self._content["components"]["schemas"][
                 metric_tags_schema_name
             ] = metric_tags_schema
+
+        # TODO; temporary hack to add auto hierarchy field at the end, remove later
+        if auto_heirarchy and auto_prop is not None:
+            schema["properties"]["auto"] = {
+                "$ref": auto_prop["$ref"],
+                "x-field-uid": auto_field.uid,
+            }
 
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
