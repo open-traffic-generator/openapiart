@@ -929,8 +929,8 @@ class Bundler(object):
                         property_name="auto",
                     )
 
-                # skip this UID as it was previously being used for metric_groups
-                _ = auto_field.uid
+        # skip this UID as it was previously being used for metric_groups
+        _ = auto_field.uid
 
         if "features" in xpattern and "count" in xpattern["features"]:
             if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
