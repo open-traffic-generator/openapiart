@@ -1067,7 +1067,7 @@ class Bundler(object):
                 "$ref": auto_prop["$ref"],
                 "x-field-uid": auto_field.uid,
             }
-        
+
         if "features" in xpattern and "random" in xpattern["features"]:
             if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
                 random_pattern_name = "{}.Random".format(schema_name)
@@ -1098,7 +1098,7 @@ class Bundler(object):
                             "x-field-uid": random_auto_field.uid,
                         },
                         "seed": {
-                            "description": "The seed value is used to initialize the random number generator to a deterministic state. \If the user provides a seed value of 0, the implementation will generate a sequence of non-deterministic random values. For any other seed value, the sequence of random numbers will be generated in a deterministic manner (specific to the implementation).",
+                            "description": "The seed value is used to initialize the random number generator to a deterministic state. If the user provides a seed value of 0, the implementation will generate a sequence of non-deterministic random values. For any other seed value, the sequence of random numbers will be generated in a deterministic manner (specific to the implementation).",
                             "type": "integer",
                             "default": 1,
                             "format": "uint32",
