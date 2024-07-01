@@ -78,7 +78,7 @@ components:
           x-field-pattern:
             format: ipv4
             default: "0.0.0.0"
-            features: [count, auto]
+            features: [auto, count]
             auto:
               $ref: "../config/config.yaml#/components/schemas/AutoIpOptions"
               default: false
@@ -92,7 +92,7 @@ components:
           x-field-pattern:
             format: ipv4
             default: "0.0.0.0"
-            features: [count, auto]
+            features: [auto, count]
             auto:
               $ref: "../config/config.yaml#/components/schemas/AutoIpDefault"
               default: true

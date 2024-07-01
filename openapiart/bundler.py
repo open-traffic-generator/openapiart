@@ -863,272 +863,56 @@ class Bundler(object):
         if xconstants is not None:
             schema["x-constants"] = copy.deepcopy(xconstants)
 
-        # TODO: part of temporary auto hack, to be removed later
-        auto_heirarchy = False
-        auto_prop = None
+        # we will follow the order in which the features are defined.
+        # This will help us to maintain backward compatibility.
+        # for example if features: ["auto", "count", "random"]
+        # The properties that will be added to yaml will be in this order with increasing x-field-uid
 
         if "features" in xpattern:
-            if "auto" in xpattern["features"]:
-                if "auto" in xpattern:
-                    # new enhance for auto hierarchy
-                    auto_prop = xpattern["auto"]
-                    if "$ref" not in auto_prop:
-                        self._errors.append(
-                            "ref is a mandatory property in {}, when auto property is specified".format(
-                                schema_name
-                            )
-                        )
-                    if "default" not in auto_prop:
-                        self._errors.append(
-                            "default is a mandatory property in {}, when auto property is specified".format(
-                                schema_name
-                            )
-                        )
-                    elif not isinstance(auto_prop["default"], bool):
-                        self._errors.append(
-                            "only boolean values are allowed for default in {}".format(
-                                schema_name
-                            )
-                        )
-                    if "$ref" in auto_prop:
-                        schema["properties"]["choice"]["x-enum"]["auto"] = {
-                            "x-field-uid": 1
-                        }
-                        if (
-                            "default" in auto_prop
-                            and auto_prop["default"] is True
-                        ):
-                            schema["properties"]["choice"]["default"] = "auto"
-                        auto_heirarchy = True
-
-                else:
-                    if "default" not in xpattern:
-                        self._errors.append(
-                            "default must be set for property {}, when auto feature is enabled".format(
-                                schema_name
-                            )
-                        )
-                    schema["properties"]["choice"]["x-enum"]["auto"] = {
-                        "x-field-uid": 1
-                    }
-                    schema["properties"]["choice"]["default"] = "auto"
-                    description = [
-                        "The OTG implementation can provide a system generated",
-                        "value for this property. If the OTG is unable to generate a value",
-                        "the default value must be used.",
-                    ]
-                    schema["properties"]["auto"] = {
-                        "description": "\n".join(description),
-                        "type": copy.deepcopy(type_name),
-                        "x-field-uid": auto_field.uid,
-                    }
-                    self._apply_common_x_field_pattern_properties(
-                        schema["properties"]["auto"],
+            for idx, feature in enumerate(xpattern["features"]):
+                if feature == "auto":
+                    self._configure_auto_schema(
                         xpattern,
+                        schema,
+                        schema_name,
+                        auto_field,
+                        type_name,
                         fmt,
-                        property_name="auto",
                     )
 
-        # skip this UID as it was previously being used for metric_groups
-        _ = auto_field.uid
+                if idx == 0:
+                    # this is just done to keep backward compatibility
+                    # main problem is if auto is there then count starts from 6,
+                    # and when auto is not present its 5.
+                    # TODO: in future is back compatibility is broken for any reason,
+                    # we should take the advantage and remove this.
+                    # skip this UID as it was previously being used for metric_groups
+                    _ = auto_field.uid
 
-        if "features" in xpattern and "count" in xpattern["features"]:
-            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
-                counter_pattern_name = "{}.Counter".format(schema_name)
-                schema["properties"]["choice"]["x-enum"]["increment"] = {
-                    "x-field-uid": 4
-                }
-                schema["properties"]["choice"]["x-enum"]["decrement"] = {
-                    "x-field-uid": 5
-                }
-                schema["properties"]["increment"] = {
-                    "$ref": "#/components/schemas/{}".format(
-                        counter_pattern_name
+                if feature == "count":
+                    self._configure_count_schema(
+                        xpattern,
+                        schema,
+                        schema_name,
+                        auto_field,
+                        type_name,
+                        fmt,
+                        pattern_fmt,
+                        xconstants,
                     )
-                }
-                schema["properties"]["increment"][
-                    "x-field-uid"
-                ] = auto_field.uid
-                schema["properties"]["decrement"] = {
-                    "$ref": "#/components/schemas/{}".format(
-                        counter_pattern_name
+                elif feature == "metric_tags":
+                    self._configure_metric_tags_schema(
+                        xpattern, schema, schema_name, auto_field, pattern_fmt
                     )
-                }
-                schema["properties"]["decrement"][
-                    "x-field-uid"
-                ] = auto_field.uid
-                counter_auto_field = AutoFieldUid()
-                counter_schema = {
-                    "description": "{} counter pattern".format(
-                        xpattern["format"]
-                    ),
-                    "type": "object",
-                    "properties": {
-                        "start": {
-                            "type": type_name,
-                            "x-field-uid": counter_auto_field.uid,
-                        },
-                        "step": {
-                            "type": type_name,
-                            "x-field-uid": counter_auto_field.uid,
-                        },
-                        "count": {
-                            "type": "integer",
-                            "x-field-uid": counter_auto_field.uid,
-                        },
-                    },
-                }
-                self._apply_common_x_field_pattern_properties(
-                    counter_schema["properties"]["start"],
-                    xpattern,
-                    fmt,
-                    property_name="start",
-                )
-                self._apply_common_x_field_pattern_properties(
-                    counter_schema["properties"]["step"],
-                    xpattern,
-                    fmt,
-                    property_name="step",
-                )
-                self._apply_common_x_field_pattern_properties(
-                    counter_schema["properties"]["count"],
-                    xpattern,
-                    pattern_fmt,
-                    property_name="count",
-                )
-
-                if xconstants is not None:
-                    counter_schema["x-constants"] = copy.deepcopy(xconstants)
-
-                self._content["components"]["schemas"][
-                    counter_pattern_name
-                ] = counter_schema
-
-        if "features" in xpattern and "metric_tags" in xpattern["features"]:
-            metric_tags_schema_name = "{}.MetricTag".format(schema_name)
-            length = 65535
-            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
-                if "length" in xpattern:
-                    length = int(xpattern["length"])
-                elif xpattern["format"] == "mac":
-                    length = 48
-                elif xpattern["format"] == "ipv4":
-                    length = 32
-                elif xpattern["format"] == "ipv6":
-                    length = 128
-            metric_tags_auto_field = AutoFieldUid()
-            metric_tags_schema = {
-                "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
-                "type": "object",
-                "required": ["name"],
-                "properties": {
-                    "name": {
-                        "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
-                        "type": "string",
-                        "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
-                        "x-field-uid": metric_tags_auto_field.uid,
-                    },
-                    "offset": {
-                        "description": "Offset in bits relative to start of corresponding header field",
-                        "type": "integer",
-                        "format": pattern_fmt,
-                        "default": 0,
-                        "maximum": length - 1,
-                        "x-field-uid": metric_tags_auto_field.uid,
-                    },
-                    "length": {
-                        "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
-                        "type": "integer",
-                        "format": pattern_fmt,
-                        "default": length,
-                        "minimum": 1,
-                        "maximum": length,
-                        "x-field-uid": metric_tags_auto_field.uid,
-                    },
-                },
-            }
-            schema["properties"]["metric_tags"] = {
-                "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
-                "type": "array",
-                "items": {
-                    "$ref": "#/components/schemas/{}".format(
-                        metric_tags_schema_name
+                elif feature == "random":
+                    self._configure_random_schema(
+                        xpattern,
+                        schema,
+                        schema_name,
+                        auto_field,
+                        type_name,
+                        fmt,
                     )
-                },
-                "x-field-uid": auto_field.uid,
-            }
-            self._content["components"]["schemas"][
-                metric_tags_schema_name
-            ] = metric_tags_schema
-
-        # TODO; temporary hack to add auto hierarchy field at the end, remove later
-        if auto_heirarchy and auto_prop is not None:
-            schema["properties"]["auto"] = {
-                "$ref": auto_prop["$ref"],
-                "x-field-uid": auto_field.uid,
-            }
-
-        if "features" in xpattern and "random" in xpattern["features"]:
-            if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
-                random_pattern_name = "{}.Random".format(schema_name)
-                schema["properties"]["choice"]["x-enum"]["random"] = {
-                    "x-field-uid": 6
-                }
-                schema["properties"]["random"] = {
-                    "$ref": "#/components/schemas/{}".format(
-                        random_pattern_name
-                    )
-                }
-                schema["properties"]["random"]["x-field-uid"] = auto_field.uid
-                random_auto_field = AutoFieldUid()
-                random_schema = {
-                    "description": "{} random pattern".format(
-                        xpattern["format"]
-                    ),
-                    "type": "object",
-                    "properties": {
-                        "min": {
-                            "description": "The minimum possible value generated by the random value generator.",
-                            "type": type_name,
-                            "x-field-uid": random_auto_field.uid,
-                        },
-                        "max": {
-                            "description": "The maximum possible value generated by the random value generator.",
-                            "type": type_name,
-                            "x-field-uid": random_auto_field.uid,
-                        },
-                        "seed": {
-                            "description": "The seed value is used to initialize the random number generator to a deterministic state. If the user provides a seed value of 0, the implementation will generate a sequence of non-deterministic random values. For any other seed value, the sequence of random numbers will be generated in a deterministic manner (specific to the implementation).",
-                            "type": "integer",
-                            "default": 1,
-                            "format": "uint32",
-                            "x-field-uid": random_auto_field.uid,
-                        },
-                        "count": {
-                            "description": "The total number of values to be generated by the random value generator.",
-                            "type": "integer",
-                            "default": 1,
-                            "format": "uint32",
-                            "x-field-uid": random_auto_field.uid,
-                        },
-                    },
-                }
-                self._apply_common_x_field_pattern_properties(
-                    random_schema["properties"]["min"],
-                    xpattern,
-                    fmt,
-                    property_name="min",
-                )
-                self._apply_common_x_field_pattern_properties(
-                    random_schema["properties"]["max"],
-                    xpattern,
-                    fmt,
-                    property_name="max",
-                )
-
-                self._content["components"]["schemas"][
-                    random_pattern_name
-                ] = random_schema
 
         self._apply_common_x_field_pattern_properties(
             schema["properties"]["value"],
@@ -1143,6 +927,259 @@ class Bundler(object):
             property_name="values",
         )
         self._content["components"]["schemas"][schema_name] = schema
+
+    def _configure_auto_schema(
+        self, xpattern, schema, schema_name, auto_field, type_name, fmt
+    ):
+        if "auto" in xpattern:
+            # new enhance for auto hierarchy
+            auto_prop = xpattern["auto"]
+            if "$ref" not in auto_prop:
+                self._errors.append(
+                    "ref is a mandatory property in {}, when auto property is specified".format(
+                        schema_name
+                    )
+                )
+            if "default" not in auto_prop:
+                self._errors.append(
+                    "default is a mandatory property in {}, when auto property is specified".format(
+                        schema_name
+                    )
+                )
+            elif not isinstance(auto_prop["default"], bool):
+                self._errors.append(
+                    "only boolean values are allowed for default in {}".format(
+                        schema_name
+                    )
+                )
+            if "$ref" in auto_prop:
+                schema["properties"]["choice"]["x-enum"]["auto"] = {
+                    "x-field-uid": 1
+                }
+                if "default" in auto_prop and auto_prop["default"] is True:
+                    schema["properties"]["choice"]["default"] = "auto"
+                schema["properties"]["auto"] = {
+                    "$ref": auto_prop["$ref"],
+                    "x-field-uid": auto_field.uid,
+                }
+        else:
+            if "default" not in xpattern:
+                self._errors.append(
+                    "default must be set for property {}, when auto feature is enabled".format(
+                        schema_name
+                    )
+                )
+            schema["properties"]["choice"]["x-enum"]["auto"] = {
+                "x-field-uid": 1
+            }
+            schema["properties"]["choice"]["default"] = "auto"
+            description = [
+                "The OTG implementation can provide a system generated",
+                "value for this property. If the OTG is unable to generate a value",
+                "the default value must be used.",
+            ]
+            schema["properties"]["auto"] = {
+                "description": "\n".join(description),
+                "type": copy.deepcopy(type_name),
+                "x-field-uid": auto_field.uid,
+            }
+            self._apply_common_x_field_pattern_properties(
+                schema["properties"]["auto"],
+                xpattern,
+                fmt,
+                property_name="auto",
+            )
+
+    def _configure_count_schema(
+        self,
+        xpattern,
+        schema,
+        schema_name,
+        auto_field,
+        type_name,
+        fmt,
+        pattern_fmt,
+        xconstants,
+    ):
+        if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+            counter_pattern_name = "{}.Counter".format(schema_name)
+            schema["properties"]["choice"]["x-enum"]["increment"] = {
+                "x-field-uid": 4
+            }
+            schema["properties"]["choice"]["x-enum"]["decrement"] = {
+                "x-field-uid": 5
+            }
+            schema["properties"]["increment"] = {
+                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
+            }
+            schema["properties"]["increment"]["x-field-uid"] = auto_field.uid
+            schema["properties"]["decrement"] = {
+                "$ref": "#/components/schemas/{}".format(counter_pattern_name)
+            }
+            schema["properties"]["decrement"]["x-field-uid"] = auto_field.uid
+            counter_auto_field = AutoFieldUid()
+            counter_schema = {
+                "description": "{} counter pattern".format(xpattern["format"]),
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid,
+                    },
+                    "step": {
+                        "type": type_name,
+                        "x-field-uid": counter_auto_field.uid,
+                    },
+                    "count": {
+                        "type": "integer",
+                        "x-field-uid": counter_auto_field.uid,
+                    },
+                },
+            }
+            self._apply_common_x_field_pattern_properties(
+                counter_schema["properties"]["start"],
+                xpattern,
+                fmt,
+                property_name="start",
+            )
+            self._apply_common_x_field_pattern_properties(
+                counter_schema["properties"]["step"],
+                xpattern,
+                fmt,
+                property_name="step",
+            )
+            self._apply_common_x_field_pattern_properties(
+                counter_schema["properties"]["count"],
+                xpattern,
+                pattern_fmt,
+                property_name="count",
+            )
+
+            if xconstants is not None:
+                counter_schema["x-constants"] = copy.deepcopy(xconstants)
+
+            self._content["components"]["schemas"][
+                counter_pattern_name
+            ] = counter_schema
+
+    def _configure_metric_tags_schema(
+        self, xpattern, schema, schema_name, auto_field, pattern_fmt
+    ):
+        metric_tags_schema_name = "{}.MetricTag".format(schema_name)
+        length = 65535
+        if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+            if "length" in xpattern:
+                length = int(xpattern["length"])
+            elif xpattern["format"] == "mac":
+                length = 48
+            elif xpattern["format"] == "ipv4":
+                length = 32
+            elif xpattern["format"] == "ipv6":
+                length = 128
+        metric_tags_auto_field = AutoFieldUid()
+        metric_tags_schema = {
+            "description": "Metric tag can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+                "name": {
+                    "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
+                    "type": "string",
+                    "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
+                    "x-field-uid": metric_tags_auto_field.uid,
+                },
+                "offset": {
+                    "description": "Offset in bits relative to start of corresponding header field",
+                    "type": "integer",
+                    "format": pattern_fmt,
+                    "default": 0,
+                    "maximum": length - 1,
+                    "x-field-uid": metric_tags_auto_field.uid,
+                },
+                "length": {
+                    "description": "Number of bits to track for metrics starting from configured offset of corresponding header field",
+                    "type": "integer",
+                    "format": pattern_fmt,
+                    "default": length,
+                    "minimum": 1,
+                    "maximum": length,
+                    "x-field-uid": metric_tags_auto_field.uid,
+                },
+            },
+        }
+        schema["properties"]["metric_tags"] = {
+            "description": "One or more metric tags can be used to enable tracking portion of or all bits in a corresponding header field for metrics per each applicable value. These would appear as tagged metrics in corresponding flow metrics.",
+            "type": "array",
+            "items": {
+                "$ref": "#/components/schemas/{}".format(
+                    metric_tags_schema_name
+                )
+            },
+            "x-field-uid": auto_field.uid,
+        }
+        self._content["components"]["schemas"][
+            metric_tags_schema_name
+        ] = metric_tags_schema
+
+    def _configure_random_schema(
+        self, xpattern, schema, schema_name, auto_field, type_name, fmt
+    ):
+        if xpattern["format"] in ["integer", "ipv4", "ipv6", "mac"]:
+            random_pattern_name = "{}.Random".format(schema_name)
+            schema["properties"]["choice"]["x-enum"]["random"] = {
+                "x-field-uid": 6
+            }
+            schema["properties"]["random"] = {
+                "$ref": "#/components/schemas/{}".format(random_pattern_name)
+            }
+            schema["properties"]["random"]["x-field-uid"] = auto_field.uid
+            random_auto_field = AutoFieldUid()
+            random_schema = {
+                "description": "{} random pattern".format(xpattern["format"]),
+                "type": "object",
+                "properties": {
+                    "min": {
+                        "description": "The minimum possible value generated by the random value generator.",
+                        "type": type_name,
+                        "x-field-uid": random_auto_field.uid,
+                    },
+                    "max": {
+                        "description": "The maximum possible value generated by the random value generator.",
+                        "type": type_name,
+                        "x-field-uid": random_auto_field.uid,
+                    },
+                    "seed": {
+                        "description": "The seed value is used to initialize the random number generator to a deterministic state. If the user provides a seed value of 0, the implementation will generate a sequence of non-deterministic random values. For any other seed value, the sequence of random numbers will be generated in a deterministic manner (specific to the implementation).",
+                        "type": "integer",
+                        "default": 1,
+                        "format": "uint32",
+                        "x-field-uid": random_auto_field.uid,
+                    },
+                    "count": {
+                        "description": "The total number of values to be generated by the random value generator.",
+                        "type": "integer",
+                        "default": 1,
+                        "format": "uint32",
+                        "x-field-uid": random_auto_field.uid,
+                    },
+                },
+            }
+            self._apply_common_x_field_pattern_properties(
+                random_schema["properties"]["min"],
+                xpattern,
+                fmt,
+                property_name="min",
+            )
+            self._apply_common_x_field_pattern_properties(
+                random_schema["properties"]["max"],
+                xpattern,
+                fmt,
+                property_name="max",
+            )
+
+            self._content["components"]["schemas"][
+                random_pattern_name
+            ] = random_schema
 
     def _apply_common_x_field_pattern_properties(
         self, schema, xpattern, fmt, property_name
