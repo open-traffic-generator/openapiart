@@ -224,7 +224,7 @@ Flow.Ipv4:
       x-field-pattern:
         format: ipv4
         default: 0.0.0.0
-        count: false
+        features: [count, random]
 ```
 ### Sample property after bundle
 ```yaml
@@ -240,7 +240,7 @@ Pattern.Flow.Ipv4.Address:
   properties:
     choice:
       type: string
-      enum: [value, values, increment, decrement]
+      enum: [value, values, increment, decrement, random]
     value:
       type: string
       format: ipv4
@@ -255,6 +255,8 @@ Pattern.Flow.Ipv4.Address:
       $ref: '#/components/schemas/Pattern.Flow.Ipv4.Address.Counter'
     decrement:
       $ref: '#/components/schemas/Pattern.Flow.Ipv4.Address.Counter'
+    random:
+      $ref: '#/components/schemas/Pattern.Flow.Ipv4.Address.Random'
 ```
 ### Sample instantiation
 ```yaml
