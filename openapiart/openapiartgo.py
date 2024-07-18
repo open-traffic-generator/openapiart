@@ -1166,7 +1166,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if self._split_file:
             # creating file for each interface
             # this change got introduced for splitting up a gosdk into multiple sub-files
-            fp_name = self._get_file_name(new.struct)
+            fp_name = self._get_file_name(new.interface)
             fp_name = os.path.normpath(
                 os.path.join(self._ux_path, "{}.go".format(fp_name))
             )

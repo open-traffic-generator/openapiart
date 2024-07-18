@@ -106,7 +106,6 @@ class OpenApiArtPlugin(object):
                 elif len(str_) > 1:
                     file_name += "_" + str_[:-1] + "_" + str_[-1]
                     i = j - 1
-                    print(i, j, name[i], name[j], file_name)
                 else:
                     file_name += "_" + name[i].lower()
             else:
