@@ -183,6 +183,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "numberdouble": "float64",
             "stringbinary": "[]byte",
         }
+        self._interface_count = 0
+        self._split_file = kwargs.get("split")
 
     def generate(self, openapi):
         self._base_url = ""
@@ -241,7 +243,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._build_api_interface()
         self._build_request_interfaces()
         self._write_component_interfaces()
-        self._close_fp()
+        if not self._split_file:
+            self._close_fp()
+        print("Total no of files created: %s" % str(self._interface_count + 1))
 
     def _write_package_docstring(self, info_object):
         """Write the header of the generated go code file which consists of:
@@ -302,6 +306,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._fp = go_pkg_fp
         self._filename = go_pkg_filename
 
+    def _write_interface_imports(self):
+        line = 'import {pb_pkg_name} "{go_sdk_pkg_dir}/{pb_pkg_name}"'.format(
+            pb_pkg_name=self._protobuf_package_name,
+            go_sdk_pkg_dir=self._go_sdk_package_dir,
+        )
+        self._write(line)
+        self._write('import "google.golang.org/protobuf/types/known/emptypb"')
+        self._write('import "github.com/ghodss/yaml"')
+        self._write('import "google.golang.org/protobuf/encoding/protojson"')
+        self._write('import "google.golang.org/protobuf/proto"')
+        self._write()
+    
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
             if go_type.startswith("String"):
@@ -978,6 +994,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     error_handling=error_handling,
                 )
             )
+        
+        if self._split_file:
+            # we need to close the original gosnappi file for splitting it.
+            # Rest of the interfaces will be created in different sub files.
+            self._close_fp()
 
     def _build_request_interfaces(self):
         for new in self._api.external_new_methods:
@@ -1141,6 +1162,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
             return
         else:
             new.generated = True
+
+        if self._split_file:
+            # creating file for each interface
+            # this change got introduced for splitting up a gosdk into multiple sub-files
+            fp_name = self._get_file_name(new.struct)
+            fp_name = os.path.normpath(
+                os.path.join(self._ux_path, "{}.go".format(fp_name))
+            )
+            self._init_fp(fp_name)
+            self._interface_count += 1
+            print(
+                "creating file %s for interface %s, interface-count: %s"
+                % (fp_name, new.interface, str(self._interface_count))
+            )
+            self._write_package()
+            self._write_interface_imports()
 
         self._build_setters_getters(new)
         internal_items = []
@@ -1527,6 +1564,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # self._write_value_of(new)
         self._write_validate_method(new)
         self._write_default_method(new)
+
+        # closing file for interface
+        if self._split_file:
+            # need to close the file after each interface
+            self._close_fp()
+
 
     def _escaped_str(self, val):
         val = val.replace("{", "{{")
