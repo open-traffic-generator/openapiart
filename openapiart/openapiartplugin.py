@@ -87,7 +87,7 @@ class OpenApiArtPlugin(object):
                 + " */"
             )
         return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)
-    
+
     def _get_file_name(self, name):
         file_name = ""
         i = 0

@@ -317,7 +317,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
         self._write()
-    
+
     def _write_types(self):
         for _, go_type in self._oapi_go_types.items():
             if go_type.startswith("String"):
@@ -994,7 +994,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     error_handling=error_handling,
                 )
             )
-        
+
         if self._split_file:
             # we need to close the original gosnappi file for splitting it.
             # Rest of the interfaces will be created in different sub files.
@@ -1569,7 +1569,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         if self._split_file:
             # need to close the file after each interface
             self._close_fp()
-
 
     def _escaped_str(self, val):
         val = val.replace("{", "{{")

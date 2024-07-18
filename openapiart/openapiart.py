@@ -220,7 +220,9 @@ class OpenApiArt(object):
             )
         return self
 
-    def GenerateGoSdk(self, package_dir, package_name, sdk_version="", split=True):
+    def GenerateGoSdk(
+        self, package_dir, package_name, sdk_version="", split=True
+    ):
         """Generates a Go UX Sdk
 
         Args
