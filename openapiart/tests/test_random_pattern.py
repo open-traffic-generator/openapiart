@@ -133,6 +133,7 @@ def test_random_pattern_ipv6_format(default_config):
     assert pat.max == "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
     assert pat.min == "::"
 
+
 def test_random_pattern_ipv6_format_without_default(default_config):
     pat = default_config.ipv6_pattern_without_default.ipv6
     val = pat._TYPES.get("value")
@@ -174,6 +175,7 @@ def test_random_pattern_ipv6_format_without_default(default_config):
     assert pat.seed == 1
     assert pat.max == "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"
     assert pat.min is None
+
 
 def test_random_pattern_mac_format(default_config):
     pat = default_config.mac_pattern.mac
