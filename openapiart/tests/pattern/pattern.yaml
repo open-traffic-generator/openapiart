@@ -20,6 +20,15 @@ components:
             default: "::"
             features: [count, random]
           x-field-uid: 1
+    Ipv6PatternWithoutDefault:
+      description: Test ipv6 pattern
+      type: object
+      properties:
+        ipv6:
+          x-field-pattern:
+            format: ipv6
+            features: [count, random]
+          x-field-uid: 1
     MacPattern:
       description: Test mac pattern
       type: object

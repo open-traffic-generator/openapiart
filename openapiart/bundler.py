@@ -1193,6 +1193,7 @@ class Bundler(object):
         max_defaults = {
             "mac": "ff:ff:ff:ff:ff:ff",
             "ipv4": "255.255.255.255",
+            "ipv6": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
         }
         if "default" in xpattern:
             schema["default"] = xpattern["default"]
@@ -1205,9 +1206,9 @@ class Bundler(object):
                 schema["default"] = 1
             elif property_name == "values":
                 schema["default"] = [schema["default"]]
-            elif property_name == "max":
-                if fmt in max_defaults:
-                    schema["default"] = max_defaults[fmt]
+        if property_name == "max":
+            if fmt in max_defaults:
+                schema["default"] = max_defaults[fmt]
 
         finalised_format = None
         if xpattern["format"] == "integer":
