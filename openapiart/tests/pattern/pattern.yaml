@@ -8,7 +8,7 @@ components:
           x-field-pattern:
             format: ipv4
             default: 0.0.0.0
-            features: [count]
+            features: [count, random]
           x-field-uid: 1
     Ipv6Pattern:
       description: Test ipv6 pattern
@@ -18,7 +18,16 @@ components:
           x-field-pattern:
             format: ipv6
             default: "::"
-            features: [count]
+            features: [count, random]
+          x-field-uid: 1
+    Ipv6PatternWithoutDefault:
+      description: Test ipv6 pattern
+      type: object
+      properties:
+        ipv6:
+          x-field-pattern:
+            format: ipv6
+            features: [count, random]
           x-field-uid: 1
     MacPattern:
       description: Test mac pattern
@@ -28,7 +37,7 @@ components:
           x-field-pattern:
             format: mac
             default: "00:00:00:00:00:00"
-            features: [count, auto]
+            features: [count, auto, random]
           x-field-uid: 1
     IntegerPattern:
       description: Test integer pattern
@@ -39,7 +48,7 @@ components:
             format: integer
             default: 0
             length: 8
-            features: [count]
+            features: [count, random]
           x-field-uid: 1
     ChecksumPattern:
       description: Test checksum pattern
@@ -78,7 +87,7 @@ components:
           x-field-pattern:
             format: ipv4
             default: "0.0.0.0"
-            features: [count, auto]
+            features: [auto, count]
             auto:
               $ref: "../config/config.yaml#/components/schemas/AutoIpOptions"
               default: false
@@ -92,7 +101,7 @@ components:
           x-field-pattern:
             format: ipv4
             default: "0.0.0.0"
-            features: [count, auto]
+            features: [auto, count]
             auto:
               $ref: "../config/config.yaml#/components/schemas/AutoIpDefault"
               default: true
