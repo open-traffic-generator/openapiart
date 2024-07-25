@@ -15,6 +15,7 @@
 """
 import sys
 import os
+import shutil
 import importlib
 
 
@@ -53,10 +54,28 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         open_api.GeneratePythonSdk(package_name="sanity")
 
     if sdk == "go" or sdk is None or sdk == "all":
+        # delete all the previous files
+        pkg_dir = "./pkg/"
+        persistent_dirs = ["servertests"]
+        persistent_files = ["common.go", "expected.json"]
+        for (root, dirs, files) in os.walk(pkg_dir, topdown=True):
+            if root == pkg_dir:
+                # delete directories that are generated
+                for dir in dirs:
+                    if dir not in persistent_dirs:
+                        print("deleting directory ", os.path.join(pkg_dir, dir))
+                        shutil.rmtree(os.path.join(pkg_dir, dir))
+                # delete all files that are generated
+                for file in files:
+                    if file not in persistent_files and not file.endswith("_test.go"):
+                        print("deleting file ", os.path.join(pkg_dir, file))
+                        os.remove(os.path.join(pkg_dir, file))
+                break
         open_api.GenerateGoSdk(
             package_dir="github.com/open-traffic-generator/openapiart/pkg",
             package_name="openapiart",
             sdk_version="0.0.1",
+            split=True,
         )
         open_api.GenerateGoServer(
             module_path="github.com/open-traffic-generator/openapiart/pkg",
