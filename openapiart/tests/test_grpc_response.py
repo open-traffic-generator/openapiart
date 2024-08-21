@@ -111,5 +111,29 @@ def test_grpc_accept_yaml(grpc_api):
     grpc_api.set_config(s_obj)
 
 
+def test_version_mismatch_error(utils, grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    try:
+        grpc_api.get_local_version().api_spec_version = "2.0.1"
+        grpc_api._version_check = True
+        grpc_api._version_check_err = None
+        grpc_api.set_component_info(
+            "keng-controller", "1.8.0", "protocol-engine"
+        )
+        grpc_api.set_config(payload)
+        raise Exception("expected version error")
+    except Exception as e:
+        assert (
+            str(e)
+            == "keng-controller 1.8.0 is not compatible with protocol-engine 1.2.3"
+        )
+    finally:
+        grpc_api.get_local_version().api_spec_version = "0.1.0"
+        grpc_api._version_check = False
+    #
+    # print(grpc_api.__dict__)
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

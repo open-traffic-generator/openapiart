@@ -694,6 +694,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 localVersion  Version
                 remoteVersion Version
                 checkError    error
+                clientName    string
+                clientAppVer  string
+                serverName    string
             }}
             type {internal_struct_name} struct {{
                 apiSt
@@ -1013,6 +1016,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             "// SetVersionCompatibilityCheck allows enabling or disabling automatic version",
             "// compatibility check between client and server API spec version upon API call",
             "SetVersionCompatibilityCheck(bool)",
+            "// ability to set component names and specific version for version check error msgs",
+            "SetComponentInformation(string, string, string)",
             "// CheckVersionCompatibility compares API spec version for local client and remote server,",
             "// and returns an error if they are not compatible according to Semantic Versioning 2.0.0",
             "CheckVersionCompatibility() error",
@@ -1045,6 +1050,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api.versionMeta.checkVersion = v
             }}
 
+            func (api *{0}) SetComponentInformation(clientName string, clientVer string, serverName string) {{
+                api.versionMeta.clientName = clientName
+                api.versionMeta.clientAppVer = clientVer
+                api.versionMeta.serverName = serverName
+            }}
+
             func (api *{0}) checkLocalRemoteVersionCompatibility() (error, error) {{
                 localVer := api.GetLocalVersion()
                 remoteVer, err := api.GetRemoteVersion()
@@ -1053,10 +1064,16 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 err = checkClientServerVersionCompatibility(localVer.ApiSpecVersion(), remoteVer.ApiSpecVersion(), "API spec")
                 if err != nil {{
-                    return fmt.Errorf(
+                    if api.versionMeta.clientName != "" {{
+                        return fmt.Errorf(
+                        "%s %s is not compatible with %s %s", api.versionMeta.clientName, api.versionMeta.clientAppVer,
+                        api.versionMeta.serverName, remoteVer.AppVersion(),), nil
+                    }} else {{
+                        return fmt.Errorf(
                         "client SDK version '%s' is not compatible with server SDK version '%s': %v",
                         localVer.SdkVersion(), remoteVer.SdkVersion(), err,
-                    ), nil
+                        ), nil
+                    }}
                 }}
 
                 return nil, nil
