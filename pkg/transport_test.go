@@ -421,3 +421,16 @@ func TestGrpcErrorStructUpdate(t *testing.T) {
 	assert.Equal(t, errSt.Kind(), openapiart.ErrorKind.VALIDATION)
 	assert.Equal(t, errSt.Errors()[0], "invalid1")
 }
+
+func TestVersionMismatchMsgWithComponentInfo(t *testing.T) {
+	api := apis[0]
+	config1 := NewFullyPopulatedPrefixConfig(api)
+	config1.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	api.SetVersionCompatibilityCheck(true)
+	api.GetLocalVersion().SetApiSpecVersion("2.0.1")
+	api.SetComponentInformation("keng-controller", "1.8.0", "protocol-engine")
+	_, err := api.SetConfig(config1)
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "keng-controller 1.8.0 is not compatible with protocol-engine 1.2.3")
+	api.SetVersionCompatibilityCheck(false)
+}
