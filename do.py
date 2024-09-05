@@ -8,7 +8,7 @@ import platform
 
 
 BLACK_VERSION = "22.1.0"
-GO_VERSION = "1.21"
+GO_VERSION = "1.21.0"
 PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
@@ -254,7 +254,7 @@ def testgo():
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)
     print("res =", result)
-    result =result[0]
+    result = result[0]
     print("result is", int(result))
     print("ret = ", ret)
     if int(result) < go_coverage_threshold:
