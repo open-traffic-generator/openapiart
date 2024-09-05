@@ -62,7 +62,7 @@ def get_go(version=GO_VERSION, targz=None):
             print("host architecture not supported")
             return
 
-    print("Installing Go ...")
+    print("Installing Go ...", targz)
 
     if not os.path.exists(LOCAL_PATH):
         os.mkdir(LOCAL_PATH)
@@ -252,8 +252,9 @@ def testgo():
         ["go test ./... -v -coverprofile coverage.txt"], capture_output=True
     )
     os.chdir("..")
-    result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
-    print(result)
+    result = re.findall(r"coverage:.*\s(\d+)", ret)
+    print("res =", result)
+    result =result[0]
     print("result is", int(result))
     print("ret = ", ret)
     if int(result) < go_coverage_threshold:
