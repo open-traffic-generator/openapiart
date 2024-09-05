@@ -8,7 +8,7 @@ import platform
 
 
 BLACK_VERSION = "22.1.0"
-GO_VERSION = "1.20"
+GO_VERSION = "1.21"
 PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
@@ -253,6 +253,8 @@ def testgo():
     )
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
+    print("result is", int(result))
+    print("ret = ", ret)
     if int(result) < go_coverage_threshold:
         raise Exception(
             "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
@@ -273,7 +275,7 @@ def go_lint():
     try:
         output = run(["go version"], capture_output=True)
         if "go1.20" in output:
-            print("Using older linter version for go version older than 1.19")
+            print("Using older linter version for go version older than 1.20")
             version = "1.55.0"
         else:
             version = "1.60.1"
