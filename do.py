@@ -253,7 +253,7 @@ def testgo():
     )
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)
-    result = [x for x in result if int(x) !=0 and int(x) < 100]
+    result = [x for x in result if int(x) != 0 and int(x) < 100]
     result = result[0]
     print("result is", int(result))
     if int(result) < go_coverage_threshold:
