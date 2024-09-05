@@ -49,7 +49,7 @@ func (h *serviceBHandler) GetSingleItem(r *http.Request) (openapiart.GetSingleIt
 		_ = err.SetCode(code)
 		_ = err.SetErrors([]string{fmt.Sprintf("not found: id '%s'", id)})
 		jsonStr, _ := err.Marshal().ToJson()
-		return nil, fmt.Errorf(jsonStr)
+		return nil, fmt.Errorf("%s", jsonStr)
 	}
 	return result, nil
 }

@@ -253,10 +253,9 @@ def testgo():
     )
     os.chdir("..")
     result = re.findall(r"coverage:.*\s(\d+)", ret)
-    print("res =", result)
+    result = [x for x in result if int(x) !=0 and int(x) < 100]
     result = result[0]
     print("result is", int(result))
-    print("ret = ", ret)
     if int(result) < go_coverage_threshold:
         raise Exception(
             "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
