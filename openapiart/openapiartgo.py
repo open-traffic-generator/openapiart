@@ -226,12 +226,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write("module {}".format(self._go_sdk_package_dir))
         self._write()
         self._write("go 1.16")
-        self._write()
-        self._write(
-            """require (
-                google.golang.org/grpc v1.65.0
-            )"""
-        )
         self._close_fp()
 
     def _write_go_file(self):

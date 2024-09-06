@@ -8,7 +8,7 @@ import platform
 
 
 BLACK_VERSION = "22.1.0"
-GO_VERSION = "1.20"
+GO_VERSION = "1.21.0"
 PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
@@ -62,7 +62,7 @@ def get_go(version=GO_VERSION, targz=None):
             print("host architecture not supported")
             return
 
-    print("Installing Go ...")
+    print("Installing Go ...", targz)
 
     if not os.path.exists(LOCAL_PATH):
         os.mkdir(LOCAL_PATH)
@@ -252,7 +252,10 @@ def testgo():
         ["go test ./... -v -coverprofile coverage.txt"], capture_output=True
     )
     os.chdir("..")
-    result = re.findall(r"coverage:.*\s(\d+)", ret)[0]
+    result = re.findall(r"coverage:.*\s(\d+)", ret)
+    result = [x for x in result if int(x) != 0 and int(x) < 100]
+    result = result[0]
+    print("result is", int(result))
     if int(result) < go_coverage_threshold:
         raise Exception(
             "Go tests achieved {1}% which is less than Coverage thresold {0}%,".format(
@@ -272,11 +275,11 @@ def testgo():
 def go_lint():
     try:
         output = run(["go version"], capture_output=True)
-        if "go1.17" in output or "go1.18" in output:
-            print("Using older linter version for go version older than 1.19")
-            version = "1.46.2"
+        if "go1.20" in output:
+            print("Using older linter version for go version older than 1.20")
+            version = "1.55.0"
         else:
-            version = "1.51.1"
+            version = "1.60.1"
 
         pkg = "go install"
         if on_linux() or on_macos():
