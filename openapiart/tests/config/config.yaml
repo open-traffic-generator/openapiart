@@ -332,6 +332,9 @@ components:
           type: string
           format: ipv4
           x-field-uid: 60
+        ipv6_pattern_without_default:
+          $ref: "../pattern/pattern.yaml#/components/schemas/Ipv6PatternWithoutDefault"
+          x-field-uid: 61
 
     WObject:
       required: [w_name]

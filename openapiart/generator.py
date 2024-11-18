@@ -747,6 +747,9 @@ class Generator:
                 self._write(2, "if self._version_check is None:")
                 self._write(3, "self._version_check = False")
                 self._write(2, "self._version_check_err = None")
+                self._write(2, "self._client_name = None")
+                self._write(2, "self._client_ver = None")
+                self._write(2, "self._server_name = None")
             else:
                 self._write(2, "pass")
             self._write(2, 'endpoint = kwargs.get("otel_collector")')
@@ -853,6 +856,16 @@ class Generator:
         if not self._generate_version_api:
             return
 
+        # adding functionality for adding component info
+        self._write(
+            1,
+            "def set_component_info(self, client_name, client_version, server_name):",
+        )
+        self._write(2, "self._client_name = client_name")
+        self._write(2, "self._client_app_ver = client_version")
+        self._write(2, "self._server_name = server_name")
+        self._write()
+
         self._write(
             indent=1,
             line="""def _check_client_server_version_compatibility(
@@ -911,10 +924,16 @@ class Generator:
                 local.api_spec_version, remote.api_spec_version, "API spec"
             )
         except Exception as e:
-            msg = "client SDK version '{}' is not compatible with server SDK version '{}'".format(
-                local.sdk_version, remote.sdk_version
-            )
-            return Exception("{}: {}".format(msg, str(e))), None
+            if self._client_name is not None:
+                msg = "{} {} is not compatible with {} {}".format(
+                    self._client_name, self._client_app_ver, self._server_name, remote.app_version
+                )
+                return Exception(msg), None
+            else:
+                msg = "client SDK version '{}' is not compatible with server SDK version '{}'".format(
+                    local.sdk_version, remote.sdk_version
+                )
+                return Exception("{}: {}".format(msg, str(e))), None
 
         return None, None
 

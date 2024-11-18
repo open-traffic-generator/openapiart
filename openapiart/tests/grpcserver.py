@@ -71,6 +71,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
     def GetVersion(self, request, context):
         self._log("Executing GetVersion")
         v = op.api().get_local_version()
+        v.app_version = "1.2.3"
         response_200 = {"version": v.serialize(v.DICT)}
         res_obj = json_format.Parse(
             json.dumps(response_200), pb2.GetVersionResponse()

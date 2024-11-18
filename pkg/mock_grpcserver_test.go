@@ -104,7 +104,7 @@ func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.G
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
-	ver, _ := openapiart.NewApi().GetLocalVersion().Marshal().ToProto()
+	ver, _ := openapiart.NewApi().GetLocalVersion().SetAppVersion("1.2.3").Marshal().ToProto()
 	resp := &sanity.GetVersionResponse{
 		Version: ver,
 	}

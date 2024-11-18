@@ -92,7 +92,7 @@ func (h *bundlerHandler) SetConfig(rbody openapiart.PrefixConfig, r *http.Reques
 		fmt.Println(e)
 		_ = err.SetErrors([]string{"internal err 1", "internal err 2", "internal err 3"})
 		jsonStr, _ := err.Marshal().ToJson()
-		return nil, fmt.Errorf(jsonStr)
+		return nil, fmt.Errorf("%s", jsonStr)
 	}
 	return response, nil
 }

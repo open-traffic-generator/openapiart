@@ -88,6 +88,35 @@ class OpenApiArtPlugin(object):
             )
         return "{}// ".format(indent) + "\n{}// ".format(indent).join(lines)
 
+    def _get_file_name(self, name):
+        file_name = ""
+        i = 0
+        while i < len(name):
+            if name[i].isupper():
+                j = i
+                while j < len(name):
+                    if name[j].islower():
+                        break
+                    else:
+                        j += 1
+                str_ = name[i:j].lower()
+                if j == len(name):
+                    file_name += "_" + str_
+                    break
+                elif len(str_) > 1:
+                    file_name += "_" + str_[:-1] + "_" + str_[-1]
+                    i = j - 1
+                else:
+                    file_name += "_" + name[i].lower()
+            else:
+                file_name += name[i].lower()
+            i += 1
+        if file_name.startswith("_"):
+            file_name = file_name[1:]
+        if file_name.endswith("test"):
+            file_name = file_name + "_intf"
+        return file_name
+
 
 class type_limits(object):
     limits = {
