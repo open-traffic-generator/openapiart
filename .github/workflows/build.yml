@@ -164,7 +164,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: generated_py_package
+          name: generated_py_package-${{ matrix.python-version }}
           path: |
             art
       - name: Display structure of downloaded files
@@ -211,7 +211,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: generated_go_package
+          name: generated_go_package-${{ matrix.go-version }}
           path: |
             pkg
             art
