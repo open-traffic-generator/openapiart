@@ -183,7 +183,7 @@ func TestBadEnumJsonDecode(t *testing.T) {
 	input_str := `{"a":"ixia", "b" : 8.8, "c" : 1, "response" : "status_800", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:47): invalid value for enum type: "status_800"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:47): invalid value for enum field response: "status_800"`)
 }
 
 func TestBadDatatypeJsonDecode(t *testing.T) {
@@ -192,7 +192,7 @@ func TestBadDatatypeJsonDecode(t *testing.T) {
 	input_str := `{"a":"ixia", "b" : "abc", "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:20): invalid value for float type: "abc"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:20): invalid value for float field b: "abc"`)
 }
 
 func TestBadDatastructureJsonDecode(t *testing.T) {
@@ -201,7 +201,7 @@ func TestBadDatastructureJsonDecode(t *testing.T) {
 	input_str := `{"a":["ixia"], "b" : 9.9, "c" : 1, "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string field a: [`)
 }
 
 func TestWithoutValueJsonDecode(t *testing.T) {
@@ -210,7 +210,7 @@ func TestWithoutValueJsonDecode(t *testing.T) {
 	input_str := `{"a": "ixia", "b" : 8.8, "c" : "", "response" : "status_200", "required_object" : {"e_a": 1, "e_b": 2}}`
 	err := c1.Unmarshal().FromJson(input_str)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:32): invalid value for int32 type: ""`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:32): invalid value for int32 field c: ""`)
 }
 
 func TestValidYamlDecode(t *testing.T) {
@@ -260,7 +260,7 @@ response: status_800
 `
 	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:84): invalid value for enum type: "status_800"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:84): invalid value for enum field response: "status_800"`)
 }
 
 func TestBadDatatypeYamlDecode(t *testing.T) {
@@ -276,7 +276,7 @@ required_object:
 `
 	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:17): invalid value for float type: "abc"`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:17): invalid value for float field b: "abc"`)
 }
 
 func TestBadDatastructureYamlDecode(t *testing.T) {
@@ -292,7 +292,7 @@ required_object:
 `
 	err := config.Unmarshal().FromYaml(data)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string type: [`)
+	assert.Contains(t, err.Error(), `unmarshal error (line 1:6): invalid value for string field a: [`)
 }
 
 func TestSetMsg(t *testing.T) {

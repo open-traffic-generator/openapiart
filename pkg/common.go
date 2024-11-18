@@ -242,7 +242,7 @@ func (obj *validation) validationResult() error {
 		errors := strings.Join(obj.validationErrors, "\n")
 		obj.validationErrors = nil
 		logs.Error().Str("Validation Errors ", errors).Msg("")
-		return fmt.Errorf(errors)
+		return fmt.Errorf("%s", errors)
 	}
 	return nil
 }
@@ -311,15 +311,15 @@ func (obj *validation) validateIpv6(ip string) error {
 		strings.Count(ip, "::") > 1 || strings.Count(ip, ":::") > 0 ||
 		strings.Count(ip, ":") == 0 {
 		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if (string(ip[0]) == ":" && string(ip[:2]) != "::") || (string(ip[len(ip)-1]) == ":" && string(ip[len(ip)-2:]) != "::") {
 		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if strings.Count(ip, "::") == 0 && strings.Count(ip, ":") != 7 {
 		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
-		return fmt.Errorf(fmt.Sprintf("Invalid ipv6 address %s", ip))
+		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if ip == "::" {
 		return nil
@@ -342,7 +342,7 @@ func (obj *validation) validateIpv6(ip string) error {
 		num, err := strconv.ParseUint(val, 16, 64)
 		if err != nil || num > 65535 {
 			logs.Error().Msg("Invalid Ipv4 address")
-			return fmt.Errorf(fmt.Sprintf("Invalid Ipv6 address at %s octet in %s ipv6", octInd[ind], ip))
+			return fmt.Errorf("Invalid Ipv6 address at %s octet in %s ipv6", octInd[ind], ip)
 		}
 	}
 

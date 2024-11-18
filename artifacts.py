@@ -57,7 +57,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         # delete all the previous files
         pkg_dir = "./pkg/"
         persistent_dirs = ["servertests"]
-        persistent_files = ["common.go", "expected.json"]
+        persistent_files = ["common.go", "telemetry.go", "loggers.go", "expected.json"]
         for (root, dirs, files) in os.walk(pkg_dir, topdown=True):
             if root == pkg_dir:
                 # delete directories that are generated

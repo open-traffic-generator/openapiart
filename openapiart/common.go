@@ -243,7 +243,7 @@ func (obj *validation) validationResult() error {
 		errors := strings.Join(obj.validationErrors, "\n")
 		obj.validationErrors = nil
 		logs.Error().Str("Validation Errors ", errors).Msg("")
-		return fmt.Errorf(errors)
+		return fmt.Errorf("%s", errors)
 	}
 	return nil
 }
@@ -275,6 +275,7 @@ func (obj *validation) under_review(message string) {
 func (obj *validation) validateMac(mac string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
+		logs.Error().Str("Invalid Mac address ", mac).Msg("")
 		return fmt.Errorf("Invalid Mac address %s", mac)
 	}
 	octInd := []string{"0th", "1st", "2nd", "3rd", "4th", "5th"}
