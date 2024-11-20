@@ -47,6 +47,52 @@ jobs:
             dist
             pkg
 
+  build_yaml:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: install python requirements
+        run: |
+          python do.py setup
+          python do.py init
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.20"
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          version: "23.3"
+      - name: Setup Go and protoc
+        run: |
+          python do.py setup_ext "1.20"
+      - uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: python_package
+      - name: Install dependencies
+        run: |
+          python do.py install_package_only
+      - name: Generate Python SDK
+        run: |
+          python do.py generate_from_yaml python
+      - name: Test python SDK
+        run: |
+          python do.py testpy
+      - name: Generate Go SDK
+        run: |
+          python do.py generate_from_yaml go
+      - name: Test Go SDK
+        run: |
+          python do.py testgo
+
   dev_workflow_ubuntu:
     runs-on: ubuntu-latest
     steps:
