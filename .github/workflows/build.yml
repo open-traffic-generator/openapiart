@@ -40,7 +40,7 @@ jobs:
           python do.py lint true
       - name: Archive generated artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: python_package
           path: |
@@ -149,7 +149,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: python_package
@@ -162,9 +162,9 @@ jobs:
           python do.py generate python True
       - name: Archive generated artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: generated_py_package
+          name: generated_py_package-${{ matrix.python-version }}
           path: |
             art
       - name: Display structure of downloaded files
@@ -209,13 +209,13 @@ jobs:
           python do.py go_lint
       - name: Archive generated artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: generated_go_package
+          name: generated_go_package-${{ matrix.go-version }}
           path: |
             pkg
             art
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: python_package
       - name: Display structure of downloaded files
@@ -239,7 +239,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: python_package
@@ -270,7 +270,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: python_package
       - name: Display structure of downloaded files
