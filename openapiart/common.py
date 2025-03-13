@@ -51,7 +51,7 @@ def api(
     transport=None,
     verify=True,
     logger=None,
-    loglevel=logging.INFO,
+    loglevel=logging.WARN,
     ext=None,
     version_check=False,
     otel_collector=None,
