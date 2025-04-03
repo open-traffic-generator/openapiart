@@ -30,6 +30,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             "responses"
         ].items():
             self._write_msg(name, response_object)
+        self._write_data_msg()
         for _, path_object in self._openapi["paths"].items():
             self._write_request_msg(path_object)
             self._write_response_msg(path_object)
@@ -470,3 +471,20 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             operation.rpc, operation.request, "", operation.response
         )
         self._write(line, indent=1)
+        # additional code to add a stream rpc under the hood
+        if operation.rpc == "SetConfig":
+            print("writing rpc stream_config")
+            line = "rpc StreamConfig(stream Data) returns({});".format(
+                operation.response
+            )
+            self._write(line, indent=1)
+
+    def _write_data_msg(self):
+        # This function is a must have a message to support grpc streaming.
+        # Its not mentioned in the model so needs to be handled by openapiart under the hood
+        print("writing msg Data for streaming")
+        self._write()
+        self._write("// Data that needs to be streamed")
+        self._write("message Data {")
+        self._write("bytes datum = 1;", indent=1)
+        self._write("}")
