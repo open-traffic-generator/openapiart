@@ -135,5 +135,15 @@ def test_version_mismatch_error(utils, grpc_api):
     # print(grpc_api.__dict__)
 
 
+def test_stream_config(utils, grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    grpc_api.enable_grpc_streaming = True
+    grpc_api.chunk_size = 200
+    result = grpc_api.set_config(payload)
+    assert result.read() == b"success"
+    grpc_api.enable_grpc_streaming = False
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
