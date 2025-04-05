@@ -833,6 +833,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
         if self._generate_version_api:
             methods.extend(self._get_version_api_interface_method_signatures())
+        # adding func signature in interface for stream config
+        methods.extend(self._get_stream_config_api_interface_method())
         method_signatures = "\n".join(methods)
         self._write(
             """
@@ -869,6 +871,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     self._api.internal_struct_name
                 )
             )
+        # add streamConfig function
+        self._write(
+            self._get_stream_config_method_impl(self._api.internal_struct_name)
+        )
         for rpc in self._api.external_rpc_methods:
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
@@ -1116,6 +1122,49 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
         """.format(
             struct_name, self._api_version, self._sdk_version
+        )
+
+    def _get_stream_config_api_interface_method(self):
+        return [
+            "// streamConfig provides us a way to stream grpc config by first chunking the data",
+            "streamConfig(context.Context, string) (*{pkg}.SetConfigResponse, error)".format(
+                pkg=self._protobuf_package_name
+            ),
+        ]
+
+    def _get_stream_config_method_impl(self, struct_name):
+        return """
+        func (api *{0}) streamConfig(ctx context.Context, data string) (*{1}.SetConfigResponse, error) {{
+            chunkSize := api.grpc.chunkSize
+            streamClient, err := api.grpcClient.StreamConfig(ctx)
+            if err != nil {{
+                return nil, err
+            }}
+            idx := 0
+            bytes := []byte(data)
+            for i := 0; i < len(bytes); i += chunkSize {{
+                // str := fmt.Sprintf("This is string %d !!!!!", idx)
+                data := &sanity.Data{{}}
+                if i+chunkSize > len(bytes) {{
+                    data.Datum = bytes[i:]
+                }} else {{
+                    data.Datum = bytes[i : i+chunkSize]
+                }}
+                fmt.Println("sending chunk ", idx, string(data.Datum))
+                if err := streamClient.Send(data); err != nil {{
+                    return nil, err
+                }}
+                idx++
+            }}
+            res, err := streamClient.CloseAndRecv()
+            if err != nil {{
+                return nil, err
+            }}
+            return res, nil
+        }}
+        """.format(
+            struct_name,
+            self._protobuf_package_name,
         )
 
     def _write_component_interfaces(self):
