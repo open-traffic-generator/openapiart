@@ -68,6 +68,8 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
             self._log("received " + data.datum.decode())
 
         self._log("received all chunks ")
+        config = json_format.Parse(full_str, pb2.PrefixConfig())
+        print(config)
 
         response_200 = """
             {

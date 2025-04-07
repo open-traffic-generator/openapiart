@@ -21,6 +21,7 @@ import (
 )
 
 var apis []openapiart.Api
+var streamApi openapiart.Api
 
 func init() {
 	err := StartMockGrpcServer()
@@ -45,6 +46,11 @@ func init() {
 	clientConnApi := openapiart.NewApi()
 	clientConnApi.NewGrpcTransport().SetClientConnection(conn)
 	apis = append(apis, clientConnApi)
+
+	// one api with streaming enabled
+	streamApi = openapiart.NewApi()
+	streamApi.NewGrpcTransport().SetLocation(grpcServer.Location).EnableGrpcStreaming().SetStreamChunkSize(104)
+
 }
 
 func TestSetConfigSuccess(t *testing.T) {
@@ -433,4 +439,16 @@ func TestVersionMismatchMsgWithComponentInfo(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "keng-controller 1.8.0 is not compatible with protocol-engine 1.2.3")
 	api.SetVersionCompatibilityCheck(false)
+}
+
+func TestStreamConfigSuccess(t *testing.T) {
+	api := streamApi
+	api.SetVersionCompatibilityCheck(true)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	log.Println(err)
+	log.Println(string(resp))
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 }

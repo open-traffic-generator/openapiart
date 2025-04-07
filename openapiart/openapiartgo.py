@@ -185,6 +185,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
         self._interface_count = 0
         self._split_file = kwargs.get("split")
+        self._set_config_struct = ""
 
     def generate(self, openapi):
         self._base_url = ""
@@ -516,6 +517,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         == 0
                     ):
                         self._api.external_new_methods.append(new)
+                    if rpc.operation_name == "SetConfig":
+                        self._set_config_struct = new.struct
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
@@ -914,6 +917,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }"""
             else:
                 version_check = ""
+
+            if rpc.operation_name == "SetConfig":
+                stream_config = """var resp *{package}.SetConfigResponse
+                var err error
+                if api.grpc.enableGrpcStreaming {{
+                    str, er := {obj}.Marshal().ToPbText()
+                    if er != nil {{
+                        return nil, er
+                    }}
+                    resp, err = api.streamConfig(ctx, str)
+                }} else {{
+                """.format(
+                    package=self._protobuf_package_name,
+                    obj=self._set_config_struct,
+                )
+            else:
+                stream_config = ""
+
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
@@ -928,7 +949,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
-                    resp, err := api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_start}
+                    resp, err {declare}= api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_end}
                     if err != nil {{
                         if er, ok := fromGrpcError(err); ok {{
                             return nil, er
@@ -949,6 +972,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    stream_config_start=stream_config,
+                    stream_config_end="}"
+                    if rpc.operation_name == "SetConfig"
+                    else "",
+                    declare=":" if stream_config == "" else "",
                 )
             )
 
@@ -1140,21 +1168,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
             if err != nil {{
                 return nil, err
             }}
-            idx := 0
             bytes := []byte(data)
             for i := 0; i < len(bytes); i += chunkSize {{
-                // str := fmt.Sprintf("This is string %d !!!!!", idx)
                 data := &sanity.Data{{}}
                 if i+chunkSize > len(bytes) {{
                     data.Datum = bytes[i:]
                 }} else {{
                     data.Datum = bytes[i : i+chunkSize]
                 }}
-                fmt.Println("sending chunk ", idx, string(data.Datum))
                 if err := streamClient.Send(data); err != nil {{
                     return nil, err
                 }}
-                idx++
             }}
             res, err := streamClient.CloseAndRecv()
             if err != nil {{

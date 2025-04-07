@@ -40,6 +40,12 @@ type GrpcTransport interface {
 	SetClientConnection(con *grpc.ClientConn) GrpcTransport
 	// ClientConnection get grpc DialContext
 	ClientConnection() *grpc.ClientConn
+	// EnableGrpcStreaming enables streaming of data through GRPC channel
+	EnableGrpcStreaming() GrpcTransport
+	// DisableGrpcStreaming disables streaming of data through GRPC channel
+	DisableGrpcStreaming() GrpcTransport
+	// SetStreamChunkSize sets the chunk size, basically this decides your data will be sliced into how many chunks before streaming it to the server
+	SetStreamChunkSize(value int) GrpcTransport
 }
 
 // Location
