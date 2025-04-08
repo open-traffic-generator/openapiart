@@ -134,7 +134,7 @@ jobs:
 
   python_tests:
     needs: build
-    runs-on: Ubuntu 22.04
+    runs-on: ubuntu-22.04
     strategy:
       max-parallel: 6
       matrix:
