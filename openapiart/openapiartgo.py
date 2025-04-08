@@ -1170,7 +1170,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
             bytes := []byte(data)
             for i := 0; i < len(bytes); i += chunkSize {{
-                data := &sanity.Data{{}}
+                data := &{1}.Data{{}}
                 if i+chunkSize > len(bytes) {{
                     data.Datum = bytes[i:]
                 }} else {{
