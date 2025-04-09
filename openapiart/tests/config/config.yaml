@@ -335,6 +335,11 @@ components:
         ipv6_pattern_without_default:
           $ref: "../pattern/pattern.yaml#/components/schemas/Ipv6PatternWithoutDefault"
           x-field-uid: 61
+        protocols:
+          type: array
+          items:
+            $ref: "#/components/schemas/Port.Protocols"
+          x-field-uid: 62
 
     WObject:
       required: [w_name]
@@ -814,3 +819,25 @@ components:
               x-field-uid: 1
             dhcp:
               x-field-uid: 2
+
+    Port.Protocols:
+      description: |-
+        Supprted protocols.
+      type: object
+      properties:
+        choice:
+          description: |-
+            list of protocols that have per port settings
+          type: string
+          default: rocev2
+          x-enum:
+            rocev2:
+              x-field-uid: 1
+          x-field-uid: 1
+        rocev2:
+          description: |-
+            Rocev2 Port Settings.
+          type: array
+          items:
+            $ref: "../common/common.yaml#/components/schemas/Rocev2.PerPortSettings"
+          x-field-uid: 2

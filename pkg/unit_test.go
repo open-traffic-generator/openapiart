@@ -1725,6 +1725,25 @@ func TestClone(t *testing.T) {
 	assert.NotSame(t, &lObj1, &lObj2)
 }
 
+func TestArrayOfChoices(t *testing.T) {
+	api := openapiart.NewApi()
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.Protocols().Add().Rocev2().Add()
+	config.Protocols().Add().Rocev2().Add().SetCnpDelayTimer(234)
+
+	j, err := config.Marshal().ToJson()
+	assert.Nil(t, err)
+
+	config2 := openapiart.NewPrefixConfig()
+	err = config2.Unmarshal().FromJson(j)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(config2.Protocols().Items()))
+	assert.Equal(t, 1, len(config2.Protocols().Items()[0].Rocev2().Items()))
+	assert.Equal(t, uint32(55), config2.Protocols().Items()[0].Rocev2().Items()[0].CnpDelayTimer())
+	assert.Equal(t, 1, len(config2.Protocols().Items()[1].Rocev2().Items()))
+	assert.Equal(t, uint32(234), config2.Protocols().Items()[1].Rocev2().Items()[0].CnpDelayTimer())
+}
+
 // TODO: restore behavior
 // func TestDeprecationWarning(t *testing.T) {
 
