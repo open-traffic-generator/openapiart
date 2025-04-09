@@ -1382,10 +1382,15 @@ class Generator:
                 for property, item in yobject["properties"].items():
                     if property == "choice":
                         continue
+                    ref = (
+                        item["items"]["$ref"]
+                        if "items" in item
+                        else item["$ref"]
+                    )
                     self._write_factory_method(
                         contained_class_name,
                         property,
-                        item["$ref"],
+                        ref,
                         True,
                         True,
                     )

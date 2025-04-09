@@ -38,5 +38,24 @@ def test_add_with_multiple_list(api):
     config.deserialize(yaml)
 
 
+def test_list_of_choices(api):
+    config = api.prefix_config()
+    config.a = "asdf"
+    config.b = 1.1
+    config.c = 1
+    config.required_object.e_a = 1.1
+    config.required_object.e_b = 1.2
+    r = config.protocols.rocev2().rocev2()[-1]
+    r.add(cnp_delay_timer=234)
+    assert len(config.protocols) == 2
+    yaml = config.serialize(encoding=config.YAML)
+    print(yaml)
+    config.deserialize(yaml)
+    assert len(config.protocols) == 2
+    assert len(config.protocols[0]) == 0
+    assert len(config.protocols[1]) == 1
+    assert config.protocols[1][0].cnp_delay_timer == 234
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
