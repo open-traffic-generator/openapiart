@@ -922,7 +922,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 stream_config = """var resp *{package}.SetConfigResponse
                 var err error
                 if api.grpc.enableGrpcStreaming {{
-                    str, er := {obj}.Marshal().ToPbText()
+                    str, er := {obj}.Marshal().ToJson()
                     if er != nil {{
                         return nil, er
                     }}

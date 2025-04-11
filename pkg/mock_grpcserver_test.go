@@ -115,7 +115,7 @@ func (s *GrpcServer) StreamConfig(srv sanity.Openapi_StreamConfigServer) error {
 					ResponseBytes: []byte("StreamConfig has completed successfully"),
 				}
 				config := openapiart.NewPrefixConfig()
-				err := config.Unmarshal().FromPbText(string(blob))
+				err := config.Unmarshal().FromJson(string(blob))
 				if err != nil {
 					return err
 				}
