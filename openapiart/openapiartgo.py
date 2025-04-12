@@ -922,7 +922,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 stream_config = """var resp *{package}.SetConfigResponse
                 var err error
                 if api.grpc.enableGrpcStreaming {{
-                    str, er := {obj}.Marshal().ToJson()
+                    str, er := proto.Marshal({obj}.msg())
                     if er != nil {{
                         return nil, er
                     }}
@@ -1155,14 +1155,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
     def _get_stream_config_api_interface_method(self):
         return [
             "// streamConfig provides us a way to stream grpc config by first chunking the data",
-            "streamConfig(context.Context, string) (*{pkg}.SetConfigResponse, error)".format(
+            "streamConfig(context.Context, []byte]) (*{pkg}.SetConfigResponse, error)".format(
                 pkg=self._protobuf_package_name
             ),
         ]
 
     def _get_stream_config_method_impl(self, struct_name):
         return """
-        func (api *{0}) streamConfig(ctx context.Context, data string) (*{1}.SetConfigResponse, error) {{
+        func (api *{0}) streamConfig(ctx context.Context, data []byte]) (*{1}.SetConfigResponse, error) {{
             chunkSize := api.grpc.chunkSize
             streamClient, err := api.grpcClient.StreamConfig(ctx)
             if err != nil {{

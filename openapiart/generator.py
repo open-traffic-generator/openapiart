@@ -440,7 +440,6 @@ class Generator:
         raise Exception(err)
 
     def _stream_data(self, stub, data):
-        data = data.encode()
         data_chunks = []
         for i in range(0, len(data), self.chunk_size):
             if i+self.chunk_size > len(data):
@@ -516,11 +515,8 @@ class Generator:
                     if status_msg != "":
                         self._write(2, "self.add_warnings('%s')" % status_msg)
 
-                    self._write(
-                        2, "json_str = self._serialize_payload(payload)"
-                    )
                     self._write(2, "pb_obj = json_format.Parse(")
-                    self._write(3, "json_str,")
+                    self._write(3, "self._serialize_payload(payload),")
                     self._write(3, "pb2.%s()" % rpc_method.request_class)
                     self._write(2, ")")
                     if (
@@ -536,6 +532,7 @@ class Generator:
                             request_property=rpc_method.request_property,
                         ),
                     )
+                    self._write(2, "pb_str = pb_obj.SerializeToString()")
                     self._write(2, "stub = self._get_stub()")
                     self._write(2, "try:")
                     # code to add streaming of config hook in set_config
@@ -543,10 +540,10 @@ class Generator:
                     if rpc_method.method == "set_config":
                         self._write(
                             3,
-                            "if self.enable_grpc_streaming and len(json_str) > self.chunk_size:",
+                            "if self.enable_grpc_streaming and len(pb_str) > self.chunk_size:",
                         )
                         self._write(
-                            4, "res_obj = self._stream_data(stub, json_str)"
+                            4, "res_obj = self._stream_data(stub, pb_str)"
                         )
                         self._write(3, "else:")
                         line_indent += 1

@@ -62,14 +62,16 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
     def StreamConfig(self, request_iterator, context):
         self._log("Executing GetVersion")
-        full_str = ""
+        full_str = b""
         for data in request_iterator:
-            full_str += data.datum.decode()
-            self._log("received " + data.datum.decode())
+            full_str += data.datum
+            self._log("received ")
 
         self._log("received all chunks ")
-        config = json_format.Parse(full_str, pb2.PrefixConfig())
-        print(config)
+        self._log(full_str)
+        obj = pb2.PrefixConfig()
+        obj.ParseFromString(full_str)
+        self._log(obj)
 
         response_200 = """
             {
