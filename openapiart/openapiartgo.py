@@ -185,6 +185,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
         self._interface_count = 0
         self._split_file = kwargs.get("split")
+        self._set_config_struct = ""
 
     def generate(self, openapi):
         self._base_url = ""
@@ -516,6 +517,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         == 0
                     ):
                         self._api.external_new_methods.append(new)
+                    if rpc.operation_name == "SetConfig":
+                        self._set_config_struct = new.struct
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
@@ -833,6 +836,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
         if self._generate_version_api:
             methods.extend(self._get_version_api_interface_method_signatures())
+        # adding func signature in interface for stream config
+        methods.extend(self._get_stream_config_api_interface_method())
         method_signatures = "\n".join(methods)
         self._write(
             """
@@ -869,6 +874,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     self._api.internal_struct_name
                 )
             )
+        # add streamConfig function
+        self._write(
+            self._get_stream_config_method_impl(self._api.internal_struct_name)
+        )
         for rpc in self._api.external_rpc_methods:
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
@@ -908,6 +917,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }"""
             else:
                 version_check = ""
+
+            if rpc.operation_name == "SetConfig":
+                stream_config = """var resp *{package}.SetConfigResponse
+                var err error
+                if api.grpc.enableGrpcStreaming {{
+                    str, er := proto.Marshal({obj}.msg())
+                    if er != nil {{
+                        return nil, er
+                    }}
+                    resp, err = api.streamConfig(ctx, str)
+                }} else {{
+                """.format(
+                    package=self._protobuf_package_name,
+                    obj=self._set_config_struct,
+                )
+            else:
+                stream_config = ""
+
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
@@ -922,7 +949,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     request := {request}
                     ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
                     defer cancelFunc()
-                    resp, err := api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_start}
+                    resp, err {declare}= api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_end}
                     if err != nil {{
                         if er, ok := fromGrpcError(err); ok {{
                             return nil, er
@@ -943,6 +972,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    stream_config_start=stream_config,
+                    stream_config_end="}"
+                    if rpc.operation_name == "SetConfig"
+                    else "",
+                    declare=":" if stream_config == "" else "",
                 )
             )
 
@@ -1116,6 +1150,45 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
         """.format(
             struct_name, self._api_version, self._sdk_version
+        )
+
+    def _get_stream_config_api_interface_method(self):
+        return [
+            "// streamConfig provides us a way to stream grpc config by first chunking the data",
+            "streamConfig(context.Context, []byte) (*{pkg}.SetConfigResponse, error)".format(
+                pkg=self._protobuf_package_name
+            ),
+        ]
+
+    def _get_stream_config_method_impl(self, struct_name):
+        return """
+        func (api *{0}) streamConfig(ctx context.Context, data []byte) (*{1}.SetConfigResponse, error) {{
+            chunkSize := api.grpc.chunkSize
+            streamClient, err := api.grpcClient.StreamConfig(ctx)
+            if err != nil {{
+                return nil, err
+            }}
+            bytes := []byte(data)
+            for i := 0; i < len(bytes); i += chunkSize {{
+                data := &{1}.Data{{}}
+                if i+chunkSize > len(bytes) {{
+                    data.Datum = bytes[i:]
+                }} else {{
+                    data.Datum = bytes[i : i+chunkSize]
+                }}
+                if err := streamClient.Send(data); err != nil {{
+                    return nil, err
+                }}
+            }}
+            res, err := streamClient.CloseAndRecv()
+            if err != nil {{
+                return nil, err
+            }}
+            return res, nil
+        }}
+        """.format(
+            struct_name,
+            self._protobuf_package_name,
         )
 
     def _write_component_interfaces(self):

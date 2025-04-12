@@ -3,8 +3,10 @@ package openapiart_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -94,6 +96,39 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 		err = status.Error(codes.Internal, jsonStr)
 	}
 	return resp, err
+}
+
+func (s *GrpcServer) StreamConfig(srv sanity.Openapi_StreamConfigServer) error {
+	var blob []byte
+	idx := 0
+	for {
+		data, err := srv.Recv()
+		if data != nil {
+			fmt.Println("Receiving chunk ", idx, time.Now().String())
+		}
+		if err != nil {
+			if err == io.EOF {
+				fmt.Printf("Transfer of %d bytes successful\n", len(blob))
+				// log.Println(string(blob))
+
+				resp := &sanity.SetConfigResponse{
+					ResponseBytes: []byte("StreamConfig has completed successfully"),
+				}
+				config := openapiart.NewPrefixConfig()
+				err := config.Unmarshal().FromPbText(string(blob))
+				if err != nil {
+					return err
+				}
+				fmt.Println(config.Marshal().ToYaml())
+				return srv.SendAndClose(resp)
+			}
+
+			return err
+		}
+		idx++
+		blob = append(blob, data.Datum...)
+
+	}
 }
 
 func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {

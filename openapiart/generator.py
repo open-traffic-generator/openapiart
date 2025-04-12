@@ -376,6 +376,8 @@ class Generator:
         self._cert_domain = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
+        self.enable_grpc_streaming = False
+        self.chunk_size = 50
         self._location = (
             kwargs["location"]
             if "location" in kwargs and kwargs["location"] is not None
@@ -436,6 +438,19 @@ class Generator:
             err.code = grpc_error.code().value[0]
             err.errors = [grpc_error.details()]
         raise Exception(err)
+
+    def _stream_data(self, stub, data):
+        data_chunks = []
+        for i in range(0, len(data), self.chunk_size):
+            if i+self.chunk_size > len(data):
+                chunk = data[i:len(data)]
+            else:
+                chunk = data[i:i+self.chunk_size]
+            data_chunks.append(pb2.Data(datum=chunk))
+        # print(chunk_list, len(chunk_list))
+        reqs = iter(data_chunks)
+        res = stub.StreamConfig(reqs, timeout=self._request_timeout)
+        return res
 
     @property
     def request_timeout(self):
@@ -517,10 +532,23 @@ class Generator:
                             request_property=rpc_method.request_property,
                         ),
                     )
+                    self._write(2, "pb_str = pb_obj.SerializeToString()")
                     self._write(2, "stub = self._get_stub()")
                     self._write(2, "try:")
+                    # code to add streaming of config hook in set_config
+                    line_indent = 3
+                    if rpc_method.method == "set_config":
+                        self._write(
+                            3,
+                            "if self.enable_grpc_streaming and len(pb_str) > self.chunk_size:",
+                        )
+                        self._write(
+                            4, "res_obj = self._stream_data(stub, pb_str)"
+                        )
+                        self._write(3, "else:")
+                        line_indent += 1
                     self._write(
-                        3,
+                        line_indent,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
