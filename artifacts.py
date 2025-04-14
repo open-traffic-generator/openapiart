@@ -41,6 +41,10 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
                 os.path.dirname(__file__),
                 "./openapiart/goserver/api/service_b.api.yaml",
             ),
+            os.path.join(
+                os.path.dirname(__file__),
+                "./openapiart/tests/restructured_config/config.yaml",
+            ),
         ],
         artifact_dir=os.path.join(os.path.dirname(__file__), "art"),
         extension_prefix="sanity",
