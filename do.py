@@ -279,7 +279,7 @@ def go_lint():
             print("Using older linter version for go version older than 1.20")
             version = "1.55.0"
         else:
-            version = "1.60.1"
+            version = "1.61.0"
 
         pkg = "go install"
         if on_linux() or on_macos():
