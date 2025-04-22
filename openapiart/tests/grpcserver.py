@@ -60,7 +60,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
 
         return res_obj
 
-    def StreamConfig(self, request_iterator, context):
+    def streamSetConfig(self, request_iterator, context):
         self._log("Executing GetVersion")
         full_str = b""
         for data in request_iterator:

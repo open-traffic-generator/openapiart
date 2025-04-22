@@ -449,7 +449,7 @@ class Generator:
             data_chunks.append(pb2.Data(datum=chunk))
         # print(chunk_list, len(chunk_list))
         reqs = iter(data_chunks)
-        res = stub.StreamConfig(reqs, timeout=self._request_timeout)
+        res = stub.streamSetConfig(reqs, timeout=self._request_timeout)
         return res
 
     @property
