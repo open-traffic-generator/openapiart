@@ -48,6 +48,14 @@ def update_configuration():
     return Response(status=200)
 
 
+@app.route("/api/config/append", methods=["PATCH"])
+def append_config():
+    config = app.PACKAGE.Api().warning_details()
+    config.warnings = ["w1", "w2"]
+    serialized_config = config.serialize()
+    return Response(serialized_config, mimetype="application/json", status=200)
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     app.CONFIG.a = "asdf"

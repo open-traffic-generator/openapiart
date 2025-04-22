@@ -139,6 +139,19 @@ func (s *GrpcServer) UpdateConfiguration(ctx context.Context, req *sanity.Update
 	}
 }
 
+func (s *GrpcServer) AppendConfig(ctx context.Context, req *sanity.AppendConfigRequest) (*sanity.AppendConfigResponse, error) {
+	if len(req.ConfigAppend.ConfigAppendList) < 2 {
+		return nil, fmt.Errorf("length of configAppendList should be two")
+	}
+
+	resp := &sanity.AppendConfigResponse{
+		WarningDetails: &sanity.WarningDetails{
+			Warnings: []string{"This is your first warning", "Your last warning"},
+		},
+	}
+	return resp, nil
+}
+
 func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsRequest) (*sanity.GetMetricsResponse, error) {
 	choice := req.MetricsRequest.Choice.String()
 	switch choice {

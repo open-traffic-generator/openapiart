@@ -346,13 +346,13 @@ class Generator:
             if "type" not in schema_object:
                 continue
             print("found top level factory method %s" % property_name)
-            if schema_object["type"] == "array":
-                ref = schema_object["items"]["$ref"]
-                _, _, class_name, _ = self._get_object_property_class_names(
-                    ref
-                )
-                class_name = "%sIter" % class_name
-                self._top_level_schema_refs.append((ref, property_name))
+            # if schema_object["type"] == "array":
+            #     ref = schema_object["items"]["$ref"]
+            #     _, _, class_name, _ = self._get_object_property_class_names(
+            #         ref
+            #     )
+            #     class_name = "%sIter" % class_name
+            #     self._top_level_schema_refs.append((ref, property_name))
             self._top_level_schema_refs.append((ref, None))
 
             factories.append({"name": property_name, "class_name": class_name})
@@ -985,6 +985,18 @@ class Generator:
         schema_object = self._get_object_from_ref(ref)
         ref_name = ref.split("/")[-1]
         class_name = ref_name.replace(".", "")
+        if "type" in schema_object and schema_object["type"] == "array":
+            schema_object["properties"] = {
+                ref_name.lower().replace(".", "_")
+                + "_"
+                + "list": {
+                    "type": "array",
+                    "items": {"$ref": schema_object["items"]["$ref"]},
+                    "x-field-uid": 1,
+                }
+            }
+            del schema_object["type"]
+            del schema_object["items"]
         if class_name in self._generated_classes:
             return
         self._generated_classes.append(class_name)

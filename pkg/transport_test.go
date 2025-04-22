@@ -434,3 +434,54 @@ func TestVersionMismatchMsgWithComponentInfo(t *testing.T) {
 	assert.Equal(t, err.Error(), "keng-controller 1.8.0 is not compatible with protocol-engine 1.2.3")
 	api.SetVersionCompatibilityCheck(false)
 }
+
+func TestHTTPAppendConfigSuccess(t *testing.T) {
+	api := apis[1]
+	config := openapiart.NewConfigAppend()
+	i1 := config.ConfigAppendList().Add()
+	i1.Flows().Add().SetName("f1").SetRate(23)
+	i1.Flows().Add().SetName("f2").SetRate(32)
+	i2 := config.ConfigAppendList().Add()
+	i2.Flows().Add().SetName("f3").SetRate(56)
+	i2.Flows().Add().SetName("f4").SetRate(65)
+	jsonStr, err := config.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.NotNil(t, jsonStr)
+	warn, err := api.AppendConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, warn)
+	fmt.Println(warn.Marshal().ToJson())
+}
+
+func TestGRPCAppendConfigSuccess(t *testing.T) {
+	api := apis[0]
+	config := openapiart.NewConfigAppend()
+	i1 := config.ConfigAppendList().Add()
+	i1.Flows().Add().SetName("f1").SetRate(23)
+	i1.Flows().Add().SetName("f2").SetRate(32)
+	i2 := config.ConfigAppendList().Add()
+	i2.Flows().Add().SetName("f3").SetRate(56)
+	i2.Flows().Add().SetName("f4").SetRate(65)
+	jsonStr, err := config.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.NotNil(t, jsonStr)
+	warn, err := api.AppendConfig(config)
+	assert.Nil(t, err)
+	assert.NotNil(t, warn)
+	fmt.Println(warn.Marshal().ToJson())
+}
+
+func TestGRPCAppendConfigFailure(t *testing.T) {
+	api := apis[0]
+	config := openapiart.NewConfigAppend()
+	i1 := config.ConfigAppendList().Add()
+	i1.Flows().Add().SetName("f1").SetRate(23)
+	i1.Flows().Add().SetName("f2").SetRate(32)
+	jsonStr, err := config.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.NotNil(t, jsonStr)
+	warn, err := api.AppendConfig(config)
+	assert.Nil(t, warn)
+	assert.NotNil(t, err)
+	fmt.Println(err.Error())
+}
