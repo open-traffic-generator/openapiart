@@ -472,10 +472,14 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         )
         self._write(line, indent=1)
         # additional code to add a stream rpc under the hood
-        if operation.rpc == "SetConfig":
-            print("writing rpc stream_config")
-            line = "rpc StreamConfig(stream Data) returns({});".format(
-                operation.response
+        if operation.rpc.startswith("Set"):
+            self._write(
+                "// streaming version of the rpc {}".format(operation.rpc),
+                indent=1,
+            )
+            print("writing rpc {}".format("stream" + operation.rpc))
+            line = "rpc {}(stream Data) returns ({});".format(
+                "stream" + operation.rpc, operation.response
             )
             self._write(line, indent=1)
 

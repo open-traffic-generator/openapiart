@@ -98,7 +98,7 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	return resp, err
 }
 
-func (s *GrpcServer) StreamConfig(srv sanity.Openapi_StreamConfigServer) error {
+func (s *GrpcServer) StreamSetConfig(srv sanity.Openapi_StreamSetConfigServer) error {
 	var blob []byte
 	idx := 0
 	for {
