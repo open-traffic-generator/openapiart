@@ -104,6 +104,18 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         )
         return res_obj
 
+    def AppendConfig(self, request, context):
+        self._log("Executing AppendConfig")
+        response = {
+            "warning_details": {
+                "warnings": ["w1", "w2"],
+            }
+        }
+        res_obj = json_format.Parse(
+            json.dumps(response), pb2.AppendConfigResponse()
+        )
+        return res_obj
+
 
 def gRpcServer(secure):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

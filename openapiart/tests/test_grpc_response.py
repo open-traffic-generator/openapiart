@@ -145,5 +145,17 @@ def test_stream_config(utils, grpc_api):
     grpc_api.enable_grpc_streaming = False
 
 
+def test_grpc_append_config(grpc_api):
+    config = grpc_api.config_append()
+    f1 = config.config_append_list.add().flows.add()
+    f1.name = "f1"
+    f1.rate = 23
+    f2 = config.config_append_list.add().flows.add()
+    f2.name = "f2"
+    f2.rate = 32
+    result = grpc_api.append_config(config)
+    assert result.warnings == ["w1", "w2"]
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

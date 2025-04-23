@@ -390,6 +390,18 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
             print("Failed writing response {}: {}".format(msg_name, err))
 
     def _write_msg_fields(self, name, schema_object):
+        if "type" in schema_object and schema_object["type"] == "array":
+            schema_object["properties"] = {
+                name.lower().replace(".", "_")
+                + "_"
+                + "list": {
+                    "type": "array",
+                    "items": {"$ref": schema_object["items"]["$ref"]},
+                    "x-field-uid": 1,
+                }
+            }
+            del schema_object["type"]
+            del schema_object["items"]
         if "properties" not in schema_object:
             return
         for property_name, property_object in schema_object[
