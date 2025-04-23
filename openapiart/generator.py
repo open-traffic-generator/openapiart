@@ -346,6 +346,7 @@ class Generator:
             if "type" not in schema_object:
                 continue
             print("found top level factory method %s" % property_name)
+            # TODO: check if part needs to be removed or was introduced for which tes-case
             # if schema_object["type"] == "array":
             #     ref = schema_object["items"]["$ref"]
             #     _, _, class_name, _ = self._get_object_property_class_names(
