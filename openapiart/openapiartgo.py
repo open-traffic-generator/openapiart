@@ -30,6 +30,7 @@ class FluentRpc(object):
         self.stream_method = None
         self.streaming_type = None
         self.streaming_response = None
+        self.struct = None
 
 
 class FluentRpcResponse(object):
@@ -190,7 +191,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
         }
         self._interface_count = 0
         self._split_file = kwargs.get("split")
-        self._set_config_struct = ""
 
     def generate(self, openapi):
         self._base_url = ""
@@ -529,8 +529,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         == 0
                     ):
                         self._api.external_new_methods.append(new)
-                    if rpc.operation_name == "SetConfig":
-                        self._set_config_struct = new.struct
+                    rpc.struct = new.struct
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
@@ -957,7 +956,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }} else {{
                 """.format(
                     package=self._protobuf_package_name,
-                    obj=self._set_config_struct,
+                    obj=rpc.struct,
                     operation=rpc.stream_operation_name,
                     response=rpc.streaming_response,
                 )

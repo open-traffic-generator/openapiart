@@ -39,6 +39,8 @@ class FluentRpc(object):
         self.http_method = None
         self.good_response_property = None
         self.x_status = None
+        self.stream_type = None
+        self.stream_operation_name = None
 
 
 class Generator:
@@ -244,9 +246,16 @@ class Generator:
             print("found method %s" % method_name)
             rpc = FluentRpc()
             rpc.method = method_name
+            if rpc.method.startswith("set"):
+                rpc.stream_type = "client"
+            elif rpc.method.startswith("get"):
+                rpc.stream_type = "server"
+            else:
+                rpc.stream_type = ""
             rpc.operation_name = self._get_external_struct_name(
                 operation["operationId"].replace(".", "_")
             )
+            rpc.stream_operation_name = "stream" + rpc.operation_name
             rpc.description = self._get_description(operation)
             request = self._get_parser("$..requestBody..schema").find(
                 operation
@@ -440,7 +449,7 @@ class Generator:
             err.errors = [grpc_error.details()]
         raise Exception(err)
 
-    def _stream_data(self, stub, data):
+    def _client_stream(self, stub, data):
         data_chunks = []
         for i in range(0, len(data), self.chunk_size):
             if i+self.chunk_size > len(data):
@@ -450,8 +459,7 @@ class Generator:
             data_chunks.append(pb2.Data(datum=chunk))
         # print(chunk_list, len(chunk_list))
         reqs = iter(data_chunks)
-        res = stub.streamSetConfig(reqs, timeout=self._request_timeout)
-        return res
+        return reqs
 
     @property
     def request_timeout(self):
@@ -538,13 +546,18 @@ class Generator:
                     self._write(2, "try:")
                     # code to add streaming of config hook in set_config
                     line_indent = 3
-                    if rpc_method.method == "set_config":
+                    if rpc_method.stream_type == "client":
                         self._write(
                             3,
                             "if self.enable_grpc_streaming and len(pb_str) > self.chunk_size:",
                         )
                         self._write(
-                            4, "res_obj = self._stream_data(stub, pb_str)"
+                            4, "stream_req = self._client_stream(stub, pb_str)"
+                        )
+                        self._write(
+                            4,
+                            "res_obj = stub.%s(stream_req, timeout=self._request_timeout)"
+                            % rpc_method.stream_operation_name,
                         )
                         self._write(3, "else:")
                         line_indent += 1
