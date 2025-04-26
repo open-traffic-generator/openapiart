@@ -116,6 +116,53 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         )
         return res_obj
 
+    def streamGetMetrics(self, request, context):
+        print(request)
+        metrics = op.api().metrics()
+        p = metrics.ports.add()
+        p.name = "p1"
+        p.tx_frames = 1.23
+        p.rx_frames = 3.45
+        f = metrics.flows.add()
+        f.name = "f1"
+        f.tx_frames = 4.23
+        f.rx_frames = 6.45
+        js = metrics.serialize()
+        obj = json_format.Parse(js, pb2.Metrics())
+        bts = obj.SerializeToString()
+        chunk_size = 10
+        for i in range(0, len(bts), chunk_size):
+            if i + chunk_size > len(bts):
+                chunk = bts[i : len(bts)]
+            else:
+                chunk = bts[i : i + chunk_size]
+            print("sending ", chunk)
+            yield pb2.Data(datum=chunk)
+        print("finished sending all")
+    
+    def streamGetConfig(self, request, context):
+        config = op.api().prefix_config()
+        config.a = "asdf"
+        config.b = 1.1
+        config.c = 50
+        config.required_object.e_a = 1.1
+        config.required_object.e_b = 1.2
+        config.d_values = [config.A, config.B, config.C]
+        res_obj = json_format.Parse(
+            config.serialize(), pb2.PrefixConfig()
+        )
+        bts = res_obj.SerializeToString()
+        chunk_size = 10
+        for i in range(0, len(bts), chunk_size):
+            if i + chunk_size > len(bts):
+                chunk = bts[i : len(bts)]
+            else:
+                chunk = bts[i : i + chunk_size]
+            print("sending ", chunk)
+            yield pb2.Data(datum=chunk)
+        print("finished sending all")
+
+
 
 def gRpcServer(secure):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

@@ -41,6 +41,7 @@ class FluentRpc(object):
         self.x_status = None
         self.stream_type = None
         self.stream_operation_name = None
+        self.response_class = None
 
 
 class Generator:
@@ -292,6 +293,7 @@ class Generator:
                     ) = self._get_ref_from_response(
                         schema_obj, response_property
                     )
+                    rpc.response_class = class_name
                     if ref:
                         refs.append(ref)
                 else:
@@ -461,6 +463,12 @@ class Generator:
         reqs = iter(data_chunks)
         return reqs
 
+    def _server_stream(self, stub, responses):
+        data = b""
+        for response in responses:
+            data += response.datum
+        return data
+
     @property
     def request_timeout(self):
         \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
@@ -502,6 +510,9 @@ class Generator:
                     key = "{}.{}".format("GrpcApi", rpc_method.method)
                     self._deprecated_properties[key] = rpc_method.x_status[1]
 
+                including_default, return_byte = self._process_good_response(
+                    rpc_method
+                )
                 if rpc_method.request_class is None:
                     self._write(1, "def %s(self):" % rpc_method.method)
                     if status_msg != "":
@@ -511,8 +522,12 @@ class Generator:
                         2,
                         "empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
                     )
+                    (
+                        line_indent,
+                        skip_response_check,
+                    ) = self._add_streaming_code(rpc_method, return_byte, 2)
                     self._write(
-                        2,
+                        line_indent,
                         "res_obj = stub.%s(empty, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
@@ -541,26 +556,16 @@ class Generator:
                             request_property=rpc_method.request_property,
                         ),
                     )
-                    self._write(2, "pb_str = pb_obj.SerializeToString()")
+                    if rpc_method.stream_type == "client":
+                        self._write(2, "pb_str = pb_obj.SerializeToString()")
                     self._write(2, "stub = self._get_stub()")
                     self._write(2, "try:")
                     # code to add streaming of config hook in set_config
-                    line_indent = 3
-                    if rpc_method.stream_type == "client":
-                        self._write(
-                            3,
-                            "if self.enable_grpc_streaming and len(pb_str) > self.chunk_size:",
-                        )
-                        self._write(
-                            4, "stream_req = self._client_stream(stub, pb_str)"
-                        )
-                        self._write(
-                            4,
-                            "res_obj = stub.%s(stream_req, timeout=self._request_timeout)"
-                            % rpc_method.stream_operation_name,
-                        )
-                        self._write(3, "else:")
-                        line_indent += 1
+
+                    (
+                        line_indent,
+                        skip_response_check,
+                    ) = self._add_streaming_code(rpc_method, return_byte, 3)
                     self._write(
                         line_indent,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
@@ -568,9 +573,6 @@ class Generator:
                     )
                     self._write(2, "except grpc.RpcError as grpc_error:")
                     self._write(3, "self._raise_exception(grpc_error)")
-                including_default, return_byte = self._process_good_response(
-                    rpc_method
-                )
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
@@ -579,8 +581,19 @@ class Generator:
                     self._write(2, "if bytes is not None:")
                     self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
+                    line_indent = 2
+                    if (
+                        rpc_method.stream_type == "server"
+                        and not skip_response_check
+                    ):
+                        self._write(
+                            line_indent, "if self.enable_grpc_streaming:"
+                        )
+                        line_indent += 1
+                        self._write(line_indent, "result = response")
+                        self._write(line_indent - 1, "else:")
                     self._write(
-                        2,
+                        line_indent,
                         'result = response.get("%s")'
                         % rpc_method.proto_field_name,
                     )
@@ -2116,3 +2129,50 @@ class Generator:
             proto_name = self._camelcase_to_snakecase(class_name)
 
         return response_name, response_type, class_name, ref, proto_name
+
+    def _add_streaming_code(self, rpc_method, return_byte, line_indent):
+        skip_rpc_conversion = False
+        obj = "req_obj" if rpc_method.request_class else "empty"
+        if rpc_method.stream_type != "":
+            self._write(
+                line_indent,
+                "if self.enable_grpc_streaming {}:".format(
+                    "and len(pb_str) > self.chunk_size"
+                    if rpc_method.stream_type == "client"
+                    else ""
+                ),
+            )
+            line_indent += 1
+            if rpc_method.stream_type == "client":
+                self._write(
+                    line_indent,
+                    "stream_req = self._client_stream(stub, pb_str)",
+                )
+                self._write(
+                    line_indent,
+                    "res_obj = stub.%s(stream_req, timeout=self._request_timeout)"
+                    % rpc_method.stream_operation_name,
+                )
+            elif rpc_method.stream_type == "server":
+                self._write(
+                    line_indent,
+                    "res = stub.%s(%s, timeout=self._request_timeout)"
+                    % (rpc_method.stream_operation_name, obj),
+                )
+                self._write(
+                    line_indent, "data = self._server_stream(stub, res)"
+                )
+                if return_byte:
+                    self._write(line_indent, "return io.BytesIO(data)")
+                    skip_rpc_conversion = True
+                elif rpc_method.good_response_type:
+                    self._write(
+                        line_indent,
+                        "res_obj = pb2.%s()" % rpc_method.response_class,
+                    )
+                    self._write(line_indent, "res_obj.ParseFromString(data)")
+                else:
+                    self._write(line_indent, "return data.decode()")
+                    skip_rpc_conversion = True
+            self._write(line_indent - 1, "else:")
+        return line_indent, skip_rpc_conversion

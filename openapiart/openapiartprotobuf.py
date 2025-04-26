@@ -494,6 +494,16 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 "stream" + operation.rpc, operation.response
             )
             self._write(line, indent=1)
+        elif operation.rpc.startswith("Get") and operation.rpc != "GetVersion":
+            self._write(
+                "// streaming version of the rpc {}".format(operation.rpc),
+                indent=1,
+            )
+            print("writing rpc {}".format("stream" + operation.rpc))
+            line = "rpc {}({}) returns (stream Data);".format(
+                "stream" + operation.rpc, operation.request
+            )
+            self._write(line, indent=1)
 
     def _write_data_msg(self):
         # This function is a must have a message to support grpc streaming.
