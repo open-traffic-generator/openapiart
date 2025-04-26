@@ -139,7 +139,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
             print("sending ", chunk)
             yield pb2.Data(datum=chunk)
         print("finished sending all")
-    
+
     def streamGetConfig(self, request, context):
         config = op.api().prefix_config()
         config.a = "asdf"
@@ -148,9 +148,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         config.required_object.e_a = 1.1
         config.required_object.e_b = 1.2
         config.d_values = [config.A, config.B, config.C]
-        res_obj = json_format.Parse(
-            config.serialize(), pb2.PrefixConfig()
-        )
+        res_obj = json_format.Parse(config.serialize(), pb2.PrefixConfig())
         bts = res_obj.SerializeToString()
         chunk_size = 10
         for i in range(0, len(bts), chunk_size):
@@ -161,7 +159,6 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
             print("sending ", chunk)
             yield pb2.Data(datum=chunk)
         print("finished sending all")
-
 
 
 def gRpcServer(secure):
