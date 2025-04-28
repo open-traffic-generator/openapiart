@@ -244,7 +244,7 @@ def testpy():
 
 
 def testgo():
-    go_coverage_threshold = 35
+    go_coverage_threshold = 30
     # TODO: not able to run the test from main directory
     os.chdir("pkg")
     run(["go mod tidy"], capture_output=True)

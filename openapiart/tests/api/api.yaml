@@ -129,3 +129,39 @@ paths:
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default
           x-field-uid: 2
+  /test:
+    get:
+      tags: ["UnitTest"]
+      operationId: get_test_config
+      description: >-
+        Get the new restructured unit test config.
+      responses:
+        "200":
+          description: returns the unit test config
+          content:
+            application/json:
+              schema:
+                $ref: "../restructured_config/config.yaml#/components/schemas/Test.Config"
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
+    post:
+      tags: ["UnitTest"]
+      operationId: set_test_config
+      description: >-
+        Sets the new restructured unit test configuration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../restructured_config/config.yaml#/components/schemas/Test.Config"
+      responses:
+        '200':
+          x-include: ../common/common.yaml#/components/responses/Success/200
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
+    
