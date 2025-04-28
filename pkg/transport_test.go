@@ -503,3 +503,40 @@ func TestGRPCAppendConfigFailure(t *testing.T) {
 	assert.NotNil(t, err)
 	fmt.Println(err.Error())
 }
+
+func TestStreamGetConfigSuccess(t *testing.T) {
+	api := streamApi
+	resp, err := api.GetConfig()
+	log.Println(err)
+	log.Println(resp)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestStreamMetricsSuccesss(t *testing.T) {
+	api := streamApi
+	metReq := openapiart.NewMetricsRequest()
+	metReq.SetPort("p1")
+	metrics, err := api.GetMetrics(metReq)
+	assert.Nil(t, err)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics.Ports().Items(), 2)
+	_, m_err := metrics.Marshal().ToYaml()
+	assert.Nil(t, m_err)
+	assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
+	for _, row := range metrics.Ports().Items() {
+		log.Println(row.Marshal().ToYaml())
+	}
+	metReqflow := openapiart.NewMetricsRequest()
+	metReqflow.SetFlow("f1")
+	metResp, err := api.GetMetrics(metReqflow)
+	assert.Nil(t, err)
+	assert.NotNil(t, metResp)
+	assert.Len(t, metResp.Flows().Items(), 2)
+	_, m_err1 := metResp.Marshal().ToYaml()
+	assert.Nil(t, m_err1)
+	assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
+	for _, row := range metResp.Flows().Items() {
+		log.Println(row.Marshal().ToYaml())
+	}
+}
