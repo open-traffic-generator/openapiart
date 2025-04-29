@@ -1259,7 +1259,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 resp, err := streamClient.Recv()
                 if err == io.EOF {{
                     res := New{res_struct}()
-                    m_err := res.Unmarshal().FromPbText(string(bytes))
+                    m_err := proto.Unmarshal(bytes, res.msg())
                     if m_err != nil {{
                         return nil, m_err
                     }} else {{
