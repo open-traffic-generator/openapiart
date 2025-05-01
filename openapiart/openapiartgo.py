@@ -1248,6 +1248,22 @@ class OpenApiArtGo(OpenApiArtPlugin):
         )
 
     def _server_stream_method_impl(self, struct_name, rpc_info):
+        if rpc_info.request_return_type == "[]byte":
+            ret = "return bytes, nil"
+        else:
+            ret = """res := New{res_struct}()
+            m_err := proto.Unmarshal(bytes, res.msg())
+            if m_err != nil {{
+                return nil, m_err
+            }} else {{
+                return res, nil
+            }}
+            """.format(
+                res_struct=self._get_external_struct_name(
+                    rpc_info.request_return_type
+                )
+            )
+
         return """
         func (api *{struct}) {operation}(ctx context.Context, req {request}) ({response}, error) {{
             streamClient, err := api.grpcClient.{pkg_op}(ctx, req)
@@ -1258,13 +1274,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             for {{
                 resp, err := streamClient.Recv()
                 if err == io.EOF {{
-                    res := New{res_struct}()
-                    m_err := proto.Unmarshal(bytes, res.msg())
-                    if m_err != nil {{
-                        return nil, m_err
-                    }} else {{
-                        return res, nil
-                    }}
+                    {return_value}
                 }}
                 if err != nil {{
                     return nil, err
@@ -1285,9 +1295,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             + "."
             + rpc_info.operation_name
             + "Request",
-            res_struct=self._get_external_struct_name(
-                rpc_info.request_return_type
-            ),
+            return_value=ret,
         )
 
     def _write_component_interfaces(self):
