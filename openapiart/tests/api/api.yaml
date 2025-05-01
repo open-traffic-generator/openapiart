@@ -129,3 +129,16 @@ paths:
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default
           x-field-uid: 2
+  /capture:
+    get:
+      tags: ["Bundler"]
+      operationId: get_capture
+      description: >-
+        Gets the capture bytes
+      responses:
+        "200":
+          x-include: ../common/common.yaml#/components/responses/Success/200
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
