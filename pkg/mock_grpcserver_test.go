@@ -105,6 +105,7 @@ func (s *GrpcServer) StreamSetConfig(srv sanity.Openapi_StreamSetConfigServer) e
 	for {
 		data, err := srv.Recv()
 		if data != nil {
+			fmt.Println("chunk size is:", data.ChunkSize)
 			fmt.Println("Receiving chunk ", idx, time.Now().String())
 		}
 		if err != nil {

@@ -64,6 +64,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         self._log("Executing GetVersion")
         full_str = b""
         for data in request_iterator:
+            print("received chunk: ", data.chunk_size)
             full_str += data.datum
             self._log("received ")
 

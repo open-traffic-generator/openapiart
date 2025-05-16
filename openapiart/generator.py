@@ -389,7 +389,7 @@ class Generator:
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
         self.enable_grpc_streaming = False
-        self.chunk_size = 50
+        self.chunk_size = 4000000
         self._location = (
             kwargs["location"]
             if "location" in kwargs and kwargs["location"] is not None
@@ -458,7 +458,7 @@ class Generator:
                 chunk = data[i:len(data)]
             else:
                 chunk = data[i:i+self.chunk_size]
-            data_chunks.append(pb2.Data(datum=chunk))
+            data_chunks.append(pb2.Data(datum=chunk, chunk_size=self.chunk_size))
         # print(chunk_list, len(chunk_list))
         reqs = iter(data_chunks)
         return reqs

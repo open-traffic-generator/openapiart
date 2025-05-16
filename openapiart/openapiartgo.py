@@ -1223,6 +1223,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             bytes := []byte(data)
             for i := 0; i < len(bytes); i += chunkSize {{
                 data := &{pkg}.Data{{}}
+                data.ChunkSize = int32(chunkSize)
                 if i+chunkSize > len(bytes) {{
                     data.Datum = bytes[i:]
                 }} else {{
