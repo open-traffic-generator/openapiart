@@ -6,31 +6,32 @@ info:
   description: >-
 
 paths:
-
   /serviceb:
     get:
       tags: [ServiceAbc]
       operationId: GetAllItems
+      x-stream: server
       description: return list of some items
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceAbc.ItemList'
+                $ref: "./service_b.yaml#/components/schemas/ServiceAbc.ItemList"
           x-field-uid: 1
         default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2
   /serviceb/{item_id}:
     get:
       tags: [ServiceAbc]
       operationId: GetSingleItem
+      x-stream: server
       description: return single item
       parameters:
         - in: path
@@ -39,25 +40,26 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceAbc.Item'
+                $ref: "./service_b.yaml#/components/schemas/ServiceAbc.Item"
           x-field-uid: 1
         default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2
   /serviceb/{item_id}/{level_2}:
     get:
       tags: [ServiceAbc]
       # operationId will be CamelCased, it is not possible to define a private method in an interface
       operationId: getSingleItemLevel2
+      x-stream: server
       description: return single item
       parameters:
         - in: path
@@ -71,17 +73,17 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: './service_b.yaml#/components/schemas/ServiceAbc.Item'
+                $ref: "./service_b.yaml#/components/schemas/ServiceAbc.Item"
           x-field-uid: 1
         default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2

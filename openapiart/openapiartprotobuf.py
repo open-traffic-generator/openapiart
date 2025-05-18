@@ -77,6 +77,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                     )
                     > 0
                 )
+                operation.stream_type = path_item_object.get("x-stream")
                 self._operations[operation_id] = operation
             return self._operations[operation_id]
         return None
@@ -484,7 +485,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         )
         self._write(line, indent=1)
         # additional code to add a stream rpc under the hood
-        if operation.rpc.startswith("Set"):
+        if operation.stream_type and operation.stream_type == "client":
             self._write(
                 "// streaming version of the rpc {}".format(operation.rpc),
                 indent=1,
@@ -494,7 +495,7 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 "stream" + operation.rpc, operation.response
             )
             self._write(line, indent=1)
-        elif operation.rpc.startswith("Get") and operation.rpc != "GetVersion":
+        elif operation.stream_type and operation.stream_type == "server":
             self._write(
                 "// streaming version of the rpc {}".format(operation.rpc),
                 indent=1,

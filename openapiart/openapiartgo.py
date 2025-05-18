@@ -411,13 +411,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 rpc.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
-                if rpc.operation_name.startswith("Set"):
-                    rpc.streaming_type = "client"
-                elif (
-                    rpc.operation_name.startswith("Get")
-                    and rpc.operation_name != "GetVersion"
-                ):
-                    rpc.streaming_type = "server"
+                rpc.streaming_type = path_item_object.get("x-stream")
                 rpc.stream_operation_name = "stream" + rpc.operation_name
                 rpc.stream_description = (
                     "// streaming method for " + rpc.operation_name

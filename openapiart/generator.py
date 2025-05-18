@@ -247,12 +247,7 @@ class Generator:
             print("found method %s" % method_name)
             rpc = FluentRpc()
             rpc.method = method_name
-            if rpc.method.startswith("set"):
-                rpc.stream_type = "client"
-            elif rpc.method.startswith("get"):
-                rpc.stream_type = "server"
-            else:
-                rpc.stream_type = ""
+            rpc.stream_type = operation.get("x-stream", "")
             rpc.operation_name = self._get_external_struct_name(
                 operation["operationId"].replace(".", "_")
             )

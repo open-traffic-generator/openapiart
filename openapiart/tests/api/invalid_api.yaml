@@ -2,7 +2,7 @@ paths:
   /config:
     post:
       tags: ["Bundler"]
-      x-stream: client
+      x-stream: abc
       operationId: set_config
       description: >-
         Sets configuration resources.
@@ -48,7 +48,7 @@ paths:
           x-field-uid: 2
     get:
       tags: ["Bundler"]
-      x-stream: server
+      x-stream: def
       operationId: get_config
       description: >-
         Gets the configuration resources.
@@ -138,7 +138,6 @@ paths:
   /capture:
     get:
       tags: ["Bundler"]
-      x-stream: server
       operationId: get_capture
       description: >-
         Gets the capture bytes
