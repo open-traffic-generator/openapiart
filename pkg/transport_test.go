@@ -49,7 +49,7 @@ func init() {
 
 	// one api with streaming enabled
 	streamApi = openapiart.NewApi()
-	streamApi.NewGrpcTransport().SetLocation(grpcServer.Location).EnableGrpcStreaming().SetStreamChunkSize(104)
+	streamApi.NewGrpcTransport().SetLocation(grpcServer.Location).EnableGrpcStreaming().SetStreamChunkSize(1)
 
 }
 
