@@ -105,6 +105,7 @@ class Bundler(object):
         self._validate_integer_type()
         self._validate_field_uid()
         self._validate_response_uid()
+        self._validate_stream_type()
         self._validate_errors()
         self._validate_required_responses()
         self._resolve_strings(self._content)
@@ -419,6 +420,17 @@ class Bundler(object):
                 % str(required_err_nodes)
             )
         return None
+
+    def _validate_stream_type(self):
+        for item in self._get_parser("$..x-stream").find(self._content):
+            if item.value not in ["server", "client"]:
+                parent = jsonpath_ng.Parent().find(item)[0]
+                parent_schema = parent.value
+                self._errors.append(
+                    "invalid x-stream value %s present in %s valid values are server and client"
+                    % (item.value, parent_schema["operationId"])
+                )
+                print("error hona chahiye")
 
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
