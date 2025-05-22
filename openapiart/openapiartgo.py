@@ -25,6 +25,9 @@ class FluentRpc(object):
         self.http_call = None
         self.method_description = None
         self.status = {}
+        self.struct = None
+        self.log_request = None
+        self.log_response = None
 
 
 class FluentRpcResponse(object):
@@ -281,14 +284,40 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
+        self._write(
+            'import "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"'
+        )
+        self._write(
+            'import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"'
+        )
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "loggers.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "loggers.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._filename = os.path.normpath(
             os.path.join(self._ux_path, "common.go")
         )
         self._init_fp(self._filename)
         self._write_package()
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "telemetry.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(
+            os.path.join(os.path.dirname(__file__), "telemetry.go")
+        ) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
 
@@ -525,6 +554,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.description = "// {} {}".format(
                         rpc.operation_name, rpc.description.lstrip("// ")
                     )
+                    rpc.struct = new.struct
                     # """
                     #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
                     #     // or returns error on failure
@@ -548,6 +578,17 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         struct=new.struct
                     )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")\n'
+                        % rpc.operation_name
+                    )
+                    rpc.log_request += """jsonStr, err := {struct}.Marshal().ToJsonRaw()
+                    if err != nil {{
+                        return nil, err
+                    }}""".format(
+                        struct=new.struct
+                    )
+                    rpc.log_request += '\nlogs.Debug().RawJSON("Request", []byte(jsonStr)).Msg("")\n'
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
                             operation_name=rpc.operation_name,
@@ -558,10 +599,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         url = url[1:]
                     http.request = """{struct}Json, err := {struct}.Marshal().ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
+                    parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    api.Telemetry().SetSpanEvent(span, fmt.Sprintf("REQUEST PAYLOAD: %s", {struct}.String()))
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
                     """.format(
                         url=http_url,
                         struct=new.struct,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
@@ -585,13 +631,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
                     )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")' % rpc.operation_name
+                    )
                     rpc.http_call = (
                         """return api.http{operation_name}()""".format(
                             operation_name=rpc.operation_name,
                         )
                     )
-                    http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
+                    http.request = """parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
                         url=http_url,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
@@ -637,6 +690,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
+            var logs zerolog.Logger
             // function related to error handling
             func FromError(err error) (Error, bool) {{
                 if rErr, ok := err.(Error); ok {{
@@ -711,7 +765,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if api.grpc.clientConnection == nil {{
                         ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
                         defer cancelFunc()
-                        conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithTransportCredentials(insecure.NewCredentials()))
+                        var opts []grpc.DialOption
+                        opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+                        if api.Telemetry().isOTLPEnabled() {{
+                            opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+                        }}
+                        conn, err := grpc.DialContext(ctx, api.grpc.location, opts...)
                         if err != nil {{
                             return err
                         }}
@@ -757,7 +816,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() Api {{
                 api := {internal_struct_name}{{}}
+                api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
+                logs = getLogger("{pb_pkg_name}")
+                logs.Debug().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
@@ -787,18 +849,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             return tcpConn, nil
                         }},
                     }}
-                    client := httpClient{{
-                        client: &http.Client{{
-                            Transport: &tr,
-                        }},
-                        ctx: context.Background(),
+
+                    var client httpClient
+                    if api.Telemetry().isOTLPEnabled() {{
+                        client = httpClient{{
+                            client: &http.Client{{
+                                Transport: otelhttp.NewTransport(&tr),
+                            }},
+                            ctx: api.Telemetry().getRootContext(),
+                        }}
+                    }} else {{
+                        client = httpClient{{
+                            client: &http.Client{{
+                                Transport: &tr,
+                            }},
+                            ctx: context.Background(),
+                        }}
                     }}
+
                     api.httpClient = client
                 }}
                 return nil
             }}
 
-            func (api *{internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+            func (api *{internal_struct_name}) httpSendRecv(ctx context.Context, urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -812,7 +886,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
-                req = req.WithContext(httpClient.ctx)
+                if ctx != nil {{
+                    req = req.WithContext(ctx)
+                }} else {{
+                    req = req.WithContext(httpClient.ctx)
+                }}
                 response, err := httpClient.client.Do(req)
                 return response, err
             }}
@@ -872,25 +950,35 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for rpc in self._api.external_rpc_methods:
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
+                        api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", string(resp.ResponseBytes)))
                         return resp.ResponseBytes, nil
                     }
                     return nil, nil"""
             elif rpc.request_return_type == "*string":
                 return_value = """if resp.GetString_() != "" {
                         status_code_value := resp.GetString_()
+                        api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", status_code_value))
                         return &status_code_value, nil
                     }
                     return nil, nil"""
             else:
                 return_value = """ret := New{struct}()
                     if resp.Get{struct}() != nil {{
-                        return ret.setMsg(resp.Get{struct}()), nil
+                        ret.setMsg(resp.Get{struct}())
+                        api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", ret.String()))
+                        return ret, nil
                     }}
 
                     return ret, nil""".format(
                     struct=self._get_external_struct_name(
                         rpc.request_return_type
                     ),
+                )
+
+            set_span_attrs = ""
+            if rpc.struct is not None:
+                set_span_attrs = """api.Telemetry().SetSpanEvent(span, fmt.Sprintf("REQUEST: %s", {struct}.String()))""".format(
+                    struct=rpc.struct
                 )
 
             info = rpc.status.get("information")
@@ -912,18 +1000,31 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
                     {validate}
+                    {log_request}
                     {version_check}
+
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
+
+                    // adding spans grpc transport for OTLP instrumentation
+                    parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    {span_attrs}
+                    defer api.Telemetry().CloseSpan(span)
+
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
                     request := {request}
-                    ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+                    if newCtx == nil {{
+                        newCtx = context.Background()
+                    }}
+                    ctx, cancelFunc := context.WithTimeout(newCtx, api.grpc.requestTimeout)
                     defer cancelFunc()
                     resp, err := api.grpcClient.{operation_name}(ctx, &request)
                     if err != nil {{
+                        api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
                         if er, ok := fromGrpcError(err); ok {{
                             return nil, er
                         }}
@@ -934,6 +1035,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 """.format(
                     internal_struct_name=self._api.internal_struct_name,
                     method=rpc.method,
+                    span_attrs=set_span_attrs,
                     status=status_str,
                     request=rpc.request,
                     operation_name=rpc.operation_name,
@@ -943,6 +1045,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    log_request=rpc.log_request
+                    if rpc.log_request is not None
+                    else "",
                 )
             )
 
@@ -953,20 +1058,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += (
-                        "return nil, fromHttpError(resp.StatusCode, bodyBytes)"
-                    )
+                    error_handling += """err := fromHttpError(resp.StatusCode, bodyBytes)
+                    api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
+                    return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """return bodyBytes, nil"""
+                success_handling = """logs.Debug().Str("Response", string(bodyBytes)).Msg("")
+                api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", string(bodyBytes)))
+                return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
+                logs.Debug().Str("Response", bodyString).Msg("")
+                api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", bodyString))
                 return &bodyString, nil"""
             else:
                 success_handling = """obj := {success_method}().{struct}()
                     if err := obj.Unmarshal().FromJson(string(bodyBytes)); err != nil {{
                         return nil, err
                     }}
+                    api.Telemetry().SetSpanEvent(span, fmt.Sprintf("RESPONSE: %s", obj.String()))
+                    jsonStr, err := obj.Marshal().ToJsonRaw()
+                    if err != nil {{
+                        return nil,err
+                    }}
+                    logs.Debug().RawJSON("Response", []byte(jsonStr)).Msg("")
                     return obj, nil""".format(
                     success_method=success_method,
                     struct=http.request_return_type,
@@ -1257,6 +1372,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 ToYaml() (string, error)
                 // ToJson marshals {interface} to JSON text
                 ToJson() (string, error)
+                // ToJsonRaw marshals {interface} to raw JSON text
+                ToJsonRaw() (string, error)
             }}
 
             type unMarshal{struct} struct {{
@@ -1370,6 +1487,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return vErr
                 }}
                 return nil
+            }}
+
+            func (m *marshal{struct}) ToJsonRaw() (string, error) {{
+                vErr := m.obj.validateToAndFrom()
+                if vErr != nil {{
+                    return "", vErr
+                }}
+                opts := protojson.MarshalOptions{{
+                    UseProtoNames:   true,
+                    AllowPartial:    true,
+                    EmitUnpopulated: false,
+                }}
+                data, err := opts.Marshal(m.obj.msg())
+                if err != nil {{
+                    return "", err
+                }}
+                return string(data), nil
             }}
 
             func (m *marshal{struct}) ToJson() (string, error) {{
