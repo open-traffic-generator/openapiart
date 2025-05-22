@@ -114,3 +114,15 @@ def test_error_incorrect_json_str(api):
         api.set_config(json_str)
 
     print(execinfo.value)
+
+
+def test_append_config(api):
+    config = api.config_append()
+    f1 = config.config_append_list.add().flows.add()
+    f1.name = "f1"
+    f1.rate = 23
+    f2 = config.config_append_list.add().flows.add()
+    f2.name = "f2"
+    f2.rate = 32
+    res = api.append_config(config.serialize())
+    assert res.warnings == ["w1", "w2"]

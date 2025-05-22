@@ -107,6 +107,12 @@ func (h *bundlerHandler) UpdateConfiguration(rbody openapiart.UpdateConfig, r *h
 	return response, nil
 }
 
+func (h *bundlerHandler) AppendConfig(rbody openapiart.ConfigAppend, r *http.Request) (openapiart.AppendConfigResponse, error) {
+	response := openapiart.NewAppendConfigResponse()
+	response.WarningDetails().SetWarnings([]string{"w1, w2"})
+	return response, nil
+}
+
 func (h *bundlerHandler) GetConfig(r *http.Request) (openapiart.GetConfigResponse, error) {
 	response := openapiart.NewGetConfigResponse()
 	response.SetPrefixConfig(httpServer.Config)

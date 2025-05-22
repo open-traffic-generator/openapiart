@@ -12,7 +12,7 @@ paths:
             schema:
               $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
       responses:
-        '200':
+        "200":
           x-include: ../common/common.yaml#/components/responses/Success/200
           x-field-uid: 1
         default:
@@ -23,7 +23,7 @@ paths:
       operationId: update_configuration
       description: >-
         Sets configuration resources.
-      x-status: 
+      x-status:
         status: deprecated
         information: "please use post instead"
       requestBody:
@@ -56,6 +56,27 @@ paths:
             application/json:
               schema:
                 $ref: "../config/config.yaml#/components/schemas/Prefix.Config"
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
+  /config/append:
+    patch:
+      tags: ["Bundler"]
+      operationId: append_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../config/config.yaml#/components/schemas/Config.Append"
+      responses:
+        "200":
+          description: |-
+            success 2xx
+          $ref: "../common/common.yaml#/components/responses/Warnings"
           x-field-uid: 1
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default

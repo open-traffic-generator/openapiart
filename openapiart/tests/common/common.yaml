@@ -42,14 +42,14 @@ components:
         Error response generated while serving API request.
       type: object
       required:
-      - code
-      - errors
+        - code
+        - errors
       properties:
         code:
-           description: |-
-             Numeric status code based on underlying transport being used.
-           type: integer
-           x-field-uid: 1
+          description: |-
+            Numeric status code based on underlying transport being used.
+          type: integer
+          x-field-uid: 1
         kind:
           description: |-
             Kind of error message.
@@ -63,9 +63,9 @@ components:
               x-field-uid: 3
           x-field-uid: 2
           enum:
-          - transport
-          - validation
-          - internal
+            - transport
+            - validation
+            - internal
         errors:
           description: |-
             List of error messages generated while serving API request.
@@ -73,6 +73,21 @@ components:
           items:
             type: string
           x-field-uid: 3
+    Rocev2.PerPortSettings:
+      description: |-
+        A high level data plane traffic flow.
+      type: object
+      properties:
+        cnp_delay_timer:
+          description: |-
+            Amount of time to wait between the generation of successive CNP packets. Time in microseconds.
+          type: integer
+          format: uint32
+          default: 55
+          minimum: 0
+          maximum: 255
+          x-field-uid: 1
+
   responses:
     Success:
       "200":
@@ -95,4 +110,4 @@ components:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              $ref: "#/components/schemas/Error"
