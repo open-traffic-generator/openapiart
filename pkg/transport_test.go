@@ -21,6 +21,7 @@ import (
 )
 
 var apis []openapiart.Api
+var streamApi openapiart.Api
 
 func init() {
 	err := StartMockGrpcServer()
@@ -45,6 +46,11 @@ func init() {
 	clientConnApi := openapiart.NewApi()
 	clientConnApi.NewGrpcTransport().SetClientConnection(conn)
 	apis = append(apis, clientConnApi)
+
+	// one api with streaming enabled
+	streamApi = openapiart.NewApi()
+	streamApi.NewGrpcTransport().SetLocation(grpcServer.Location).EnableGrpcStreaming().SetStreamChunkSize(1)
+
 }
 
 func TestSetConfigSuccess(t *testing.T) {
@@ -435,6 +441,18 @@ func TestVersionMismatchMsgWithComponentInfo(t *testing.T) {
 	api.SetVersionCompatibilityCheck(false)
 }
 
+func TestStreamConfigSuccess(t *testing.T) {
+	api := streamApi
+	api.SetVersionCompatibilityCheck(true)
+	config := NewFullyPopulatedPrefixConfig(api)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	resp, err := api.SetConfig(config)
+	log.Println(err)
+	log.Println(string(resp))
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
 func TestHTTPAppendConfigSuccess(t *testing.T) {
 	api := apis[1]
 	config := openapiart.NewConfigAppend()
@@ -484,4 +502,41 @@ func TestGRPCAppendConfigFailure(t *testing.T) {
 	assert.Nil(t, warn)
 	assert.NotNil(t, err)
 	fmt.Println(err.Error())
+}
+
+func TestStreamGetConfigSuccess(t *testing.T) {
+	api := streamApi
+	resp, err := api.GetConfig()
+	log.Println(err)
+	log.Println(resp)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
+func TestStreamMetricsSuccesss(t *testing.T) {
+	api := streamApi
+	metReq := openapiart.NewMetricsRequest()
+	metReq.SetPort("p1")
+	metrics, err := api.GetMetrics(metReq)
+	assert.Nil(t, err)
+	assert.NotNil(t, metrics)
+	assert.Len(t, metrics.Ports().Items(), 2)
+	_, m_err := metrics.Marshal().ToYaml()
+	assert.Nil(t, m_err)
+	assert.Equal(t, openapiart.MetricsChoice.PORTS, metrics.Choice())
+	for _, row := range metrics.Ports().Items() {
+		log.Println(row.Marshal().ToYaml())
+	}
+	metReqflow := openapiart.NewMetricsRequest()
+	metReqflow.SetFlow("f1")
+	metResp, err := api.GetMetrics(metReqflow)
+	assert.Nil(t, err)
+	assert.NotNil(t, metResp)
+	assert.Len(t, metResp.Flows().Items(), 2)
+	_, m_err1 := metResp.Marshal().ToYaml()
+	assert.Nil(t, m_err1)
+	assert.Equal(t, openapiart.MetricsChoice.FLOWS, metResp.Choice())
+	for _, row := range metResp.Flows().Items() {
+		log.Println(row.Marshal().ToYaml())
+	}
 }

@@ -3,8 +3,10 @@ package openapiart_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -13,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type GrpcServer struct {
@@ -96,11 +99,82 @@ func (s *GrpcServer) SetConfig(ctx context.Context, req *sanity.SetConfigRequest
 	return resp, err
 }
 
+func (s *GrpcServer) StreamSetConfig(srv sanity.Openapi_StreamSetConfigServer) error {
+	var blob []byte
+	idx := 0
+	for {
+		data, err := srv.Recv()
+		if data != nil {
+			fmt.Println("chunk size is:", data.ChunkSize)
+			fmt.Println("Receiving chunk ", idx, time.Now().String())
+		}
+		if err != nil {
+			if err == io.EOF {
+				fmt.Printf("Transfer of %d bytes successful\n", len(blob))
+				// log.Println(string(blob))
+
+				resp := &sanity.SetConfigResponse{
+					ResponseBytes: []byte("StreamConfig has completed successfully"),
+				}
+				config := openapiart.NewPrefixConfig()
+				err := config.Unmarshal().FromPbText(string(blob))
+				if err != nil {
+					return err
+				}
+				fmt.Println(config.Marshal().ToYaml())
+				return srv.SendAndClose(resp)
+			}
+
+			return err
+		}
+		idx++
+		blob = append(blob, data.Datum...)
+
+	}
+}
+
 func (s *GrpcServer) GetConfig(ctx context.Context, req *empty.Empty) (*sanity.GetConfigResponse, error) {
 	resp := &sanity.GetConfigResponse{
 		PrefixConfig: s.Config,
 	}
 	return resp, nil
+}
+
+func (s *GrpcServer) StreamGetConfig(req *empty.Empty, srv sanity.Openapi_StreamGetConfigServer) error {
+	config := openapiart.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
+	config.F().SetFB(3.0)
+	config.G().Add().SetGA("a g_a value").SetGB(6).SetGC(77.7).SetGE(3.0)
+	config.J().Add().JA().SetEA(1.0).SetEB(2.0)
+	config.K().EObject().SetEA(77.7).SetEB(2.0).SetName("An EB name")
+	config.K().FObject().SetFA("asdf").SetFB(44.32232)
+	text, err := config.Marshal().ToPbText()
+	bytes := []byte(text)
+	if err != nil {
+		return err
+	}
+	chunkSize := 50
+	for i := 0; i < len(bytes); i += chunkSize {
+		data := &sanity.Data{}
+		if i+chunkSize > len(bytes) {
+			data.Datum = bytes[i:]
+		} else {
+			data.Datum = bytes[i : i+chunkSize]
+		}
+		if err := srv.Send(data); err != nil {
+			fmt.Printf("Failed to send: %v\n", err)
+			return err
+		}
+		fmt.Printf("Sent: %v\n", data)
+	}
+
+	fmt.Println("Finished streaming")
+	return nil
 }
 
 func (s *GrpcServer) GetVersion(ctx context.Context, req *empty.Empty) (*sanity.GetVersionResponse, error) {
@@ -198,6 +272,72 @@ func (s *GrpcServer) GetMetrics(ctx context.Context, req *sanity.GetMetricsReque
 	default:
 		return nil, fmt.Errorf("Invalid choice")
 	}
+}
+
+func (s *GrpcServer) StreamGetMetrics(req *sanity.GetMetricsRequest, srv sanity.Openapi_StreamGetMetricsServer) error {
+	var resp *sanity.Metrics
+	choice := req.MetricsRequest.Choice.String()
+	switch choice {
+	case "port":
+		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_ports)
+		resp = &sanity.Metrics{
+			Choice: &choice_val,
+			Ports: []*sanity.PortMetric{
+				{
+					Name:     s.GetStringPtr("P2"),
+					TxFrames: s.GetFloatPtr(3000),
+					RxFrames: s.GetFloatPtr(2788),
+				},
+				{
+					Name:     s.GetStringPtr("P1"),
+					TxFrames: s.GetFloatPtr(2323),
+					RxFrames: s.GetFloatPtr(2000),
+				},
+			},
+		}
+	case "flow":
+		choice_val := sanity.Metrics_Choice_Enum(sanity.Metrics_Choice_flows)
+		resp = &sanity.Metrics{
+			Choice: &choice_val,
+			Flows: []*sanity.FlowMetric{
+				{
+					Name:     s.GetStringPtr("F2"),
+					TxFrames: s.GetFloatPtr(4000),
+					RxFrames: s.GetFloatPtr(2000),
+				},
+				{
+					Name:     s.GetStringPtr("F1"),
+					TxFrames: s.GetFloatPtr(2000),
+					RxFrames: s.GetFloatPtr(2000),
+				},
+			},
+		}
+	default:
+		return fmt.Errorf("Invalid choice")
+	}
+
+	bytes, err := proto.Marshal(resp)
+	if err != nil {
+		return err
+	}
+	chunkSize := 20
+	for i := 0; i < len(bytes); i += chunkSize {
+		data := &sanity.Data{}
+		if i+chunkSize > len(bytes) {
+			data.Datum = bytes[i:]
+		} else {
+			data.Datum = bytes[i : i+chunkSize]
+		}
+		if err := srv.Send(data); err != nil {
+			fmt.Printf("Failed to send: %v\n", err)
+			return err
+		}
+		fmt.Printf("Sent: %v\n", data)
+	}
+
+	fmt.Println("Finished streaming")
+	return nil
+
 }
 
 func (s *GrpcServer) GetWarnings(ctx context.Context, empty *empty.Empty) (*sanity.GetWarningsResponse, error) {
