@@ -513,6 +513,6 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         self._write()
         self._write("// Data that needs to be streamed")
         self._write("message Data {")
-        self._write("int32 chunk_size = 1;", indent=1)
+        self._write("uint64 chunk_size = 1;", indent=1)
         self._write("bytes datum = 2;", indent=1)
         self._write("}")
