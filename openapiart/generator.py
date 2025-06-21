@@ -39,6 +39,9 @@ class FluentRpc(object):
         self.http_method = None
         self.good_response_property = None
         self.x_status = None
+        self.stream_type = None
+        self.stream_operation_name = None
+        self.response_class = None
 
 
 class Generator:
@@ -174,6 +177,12 @@ class Generator:
             )
             common_content = common_content.replace(cnf_text, modify_text)
 
+            cnf_text = 'log = logging.getLogger("common")'
+            modify_text = 'log = logging.getLogger("{pkg_name}")'.format(
+                pkg_name=self._package_name
+            )
+            common_content = common_content.replace(cnf_text, modify_text)
+
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
             if self._extension_prefix is not None:
@@ -244,9 +253,11 @@ class Generator:
             print("found method %s" % method_name)
             rpc = FluentRpc()
             rpc.method = method_name
+            rpc.stream_type = operation.get("x-stream", "")
             rpc.operation_name = self._get_external_struct_name(
                 operation["operationId"].replace(".", "_")
             )
+            rpc.stream_operation_name = "stream" + rpc.operation_name
             rpc.description = self._get_description(operation)
             request = self._get_parser("$..requestBody..schema").find(
                 operation
@@ -283,6 +294,7 @@ class Generator:
                     ) = self._get_ref_from_response(
                         schema_obj, response_property
                     )
+                    rpc.response_class = class_name
                     if ref:
                         refs.append(ref)
                 else:
@@ -377,22 +389,16 @@ class Generator:
         self._cert_domain = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
+        self.enable_grpc_streaming = False
+        self.chunk_size = 4000000
         self._location = (
             kwargs["location"]
             if "location" in kwargs and kwargs["location"] is not None
             else "localhost:50051"
         )
         self._transport = kwargs["transport"] if "transport" in kwargs else None
-        self._logger = kwargs["logger"] if "logger" in kwargs else None
-        self._loglevel = kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        if self._logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self._logger = logging.Logger(self.__module__, level=self._loglevel)
-            self._logger.addHandler(stdout_handler)
-        self._logger.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        log.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        self._telemetry.initiate_grpc_instrumentation()
 
     def _use_secure_connection(self, cert_path, cert_domain=None):
         \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
@@ -438,6 +444,24 @@ class Generator:
             err.errors = [grpc_error.details()]
         raise Exception(err)
 
+    def _client_stream(self, stub, data):
+        data_chunks = []
+        for i in range(0, len(data), self.chunk_size):
+            if i+self.chunk_size > len(data):
+                chunk = data[i:len(data)]
+            else:
+                chunk = data[i:i+self.chunk_size]
+            data_chunks.append(pb2.Data(datum=chunk, chunk_size=self.chunk_size))
+        # print(chunk_list, len(chunk_list))
+        reqs = iter(data_chunks)
+        return reqs
+
+    def _server_stream(self, stub, responses):
+        data = b""
+        for response in responses:
+            data += response.datum
+        return data
+
     @property
     def request_timeout(self):
         \"\"\"duration of time in seconds to allow for the RPC.\"\"\"
@@ -479,8 +503,15 @@ class Generator:
                     key = "{}.{}".format("GrpcApi", rpc_method.method)
                     self._deprecated_properties[key] = rpc_method.x_status[1]
 
+                including_default, return_byte = self._process_good_response(
+                    rpc_method
+                )
                 if rpc_method.request_class is None:
+                    self._write(1, "@Telemetry.create_child_span")
                     self._write(1, "def %s(self):" % rpc_method.method)
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
+                    )
                     if status_msg != "":
                         self._write(2, "self.add_warnings('%s')" % status_msg)
                     self._write(2, "stub = self._get_stub()")
@@ -488,14 +519,29 @@ class Generator:
                         2,
                         "empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
                     )
+                    (
+                        line_indent,
+                        skip_response_check,
+                    ) = self._add_streaming_code(rpc_method, return_byte, 2)
                     self._write(
-                        2,
+                        line_indent,
                         "res_obj = stub.%s(empty, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
                 else:
+                    self._write(1, "@Telemetry.create_child_span")
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
+                    )
+                    self._write(
+                        2, 'log.info("Executing ' + rpc_method.method + '")'
+                    )
+                    self._write(
+                        2, 'log.debug("Request payload - " + str(payload))'
+                    )
+                    self._write(
+                        2,
+                        'self._telemetry.set_span_event("REQUEST: %s" % str(payload))',
                     )
 
                     if status_msg != "":
@@ -518,28 +564,49 @@ class Generator:
                             request_property=rpc_method.request_property,
                         ),
                     )
+                    if rpc_method.stream_type == "client":
+                        self._write(2, "pb_str = pb_obj.SerializeToString()")
                     self._write(2, "stub = self._get_stub()")
                     self._write(2, "try:")
+                    # code to add streaming of config hook in set_config
+
+                    (
+                        line_indent,
+                        skip_response_check,
+                    ) = self._add_streaming_code(rpc_method, return_byte, 3)
                     self._write(
-                        3,
+                        line_indent,
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
                     self._write(2, "except grpc.RpcError as grpc_error:")
                     self._write(3, "self._raise_exception(grpc_error)")
-                including_default, return_byte = self._process_good_response(
-                    rpc_method
-                )
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
+                self._write(2, 'log.debug("Response - " + str(response))')
+                self._write(
+                    2,
+                    'self._telemetry.set_span_event("RESPONSE: %s" % str(response))',
+                )
                 if return_byte:
                     self._write(2, 'bytes = response.get("response_bytes")')
                     self._write(2, "if bytes is not None:")
                     self._write(3, "return io.BytesIO(res_obj.response_bytes)")
                 elif rpc_method.good_response_type:
+                    line_indent = 2
+                    if (
+                        rpc_method.stream_type == "server"
+                        and not skip_response_check
+                    ):
+                        self._write(
+                            line_indent, "if self.enable_grpc_streaming:"
+                        )
+                        line_indent += 1
+                        self._write(line_indent, "result = response")
+                        self._write(line_indent - 1, "else:")
                     self._write(
-                        2,
+                        line_indent,
                         'result = response.get("%s")'
                         % rpc_method.proto_field_name,
                     )
@@ -625,6 +692,7 @@ class Generator:
             self._write(1, "def __init__(self, **kwargs):")
             self._write(2, "super(HttpApi, self).__init__(**kwargs)")
             self._write(2, "self._transport = HttpTransport(**kwargs)")
+            self._write(2, "self._telemetry.initiate_http_instrumentation()")
             self._write()
             self._write(1, "@property")
             self._write(1, "def verify(self):")
@@ -640,6 +708,7 @@ class Generator:
                 if method["x_status"] is not None:
                     key = "{}.{}".format("HttpApi", method["name"])
                     self._deprecated_properties[key] = method["x_status"][1]
+                self._write(1, "@Telemetry.create_child_span")
                 self._write(
                     1,
                     "def %s(%s):"
@@ -655,6 +724,7 @@ class Generator:
                 self._write(0)
                 self._write(2, "Return: %s" % method["response_type"])
                 self._write(2, '"""')
+                self._write(2, 'log.info("Executing ' + method["name"] + '")')
 
                 if method["x_status"] is not None:
                     status_msg = "%s api is %s, %s" % (
@@ -732,6 +802,15 @@ class Generator:
                 self._write(2, "self._server_name = None")
             else:
                 self._write(2, "pass")
+            self._write(2, 'endpoint = kwargs.get("otel_collector")')
+            self._write(
+                2, 'transport = kwargs.get("otel_collector_transport")'
+            )
+            self._write(2, "self._telemetry = Telemetry(endpoint, transport)")
+
+            self._write()
+            self._write(1, "def tracer(self):")
+            self._write(2, "return self._telemetry._tracer")
 
             self._write()
             self._write(1, "def add_warnings(self, msg):")
@@ -869,9 +948,11 @@ class Generator:
             raise Exception(err)
 
     def get_local_version(self):
+        log.info("Local Version is " + str(self._version_meta))
         return self._version_meta
 
     def get_remote_version(self):
+        log.info("Remote Version is " + str(self.get_version()))
         return self.get_version()
 
     def check_version_compatibility(self):
@@ -2075,3 +2156,50 @@ class Generator:
             proto_name = self._camelcase_to_snakecase(class_name)
 
         return response_name, response_type, class_name, ref, proto_name
+
+    def _add_streaming_code(self, rpc_method, return_byte, line_indent):
+        skip_rpc_conversion = False
+        obj = "req_obj" if rpc_method.request_class else "empty"
+        if rpc_method.stream_type != "":
+            self._write(
+                line_indent,
+                "if self.enable_grpc_streaming {}:".format(
+                    "and len(pb_str) > self.chunk_size"
+                    if rpc_method.stream_type == "client"
+                    else ""
+                ),
+            )
+            line_indent += 1
+            if rpc_method.stream_type == "client":
+                self._write(
+                    line_indent,
+                    "stream_req = self._client_stream(stub, pb_str)",
+                )
+                self._write(
+                    line_indent,
+                    "res_obj = stub.%s(stream_req, timeout=self._request_timeout)"
+                    % rpc_method.stream_operation_name,
+                )
+            elif rpc_method.stream_type == "server":
+                self._write(
+                    line_indent,
+                    "res = stub.%s(%s, timeout=self._request_timeout)"
+                    % (rpc_method.stream_operation_name, obj),
+                )
+                self._write(
+                    line_indent, "data = self._server_stream(stub, res)"
+                )
+                if return_byte:
+                    self._write(line_indent, "return io.BytesIO(data)")
+                    skip_rpc_conversion = True
+                elif rpc_method.good_response_type:
+                    self._write(
+                        line_indent,
+                        "res_obj = pb2.%s()" % rpc_method.response_class,
+                    )
+                    self._write(line_indent, "res_obj.ParseFromString(data)")
+                else:
+                    self._write(line_indent, "return data.decode()")
+                    skip_rpc_conversion = True
+            self._write(line_indent - 1, "else:")
+        return line_indent, skip_rpc_conversion

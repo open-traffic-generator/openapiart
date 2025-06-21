@@ -25,6 +25,14 @@ class FluentRpc(object):
         self.http_call = None
         self.method_description = None
         self.status = {}
+        self.struct = None
+        self.log_request = None
+        self.log_response = None
+        self.stream_operation_name = None
+        self.stream_description = None
+        self.stream_method = None
+        self.streaming_type = None
+        self.streaming_response = None
 
 
 class FluentRpcResponse(object):
@@ -281,14 +289,40 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write('import "github.com/ghodss/yaml"')
         self._write('import "google.golang.org/protobuf/encoding/protojson"')
         self._write('import "google.golang.org/protobuf/proto"')
+        self._write(
+            'import "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"'
+        )
+        self._write(
+            'import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"'
+        )
         go_pkg_fp = self._fp
         go_pkg_filename = self._filename
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "loggers.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "loggers.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
         self._filename = os.path.normpath(
             os.path.join(self._ux_path, "common.go")
         )
         self._init_fp(self._filename)
         self._write_package()
         with open(os.path.join(os.path.dirname(__file__), "common.go")) as fp:
+            self._write(fp.read().strip().strip("\n"))
+        self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "telemetry.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(
+            os.path.join(os.path.dirname(__file__), "telemetry.go")
+        ) as fp:
             self._write(fp.read().strip().strip("\n"))
         self._write()
 
@@ -405,6 +439,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 rpc.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
+                rpc.streaming_type = path_item_object.get("x-stream")
+                rpc.stream_operation_name = "stream" + rpc.operation_name
+                rpc.stream_description = (
+                    "// streaming method for " + rpc.operation_name
+                )
                 rpc.description = self._get_description(path_item_object, True)
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
@@ -447,6 +486,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         ),
                     )
                 )
+                rpc.streaming_response = rpc.request_return_type
                 binary_type = self._get_parser(
                     "$..responses..'200'..schema..format"
                 ).find(path_item_object)
@@ -516,6 +556,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         == 0
                     ):
                         self._api.external_new_methods.append(new)
+                    rpc.struct = new.struct
                     rpc.request = "{pb_pkg_name}.{operation_name}Request{{{interface}: {struct}.msg()}}".format(
                         pb_pkg_name=self._protobuf_package_name,
                         operation_name=rpc.operation_name,
@@ -525,6 +566,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.description = "// {} {}".format(
                         rpc.operation_name, rpc.description.lstrip("// ")
                     )
+                    rpc.struct = new.struct
                     # """
                     #     // Performs {operation_name} on user provided {interface} and returns {request_return_type}
                     #     // or returns error on failure
@@ -548,6 +590,18 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     """.format(
                         struct=new.struct
                     )
+                    # TODO: restore this behavior in optimized way
+                    # rpc.log_request = (
+                    #     'logs.Info().Msg("Executing %s")\n'
+                    #     % rpc.operation_name
+                    # )
+                    # rpc.log_request += """jsonStr, err := {struct}.Marshal().ToJsonRaw()
+                    # if err != nil {{
+                    #     return nil, err
+                    # }}""".format(
+                    #     struct=new.struct
+                    # )
+                    # rpc.log_request += '\nlogs.Debug().RawJSON("Request", []byte(jsonStr)).Msg("")\n'
                     rpc.http_call = (
                         """return api.http{operation_name}({struct})""".format(
                             operation_name=rpc.operation_name,
@@ -558,10 +612,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         url = url[1:]
                     http.request = """{struct}Json, err := {struct}.Marshal().ToJson()
                     if err != nil {{return nil, err}}
-                    resp, err := api.httpSendRecv("{url}", {struct}Json, "{method}")
+                    parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
                     """.format(
                         url=http_url,
                         struct=new.struct,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
@@ -585,19 +643,44 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
                     )
+                    rpc.log_request = (
+                        'logs.Info().Msg("Executing %s")' % rpc.operation_name
+                    )
                     rpc.http_call = (
                         """return api.http{operation_name}()""".format(
                             operation_name=rpc.operation_name,
                         )
                     )
-                    http.request = """resp, err := api.httpSendRecv("{url}", "", "{method}")""".format(
+                    http.request = """parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    defer api.Telemetry().CloseSpan(span)
+                    resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
                         url=http_url,
+                        operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
                     )
                     http.method = """http{rpc_method}""".format(
                         rpc_method=rpc.method
+                    )
+                if rpc.streaming_type and rpc.streaming_type == "client":
+                    rpc.stream_method = """{operation_name}(context.Context, []byte) (*{pkg}.{request_return_type}, error)""".format(
+                        operation_name=rpc.stream_operation_name,
+                        pkg=self._protobuf_package_name,
+                        request_return_type=rpc.streaming_response,
+                    )
+                elif rpc.streaming_type and rpc.streaming_type == "server":
+                    rpc.stream_method = """{operation_name}(context.Context, {request}) ({request_return_type}, error)""".format(
+                        operation_name=rpc.stream_operation_name,
+                        request_return_type=rpc.request_return_type,
+                        request="*emptypb.Empty"
+                        if rpc.request.startswith("empty")
+                        else "*"
+                        + self._protobuf_package_name
+                        + "."
+                        + rpc.operation_name
+                        + "Request",
                     )
                 for ref in self._get_parser("$..responses").find(
                     path_item_object
@@ -637,6 +720,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
+            var logs zerolog.Logger
             // function related to error handling
             func FromError(err error) (Error, bool) {{
                 if rErr, ok := err.(Error); ok {{
@@ -711,7 +795,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if api.grpc.clientConnection == nil {{
                         ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.dialTimeout)
                         defer cancelFunc()
-                        conn, err := grpc.DialContext(ctx, api.grpc.location, grpc.WithTransportCredentials(insecure.NewCredentials()))
+                        var opts []grpc.DialOption
+                        opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+                        if api.Telemetry().isOTLPEnabled() {{
+                            opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+                        }}
+                        conn, err := grpc.DialContext(ctx, api.grpc.location, opts...)
                         if err != nil {{
                             return err
                         }}
@@ -757,7 +846,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
             //  NewApi returns a new instance of the top level interface hierarchy
             func NewApi() Api {{
                 api := {internal_struct_name}{{}}
+                api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
+                logs = getLogger("{pb_pkg_name}")
+                logs.Debug().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
@@ -787,18 +879,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             return tcpConn, nil
                         }},
                     }}
-                    client := httpClient{{
-                        client: &http.Client{{
-                            Transport: &tr,
-                        }},
-                        ctx: context.Background(),
+
+                    var client httpClient
+                    if api.Telemetry().isOTLPEnabled() {{
+                        client = httpClient{{
+                            client: &http.Client{{
+                                Transport: otelhttp.NewTransport(&tr),
+                            }},
+                            ctx: api.Telemetry().getRootContext(),
+                        }}
+                    }} else {{
+                        client = httpClient{{
+                            client: &http.Client{{
+                                Transport: &tr,
+                            }},
+                            ctx: context.Background(),
+                        }}
                     }}
+
                     api.httpClient = client
                 }}
                 return nil
             }}
 
-            func (api *{internal_struct_name}) httpSendRecv(urlPath string, jsonBody string, method string) (*http.Response, error) {{
+            func (api *{internal_struct_name}) httpSendRecv(ctx context.Context, urlPath string, jsonBody string, method string) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -812,7 +916,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 req.Header.Set("Content-Type", "application/json")
-                req = req.WithContext(httpClient.ctx)
+                if ctx != nil {{
+                    req = req.WithContext(ctx)
+                }} else {{
+                    req = req.WithContext(httpClient.ctx)
+                }}
                 response, err := httpClient.client.Do(req)
                 return response, err
             }}
@@ -830,9 +938,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         for rpc in self._api.external_rpc_methods:
             methods.append(rpc.description)
             methods.append(rpc.method)
+            # adding func signature in interface for stream of rpcs
+            if rpc.streaming_type is not None:
+                methods.append(rpc.stream_description)
+                methods.append(rpc.stream_method)
             # descriptions.append("(*{}).{}".format(self._api.external_interface_name, rpc.method_description))
         if self._generate_version_api:
             methods.extend(self._get_version_api_interface_method_signatures())
+
         method_signatures = "\n".join(methods)
         self._write(
             """
@@ -869,6 +982,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     self._api.internal_struct_name
                 )
             )
+
         for rpc in self._api.external_rpc_methods:
             if rpc.request_return_type == "[]byte":
                 return_value = """if resp.ResponseBytes != nil {
@@ -884,7 +998,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 return_value = """ret := New{struct}()
                     if resp.Get{struct}() != nil {{
-                        return ret.setMsg(resp.Get{struct}()), nil
+                        ret.setMsg(resp.Get{struct}())
+                        return ret, nil
                     }}
 
                     return ret, nil""".format(
@@ -892,6 +1007,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         rpc.request_return_type
                     ),
                 )
+
+            # TODO: restore this in optimized way
+            # set_span_attrs = ""
+            # if rpc.struct is not None:
+            #     set_span_attrs = """api.Telemetry().SetSpanEvent(span, fmt.Sprintf("REQUEST: %s", {struct}.String()))""".format(
+            #         struct=rpc.struct
+            #     )
 
             info = rpc.status.get("information")
             status_type = rpc.status.get("status")
@@ -901,6 +1023,21 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.operation_name, status_type, info, "api"
                 )
 
+            # add streamConfig function
+
+            if rpc.streaming_type and rpc.streaming_type == "client":
+                self._write(
+                    self._client_stream_method_impl(
+                        self._api.internal_struct_name, rpc
+                    )
+                )
+            elif rpc.streaming_type and rpc.streaming_type == "server":
+                self._write(
+                    self._server_stream_method_impl(
+                        self._api.internal_struct_name, rpc
+                    )
+                )
+
             if self._generate_version_api:
                 version_check = """
                     if err := api.checkLocalRemoteVersionCompatibilityOnce(); err != nil {
@@ -908,22 +1045,67 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     }"""
             else:
                 version_check = ""
+
+            if rpc.streaming_type and rpc.streaming_type == "client":
+                stream_config = """var resp *{package}.{response}
+                var err error
+                if api.grpc.enableGrpcStreaming {{
+                    str, er := proto.Marshal({obj}.msg())
+                    if er != nil {{
+                        return nil, er
+                    }}
+                    resp, err = api.{operation}(ctx, str)
+                }} else {{
+                """.format(
+                    package=self._protobuf_package_name,
+                    obj=rpc.struct,
+                    operation=rpc.stream_operation_name,
+                    response=rpc.streaming_response,
+                )
+            elif rpc.streaming_type and rpc.streaming_type == "server":
+                stream_config = """var resp *{package}.{response}
+                var err error
+                if api.grpc.enableGrpcStreaming {{
+                    return api.{operation}(ctx, &request)
+                }} else {{
+                """.format(
+                    operation=rpc.stream_operation_name,
+                    package=self._protobuf_package_name,
+                    response=rpc.streaming_response,
+                )
+            else:
+                stream_config = ""
+
             self._write(
                 """func (api *{internal_struct_name}) {method} {{
                     {status}
                     {validate}
+                    {log_request}
                     {version_check}
+
                     if api.hasHttpTransport() {{
                             {http_call}
                     }}
+
+                    // adding spans grpc transport for OTLP instrumentation
+                    parentCtx := api.Telemetry().getRootContext()
+                    newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
+                    defer api.Telemetry().CloseSpan(span)
+
                     if err := api.grpcConnect(); err != nil {{
                         return nil, err
                     }}
                     request := {request}
-                    ctx, cancelFunc := context.WithTimeout(context.Background(), api.grpc.requestTimeout)
+                    if newCtx == nil {{
+                        newCtx = context.Background()
+                    }}
+                    ctx, cancelFunc := context.WithTimeout(newCtx, api.grpc.requestTimeout)
                     defer cancelFunc()
-                    resp, err := api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_start}
+                    resp, err {declare}= api.grpcClient.{operation_name}(ctx, &request)
+                    {stream_config_end}
                     if err != nil {{
+                        api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
                         if er, ok := fromGrpcError(err); ok {{
                             return nil, er
                         }}
@@ -943,6 +1125,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     version_check=""
                     if rpc.method == "GetVersion() (Version, error)"
                     else version_check,
+                    log_request=rpc.log_request
+                    if rpc.log_request is not None
+                    else "",
+                    stream_config_start=stream_config,
+                    stream_config_end="}" if stream_config != "" else "",
+                    declare=":" if stream_config == "" else "",
                 )
             )
 
@@ -953,12 +1141,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if response.status_code.startswith("2"):
                     success_method = response.request_return_type
                 else:
-                    error_handling += (
-                        "return nil, fromHttpError(resp.StatusCode, bodyBytes)"
-                    )
+                    error_handling += """err := fromHttpError(resp.StatusCode, bodyBytes)
+                    api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
+                    return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """return bodyBytes, nil"""
+                success_handling = """logs.Debug().Str("Response", string(bodyBytes)).Msg("")
+                return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
                 return &bodyString, nil"""
@@ -1116,6 +1305,94 @@ class OpenApiArtGo(OpenApiArtPlugin):
             }}
         """.format(
             struct_name, self._api_version, self._sdk_version
+        )
+
+    def _client_stream_method_impl(self, struct_name, rpc_info):
+        return """
+        func (api *{struct}) {operation}(ctx context.Context, data []byte) (*{pkg}.{response}, error) {{
+            chunkSize := api.grpc.chunkSize
+            streamClient, err := api.grpcClient.{pkg_op}(ctx)
+            if err != nil {{
+                return nil, err
+            }}
+            bytes := []byte(data)
+            var i uint64
+            for i = 0; i < uint64(len(bytes)); i += chunkSize {{
+                data := &{pkg}.Data{{}}
+                data.ChunkSize = uint64(chunkSize)
+                if i+chunkSize > uint64(len(bytes)) {{
+                    data.Datum = bytes[i:]
+                }} else {{
+                    data.Datum = bytes[i : i+chunkSize]
+                }}
+                if err := streamClient.Send(data); err != nil {{
+                    return nil, err
+                }}
+            }}
+            res, err := streamClient.CloseAndRecv()
+            if err != nil {{
+                return nil, err
+            }}
+            return res, nil
+        }}
+        """.format(
+            struct=struct_name,
+            pkg=self._protobuf_package_name,
+            operation=rpc_info.stream_operation_name,
+            pkg_op=rpc_info.stream_operation_name[0].upper()
+            + rpc_info.stream_operation_name[1:],
+            response=rpc_info.streaming_response,
+        )
+
+    def _server_stream_method_impl(self, struct_name, rpc_info):
+        if rpc_info.request_return_type == "[]byte":
+            ret = "return bytes, nil"
+        else:
+            ret = """res := New{res_struct}()
+            m_err := proto.Unmarshal(bytes, res.msg())
+            if m_err != nil {{
+                return nil, m_err
+            }} else {{
+                return res, nil
+            }}
+            """.format(
+                res_struct=self._get_external_struct_name(
+                    rpc_info.request_return_type
+                )
+            )
+
+        return """
+        func (api *{struct}) {operation}(ctx context.Context, req {request}) ({response}, error) {{
+            streamClient, err := api.grpcClient.{pkg_op}(ctx, req)
+            if err != nil {{
+                return nil, err
+            }}
+            var bytes []byte
+            for {{
+                resp, err := streamClient.Recv()
+                if err == io.EOF {{
+                    {return_value}
+                }}
+                if err != nil {{
+                    return nil, err
+                }}
+                bytes = append(bytes, resp.Datum...)
+            }}
+        }}
+        """.format(
+            struct=struct_name,
+            operation=rpc_info.stream_operation_name,
+            pkg_op=rpc_info.stream_operation_name[0].upper()
+            + rpc_info.stream_operation_name[1:],
+            response=rpc_info.request_return_type,
+            request="*emptypb.Empty"
+            if rpc_info.request.startswith("empty")
+            else "*"
+            + self._protobuf_package_name
+            + "."
+            + rpc_info.operation_name
+            + "Request",
+            return_value=ret,
         )
 
     def _write_component_interfaces(self):

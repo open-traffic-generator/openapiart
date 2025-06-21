@@ -135,6 +135,16 @@ def test_version_mismatch_error(utils, grpc_api):
     # print(grpc_api.__dict__)
 
 
+def test_stream_config(utils, grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    grpc_api.enable_grpc_streaming = True
+    grpc_api.chunk_size = 200
+    result = grpc_api.set_config(payload)
+    assert result.read() == b"success"
+    grpc_api.enable_grpc_streaming = False
+
+
 def test_grpc_append_config(grpc_api):
     config = grpc_api.config_append()
     f1 = config.config_append_list.add().flows.add()
@@ -145,6 +155,24 @@ def test_grpc_append_config(grpc_api):
     f2.rate = 32
     result = grpc_api.append_config(config)
     assert result.warnings == ["w1", "w2"]
+
+
+def test_grpc_stream_get_metrics(grpc_api):
+    grpc_api.enable_grpc_streaming = True
+    grpc_api.chunk_size = 200
+    mr = grpc_api.metrics_request()
+    mr.port = "p1"
+    result = grpc_api.get_metrics(mr)
+    print(result)
+    grpc_api.enable_grpc_streaming = False
+
+
+def test_grpc_stream_get_config(grpc_api):
+    grpc_api.enable_grpc_streaming = True
+    result = grpc_api.get_config()
+    assert result.b == 1.1
+    assert result.d_values == ["a", "b", "c"]
+    grpc_api.enable_grpc_streaming = False
 
 
 if __name__ == "__main__":
