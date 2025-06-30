@@ -11,6 +11,16 @@ def test_grpc_set_config(utils, secure_grpc_api):
     assert result.read() == b"success"
 
 
+def test_grpc_stream_config(utils, secure_grpc_api):
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    secure_grpc_api.enable_grpc_streaming = True
+    secure_grpc_api.chunk_size = 200
+    result = secure_grpc_api.set_config(payload)
+    assert result.read() == b"success"
+    secure_grpc_api.enable_grpc_streaming = False
+
+
 def test_grpc_get_config(utils, secure_grpc_api):
     with open(utils.get_test_config_path("config.json")) as f:
         payload = json.load(f)

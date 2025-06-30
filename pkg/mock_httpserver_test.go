@@ -125,6 +125,12 @@ func (h *capabilitiesHandler) GetVersion(r *http.Request) (openapiart.GetVersion
 	return response, nil
 }
 
+func (h *bundlerHandler) GetCapture(r *http.Request) (openapiart.GetCaptureResponse, error) {
+	response := openapiart.NewGetCaptureResponse()
+	response.SetResponseBytes([]byte("Successful set config operation"))
+	return response, nil
+}
+
 // Defined Metrics interface
 
 type metricsHandler struct {

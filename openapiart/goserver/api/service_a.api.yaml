@@ -11,11 +11,11 @@ info:
       apitest.yaml      - for model definition used by the service
 
 paths:
-
   /apitest:
     get:
       tags: [ApiTest]
       operationId: GetRootResponse
+      x-stream: server
       description: simple GET api with single return type
       responses:
         "200":
@@ -23,21 +23,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+                $ref: "./common.yaml#/components/schemas/Common.ResponseSuccess"
           x-field-uid: 1
         default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2
 
     delete:
       tags: [ApiTest]
       operationId: dummyResponseTest
       responses:
-        '200':
+        "200":
           description: |-
             OK
           content:
@@ -50,9 +50,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2
-      
+
     post:
       tags: [ApiTest]
       operationId: PostRootResponse
@@ -61,19 +61,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: './service_a.yaml#/components/schemas/ApiTest.InputBody'
+              $ref: "./service_a.yaml#/components/schemas/ApiTest.InputBody"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Common.ResponseSuccess'
+                $ref: "./common.yaml#/components/schemas/Common.ResponseSuccess"
           x-field-uid: 1
         default:
           description: OK
           content:
             application/json:
               schema:
-                $ref: './common.yaml#/components/schemas/Error'
+                $ref: "./common.yaml#/components/schemas/Error"
           x-field-uid: 2
