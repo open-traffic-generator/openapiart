@@ -389,8 +389,9 @@ class Generator:
         self._cert_domain = None
         self._request_timeout = 10
         self._keep_alive_timeout = 10 * 1000
+        self._maximum_receive_buffer_size = 4 * 1024 * 1024
         self.enable_grpc_streaming = False
-        self.chunk_size = 4000000
+        self._chunk_size = 4 * 1024 * 1024
         self._location = (
             kwargs["location"]
             if "location" in kwargs and kwargs["location"] is not None
@@ -410,7 +411,8 @@ class Generator:
     def _get_stub(self):
         if self._stub is None:
             CHANNEL_OPTIONS = [('grpc.enable_retries', 0),
-                               ('grpc.keepalive_timeout_ms', self._keep_alive_timeout)]
+                               ('grpc.keepalive_timeout_ms', self._keep_alive_timeout),
+                               ('grpc.max_receive_message_length', self._maximum_receive_buffer_size)]
             if self._cert is None:
                 self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
             else:
@@ -446,12 +448,12 @@ class Generator:
 
     def _client_stream(self, stub, data):
         data_chunks = []
-        for i in range(0, len(data), self.chunk_size):
-            if i+self.chunk_size > len(data):
+        for i in range(0, len(data), self._chunk_size):
+            if i+self._chunk_size > len(data):
                 chunk = data[i:len(data)]
             else:
-                chunk = data[i:i+self.chunk_size]
-            data_chunks.append(pb2.Data(datum=chunk, chunk_size=self.chunk_size))
+                chunk = data[i:i+self._chunk_size]
+            data_chunks.append(pb2.Data(datum=chunk, chunk_size=self._chunk_size))
         # print(chunk_list, len(chunk_list))
         reqs = iter(data_chunks)
         return reqs
@@ -479,6 +481,21 @@ class Generator:
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
 
+    @property
+    def chunk_size(self):
+        return self._chunk_size
+
+    @chunk_size.setter
+    def chunk_size(self, size):
+        self._chunk_size = size * 1024 * 1024
+
+    @property
+    def maximum_receive_buffer_size(self):
+        return self._maximum_receive_buffer_size
+
+    @maximum_receive_buffer_size.setter
+    def maximum_receive_buffer_size(self, size):
+        self._maximum_receive_buffer_size = size * 1024 * 1024
 
     def close(self):
         if self._channel is not None:
@@ -2164,7 +2181,7 @@ class Generator:
             self._write(
                 line_indent,
                 "if self.enable_grpc_streaming {}:".format(
-                    "and len(pb_str) > self.chunk_size"
+                    "and len(pb_str) > self._chunk_size"
                     if rpc_method.stream_type == "client"
                     else ""
                 ),

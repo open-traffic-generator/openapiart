@@ -159,7 +159,12 @@ def test_grpc_append_config(grpc_api):
 
 def test_grpc_stream_get_metrics(grpc_api):
     grpc_api.enable_grpc_streaming = True
-    grpc_api.chunk_size = 200
+    grpc_api.chunk_size = 2
+    grpc_api.maximum_receive_buffer_size = 2
+
+    assert grpc_api.chunk_size == 2 * 1024 * 1024
+    assert grpc_api.maximum_receive_buffer_size == 2 * 1024 * 1024
+
     mr = grpc_api.metrics_request()
     mr.port = "p1"
     result = grpc_api.get_metrics(mr)
