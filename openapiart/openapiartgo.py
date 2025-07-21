@@ -25,7 +25,6 @@ class FluentRpc(object):
         self.http_call = None
         self.method_description = None
         self.status = {}
-        self.struct = None
         self.log_request = None
         self.log_response = None
         self.stream_operation_name = None
@@ -33,6 +32,7 @@ class FluentRpc(object):
         self.stream_method = None
         self.streaming_type = None
         self.streaming_response = None
+        self.struct = None
 
 
 class FluentRpcResponse(object):
