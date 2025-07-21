@@ -518,7 +518,7 @@ def build(sdk="all", env_setup=None):
     init()
     run([py() + " setup.py install"])
     print("\nSTEP 3: Generating Python and Go SDKs\n")
-    generate(sdk=sdk, cicd="True")
+    generate(sdk=sdk, cicd="False")
     if sdk == "python" or sdk == "all":
         print("\nSTEP 4: Perform Python lint\n")
         lint()
