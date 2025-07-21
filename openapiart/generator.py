@@ -482,7 +482,7 @@ class Generator:
     @keep_alive_timeout.setter
     def keep_alive_timeout(self, timeout):
         self._keep_alive_timeout = timeout * 1000
-    
+
     @property
     def chunk_size(self):
         return self._chunk_size
@@ -490,7 +490,7 @@ class Generator:
     @chunk_size.setter
     def chunk_size(self, size):
         self._chunk_size = size * 1024 * 1024
- 
+
     @property
     def maximum_receive_buffer_size(self):
         return self._maximum_receive_buffer_size
@@ -498,7 +498,6 @@ class Generator:
     @maximum_receive_buffer_size.setter
     def maximum_receive_buffer_size(self, size):
         self._maximum_receive_buffer_size = size * 1024 * 1024
-
 
     def close(self):
         if self._channel is not None:
