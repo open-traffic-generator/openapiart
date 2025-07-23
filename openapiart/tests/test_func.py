@@ -200,5 +200,35 @@ def test_int_64_format(api, default_config):
         print(e)
 
 
+def test_binary_data(api, default_config):
+    import base64
+    import io
+
+    # test for binary data
+    default_config.binary_data = base64.b64encode(
+        b'hello\nBye bye\n "yoyoyoy\n"check check !#$'
+    ).decode("utf-8")
+    dt = default_config.serialize(default_config.DICT)
+    assert isinstance(dt["binary_data"], str)
+    json_str = default_config.serialize()
+    conf = api.prefix_config()
+    conf.deserialize(json_str)
+    data = conf.binary_data
+    assert isinstance(data, str)
+    decoded = base64.b64decode(data, validate=True)
+    assert decoded == b'hello\nBye bye\n "yoyoyoy\n"check check !#$'
+
+    # test binary string
+    conf.binary_data = "00101"
+    dt = conf.serialize(default_config.DICT)
+    assert isinstance(dt["binary_data"], str)
+    json_str = conf.serialize()
+    conf2 = api.prefix_config()
+    conf2.deserialize(json_str)
+    data = conf2.binary_data
+    assert isinstance(data, str)
+    assert data == "00101"
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
