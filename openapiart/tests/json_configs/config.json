@@ -1,70 +1,71 @@
 {
-    "required_object": {
-      "e_a": 10.1,
-      "e_b": 2245.1111
-    },
-    "a": "asdf",
-    "b": 1.1,
-    "c": 1,
-    "d_values": [
-      "a",
-      "b",
-      "c"
-    ],
-    "h": true,
-    "i": "11011011",
-    "e": {
-      "e_a": 1.1,
-      "e_b": 1.2
-    },
-    "f": {
-      "choice": "f_b",
-      "f_b" : 3.0
-    },
-    "g": [
-      {
-        "choice": "g_e",
-        "g_a": "a g_a value",
-        "g_b": 6,
-        "g_c": 77.7,
-        "g_e": 3.0,
-        "g_f": "a"
-      }
-    ],
-    "j": [
-      {
-        "choice": "j_a",
-        "j_a": {
-          "e_a": 1.0,
-          "e_b": 2.0
-        }
-      },
-      {
-        "choice": "j_a",
-        "j_a": {
-          "e_a": 1.0,
-          "e_b": 2.0
-        }
-      }
-    ],
-    "k": {
-      "e_object": {
-        "e_a": 77.7,
-        "e_b": 2.0
-      },
-      "f_object": {
-        "choice": "f_a",
-        "f_a": "asdf"
-      }
-    },
-    "l": {
-      "string_param": "test",
-      "integer": 80,
-      "float": 100.11,
-      "double": 1.7976931348623157e+308,
-      "mac": "00:00:00:00:00:0a",
-      "ipv4": "1.1.1.1",
-      "ipv6": "2000::1",
-      "hex": "0x12"
+  "required_object": {
+    "e_a": 10.1,
+    "e_b": 2245.1111
+  },
+  "a": "asdf",
+  "b": 1.1,
+  "c": 1,
+  "binary_data": "aGVsbG8KQnllIGJ5ZQogInlveW95b3kKImNoZWNrIGNoZWNrICEjJA==",
+  "d_values": [
+    "a",
+    "b",
+    "c"
+  ],
+  "h": true,
+  "i": "11011011",
+  "e": {
+    "e_a": 1.1,
+    "e_b": 1.2
+  },
+  "f": {
+    "choice": "f_b",
+    "f_b": 3.0
+  },
+  "g": [
+    {
+      "choice": "g_e",
+      "g_a": "a g_a value",
+      "g_b": 6,
+      "g_c": 77.7,
+      "g_e": 3.0,
+      "g_f": "a"
     }
+  ],
+  "j": [
+    {
+      "choice": "j_a",
+      "j_a": {
+        "e_a": 1.0,
+        "e_b": 2.0
+      }
+    },
+    {
+      "choice": "j_a",
+      "j_a": {
+        "e_a": 1.0,
+        "e_b": 2.0
+      }
+    }
+  ],
+  "k": {
+    "e_object": {
+      "e_a": 77.7,
+      "e_b": 2.0
+    },
+    "f_object": {
+      "choice": "f_a",
+      "f_a": "asdf"
+    }
+  },
+  "l": {
+    "string_param": "test",
+    "integer": 80,
+    "float": 100.11,
+    "double": 1.7976931348623157e+308,
+    "mac": "00:00:00:00:00:0a",
+    "ipv4": "1.1.1.1",
+    "ipv6": "2000::1",
+    "hex": "0x12"
   }
+}
