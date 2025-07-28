@@ -340,6 +340,10 @@ components:
           items:
             $ref: "#/components/schemas/Port.Protocols"
           x-field-uid: 62
+        binary_data:
+          type: string
+          format: binary
+          x-field-uid: 63
 
     WObject:
       required: [w_name]

@@ -77,3 +77,27 @@ func TestRandomPatternForAllFormat(t *testing.T) {
 	assert.Equal(t, pat5.Count(), uint32(1))
 	assert.Equal(t, pat5.Seed(), uint32(1))
 }
+
+func TestBinaryDataSerialization(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1})
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse(openapiart.PrefixConfigResponse.STATUS_200)
+	config.SetBinaryData([]byte("Hello\nbyebye!@#$"))
+	config.E().SetEA(1.1).SetEB(1.2).SetMParam1("Mparam1").SetMParam2("Mparam2")
+	json, err := config.Marshal().ToJson()
+	assert.Nil(t, err)
+	_, err = config.Marshal().ToYaml()
+	assert.Nil(t, err)
+	_, err = config.Marshal().ToPbText()
+	assert.Nil(t, err)
+	_, err = config.Marshal().ToProto()
+	assert.Nil(t, err)
+
+	config2 := openapiart.NewPrefixConfig()
+	err = config2.Unmarshal().FromJson(json)
+	assert.Nil(t, err)
+	assert.Equal(t, string(config2.BinaryData()), "Hello\nbyebye!@#$")
+}

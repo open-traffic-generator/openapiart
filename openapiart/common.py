@@ -12,6 +12,7 @@ import grpc
 import semantic_version
 import types
 import platform
+import base64
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
@@ -527,14 +528,24 @@ class OpenApiValidator(object):
         return v_obj_lst
 
     def validate_binary(self, value):
-        if value is None or not isinstance(value, (str, unicode)):
+        if isinstance(value, bytes):
+            return True
+
+        if not isinstance(value, str):
             return False
-        return all(
-            [
-                True if int(bin) == 0 or int(bin) == 1 else False
-                for bin in value
-            ]
-        )
+            
+        try:
+            base64.b64decode(value, validate=True)
+            return True
+        except Exception:
+            pass
+            
+        # Fallback: validate as a string of '0's and '1's
+        if not value:  # An empty string is not a valid binary string in this context
+            return False
+            
+        return all(char in '01' for char in value)
+
 
     def validate_oid(self, value):
         segments = value.split(".")

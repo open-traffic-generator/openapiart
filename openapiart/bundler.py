@@ -430,7 +430,6 @@ class Bundler(object):
                     "invalid x-stream value %s present in %s valid values are server and client"
                     % (item.value, parent_schema["operationId"])
                 )
-                print("error hona chahiye")
 
     def _validate_file(self):
         print("validating {}...".format(self._output_filename))
