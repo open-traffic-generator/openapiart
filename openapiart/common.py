@@ -29,6 +29,18 @@ if sys.version_info[0] == 3:
 
 openapi_warnings = []
 
+# instantiate the logger
+stderr_handler = logging.StreamHandler(sys.stderr)
+formatter = logging.Formatter(
+    fmt="%(asctime)s.%(msecs)03d [%(name)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+formatter.converter = time.gmtime
+stderr_handler.setFormatter(formatter)
+log = logging.getLogger("common")
+log.addHandler(stderr_handler)
+log.info("Logger instantiated")
+
 
 class Transport:
     HTTP = "http"
@@ -40,9 +52,11 @@ def api(
     transport=None,
     verify=True,
     logger=None,
-    loglevel=logging.INFO,
+    loglevel=logging.WARN,
     ext=None,
     version_check=False,
+    otel_collector=None,
+    otel_collector_transport="http",
 ):
     """Create an instance of an Api class
 
@@ -66,12 +80,29 @@ def api(
       man-in-the-middle (MitM) attacks. Setting verify to `False`
       may be useful during local development or testing.
     - logger (logging.Logger): A user defined logging.logger, if none is provided
-      then a default logger with a stdout handler will be provided
+      then a default logger with a stderr handler will be provided
     - loglevel (logging.loglevel): The logging package log level.
       The default loglevel is logging.INFO
     - ext (str): Name of an extension package
     """
     params = locals()
+
+    if logger is not None:
+        global log
+        log = logger
+    log.setLevel(loglevel)
+
+    if version_check is False:
+        log.warning("Version check is disabled")
+
+    if otel_collector is not None:
+        if sys.version_info[0] == 3 and sys.version_info[1] >= 7:
+            log.info("Telemetry feature enabled")
+        else:
+            raise Exception(
+                "Telemetry feature is only available for python version >= 3.7"
+            )
+
     transport_types = ["http", "grpc"]
     if ext is None:
         transport = "http" if transport is None else transport
@@ -82,8 +113,10 @@ def api(
                 )
             )
         if transport == "http":
+            log.info("Transport set to HTTP")
             return HttpApi(**params)
         else:
+            log.info("Transport set to GRPC")
             return GrpcApi(**params)
     try:
         if transport is not None:
@@ -106,21 +139,7 @@ class HttpTransport(object):
             else "https://localhost:443"
         )
         self.verify = kwargs["verify"] if "verify" in kwargs else False
-        self.logger = kwargs["logger"] if "logger" in kwargs else None
-        self.loglevel = (
-            kwargs["loglevel"] if "loglevel" in kwargs else logging.DEBUG
-        )
-        if self.logger is None:
-            stdout_handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter(
-                fmt="%(asctime)s [%(name)s] [%(levelname)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-            formatter.converter = time.gmtime
-            stdout_handler.setFormatter(formatter)
-            self.logger = logging.Logger(self.__module__, level=self.loglevel)
-            self.logger.addHandler(stdout_handler)
-        self.logger.debug(
+        log.debug(
             "HttpTransport args: {}".format(
                 ", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])
             )
@@ -132,7 +151,7 @@ class HttpTransport(object):
         self.verify = verify
         if self.verify is False:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            self.logger.warning("Certificate verification is disabled")
+            log.warning("Certificate verification is disabled")
 
     def _parse_response_error(self, response_code, response_text):
         error_response = ""
@@ -174,6 +193,10 @@ class HttpTransport(object):
                 data = payload.serialize()
             else:
                 raise Exception("Type of payload provided is unknown")
+        log.debug("Request url - " + str(url))
+        log.debug("Method - " + str(method))
+        log.debug("Request headers - " + str(headers))
+        log.debug("Request payload - " + str(data))
         response = self._session.request(
             method=method,
             url=url,
@@ -183,6 +206,10 @@ class HttpTransport(object):
             # TODO: add a timeout here
             headers=headers,
         )
+        log.debug("Response status code - " + str(response.status_code))
+        log.debug("Response header - " + str(response.headers))
+        log.debug("Response content - " + str(response.content))
+        log.debug("Response text - " + str(response.text))
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
@@ -218,6 +245,12 @@ class OpenApiStatus:
             # cls.logger.warning(cls.messages[key])
             logging.warning(cls.messages[key])
             object.__warnings__.append(cls.messages[key])
+            log.warning(
+                "["
+                + OpenApiStatus.warn.__name__
+                + "] cls.messages[key]-"
+                + cls.messages[key]
+            )
             # openapi_warnings.append(cls.messages[key])
 
     @staticmethod
@@ -232,6 +265,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.deprecated.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
     @staticmethod
     def under_review(func_or_data):
@@ -245,6 +284,12 @@ class OpenApiStatus:
         if isinstance(func_or_data, types.FunctionType):
             return inner
         OpenApiStatus.warn(func_or_data)
+        log.warning(
+            "["
+            + OpenApiStatus.under_review.__name__
+            + "] func_or_data-"
+            + func_or_data
+        )
 
 
 class OpenApiBase(object):
@@ -359,6 +404,7 @@ class OpenApiValidator(object):
                 return False
             return all([0 <= int(oct, 16) <= 255 for oct in mac.split(":")])
         except Exception:
+            log.debug("Validating MAC address - " + str(mac) + " failed ")
             return False
 
     def validate_ipv4(self, ip):
@@ -373,6 +419,7 @@ class OpenApiValidator(object):
         try:
             return all([0 <= int(oct) <= 255 for oct in ip.split(".", 3)])
         except Exception:
+            log.debug("Validating IPv4 address - " + str(ip) + " failed")
             return False
 
     def validate_ipv6(self, ip):
@@ -410,6 +457,7 @@ class OpenApiValidator(object):
                 ]
             )
         except Exception:
+            log.debug("Validating IPv6 address - " + str(ip) + " failed")
             return False
 
     def validate_hex(self, hex):
@@ -419,6 +467,7 @@ class OpenApiValidator(object):
             int(hex, 16)
             return True
         except Exception:
+            log.debug("Validating HEX value - " + str(hex) + " failed")
             return False
 
     def validate_integer(self, value, min, max, type_format=None):
@@ -1175,3 +1224,101 @@ class OpenApiIter(OpenApiBase):
         raise NotImplementedError(
             "validating an OpenApiIter object is not supported"
         )
+
+
+class Telemetry(object):
+    def __init__(self, endpoint, transport):
+        self.transport = transport
+        self.endpoint = endpoint
+        self.is_telemetry_enabled = False
+        self._tracer = None
+        self._trace_provider = None
+        self._resource = None
+        self._batch_span_processor = None
+        self._trace = None
+        self._http_exporter = None
+        self._grpc_exporter = None
+        self._http_instrumentor = None
+        self._grpc_instrumentor = None
+        self._spankind = None
+        if self.endpoint is not None:
+            self.is_telemetry_enabled = True
+            self._initiate_tracer()
+
+    def _initiate_tracer(self):
+        import warnings
+
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        self._trace = importlib.import_module("opentelemetry.trace")
+        self._spankind = getattr(self._trace, "SpanKind")
+        self._trace_provider = importlib.import_module(
+            "opentelemetry.sdk.trace"
+        )
+        self._trace_provider = getattr(self._trace_provider, "TracerProvider")
+        self._resource = importlib.import_module("opentelemetry.sdk.resources")
+        self._resource = getattr(self._resource, "Resource")
+        self._batch_span_processor = importlib.import_module(
+            "opentelemetry.sdk.trace.export"
+        )
+        self._batch_span_processor = getattr(
+            self._batch_span_processor, "BatchSpanProcessor"
+        )
+        self._grpc_exporter = importlib.import_module(
+            "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
+        )
+        self._grpc_exporter = getattr(self._grpc_exporter, "OTLPSpanExporter")
+        self._http_exporter = importlib.import_module(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+        )
+        self._http_exporter = getattr(self._http_exporter, "OTLPSpanExporter")
+
+        provider = self._trace_provider(
+            resource=self._resource.create({"service.name": "snappi"})
+        )
+        self._trace.set_tracer_provider(provider)
+        if self.transport == "http":
+            otlp_exporter = self._http_exporter(endpoint=self.endpoint)
+        else:
+            otlp_exporter = self._grpc_exporter(
+                endpoint=self.endpoint, insecure=True
+            )
+        span_processor = self._batch_span_processor(otlp_exporter)
+        provider.add_span_processor(span_processor)
+        tracer = self._trace.get_tracer(__name__)
+        self._tracer = tracer
+
+    def initiate_http_instrumentation(self):
+        if self.is_telemetry_enabled:
+            from opentelemetry.instrumentation.requests import (
+                RequestsInstrumentor,
+            )
+
+            RequestsInstrumentor().instrument()
+
+    def initiate_grpc_instrumentation(self):
+        if self.is_telemetry_enabled:
+            from opentelemetry.instrumentation.grpc import (
+                GrpcInstrumentorClient,
+            )
+
+            GrpcInstrumentorClient().instrument()
+
+    def set_span_event(self, message):
+        if self.is_telemetry_enabled:
+            current_span = self._trace.get_current_span()
+            current_span.add_event(message)
+
+    @staticmethod
+    def create_child_span(func):
+        def tracing(self, *args, **kwargs):
+            telemetry = self._telemetry
+            if telemetry.is_telemetry_enabled:
+                name = func.__name__
+                with self.tracer().start_as_current_span(
+                    name, kind=telemetry._spankind.CLIENT
+                ):
+                    return func(self, *args, **kwargs)
+            else:
+                return func(self, *args, **kwargs)
+
+        return tracing
