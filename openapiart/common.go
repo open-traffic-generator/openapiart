@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 )
 
@@ -52,7 +51,7 @@ type GrpcTransport interface {
 
 // Location
 func (obj *grpcTransport) Location() string {
-	logs.Debug().Str("Location ", obj.location).Msg("")
+	logs.Debug("", "Location ", obj.location)
 	return obj.location
 }
 
@@ -64,7 +63,7 @@ func (obj *grpcTransport) SetLocation(value string) GrpcTransport {
 
 // RequestTimeout returns the grpc request timeout in seconds
 func (obj *grpcTransport) RequestTimeout() time.Duration {
-	logs.Debug().Str("RequestTimeout ", obj.requestTimeout.String()).Msg("")
+	logs.Debug("", "RequestTimeout ", obj.requestTimeout.String())
 	return obj.requestTimeout
 }
 
@@ -74,7 +73,7 @@ func (obj *grpcTransport) SetRequestTimeout(value time.Duration) GrpcTransport {
 	return obj
 }
 func (obj *grpcTransport) DialTimeout() time.Duration {
-	logs.Debug().Str("DialTimeout ", obj.dialTimeout.String()).Msg("")
+	logs.Debug("", "DialTimeout ", obj.dialTimeout.String())
 	return obj.dialTimeout
 }
 
@@ -130,7 +129,7 @@ type HttpTransport interface {
 
 // Location
 func (obj *httpTransport) Location() string {
-	logs.Debug().Str("Location  ", obj.location).Msg("")
+	logs.Debug("", "Location  ", obj.location)
 	return obj.location
 }
 
@@ -216,18 +215,18 @@ func (api *apiSt) getWarnings() string {
 }
 
 func (api *apiSt) addWarnings(message string) {
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 	api.warnings = message
 }
 
 func (api *apiSt) deprecated(message string) {
 	api.warnings = message
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 }
 
 func (api *apiSt) under_review(message string) {
 	api.warnings = message
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 }
 
 // Returns instance of telemetry operations
@@ -275,7 +274,7 @@ func (obj *validation) validationResult() error {
 	if len(obj.validationErrors) > 0 {
 		errors := strings.Join(obj.validationErrors, "\n")
 		obj.validationErrors = nil
-		logs.Error().Str("Validation Errors ", errors).Msg("")
+		logs.Error("", "Validation Errors ", errors)
 		return fmt.Errorf("%s", errors)
 	}
 	return nil
@@ -291,31 +290,31 @@ func (obj *validation) Warnings() []string {
 }
 
 func (obj *validation) addWarnings(message string) {
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) deprecated(message string) {
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) under_review(message string) {
-	logs.Warn().Msg(message)
+	logs.Warn(message)
 	obj.warnings = append(obj.warnings, message)
 }
 
 func (obj *validation) validateMac(mac string) error {
 	macSlice := strings.Split(mac, ":")
 	if len(macSlice) != 6 {
-		logs.Error().Str("Invalid Mac address ", mac).Msg("")
+		logs.Error("", "Invalid Mac address ", mac)
 		return fmt.Errorf("Invalid Mac address %s", mac)
 	}
 	octInd := []string{"0th", "1st", "2nd", "3rd", "4th", "5th"}
 	for ind, val := range macSlice {
 		num, err := strconv.ParseUint(val, 16, 32)
 		if err != nil || num > 255 {
-			logs.Error().Msg("Invalid Mac address")
+			logs.Error("Invalid Mac address")
 			return fmt.Errorf("Invalid Mac address at %s octet in %s mac", octInd[ind], mac)
 		}
 	}
@@ -325,14 +324,14 @@ func (obj *validation) validateMac(mac string) error {
 func (obj *validation) validateIpv4(ip string) error {
 	ipSlice := strings.Split(ip, ".")
 	if len(ipSlice) != 4 {
-		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
+		logs.Error("", "Invalid Ipv4 address ", ip)
 		return fmt.Errorf("Invalid Ipv4 address %s", ip)
 	}
 	octInd := []string{"1st", "2nd", "3rd", "4th"}
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 10, 32)
 		if err != nil || num > 255 {
-			logs.Error().Msg("Invalid Ipv4 address")
+			logs.Error("Invalid Ipv4 address")
 			return fmt.Errorf("Invalid Ipv4 address at %s octet in %s ipv4", octInd[ind], ip)
 		}
 	}
@@ -344,15 +343,15 @@ func (obj *validation) validateIpv6(ip string) error {
 	if strings.Count(ip, " ") > 0 || strings.Count(ip, ":") > 7 ||
 		strings.Count(ip, "::") > 1 || strings.Count(ip, ":::") > 0 ||
 		strings.Count(ip, ":") == 0 {
-		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
+		logs.Error("", "Invalid Ipv4 address ", ip)
 		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if (string(ip[0]) == ":" && string(ip[:2]) != "::") || (string(ip[len(ip)-1]) == ":" && string(ip[len(ip)-2:]) != "::") {
-		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
+		logs.Error("", "Invalid Ipv4 address ", ip)
 		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if strings.Count(ip, "::") == 0 && strings.Count(ip, ":") != 7 {
-		logs.Error().Str("Invalid Ipv4 address ", ip).Msg("")
+		logs.Error("", "Invalid Ipv4 address ", ip)
 		return fmt.Errorf("Invalid ipv6 address %s", ip)
 	}
 	if ip == "::" {
@@ -375,7 +374,7 @@ func (obj *validation) validateIpv6(ip string) error {
 	for ind, val := range ipSlice {
 		num, err := strconv.ParseUint(val, 16, 64)
 		if err != nil || num > 65535 {
-			logs.Error().Msg("Invalid Ipv4 address")
+			logs.Error("Invalid Ipv4 address")
 			return fmt.Errorf("Invalid Ipv6 address at %s octet in %s ipv6", octInd[ind], ip)
 		}
 	}
@@ -520,21 +519,21 @@ func checkClientServerVersionCompatibility(clientVer string, serverVer string, c
 	c, err := semver.NewVersion(clientVer)
 	if err != nil {
 		message := "client " + componentName + " version " + clientVer + " is not a valid semver"
-		logs.Error().Str("Message", message).Msg("")
+		logs.Error("", "Message", message)
 		return fmt.Errorf("client %s version '%s' is not a valid semver", componentName, clientVer)
 	}
 
 	s, err := semver.NewConstraint(serverVer)
 	if err != nil {
 		message := "server " + componentName + " version " + serverVer + " is not a valid semver"
-		logs.Error().Str("Message", message).Msg("")
+		logs.Error("", "Message", message)
 		return fmt.Errorf("server %s version '%s' is not a valid semver constraint", componentName, serverVer)
 	}
 
 	err = fmt.Errorf("client %s version '%s' is not semver compatible with server %s version constraint '%s'", componentName, clientVer, componentName, serverVer)
 	valid, errs := s.Validate(c)
 	if len(errs) != 0 {
-		logs.Error().Msg("Client Server Version Compatibility Check")
+		logs.Error("Client Server Version Compatibility Check Failed!")
 		return fmt.Errorf("%v: %v", err, errs)
 	}
 

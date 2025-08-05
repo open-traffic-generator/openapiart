@@ -200,9 +200,9 @@ func (t *telemetry) Start() (Telemetry, error) {
 func (t *telemetry) Stop() {
 	if t.isOTLPEnabled() {
 		if err := t.traceProvider.Shutdown(context.Background()); err != nil {
-			logs.Error().Msg("Failed shutting down trace provider")
+			logs.Error("Failed shutting down trace provider")
 		}
-		logs.Info().Msg("Stopping tracing")
+		logs.Info("Stopping tracing")
 	}
 }
 

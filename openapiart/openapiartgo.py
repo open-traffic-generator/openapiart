@@ -643,9 +643,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
                     )
-                    rpc.log_request = (
-                        'logs.Info().Msg("Executing %s")' % rpc.operation_name
-                    )
+                    # rpc.log_request = (
+                    #     'logs.Info("Executing %s")' % rpc.operation_name
+                    # )
                     rpc.http_call = (
                         """return api.http{operation_name}()""".format(
                             operation_name=rpc.operation_name,
@@ -720,7 +720,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
-            var logs zerolog.Logger
+            var logs slog.Logger
             // function related to error handling
             func FromError(err error) (Error, bool) {{
                 if rErr, ok := err.(Error); ok {{
@@ -849,7 +849,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
                 logs = getLogger("{pb_pkg_name}")
-                logs.Debug().Str("Logger Initialized", "log").Msg("")
                 return &api
             }}
 
@@ -1146,7 +1145,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     return nil, err"""
 
             if http.request_return_type == "[]byte":
-                success_handling = """logs.Debug().Str("Response", string(bodyBytes)).Msg("")
+                # logs.Debug("", "Response", string(bodyBytes))
+                success_handling = """
                 return bodyBytes, nil"""
             elif http.request_return_type == "*string":
                 success_handling = """bodyString := string(bodyBytes)
