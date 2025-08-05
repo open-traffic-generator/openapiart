@@ -1,11 +1,10 @@
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
-	"time"
 
 	"log/slog"
+
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -43,13 +42,8 @@ func initlog() error {
 	return nil
 }
 
-func SetLogger(usrDefinedLogger slog.Logger) {
-	Logger = &usrDefinedLogger
-}
-
-func SetLogOutputToFile(choice bool) slog.Logger {
+func SetLogOutputToFile(choice bool) {
 	logToFile = choice
-	return getLogger(ModuleName)
 }
 
 func SetLogLevel(level slog.Leveler) {
