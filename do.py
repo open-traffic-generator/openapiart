@@ -8,7 +8,7 @@ import platform
 
 
 BLACK_VERSION = "22.3.0"
-GO_VERSION = "1.22.12"
+GO_VERSION = "1.23.0"
 PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
