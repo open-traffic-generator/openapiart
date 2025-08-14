@@ -180,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        go-version: ["1.22", "1.23", "1.24"]
+        go-version: ["1.22", "1.23", "1.24", "1.25"]
       fail-fast: false
     steps:
       - name: Checkout source
