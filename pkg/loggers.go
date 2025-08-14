@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"log/slog"
+
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -20,9 +19,9 @@ type logInfo struct {
 
 var (
 	logSt       *logInfo
-	Logger      *zerolog.Logger
-	logLevel    zerolog.Level = zerolog.WarnLevel
-	logToFile   bool          = false
+	Logger      *slog.Logger
+	logLevel    slog.Leveler = slog.LevelWarn
+	logToFile   bool         = false
 	logFileName string
 	ModuleName  string
 )
@@ -45,25 +44,19 @@ func initlog() error {
 	return nil
 }
 
-func SetLogger(usrDefinedLogger zerolog.Logger) {
-	Logger = &usrDefinedLogger
-}
-
-func SetLogOutputToFile(choice bool) zerolog.Logger {
+func SetLogOutputToFile(choice bool) {
 	logToFile = choice
-	return getLogger(ModuleName)
 }
 
-func SetLogLevel(level zerolog.Level) {
+func SetLogLevel(level slog.Leveler) {
 	logLevel = level
-	refreshLogLevel(logLevel)
 }
 
 func SetLogFileName(fileName string) {
 	logFileName = fileName
 }
 
-func getLogger(name string) zerolog.Logger {
+func getLogger(name string) slog.Logger {
 	if ModuleName == "" {
 		if err := initlog(); err != nil {
 			panic(fmt.Errorf("Logger helper set failed: %v", err))
@@ -73,56 +66,48 @@ func getLogger(name string) zerolog.Logger {
 	if logFileName == "" {
 		logFileName = name
 	}
-	var localLogger zerolog.Logger
+	var localLogger *slog.Logger
+	var err error
 	if !logToFile {
-		zerolog.TimestampFunc = func() time.Time {
-			return time.Now().In(time.Local)
-		}
-		zerolog.TimeFieldFormat = time.RFC3339Nano
-		consoleWriter := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-1-02T15:04:05.000Z"}
-		localLogger = zerolog.New(consoleWriter).Level(logLevel).With().Timestamp().Str("Module", name).Logger()
-
+		handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			Level: logLevel,
+		})
+		localLogger = slog.New(handler).With("Module", name)
 	} else {
-		if err := initFileLogger(); err != nil {
+		localLogger, err = initFileLogger(name)
+		if err != nil {
 			panic(fmt.Errorf("Logger init failed: %v", err))
+
 		}
-		localLogger = log.With().Str("Module", name).Logger()
 	}
-	Logger = &localLogger
+	Logger = localLogger
 	return *Logger
 }
 
-func initLogger() (err error) {
-	writer := lumberjack.Logger{
+func initLogger(name string) *slog.Logger {
+	writer := &lumberjack.Logger{
 		Filename:   path.Join(*logSt.logDir, fmt.Sprintf("%s.log", logFileName)),
 		MaxSize:    *logSt.maxLogSizeMB,
 		MaxBackups: *logSt.maxLogBackups,
 	}
-	zerolog.TimestampFieldName = "ts"
-	zerolog.MessageFieldName = "msg"
-	zerolog.TimeFieldFormat = time.RFC3339Nano
-	log.Logger = zerolog.New(&writer).Level(logLevel).With().Timestamp().Logger()
-	return err
+	// slog requires a handler. We'll use JSONHandler writing to lumberjack
+	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{
+		Level: logLevel,
+	})
+
+	logger := slog.New(handler).With("Module", name)
+	return logger
 }
 
-func refreshLogLevel(logLevel zerolog.Level) {
-	if !logToFile {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).Level(logLevel)
-	} else {
-		log.Logger = log.Level(logLevel)
+func initFileLogger(name string) (*slog.Logger, error) {
+	if err := os.RemoveAll(*logSt.logDir); err != nil {
+		return nil, err
 	}
-}
-
-func initFileLogger() (err error) {
-	if err = os.RemoveAll(*logSt.logDir); err != nil {
-
-		return err
-	}
-	if err = os.MkdirAll(*logSt.logDir, os.ModePerm); err != nil {
-		return err
+	if err := os.MkdirAll(*logSt.logDir, os.ModePerm); err != nil {
+		return nil, err
 	}
 	if err := os.Chmod(*logSt.logDir, 0771); err != nil {
-		return err
+		return nil, err
 	}
-	return initLogger()
+	return initLogger(name), nil
 }
