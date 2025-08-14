@@ -90,7 +90,7 @@ def get_go_deps():
         [
             cmd + " -v google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0",
             cmd + " -v google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1",
-            cmd + " -v golang.org/x/tools/cmd/goimports@v0.6.0",
+            cmd + " -v golang.org/x/tools/cmd/goimports@v0.36.0",
             cmd
             + " -v github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1",
         ]
@@ -274,12 +274,8 @@ def testgo():
 
 def go_lint():
     try:
-        output = run(["go version"], capture_output=True)
-        if "go1.20" in output:
-            print("Using older linter version for go version older than 1.20")
-            version = "1.55.0"
-        else:
-            version = "1.60.1"
+
+        version = "1.64.2"
 
         pkg = "go install"
         if on_linux() or on_macos():
