@@ -60,7 +60,7 @@ jobs:
           python-version: "3.10"
       - uses: actions/setup-go@v2
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
         with:
@@ -180,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        go-version: ["1.21", "1.22", "1.23"]
+        go-version: ["1.22", "1.23", "1.24"]
       fail-fast: false
     steps:
       - name: Checkout source
