@@ -720,7 +720,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
-            var logs slog.Logger
+            var logs = getLogger("{pb_pkg_name}")
             // function related to error handling
             func FromError(err error) (Error, bool) {{
                 if rErr, ok := err.(Error); ok {{

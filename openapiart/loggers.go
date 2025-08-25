@@ -18,8 +18,9 @@ type logInfo struct {
 var (
 	logSt       *logInfo
 	Logger      *slog.Logger
-	logLevel    slog.Leveler = slog.LevelWarn
-	logToFile   bool         = false
+	logLevel    slog.Level = slog.LevelWarn
+	levelVar    *slog.LevelVar
+	logToFile   bool = false
 	logFileName string
 	ModuleName  string
 )
@@ -37,6 +38,9 @@ func initlog() error {
 		*logSt.rootDir = "."
 	}
 	*logSt.logDir = path.Join(*logSt.rootDir, "logs")
+	if levelVar == nil {
+		levelVar = new(slog.LevelVar)
+	}
 	Logger = nil
 	ModuleName = ""
 	return nil
@@ -46,8 +50,12 @@ func SetLogOutputToFile(choice bool) {
 	logToFile = choice
 }
 
-func SetLogLevel(level slog.Leveler) {
+func SetLogLevel(level slog.Level) {
 	logLevel = level
+	if levelVar == nil {
+		levelVar = new(slog.LevelVar)
+	}
+	levelVar.Set(level)
 }
 
 func SetLogFileName(fileName string) {
@@ -67,8 +75,9 @@ func getLogger(name string) slog.Logger {
 	var localLogger *slog.Logger
 	var err error
 	if !logToFile {
+		levelVar.Set(logLevel)
 		handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			Level: logLevel,
+			Level: levelVar,
 		})
 		localLogger = slog.New(handler).With("Module", name)
 	} else {
@@ -90,7 +99,7 @@ func initLogger(name string) *slog.Logger {
 	}
 	// slog requires a handler. We'll use JSONHandler writing to lumberjack
 	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{
-		Level: logLevel,
+		Level: levelVar,
 	})
 
 	logger := slog.New(handler).With("Module", name)
