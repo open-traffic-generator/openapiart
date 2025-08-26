@@ -848,7 +848,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
-                logs = getLogger("{pb_pkg_name}")
                 return &api
             }}
 

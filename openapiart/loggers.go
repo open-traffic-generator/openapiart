@@ -48,6 +48,7 @@ func initlog() error {
 
 func SetLogOutputToFile(choice bool) {
 	logToFile = choice
+	logs = getLogger(ModuleName)
 }
 
 func SetLogLevel(level slog.Level) {
