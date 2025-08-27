@@ -720,7 +720,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
         # write the go code
         self._write(
             """
-            var logs slog.Logger
+            var loggerSt = &logger{{}}
+            var logs = loggerSt.getLogger("{pb_pkg_name}")
             // function related to error handling
             func FromError(err error) (Error, bool) {{
                 if rErr, ok := err.(Error); ok {{
@@ -848,7 +849,6 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 api := {internal_struct_name}{{}}
                 api.tracer = &telemetry{{transport: "HTTP", serviceName: "go-snappi"}}
                 api.versionMeta = &versionMeta{{checkVersion: false}}
-                logs = getLogger("{pb_pkg_name}")
                 return &api
             }}
 
