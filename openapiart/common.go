@@ -51,7 +51,7 @@ type GrpcTransport interface {
 
 // Location
 func (obj *grpcTransport) Location() string {
-	logs.Debug("", "Location ", obj.location)
+	logs.Debug("", "Location", obj.location)
 	return obj.location
 }
 
@@ -63,7 +63,7 @@ func (obj *grpcTransport) SetLocation(value string) GrpcTransport {
 
 // RequestTimeout returns the grpc request timeout in seconds
 func (obj *grpcTransport) RequestTimeout() time.Duration {
-	logs.Debug("", "RequestTimeout ", obj.requestTimeout.String())
+	logs.Debug("", "RequestTimeout", obj.requestTimeout.String())
 	return obj.requestTimeout
 }
 
@@ -73,7 +73,7 @@ func (obj *grpcTransport) SetRequestTimeout(value time.Duration) GrpcTransport {
 	return obj
 }
 func (obj *grpcTransport) DialTimeout() time.Duration {
-	logs.Debug("", "DialTimeout ", obj.dialTimeout.String())
+	logs.Debug("", "DialTimeout", obj.dialTimeout.String())
 	return obj.dialTimeout
 }
 
