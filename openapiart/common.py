@@ -39,7 +39,6 @@ formatter.converter = time.gmtime
 stderr_handler.setFormatter(formatter)
 log = logging.getLogger("common")
 log.addHandler(stderr_handler)
-log.info("Logger instantiated")
 
 
 class Transport:
