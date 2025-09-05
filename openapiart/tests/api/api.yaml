@@ -80,7 +80,7 @@ paths:
         "200":
           description: |-
             success 2xx
-          $ref: "../common/common.yaml#/components/responses/Warnings"
+          $ref: ../common/common.yaml#/components/responses/Warnings
           x-field-uid: 1
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default
@@ -145,6 +145,25 @@ paths:
       responses:
         "200":
           x-include: ../common/common.yaml#/components/responses/Success/200
+          x-field-uid: 1
+        default:
+          x-include: ../common/common.yaml#/components/responses/Failure/default
+          x-field-uid: 2
+  /file/upload:
+    post:
+      tags: ["Bundler"]
+      description: Upload a file
+      operationId: upload_config
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          $ref: ../common/common.yaml#/components/responses/Warnings
           x-field-uid: 1
         default:
           x-include: ../common/common.yaml#/components/responses/Failure/default

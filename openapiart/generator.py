@@ -262,6 +262,9 @@ class Generator:
             request = self._get_parser("$..requestBody..schema").find(
                 operation
             )
+            content = self._get_parser("$..requestBody..content").find(
+                operation
+            )
             for req in request:
                 (
                     _,
@@ -273,6 +276,9 @@ class Generator:
                     refs.append(ref)
                     rpc.request_property = property_name
                     rpc.request_class = class_name
+                elif "application/octet-stream" in content[0].value:
+                    rpc.request_property = "request_bytes"
+                    rpc.request_class= "RequestBytes"
 
             response_type = None
             proto_name = None
@@ -523,8 +529,8 @@ class Generator:
                 including_default, return_byte = self._process_good_response(
                     rpc_method
                 )
+                self._write(1, "@Telemetry.create_child_span")
                 if rpc_method.request_class is None:
-                    self._write(1, "@Telemetry.create_child_span")
                     self._write(1, "def %s(self):" % rpc_method.method)
                     self._write(
                         2, 'log.info("Executing ' + rpc_method.method + '")'
@@ -546,39 +552,47 @@ class Generator:
                         % rpc_method.operation_name,
                     )
                 else:
-                    self._write(1, "@Telemetry.create_child_span")
+                    only_bytes = (
+                        True
+                        if rpc_method.request_property == "request_bytes"
+                        else False
+                    )
                     self._write(
                         1, "def %s(self, payload):" % rpc_method.method
                     )
                     self._write(
                         2, 'log.info("Executing ' + rpc_method.method + '")'
                     )
-                    self._write(
-                        2, 'log.debug("Request payload - " + str(payload))'
-                    )
-                    self._write(
-                        2,
-                        'self._telemetry.set_span_event("REQUEST: %s" % str(payload))',
-                    )
+
+                    if not only_bytes:
+                        self._write(
+                            2, 'log.debug("Request payload - " + str(payload))'
+                        )
+                        self._write(
+                            2,
+                            'self._telemetry.set_span_event("REQUEST: %s" % str(payload))',
+                        )
 
                     if status_msg != "":
                         self._write(2, "self.add_warnings('%s')" % status_msg)
 
-                    self._write(2, "pb_obj = json_format.Parse(")
-                    self._write(3, "self._serialize_payload(payload),")
-                    self._write(3, "pb2.%s()" % rpc_method.request_class)
-                    self._write(2, ")")
+                    if not only_bytes:
+                        self._write(2, "pb_obj = json_format.Parse(")
+                        self._write(3, "self._serialize_payload(payload),")
+                        self._write(3, "pb2.%s()" % rpc_method.request_class)
+                        self._write(2, ")")
                     if (
                         self._generate_version_api
                         and rpc_method.method != "get_version"
                     ):
                         self._write(2, "self._do_version_check_once()")
-                    "%s=pb_obj" % rpc_method.request_property
+
                     self._write(
                         2,
-                        "req_obj = pb2.{operation_name}Request({request_property}=pb_obj)".format(
+                        "req_obj = pb2.{operation_name}Request({request_property}={obj})".format(
                             operation_name=rpc_method.operation_name,
                             request_property=rpc_method.request_property,
+                            obj="payload" if only_bytes else "pb_obj",
                         ),
                     )
                     if rpc_method.stream_type == "client":
@@ -778,7 +792,10 @@ class Generator:
                         else "None"
                     ),
                 )
-                if method["class_name"] is not None:
+                if (
+                    method["class_name"] is not None
+                    and method["class_name"] != "RequestBytes"
+                ):
                     self._write(3, "request_class=%s," % method["class_name"])
                 self._write(2, ")")
 

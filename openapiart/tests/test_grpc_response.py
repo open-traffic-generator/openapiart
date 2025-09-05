@@ -180,5 +180,11 @@ def test_grpc_stream_get_config(grpc_api):
     grpc_api.enable_grpc_streaming = False
 
 
+def test_upload_config(grpc_api):
+    bts = b"Hello\n123\nHello\n456!!@###"
+    result = grpc_api.upload_config(bts)
+    assert result.warnings == ["w1", "w2"]
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])
