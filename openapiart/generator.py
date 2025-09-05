@@ -278,7 +278,7 @@ class Generator:
                     rpc.request_class = class_name
                 elif "application/octet-stream" in content[0].value:
                     rpc.request_property = "request_bytes"
-                    rpc.request_class= "RequestBytes"
+                    rpc.request_class = "RequestBytes"
 
             response_type = None
             proto_name = None
@@ -596,7 +596,14 @@ class Generator:
                         ),
                     )
                     if rpc_method.stream_type == "client":
-                        self._write(2, "pb_str = pb_obj.SerializeToString()")
+                        self._write(
+                            2,
+                            "pb_str = {obj}".format(
+                                obj="payload"
+                                if only_bytes
+                                else "pb_obj.SerializeToString()"
+                            ),
+                        )
                     self._write(2, "stub = self._get_stub()")
                     self._write(2, "try:")
                     # code to add streaming of config hook in set_config

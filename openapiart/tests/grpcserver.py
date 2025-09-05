@@ -61,7 +61,7 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         return res_obj
 
     def streamSetConfig(self, request_iterator, context):
-        self._log("Executing GetVersion")
+        self._log("Executing streamSetConfig")
         full_str = b""
         for data in request_iterator:
             print("received chunk: ", data.chunk_size)
@@ -166,6 +166,26 @@ class OpenapiServicer(pb2_grpc.OpenapiServicer):
         response = {
             "warning_details": {
                 "warnings": ["w1", "w2"],
+            }
+        }
+        res_obj = json_format.Parse(
+            json.dumps(response), pb2.UploadConfigResponse()
+        )
+        return res_obj
+
+    def streamUploadConfig(self, request_iterator, context):
+        self._log("Executing streamUploadConfig")
+        full_str = b""
+        for data in request_iterator:
+            print("received chunk: ", data.chunk_size)
+            full_str += data.datum
+            self._log("received ")
+
+        self._log("received all chunks ")
+        self._log(full_str)
+        response = {
+            "warning_details": {
+                "warnings": ["w11", "w22"],
             }
         }
         res_obj = json_format.Parse(

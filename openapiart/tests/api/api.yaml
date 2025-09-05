@@ -152,6 +152,7 @@ paths:
   /file/upload:
     post:
       tags: ["Bundler"]
+      x-stream: client
       description: Upload a file
       operationId: upload_config
       requestBody:
