@@ -33,6 +33,7 @@ class FluentRpc(object):
         self.streaming_type = None
         self.streaming_response = None
         self.struct = None
+        self.octet_bytes = None
 
 
 class FluentRpcResponse(object):
@@ -511,6 +512,15 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 ref = self._get_parser("$..requestBody..'$ref'").find(
                     path_item_object
                 )
+                if (
+                    len(
+                        self._get_parser(
+                            "$..requestBody..'application/octet-stream'"
+                        ).find(path_item_object)
+                    )
+                    > 0
+                ):
+                    rpc.octet_bytes = True
                 if len(ref) == 1:
                     new = FluentNew()
                     new.schema_name = self._get_schema_object_name_from_ref(
@@ -639,16 +649,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     #     operation_response_name=self._get_external_struct_name(rpc.operation_name),
                     #     request_return_type=rpc.request_return_type,
                     # )
-                    rpc.method = """{operation_name}() ({request_return_type}, error)""".format(
+                    if rpc.octet_bytes:
+                        rpc.request = "{pb_pkg_name}.{operation_name}Request{{RequestBytes: data}}".format(
+                            pb_pkg_name=self._protobuf_package_name,
+                            operation_name=rpc.operation_name,
+                        )
+                    rpc.method = """{operation_name}({param}) ({request_return_type}, error)""".format(
                         operation_name=rpc.operation_name,
                         request_return_type=rpc.request_return_type,
+                        param="data []byte" if rpc.octet_bytes else "",
                     )
                     # rpc.log_request = (
                     #     'logs.Info("Executing %s")' % rpc.operation_name
                     # )
                     rpc.http_call = (
-                        """return api.http{operation_name}()""".format(
+                        """return api.http{operation_name}({value})""".format(
                             operation_name=rpc.operation_name,
+                            value="data" if rpc.octet_bytes else "",
                         )
                     )
                     http.request = """parentCtx := api.Telemetry().getRootContext()
@@ -1046,20 +1063,24 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 version_check = ""
 
             if rpc.streaming_type and rpc.streaming_type == "client":
+                marshal_str = """str, er := proto.Marshal({obj}.msg())
+                if er != nil {{
+                    return nil, er
+                }}""".format(
+                    obj=rpc.struct,
+                )
                 stream_config = """var resp *{package}.{response}
                 var err error
                 if api.grpc.enableGrpcStreaming {{
-                    str, er := proto.Marshal({obj}.msg())
-                    if er != nil {{
-                        return nil, er
-                    }}
-                    resp, err = api.{operation}(ctx, str)
+                    {marshal}
+                    resp, err = api.{operation}(ctx, {bts})
                 }} else {{
                 """.format(
                     package=self._protobuf_package_name,
-                    obj=rpc.struct,
                     operation=rpc.stream_operation_name,
                     response=rpc.streaming_response,
+                    marshal="" if rpc.octet_bytes else marshal_str,
+                    bts="data" if rpc.octet_bytes else "str",
                 )
             elif rpc.streaming_type and rpc.streaming_type == "server":
                 stream_config = """var resp *{package}.{response}

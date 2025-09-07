@@ -540,3 +540,25 @@ func TestStreamMetricsSuccesss(t *testing.T) {
 		log.Println(row.Marshal().ToYaml())
 	}
 }
+
+func TestUploadConfigSuccess(t *testing.T) {
+	api := apis[0]
+	bts := "Hello123!!##$@"
+	warn, err := api.UploadConfig([]byte(bts))
+	assert.Nil(t, err)
+	assert.NotNil(t, warn)
+	fmt.Println(warn.Marshal().ToJson())
+	assert.Equal(t, len(warn.Warnings()), 2)
+	assert.Equal(t, warn.Warnings()[1], "Your second warning")
+}
+
+func TestStreamUploadConfigSuccess(t *testing.T) {
+	api := streamApi
+	bts := "Hello123!!##$@"
+	warn, err := api.UploadConfig([]byte(bts))
+	assert.Nil(t, err)
+	assert.NotNil(t, warn)
+	fmt.Println(warn.Marshal().ToJson())
+	assert.Equal(t, len(warn.Warnings()), 1)
+	assert.Equal(t, warn.Warnings()[0], "StreamuploadConfig has completed successfully")
+}

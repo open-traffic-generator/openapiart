@@ -131,6 +131,12 @@ func (h *bundlerHandler) GetCapture(r *http.Request) (openapiart.GetCaptureRespo
 	return response, nil
 }
 
+func (h *bundlerHandler) UploadConfig(r *http.Request) (openapiart.UploadConfigResponse, error) {
+	response := openapiart.NewUploadConfigResponse()
+	response.WarningDetails().SetWarnings([]string{"w1, w2"})
+	return response, nil
+}
+
 // Defined Metrics interface
 
 type metricsHandler struct {
