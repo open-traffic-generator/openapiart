@@ -677,8 +677,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
-                        val="string(data)" if rpc.octet_bytes else "\"\"",
-                        stream="true" if rpc.octet_bytes else "false"
+                        val="string(data)" if rpc.octet_bytes else '""',
+                        stream="true" if rpc.octet_bytes else "false",
                     )
                     http.method = """http{rpc_method}""".format(
                         rpc_method=rpc.method
@@ -935,7 +935,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
                 if isBytes {{
                     req.Header.Set("Content-Type", "application/octet-stream")
-                }} else {{   
+                }} else {{
                     req.Header.Set("Content-Type", "application/json")
                 }}
                 if ctx != nil {{
