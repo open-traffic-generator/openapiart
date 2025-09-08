@@ -541,7 +541,7 @@ func TestStreamMetricsSuccesss(t *testing.T) {
 	}
 }
 
-func TestUploadConfigSuccess(t *testing.T) {
+func TestGrpcUploadConfigSuccess(t *testing.T) {
 	api := apis[0]
 	bts := "Hello123!!##$@"
 	warn, err := api.UploadConfig([]byte(bts))
@@ -561,4 +561,15 @@ func TestStreamUploadConfigSuccess(t *testing.T) {
 	fmt.Println(warn.Marshal().ToJson())
 	assert.Equal(t, len(warn.Warnings()), 1)
 	assert.Equal(t, warn.Warnings()[0], "StreamuploadConfig has completed successfully")
+}
+
+func TestHttpUploadConfigSuccess(t *testing.T) {
+	api := apis[1]
+	bts := "Hello123!!##$@"
+	warn, err := api.UploadConfig([]byte(bts))
+	assert.Nil(t, err)
+	assert.NotNil(t, warn)
+	fmt.Println(warn.Marshal().ToJson())
+	assert.Equal(t, len(warn.Warnings()), 2)
+	assert.Equal(t, warn.Warnings()[1], "w22")
 }

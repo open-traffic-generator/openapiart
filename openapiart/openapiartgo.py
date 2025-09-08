@@ -625,7 +625,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     parentCtx := api.Telemetry().getRootContext()
                     newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
                     defer api.Telemetry().CloseSpan(span)
-                    resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}")
+                    resp, err := api.httpSendRecv(newCtx, "{url}", {struct}Json, "{method}", false)
                     """.format(
                         url=http_url,
                         struct=new.struct,
@@ -671,12 +671,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     http.request = """parentCtx := api.Telemetry().getRootContext()
                     newCtx, span := api.Telemetry().NewSpan(parentCtx, "{operation_name}", trace.WithSpanKind(trace.SpanKindClient))
                     defer api.Telemetry().CloseSpan(span)
-                    resp, err := api.httpSendRecv(newCtx, "{url}", "", "{method}")""".format(
+                    resp, err := api.httpSendRecv(newCtx, "{url}", {val}, "{method}", {stream})""".format(
                         url=http_url,
                         operation_name=rpc.operation_name,
                         method=str(
                             operation_id.context.path.fields[0]
                         ).upper(),
+                        val="string(data)" if rpc.octet_bytes else "\"\"",
+                        stream="true" if rpc.octet_bytes else "false"
                     )
                     http.method = """http{rpc_method}""".format(
                         rpc_method=rpc.method
@@ -918,7 +920,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 return nil
             }}
 
-            func (api *{internal_struct_name}) httpSendRecv(ctx context.Context, urlPath string, jsonBody string, method string) (*http.Response, error) {{
+            func (api *{internal_struct_name}) httpSendRecv(ctx context.Context, urlPath string, jsonBody string, method string, isBytes bool) (*http.Response, error) {{
                 err := api.httpConnect()
                 if err != nil {{
                     return nil, err
@@ -931,7 +933,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 }}
                 queryUrl, _ = queryUrl.Parse(urlPath)
                 req, _ := http.NewRequest(method, queryUrl.String(), bodyReader)
-                req.Header.Set("Content-Type", "application/json")
+                if isBytes {{
+                    req.Header.Set("Content-Type", "application/octet-stream")
+                }} else {{   
+                    req.Header.Set("Content-Type", "application/json")
+                }}
                 if ctx != nil {{
                     req = req.WithContext(ctx)
                 }} else {{
