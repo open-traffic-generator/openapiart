@@ -193,7 +193,7 @@ components:
           type: string
           minLength: 3
           maxLength: 6
-          pattern: ^(.+)(#-#(.+))*$
+          pattern: ^([a-zA-Z0-9]+)(#-#[a-zA-Z0-9]+)*$
           x-field-uid: 33
         hex_slice:
           x-status:

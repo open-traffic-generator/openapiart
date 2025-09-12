@@ -1744,6 +1744,31 @@ func TestArrayOfChoices(t *testing.T) {
 	assert.Equal(t, uint32(234), config2.Protocols().Items()[1].Rocev2().Items()[0].CnpDelayTimer())
 }
 
+func TestStringRegexError(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	config.SetA("asdf").SetB(12.2).SetC(1).SetH(true).SetI([]byte{1, 0, 0, 1, 0, 0, 1, 1}).SetName("config")
+	config.SetSpace1(1)
+	config.RequiredObject().SetEA(1).SetEB(2)
+	config.SetIeee8021Qbb(true)
+	config.SetFullDuplex100Mb(2)
+	config.SetResponse("status_200")
+	config.SetStrLen("a##d")
+	config.SetStrRegex("a d")
+	config.StrLen()
+	config.Space1()
+	config.Name()
+	_, err := config.Marshal().ToYaml()
+	assert.NotNil(t, err)
+	assert.Contains(t, strings.ToLower(err.Error()), "prefixconfig.strlen should adhere to this regex pattern '^([a-za-z0-9]+)(#-#[a-za-z0-9]+)*$', but got a##d")
+	assert.Contains(t, strings.ToLower(err.Error()), "prefixconfig.strregex should adhere to this regex pattern '^(.+):(.+)$', but got a d")
+
+	config.SetStrLen("a#-#d")
+	config.SetStrRegex("a:d")
+	_, err = config.Marshal().ToYaml()
+	assert.Nil(t, err)
+
+}
+
 // TODO: restore behavior
 // func TestDeprecationWarning(t *testing.T) {
 
