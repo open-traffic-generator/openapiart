@@ -1759,10 +1759,10 @@ func TestStringRegexError(t *testing.T) {
 	config.Name()
 	_, err := config.Marshal().ToYaml()
 	assert.NotNil(t, err)
-	assert.Contains(t, strings.ToLower(err.Error()), "prefixconfig.strlen should adhere to this regex pattern '^([a-za-z0-9]+)(#-#[a-za-z0-9]+)*$', but got a##d")
+	assert.Contains(t, strings.ToLower(err.Error()), "prefixconfig.strlen should adhere to this regex pattern '^[\\sa-za-z0-9-_()><\\[\\]]+$', but got a##d")
 	assert.Contains(t, strings.ToLower(err.Error()), "prefixconfig.strregex should adhere to this regex pattern '^(.+):(.+)$', but got a d")
 
-	config.SetStrLen("a#-#d")
+	config.SetStrLen("a[]d")
 	config.SetStrRegex("a:d")
 	_, err = config.Marshal().ToYaml()
 	assert.Nil(t, err)

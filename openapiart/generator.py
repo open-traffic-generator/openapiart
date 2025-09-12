@@ -1922,7 +1922,7 @@ class Generator:
                 if len(ref) == 0 and "maxLength" in yproperty:
                     pt.update({"maxLength": yproperty["maxLength"]})
                 if len(ref) == 0 and "pattern" in yproperty:
-                    pt.update({"pattern": "'%s'" % yproperty["pattern"]})
+                    pt.update({"pattern": "r'%s'" % yproperty["pattern"]})
                 if len(pt) > 0:
                     types.append((name, pt))
                 # TODO: restore behavior

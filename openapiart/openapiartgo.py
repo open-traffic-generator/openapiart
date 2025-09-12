@@ -2998,11 +2998,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
         elif "string" in field.type:
             if field.pattern:
                 inner_body += """
-                if !regexp.MustCompile(\"{pattern}\").MatchString({pointer}{value}) {{
+                if !regexp.MustCompile(`{pattern}`).MatchString({pointer}{value}) {{
                     vObj.validationErrors = append(
                     vObj.validationErrors,
                     fmt.Sprintf(
-                        "{interface}.{name} should adhere to this regex pattern \'{pattern}\', but Got %s", {pointer}{value}))
+                        "{interface}.{name} should adhere to this regex pattern '%s', but Got %s",  `{pattern}`, {pointer}{value}))
                 }}
                 """.format(
                     name=field.name,
