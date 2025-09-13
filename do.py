@@ -511,7 +511,7 @@ def build(sdk="all", env_setup=None):
         "\nSTEP 2: Install openapiart with current changes against virtual environment\n"
     )
     init()
-    run([py() + " setup.py install"])
+    run([py() + " -m pip install ."])
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":
