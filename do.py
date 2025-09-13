@@ -178,7 +178,6 @@ def lint(check="false"):
     paths = [
         pkg()[0],
         "openapiart",
-        "setup.py",
         "do.py",
     ]
     # --check will check for any files to be formatted with black
@@ -297,14 +296,14 @@ def dist():
     clean()
     run(
         [
-            py() + " setup.py sdist bdist_wheel --universal",
+            py() + " -m build",
         ]
     )
     print(os.listdir("dist"))
 
 
 def install():
-    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    wheel = "{}-{}-py3-none-any.whl".format(*pkg())
     run(
         [
             "{} -m pip install --force-reinstall --no-cache-dir {}[testing]".format(
@@ -315,7 +314,7 @@ def install():
 
 
 def install_package_only():
-    wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    wheel = "{}-{}-py3-none-any.whl".format(*pkg())
     run(
         [
             "{} -m pip install --force-reinstall --no-cache-dir {}".format(
@@ -379,9 +378,9 @@ def pkg():
     try:
         return pkg.pkg
     except AttributeError:
-        with open("setup.py") as f:
+        with open("pyproject.toml") as f:
             out = f.read()
-            name = re.findall(r"pkg_name = \"(.+)\"", out)[0]
+            name = re.findall(r"name = \"(.+)\"", out)[0]
             version = re.findall(r"version = \"(.+)\"", out)[0]
 
             pkg.pkg = (name, version)

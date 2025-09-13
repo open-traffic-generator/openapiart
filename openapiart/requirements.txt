@@ -1,4 +1,4 @@
---prefer-binary
+build
 jsonpath-ng
 typing
 setuptools
