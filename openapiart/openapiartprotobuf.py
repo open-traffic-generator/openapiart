@@ -94,6 +94,15 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
                 operation.request = "{}Request".format(operation.rpc)
                 self._write()
                 self._write("message {} {{".format(operation.request))
+                if (
+                    len(
+                        self._get_parser(
+                            '$..requestBody.."application/octet-stream"'
+                        ).find(path_item_object)
+                    )
+                    > 0
+                ):
+                    self._write("bytes request_bytes = 1;", indent=1)
                 for ref in self._get_parser('$..requestBody.."$ref"').find(
                     path_item_object
                 ):

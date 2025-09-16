@@ -126,3 +126,9 @@ def test_append_config(api):
     f2.rate = 32
     res = api.append_config(config.serialize())
     assert res.warnings == ["w1", "w2"]
+
+
+def test_upload_config(api):
+    bts = b"Hello\n123\nHello\n456!!@###"
+    res = api.upload_config(bts)
+    assert res.warnings == ["w1", "w2"]

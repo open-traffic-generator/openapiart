@@ -76,6 +76,17 @@ def get_version():
     )
 
 
+@app.route("/api/file/upload", methods=["POST"])
+def upload_config():
+    print("-------------------------------------------------")
+    print(request.data, type(request.data))
+    print("-------------------------------------------------")
+    config = app.PACKAGE.Api().warning_details()
+    config.warnings = ["w1", "w2"]
+    serialized_config = config.serialize()
+    return Response(serialized_config, mimetype="application/json", status=200)
+
+
 @app.after_request
 def after_request(resp):
     print(request.method, request.url, " -> ", resp.status)

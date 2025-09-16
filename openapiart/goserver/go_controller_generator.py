@@ -322,6 +322,8 @@ class GoServerControllerGenerator(object):
             )
 
     def _need_warning_check(self, route, response):
+        if len(parse("$..'application/octet-stream'").find(route._obj)) > 0:
+            return False
         parse_schema = parse("$..schema").find(response.response_obj)
         schema = [s.value for s in parse_schema]
         if len(schema) == 0:
