@@ -1096,7 +1096,6 @@ class Bundler(object):
                 "name": {
                     "description": "Name used to identify the metrics associated with the values applicable for configured offset and length inside corresponding header field",
                     "type": "string",
-                    "pattern": r"^[\sa-zA-Z0-9-_()><\[\]]+$",
                     "x-field-uid": metric_tags_auto_field.uid,
                 },
                 "offset": {

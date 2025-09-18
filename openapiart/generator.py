@@ -1894,6 +1894,8 @@ class Generator:
                         yproperty["minLength"] = item_prop.get("minLength")
                     if item_prop.get("maxLength") is not None:
                         yproperty["maxLength"] = item_prop.get("maxLength")
+                    if item_prop.get("pattern") is not None:
+                        yproperty["pattern"] = item_prop.get("pattern")
 
                 key = (
                     "itemformat"
@@ -1919,6 +1921,8 @@ class Generator:
                     pt.update({"minLength": yproperty["minLength"]})
                 if len(ref) == 0 and "maxLength" in yproperty:
                     pt.update({"maxLength": yproperty["maxLength"]})
+                if len(ref) == 0 and "pattern" in yproperty:
+                    pt.update({"pattern": "r'%s'" % yproperty["pattern"]})
                 if len(pt) > 0:
                     types.append((name, pt))
                 # TODO: restore behavior
