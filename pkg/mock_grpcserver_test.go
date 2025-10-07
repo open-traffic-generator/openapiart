@@ -364,3 +364,46 @@ func (s *GrpcServer) GetStringPtr(value string) *string {
 func (s *GrpcServer) GetFloatPtr(value float64) *float64 {
 	return &value
 }
+
+func (s *GrpcServer) UploadConfig(ctx context.Context, req *sanity.UploadConfigRequest) (*sanity.UploadConfigResponse, error) {
+	if len(req.RequestBytes) < 2 {
+		return nil, fmt.Errorf("length of bytes should be more than 2")
+	}
+
+	resp := &sanity.UploadConfigResponse{
+		WarningDetails: &sanity.WarningDetails{
+			Warnings: []string{"This is your first warning", "Your second warning"},
+		},
+	}
+	return resp, nil
+}
+
+func (s *GrpcServer) StreamUploadConfig(srv sanity.Openapi_StreamUploadConfigServer) error {
+	var blob []byte
+	idx := 0
+	for {
+		data, err := srv.Recv()
+		if data != nil {
+			fmt.Println("chunk size is:", data.ChunkSize)
+			fmt.Println("Receiving chunk ", idx, time.Now().String())
+		}
+		if err != nil {
+			if err == io.EOF {
+				fmt.Printf("Transfer of %d bytes successful\n", len(blob))
+				log.Println(string(blob))
+
+				resp := &sanity.UploadConfigResponse{
+					WarningDetails: &sanity.WarningDetails{
+						Warnings: []string{"StreamuploadConfig has completed successfully"},
+					},
+				}
+				return srv.SendAndClose(resp)
+			}
+
+			return err
+		}
+		idx++
+		blob = append(blob, data.Datum...)
+
+	}
+}

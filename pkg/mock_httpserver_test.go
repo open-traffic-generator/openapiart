@@ -2,6 +2,7 @@ package openapiart_test
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -128,6 +129,20 @@ func (h *capabilitiesHandler) GetVersion(r *http.Request) (openapiart.GetVersion
 func (h *bundlerHandler) GetCapture(r *http.Request) (openapiart.GetCaptureResponse, error) {
 	response := openapiart.NewGetCaptureResponse()
 	response.SetResponseBytes([]byte("Successful set config operation"))
+	return response, nil
+}
+
+func (h *bundlerHandler) UploadConfig(r *http.Request) (openapiart.UploadConfigResponse, error) {
+	if r.Body != nil {
+		body, readError := io.ReadAll(r.Body)
+		if readError != nil {
+			return nil, readError
+		}
+		fmt.Println(body)
+		fmt.Println(string(body))
+	}
+	response := openapiart.NewUploadConfigResponse()
+	response.WarningDetails().SetWarnings([]string{"w11", "w22"})
 	return response, nil
 }
 
