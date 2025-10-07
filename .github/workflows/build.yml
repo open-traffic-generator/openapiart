@@ -205,7 +205,7 @@ jobs:
         run: |
           python do.py generate go
       - name: Run go lint
-        if: matrix.go-version != '1.22'
+        if: matrix.go-version != '1.22' && matrix.go-version != '1.23'
         run: |
           python do.py go_lint
       - name: Archive generated artifacts
