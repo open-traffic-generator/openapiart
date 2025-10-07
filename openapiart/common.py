@@ -13,6 +13,7 @@ import semantic_version
 import types
 import platform
 import base64
+import re
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
@@ -496,19 +497,21 @@ class OpenApiValidator(object):
     def validate_float(self, value):
         return isinstance(value, (int, float))
 
-    def validate_string(self, value, min_length, max_length):
+    def validate_string(self, value, min_length, max_length, pattern):
         if value is None or not isinstance(value, (str, unicode)):
             return False
         if min_length is not None and len(value) < min_length:
             return False
         if max_length is not None and len(value) > max_length:
             return False
+        if pattern is not None and not re.match(pattern, value):
+            return False
         return True
 
     def validate_bool(self, value):
         return isinstance(value, bool)
 
-    def validate_list(self, value, itemtype, min, max, min_length, max_length):
+    def validate_list(self, value, itemtype, min, max, min_length, max_length, pattern):
         if value is None or not isinstance(value, list):
             return False
         v_obj = getattr(self, "validate_{}".format(itemtype), None)
@@ -521,7 +524,7 @@ class OpenApiValidator(object):
             if itemtype == "integer":
                 v_obj_lst.append(v_obj(item, min, max))
             elif itemtype == "string":
-                v_obj_lst.append(v_obj(item, min_length, max_length))
+                v_obj_lst.append(v_obj(item, min_length, max_length, pattern))
             else:
                 v_obj_lst.append(v_obj(item))
         return v_obj_lst
@@ -567,6 +570,7 @@ class OpenApiValidator(object):
         max=None,
         min_length=None,
         max_length=None,
+        pattern=None,
     ):
         type_map = {
             int: "integer",
@@ -590,7 +594,7 @@ class OpenApiValidator(object):
             msg = "{} is not a valid or unsupported format".format(type_)
             raise TypeError(msg)
         if type_ == "list":
-            verdict = v_obj(value, itemtype, min, max, min_length, max_length)
+            verdict = v_obj(value, itemtype, min, max, min_length, max_length, pattern)
             if all(verdict) is True:
                 return
             err_msg = "{} \n {} are not valid".format(
@@ -615,7 +619,7 @@ class OpenApiValidator(object):
                 err_msg, value, type(value), min_max
             )
         elif type_ == "string":
-            verdict = v_obj(value, min_length, max_length)
+            verdict = v_obj(value, min_length, max_length, pattern)
             if verdict is True:
                 return
             msg = ""
@@ -623,6 +627,8 @@ class OpenApiValidator(object):
                 msg = ", expected min {}".format(min_length)
             if max_length is not None:
                 msg = msg + ", expected max {}".format(max_length)
+            if pattern is not None:
+                msg = msg + ", expected pattern '{}'".format(pattern)
             err_msg = "{} \n got {} of type {} {}".format(
                 err_msg, value, type(value), msg
             )
@@ -1012,6 +1018,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 details.get("maximum"),
                 details.get("minLength"),
                 details.get("maxLength"),
+                details.get("pattern"),
             )
 
         if details["type"] not in common_data_types:
@@ -1047,6 +1054,7 @@ class OpenApiObject(OpenApiBase, OpenApiValidator):
                 details.get("maximum"),
                 details.get("minLength"),
                 details.get("maxLength"),
+                details.get("pattern"),
             )
 
     def validate(self):

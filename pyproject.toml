@@ -1,2 +1,46 @@
 [tool.black]
 line-length = 79
+
+[build-system]
+requires = ["setuptools>=65.5.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openapiart"
+version = "0.3.33"
+dynamic = ["dependencies", "optional-dependencies"]
+description = "The OpenAPI Artifact Generator Python Package"
+readme = "readme.md"
+requires-python = ">=3.7,<4"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Keysight Technologies", email = "andy.balogh@keysight.com" },
+]
+keywords = ["testing", "openapi", "artifact", "generator"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing :: Traffic Generation",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.setuptools.dynamic]
+dependencies = { file = "openapiart/requirements.txt" }
+optional-dependencies.testing = { file = "openapiart/test_requirements.txt" }
+
+[tool.setuptools.package-data]
+"openapiart" = ["*.go", "goserver/*.go", "*.txt"]
+
+[tool.setuptools]
+include-package-data = true
+packages = ["openapiart"]
+
+[project.urls]
+Repository = "https://github.com/open-traffic-generator/openapiart"

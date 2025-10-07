@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ENV SRC_ROOT=/home/otg/openapiart
 ENV GOPATH=${SRC_ROOT}/.local
 ENV PATH="${PATH}:${GOPATH}/go/bin"

@@ -193,6 +193,7 @@ components:
           type: string
           minLength: 3
           maxLength: 6
+          pattern: ^[\sa-zA-Z0-9-_()><\[\]]+$
           x-field-uid: 33
         hex_slice:
           x-status:
@@ -344,6 +345,10 @@ components:
           type: string
           format: binary
           x-field-uid: 63
+        str_regex:
+          type: string
+          pattern: ^(.+):(.+)$
+          x-field-uid: 64
 
     WObject:
       required: [w_name]

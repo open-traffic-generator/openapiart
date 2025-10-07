@@ -169,5 +169,22 @@ def test_int64_list(config, default_config):
         assert isinstance(d, int)
 
 
+def test_str_regex(config):
+    config.str_regex = "abc def"
+    try:
+        data = config.serialize("dict")
+    except Exception as e:
+        print(e)
+        assert (
+            "got abc def of type <class 'str'> , expected pattern '^(.+):(.+)$'"
+            in e.args[0]
+        )
+    config.str_regex = "abc:def"
+    data = config.serialize("dict")
+    print(data)
+    # to directly see the pattern
+    print("pattern is", config._TYPES["str_regex"]["pattern"])
+
+
 if __name__ == "__main__":
     pytest.main(["-v", "-s", __file__])

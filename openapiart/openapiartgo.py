@@ -126,6 +126,7 @@ class FluentField(object):
         self.choice_with_no_prop = (
             []
         )  # maintain a list of choices with no properties for adding getter methods
+        self.pattern = None
 
 
 class OpenApiArtGo(OpenApiArtPlugin):
@@ -2607,6 +2608,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
             field.hasminmaxlength = (
                 "minLength" in minmax_schema or "maxLength" in minmax_schema
             )
+            field.pattern = minmax_schema.get("pattern")
             if field.isEnum:
                 field.enums = (
                     self._get_parser("$..enum").find(property_schema)[0].value
@@ -3021,13 +3023,30 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     body=inner_body, name=field.name
                 )
         elif "string" in field.type:
+            if field.pattern:
+                inner_body += """
+                if !regexp.MustCompile(`{pattern}`).MatchString({pointer}{value}) {{
+                    vObj.validationErrors = append(
+                    vObj.validationErrors,
+                    fmt.Sprintf(
+                        "{interface}.{name} should adhere to this regex pattern '%s', but Got %s",  `{pattern}`, {pointer}{value}))
+                }}
+                """.format(
+                    name=field.name,
+                    interface=new.interface,
+                    pattern=field.pattern,
+                    pointer="*" if field.isPointer else "",
+                    value="item"
+                    if field.isArray
+                    else "obj.obj.{name}".format(name=field.name),
+                )
             if field.hasminmaxlength and "string" in field.type:
                 line = []
                 if field.min_length is not None:
                     line.append("len({pointer}{value}) < {min_length}")
                 if field.max_length is not None:
                     line.append("len({pointer}{value}) > {max_length}")
-                inner_body = (
+                inner_body += (
                     "if "
                     + " || ".join(line)
                     + """ {{
