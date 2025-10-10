@@ -237,7 +237,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
         self._write()
         self._write("go 1.23.0")
         self._write("require (")
-        self._write('google.golang.org/grpc v1.75.1')
+        self._write("google.golang.org/grpc v1.75.1")
         self._write(")")
         self._close_fp()
 
