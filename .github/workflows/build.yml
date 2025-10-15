@@ -262,6 +262,7 @@ jobs:
   publish_python_package:
     needs: [python_tests, go_tests, proto_yml_generation_test]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
