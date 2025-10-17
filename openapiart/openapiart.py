@@ -64,6 +64,18 @@ class OpenApiArt(object):
         self._api_files = api_files
         self._generate_version_api = generate_version_api
         self._strict_description_validation = strict_description_validation
+        if (
+            self._strict_description_validation is not None
+            and self._strict_description_validation.lower()
+            not in [
+                "all",
+                "properties",
+                "objects",
+            ]
+        ):
+            raise Exception(
+                "strict_description_validation must be one of the following values: all, properties, objects"
+            )
         self._bundle()
         self._get_info()
         self._get_license()

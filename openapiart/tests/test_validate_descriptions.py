@@ -26,6 +26,21 @@ def str_compare(validte_str, entire_str):
     return validte_str in entire_str
 
 
+def test_allowed_values_for_strict_description_validation():
+    error_msgs = [
+        "strict_description_validation must be one of the following values: all, properties, objects",
+    ]
+    with pytest.raises(Exception) as execinfo:
+        create_openapi_artifacts(
+            openapiart_class,
+            file_name="./field_uid/without_description.yaml",
+            description_check="abc",
+        )
+    error_value = execinfo.value.args[0]
+    for msg in error_msgs:
+        str_compare(msg, error_value)
+
+
 def test_validate_descriptions_in_properties():
     error_msgs = [
         "Property Field.Config:prop1 is missing description field",
