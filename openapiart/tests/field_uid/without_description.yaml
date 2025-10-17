@@ -1,0 +1,45 @@
+paths:
+  /config:
+    post:
+      tags: ["Bundler"]
+      operationId: set_config
+      description: >-
+        Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Field.Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "Standard success binary payload"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    Field.Config:
+      type: object
+      properties:
+        prop1:
+          type: boolean
+          x-field-uid: 1
+        prop2:
+          description: "This is prop2"
+          type: string
+          x-field-uid: 2
+    Field.Config2:
+      description: "This is Config2"
+      type: object
+      properties:
+        prop_a:
+          description: "This is propA"
+          type: integer
+          x-field-uid: 1
+        prop_b:
+          type: number
+          x-field-uid: 2
