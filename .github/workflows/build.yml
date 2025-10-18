@@ -288,11 +288,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish package
-        if: steps.check_tag.outputs.exists == 'false'
+        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
         run: |
           PYPI_USERNAME=__token__ PYPI_PASSWORD=${{ secrets.PYPI_API_TOKEN }} python do.py release
       - name: Create release and publish artifacts
-        if: steps.check_tag.outputs.exists == 'false'
+        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
         uses: ncipollo/release-action@v1
         with:
           artifacts: "dist/*"

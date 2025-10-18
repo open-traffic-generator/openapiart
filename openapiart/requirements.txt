@@ -9,10 +9,7 @@ requests
 typing_extensions
 click==8.1.7
 black==22.3.0
-grpcio-tools~=1.70.0; python_version < "3.9"
-grpcio-tools~=1.75.1; python_version >= "3.9"
+grpcio-tools~=1.70.0
 pipreqs==0.4.11
-protobuf~=5.29.5; python_version < "3.9"
-protobuf~=6.33.0; python_version >= "3.9"
-grpcio~=1.70.0; python_version < "3.9"
-grpcio~=1.75.1; python_version >= "3.9"
+protobuf~=5.29.5
+grpcio~=1.70.0
