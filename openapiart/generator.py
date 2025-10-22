@@ -657,7 +657,9 @@ class Generator:
                             5, "res_obj.%s," % rpc_method.proto_field_name
                         )
                         self._write(5, "preserving_proto_field_name=True,")
-                        self._write(5, "including_default_value_fields=True")
+                        self._write(
+                            5, "always_print_fields_with_no_presence=True"
+                        )
                         self._write(4, ")")
                     self._write(
                         3,
