@@ -51,11 +51,18 @@ class Bundler(object):
             "tag:yaml.org,2002:str", data, style="|"
         )
 
-    def __init__(self, api_files, output_dir="./", generate_version_api=False):
+    def __init__(
+        self,
+        api_files,
+        output_dir="./",
+        generate_version_api=False,
+        strict_description_validation=None,
+    ):
         self._parsers = {}
         self._api_files = api_files
         self._output_dir = os.path.abspath(output_dir)
         self._generate_version_api = generate_version_api
+        self._strict_description_validation = strict_description_validation
         if os.path.exists(self._output_dir) is False:
             os.makedirs(self._output_dir)
         self.__python = os.path.normpath(sys.executable)
@@ -106,6 +113,7 @@ class Bundler(object):
         self._validate_field_uid()
         self._validate_response_uid()
         self._validate_stream_type()
+        self._validate_descriptions(self._strict_description_validation)
         self._validate_errors()
         self._validate_required_responses()
         self._resolve_strings(self._content)
@@ -463,6 +471,48 @@ class Bundler(object):
                             str(valid_formats),
                         )
                     )
+
+    def _validate_descriptions(self, check_errors):
+        property_errors = []
+        schema_object_errors = []
+
+        for schema_name, schema_object in self._content["components"][
+            "schemas"
+        ].items():
+            if "description" not in schema_object:
+                schema_object_errors.append(
+                    f"Schema object {schema_name} is missing description field"
+                )
+
+            if "properties" not in schema_object:
+                continue
+
+            for property_name, property_object in schema_object[
+                "properties"
+            ].items():
+                if (
+                    "description" not in property_object
+                    and "$ref" not in property_object
+                ):
+                    property_errors.append(
+                        f"Property {schema_name}:{property_name} is missing description field"
+                    )
+
+        # Add errors based on check_errors parameter
+        if check_errors is not None:
+            check_errors_lower = check_errors.lower()
+            should_check_all = check_errors_lower == "all"
+            if should_check_all or check_errors_lower == "properties":
+                self._errors.extend(property_errors)
+            if should_check_all or check_errors_lower == "objects":
+                self._errors.extend(schema_object_errors)
+
+        print(
+            f"[WARNING]: Total {len(property_errors)} properties are missing description field"
+        )
+        print(
+            f"[WARNING]: Total {len(schema_object_errors)} schema objects are missing description field"
+        )
 
     def _read_file(self, base_dir, filename):
         filename = os.path.join(base_dir, filename)
