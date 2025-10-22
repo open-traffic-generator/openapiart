@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openapiart"
-version = "0.3.35"
+version = "0.3.36"
 dynamic = ["dependencies", "optional-dependencies"]
 description = "The OpenAPI Artifact Generator Python Package"
 readme = "readme.md"
