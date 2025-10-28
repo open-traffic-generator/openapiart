@@ -20,6 +20,9 @@ class OpenApiArt(object):
       Unless otherwise specified the default directory for generated artifacts
       is `current working directory/.art`.
     - extension_prefix (str): name of the python extension
+    - strict_description_validation (str): whether to enforce strict validation of
+      description fields present for nodes in the OpenAPI specs.
+      options are "all", "objects", "properties", by default it is set to None.
     """
 
     def __init__(
@@ -30,6 +33,7 @@ class OpenApiArt(object):
         extension_prefix=None,
         proto_service=None,
         generate_version_api=False,
+        strict_description_validation=None,
     ):
         self._output_dir = os.path.abspath(
             artifact_dir if artifact_dir is not None else "art"
@@ -59,6 +63,19 @@ class OpenApiArt(object):
         shutil.rmtree(self._output_dir, ignore_errors=True)
         self._api_files = api_files
         self._generate_version_api = generate_version_api
+        self._strict_description_validation = strict_description_validation
+        if (
+            self._strict_description_validation is not None
+            and self._strict_description_validation.lower()
+            not in [
+                "all",
+                "properties",
+                "objects",
+            ]
+        ):
+            raise Exception(
+                "strict_description_validation must be one of the following values: all, properties, objects"
+            )
         self._bundle()
         self._get_info()
         self._get_license()
@@ -93,6 +110,7 @@ class OpenApiArt(object):
             api_files=self._api_files,
             output_dir=self._output_dir,
             generate_version_api=self._generate_version_api,
+            strict_description_validation=self._strict_description_validation,
         )
         self._bundler.bundle()
         self._api_version = self._bundler.get_api_version()

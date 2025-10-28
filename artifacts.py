@@ -46,6 +46,7 @@ def create_openapi_artifacts(openapiart_class, sdk=None):
         extension_prefix="sanity",
         proto_service="Openapi",
         generate_version_api=True,
+        strict_description_validation=None,
     )
     if sdk == "proto" or sdk is None or sdk == "all":
         open_api.GenerateProtoDef(package_name="sanity")
