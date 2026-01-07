@@ -1273,7 +1273,8 @@ class Bundler(object):
         finalised_format = None
         if xpattern["format"] == "integer":
             finalised_format = "uint32"
-            if "length" in xpattern and xpattern["length"] > 32:
+            # treat lengths >32 as 64-bit; ensure length is compared as int
+            if "length" in xpattern and int(xpattern["length"]) > 32:
                 finalised_format = "uint64"
             if xpattern.get("signed", False):
                 finalised_format = finalised_format[1:]
@@ -1285,15 +1286,19 @@ class Bundler(object):
                 schema["items"]["format"] = finalised_format
             else:
                 schema["format"] = finalised_format
+        # For canonical 32/64 bit lengths we use the canonical formats; for other
+        # lengths compute explicit min/max bounds.
         if "length" in xpattern and int(xpattern["length"]) not in [32, 64]:
             min_val = (
                 -(2 ** (int(xpattern["length"]) - 1))
                 if xpattern.get("signed", False)
                 else None
             )
-            max_val = 2 ** int(xpattern["length"]) - 1
+            max_val = 2 ** int(xpattern["length"])
             if xpattern.get("signed", False):
-                max_val = 2 ** (int(xpattern["length"]) - 1) - 1
+                max_val = 2 ** (int(xpattern["length"]) - 1)
+            if property_name != "count":
+                max_val -= 1
 
             if property_name == "values":
                 if min_val is not None:
