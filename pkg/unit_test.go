@@ -464,8 +464,8 @@ func TestBadIpv4Decrement(t *testing.T) {
 	}
 }
 
-var GoodIpv6 = []string{"::", "1::", ": :", "abcd::1234", "aa:00bd:a:b:c:d:f:abcd"}
-var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0"}
+var GoodIpv6 = []string{"::", "1::", ": :", "abcd::1234", "aa:00bd:a:b:c:d:f:abcd", "::ffff:2.7.8.9"}
+var BadIpv6 = []string{"33.4", "asdf", "1.1.1.1", "100", "-20", "65535::65535", "ab: :ab", "ab:ab:ab", "ffff0::ffff0", "::ffff:333.444.555.666.777", "::ffff::1.2.3.4"}
 
 func TestGoodIpv6Validation(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
@@ -480,7 +480,8 @@ func TestBadIpv6Validation(t *testing.T) {
 		ipv6 := config.Ipv6Pattern().Ipv6().SetValue(ip)
 		_, err := ipv6.Marshal().ToYaml()
 		if assert.Error(t, err) {
-			assert.Contains(t, strings.ToLower(err.Error()), "invalid ipv6")
+			errMsg := strings.ToLower(err.Error())
+			assert.True(t, strings.Contains(errMsg, "invalid ipv6") || strings.Contains(errMsg, "invalid ipv4"))
 		}
 	}
 }
