@@ -443,11 +443,7 @@ class Bundler(object):
         print("validating {}...".format(self._output_filename))
         with open(self._output_filename) as fid:
             yobject = yaml.safe_load(fid)
-            # check python is greater than python 3.9 or not
-            if sys.version_info >= (3, 9): 
-                openapi_spec_validator.validate(yobject)
-            else:
-                openapi_spec_validator.validate_v3_spec(yobject)
+            openapi_spec_validator.validate_spec(yobject)
         print("validating complete")
 
     def _validate_integer_type(self):
