@@ -4,7 +4,8 @@ typing
 setuptools
 wheel
 PyYAML
-openapi_spec_validator==0.7.2
+openapi_spec_validator==0.7.2 ; python_version > "3.8"
+openapi-spec-validator==0.5.7 ; python_version == "3.8"
 requests
 typing_extensions
 click==8.1.7
