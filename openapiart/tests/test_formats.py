@@ -101,6 +101,7 @@ def test_formats_ipv4_to_be_removed(config, value):
         "ab: :ab",
         "ab:ab:ab",
         "ffff0::ffff0",
+        "::ffff:333.444.555.666.777",
     ],
 )
 def test_formats_bad_ipv6(config, value):
@@ -110,6 +111,26 @@ def test_formats_bad_ipv6(config, value):
         pytest.fail("Value {} was successfully validated".format(value))
     except TypeError:
         pass
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+        "2001:db8::",
+        "fe80::1",
+        "::1",
+        "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+        "::ffff:1.2.3.4",
+        "::",
+    ],
+)
+def test_formats_good_ipv6(config, value):
+    config.l.ipv6 = value
+    try:
+        config.deserialize(config.serialize(encoding=config.YAML))
+    except TypeError:
+        pytest.fail("Value {} was not valid".format(value))
 
 
 @pytest.mark.parametrize(
