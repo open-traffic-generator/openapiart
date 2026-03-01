@@ -426,6 +426,14 @@ class OpenApiValidator(object):
         if ip is None or not isinstance(ip, (str, unicode)):
             return False
         ip = ip.strip()
+
+        # Check for IPv4-mapped IPv6 addresses (e.g., ::ffff:192.0.2.1)
+        if ip.lower().startswith("::ffff:"):
+            # Extract the part after ::ffff:
+            ipv4_part = ip[7:]  # 7 is len("::ffff:")
+            # Validate the IPv4 part
+            return self.validate_ipv4(ipv4_part)
+        
         if (
             ip.count(" ") > 0
             or ip.count(":") > 7
