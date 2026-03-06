@@ -8,13 +8,11 @@ import urllib3
 import io
 import sys
 import time
-import grpc
 import semantic_version
 import types
 import platform
 import base64
 import re
-from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
 
