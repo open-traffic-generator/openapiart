@@ -13,8 +13,6 @@ import types
 import platform
 import base64
 import re
-import sanity_pb2_grpc as pb2_grpc
-import sanity_pb2 as pb2
 
 try:
     from typing import Union, Dict, List, Any, Literal
