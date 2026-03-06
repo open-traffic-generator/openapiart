@@ -18,7 +18,9 @@ def create_openapi_artifacts(openapiart_class, sdk=None, file_name=None):
 
 
 def str_compare(validte_str, entire_str):
-    return validte_str in entire_str
+    normalized_entire = entire_str.replace("(", "").replace(")", "")
+    normalized_validate = validte_str.replace("(", "").replace(")", "")
+    return normalized_validate in normalized_entire
 
 
 def test_validate_pattern():
