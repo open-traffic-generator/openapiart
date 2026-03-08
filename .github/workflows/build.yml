@@ -226,9 +226,6 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R
 
-      - name: see go mod file
-        run: |
-          cat pkg/go.mod
       - name: Run go tests
         run: |
           python do.py testgo

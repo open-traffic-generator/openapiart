@@ -485,6 +485,7 @@ def getstatusoutput(command):
 
 
 def build(sdk="all", env_setup=None):
+    os.environ["GOTOOLCHAIN"] = "go1.25.0"
     print("\nSTEP 1: Set up virtual environment")
 
     if env_setup is not None and env_setup.lower() == "clean":
@@ -513,6 +514,7 @@ def build(sdk="all", env_setup=None):
     )
     init()
     run([py() + " -m pip install ."])
+    
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":
