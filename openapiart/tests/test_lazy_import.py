@@ -39,9 +39,9 @@ def test_grpc_not_in_top_level_imports():
     """grpc should not be imported at the module level."""
     source = _get_generated_source()
     top_imports = _get_top_level_imports(source)
-    assert "grpc" not in top_imports, (
-        "grpc should not be a top-level import in the generated module"
-    )
+    assert (
+        "grpc" not in top_imports
+    ), "grpc should not be a top-level import in the generated module"
 
 
 def test_protobuf_stubs_not_in_top_level_imports():
@@ -50,7 +50,8 @@ def test_protobuf_stubs_not_in_top_level_imports():
     source = _get_generated_source()
     top_imports = _get_top_level_imports(source)
     pb2_imports = [
-        name for name in top_imports
+        name
+        for name in top_imports
         if name.endswith("_pb2") or name.endswith("_pb2_grpc")
     ]
     assert len(pb2_imports) == 0, (
@@ -71,7 +72,9 @@ def test_grpc_lazy_loaded_in_grpc_api_init():
         if isinstance(node, ast.ClassDef) and node.name == "GrpcApi":
             grpc_api_class = node
             break
-    assert grpc_api_class is not None, "GrpcApi class not found in generated code"
+    assert (
+        grpc_api_class is not None
+    ), "GrpcApi class not found in generated code"
 
     # Find __init__ method
     init_method = None
@@ -88,22 +91,30 @@ def test_grpc_lazy_loaded_in_grpc_api_init():
             func = node.func
             # Match importlib.import_module(...) or self._xxx = importlib.import_module(...)
             is_importlib_call = False
-            if isinstance(func, ast.Attribute) and func.attr == "import_module":
+            if (
+                isinstance(func, ast.Attribute)
+                and func.attr == "import_module"
+            ):
                 if isinstance(func.value, ast.Attribute):
                     is_importlib_call = True
-                elif isinstance(func.value, ast.Name) and func.value.id == "importlib":
+                elif (
+                    isinstance(func.value, ast.Name)
+                    and func.value.id == "importlib"
+                ):
                     is_importlib_call = True
             if is_importlib_call and node.args:
                 arg = node.args[0]
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                if isinstance(arg, ast.Constant) and isinstance(
+                    arg.value, str
+                ):
                     lazy_imports.add(arg.value)
 
-    assert "grpc" in lazy_imports, (
-        "grpc should be lazily imported in GrpcApi.__init__"
-    )
-    assert "google.protobuf.json_format" in lazy_imports, (
-        "google.protobuf.json_format should be lazily imported in GrpcApi.__init__"
-    )
+    assert (
+        "grpc" in lazy_imports
+    ), "grpc should be lazily imported in GrpcApi.__init__"
+    assert (
+        "google.protobuf.json_format" in lazy_imports
+    ), "google.protobuf.json_format should be lazily imported in GrpcApi.__init__"
     pb2_lazy = [m for m in lazy_imports if "pb2" in m]
     assert len(pb2_lazy) >= 2, (
         "Both pb2 and pb2_grpc stubs should be lazily imported in "
@@ -143,8 +154,7 @@ def test_http_api_does_not_load_grpc(monkeypatch):
     assert http_api is not None
 
     grpc_related = [
-        m for m in grpc_modules_loaded
-        if "grpc" in m or "_pb2" in m
+        m for m in grpc_modules_loaded if "grpc" in m or "_pb2" in m
     ]
     assert len(grpc_related) == 0, (
         "Creating HttpApi should not trigger grpc/pb2 imports, but loaded: %s"
@@ -177,10 +187,11 @@ def test_grpc_api_triggers_lazy_imports(monkeypatch):
     assert grpc_api is not None
 
     # Verify grpc and pb2 modules were loaded
-    assert any("grpc" == m or m.endswith("_grpc") for m in grpc_modules_loaded), (
-        "GrpcApi should lazily import grpc, loaded: %s" % grpc_modules_loaded
-    )
+    assert any(
+        "grpc" == m or m.endswith("_grpc") for m in grpc_modules_loaded
+    ), ("GrpcApi should lazily import grpc, loaded: %s" % grpc_modules_loaded)
     assert any("_pb2" in m for m in grpc_modules_loaded), (
-        "GrpcApi should lazily import pb2 stubs, loaded: %s" % grpc_modules_loaded
+        "GrpcApi should lazily import pb2 stubs, loaded: %s"
+        % grpc_modules_loaded
     )
     grpc_api.close()
