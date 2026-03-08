@@ -202,8 +202,8 @@ jobs:
         run: |
           python do.py setup_ext ${{ matrix.go-version }}
 
-      - name: Set Toolchain to Local
-        run: echo "GOTOOLCHAIN=local" >> $GITHUB_ENV
+      - name: Set Toolchain to 1.25.0
+        run: echo "GOTOOLCHAIN=go1.25.0" >> $GITHUB_ENV
 
       - name: Run artifact generation
         run: |
