@@ -274,7 +274,7 @@ def testgo():
 def go_lint():
     try:
 
-        version = "1.64.2"
+        version = "1.64.8"
 
         pkg = "go install"
         if on_linux() or on_macos():
