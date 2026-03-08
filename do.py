@@ -274,7 +274,7 @@ def testgo():
 def go_lint():
     try:
 
-        version = "1.64.2"
+        version = "1.64.8"
 
         pkg = "go install"
         if on_linux() or on_macos():
@@ -471,7 +471,8 @@ def run(commands, capture_output=False):
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True, stdout=fd)
         return flush_output(fd, logfile)
-    except Exception:
+    except Exception as e:
+        print(f"Error: {e}")
         flush_output(fd, logfile)
         sys.exit(1)
 
@@ -484,6 +485,7 @@ def getstatusoutput(command):
 
 
 def build(sdk="all", env_setup=None):
+    os.environ["GOTOOLCHAIN"] = "go1.25.0"
     print("\nSTEP 1: Set up virtual environment")
 
     if env_setup is not None and env_setup.lower() == "clean":
@@ -512,6 +514,7 @@ def build(sdk="all", env_setup=None):
     )
     init()
     run([py() + " -m pip install ."])
+
     print("\nSTEP 3: Generating Python and Go SDKs\n")
     generate(sdk=sdk, cicd="True")
     if sdk == "python" or sdk == "all":

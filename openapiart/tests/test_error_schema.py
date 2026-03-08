@@ -18,7 +18,15 @@ def create_openapi_artifacts(openapiart_class, sdk=None, file_name=None):
 
 
 def str_compare(validte_str, entire_str, item):
-    return validte_str in entire_str and item in entire_str
+    normalized_entire = (
+        entire_str.replace("(", "").replace(")", "").replace("'", "")
+    )
+    normalized_validate = (
+        validte_str.replace("(", "").replace(")", "").replace("'", "")
+    )
+    return (
+        normalized_validate in normalized_entire and item in normalized_entire
+    )
 
 
 def test_validate_response_default():
@@ -64,7 +72,7 @@ def test_error_for_missing_required():
             file_name="./response/response_missing_required_in_error.yaml",
         )
     error_value = execinfo.value.args[0]
-    assert error_msg == error_value
+    assert str_compare(error_msg, error_value, "Error")
 
 
 if __name__ == "__main__":

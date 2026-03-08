@@ -201,6 +201,10 @@ jobs:
       - name: Setup Go and protoc
         run: |
           python do.py setup_ext ${{ matrix.go-version }}
+
+      - name: Set Toolchain to 1.25.0
+        run: echo "GOTOOLCHAIN=go1.25.0" >> $GITHUB_ENV
+
       - name: Run artifact generation
         run: |
           python do.py generate go
@@ -221,9 +225,7 @@ jobs:
           name: python_package
       - name: Display structure of downloaded files
         run: ls -R
-      - uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+
       - name: Run go tests
         run: |
           python do.py testgo
