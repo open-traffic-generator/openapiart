@@ -471,7 +471,8 @@ def run(commands, capture_output=False):
                 cmd = cmd.encode("utf-8", errors="ignore")
             subprocess.check_call(cmd, shell=True, stdout=fd)
         return flush_output(fd, logfile)
-    except Exception:
+    except Exception as e:
+        print(f"Error: {e}")
         flush_output(fd, logfile)
         sys.exit(1)
 
