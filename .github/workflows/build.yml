@@ -224,11 +224,12 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
+
+      - name: see go mod file
+        run: cat pkg/go.mod
       - name: Run go tests
         run: |
           python do.py testgo
-        env:
-          GOTOOLCHAIN: local
 
   proto_yml_generation_test:
     needs: build
