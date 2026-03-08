@@ -201,6 +201,9 @@ jobs:
       - name: Setup Go and protoc
         run: |
           python do.py setup_ext ${{ matrix.go-version }}
+      - name: Check goimports version
+        run: |
+          goimports -version || goimports --help | head -1 || which goimports
       - name: Run artifact generation
         run: |
           python do.py generate go
@@ -225,8 +228,10 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: see go mod file
-        run: cat pkg/go.mod
+      - name: see go mod file and goimports version
+        run: |
+          cat pkg/go.mod
+          goimports -version || goimports --help | head -1 || which goimports
       - name: Run go tests
         run: |
           python do.py testgo
