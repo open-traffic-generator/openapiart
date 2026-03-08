@@ -227,6 +227,8 @@ jobs:
       - name: Run go tests
         run: |
           python do.py testgo
+        env:
+          GOTOOLCHAIN: local
 
   proto_yml_generation_test:
     needs: build
