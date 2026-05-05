@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [ 3.9 ]
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
@@ -138,7 +138,7 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: [ "3.8", "3.9", "3.10", "3.11", "3.12" ]
       fail-fast: false
     steps:
       - name: Checkout source
@@ -180,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        go-version: ["1.22", "1.23", "1.24", "1.25"]
+        go-version: [ "1.22", "1.23", "1.24", "1.25" ]
       fail-fast: false
     steps:
       - name: Checkout source
@@ -201,6 +201,10 @@ jobs:
       - name: Setup Go and protoc
         run: |
           python do.py setup_ext ${{ matrix.go-version }}
+
+      - name: Set Toolchain to 1.25.0
+        run: echo "GOTOOLCHAIN=go1.25.0" >> $GITHUB_ENV
+
       - name: Run artifact generation
         run: |
           python do.py generate go
@@ -221,9 +225,7 @@ jobs:
           name: python_package
       - name: Display structure of downloaded files
         run: ls -R
-      - uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+
       - name: Run go tests
         run: |
           python do.py testgo
@@ -260,7 +262,7 @@ jobs:
           fail: true
 
   publish_python_package:
-    needs: [python_tests, go_tests, proto_yml_generation_test]
+    needs: [ python_tests, go_tests, proto_yml_generation_test ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source

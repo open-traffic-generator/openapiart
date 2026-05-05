@@ -9,7 +9,9 @@ def create_openapi_artifacts(artifact_dir):
     openapiart_class(
         api_files=[
             os.path.join(os.path.dirname(__file__), "./api/info.yaml"),
-            os.path.join(os.path.dirname(__file__), "./security/security.yaml"),
+            os.path.join(
+                os.path.dirname(__file__), "./security/security.yaml"
+            ),
         ],
         artifact_dir=artifact_dir,
         extension_prefix="status",
@@ -31,7 +33,9 @@ def test_security_definitions_preserved():
 
 
 def _assert_root_security(bundled):
-    assert "security" in bundled, "root-level 'security' key missing from bundled output"
+    assert (
+        "security" in bundled
+    ), "root-level 'security' key missing from bundled output"
     security = bundled["security"]
     assert isinstance(security, list)
     assert {"bearerAuth": []} in security
@@ -39,9 +43,9 @@ def _assert_root_security(bundled):
 
 
 def _assert_security_schemes(bundled):
-    assert "securitySchemes" in bundled.get("components", {}), (
-        "'securitySchemes' missing from bundled components"
-    )
+    assert "securitySchemes" in bundled.get(
+        "components", {}
+    ), "'securitySchemes' missing from bundled components"
     schemes = bundled["components"]["securitySchemes"]
 
     # http bearer
@@ -72,7 +76,10 @@ def _assert_security_schemes(bundled):
     assert "openIdAuth" in schemes
     oidc = schemes["openIdAuth"]
     assert oidc["type"] == "openIdConnect"
-    assert oidc["openIdConnectUrl"] == "https://example.com/.well-known/openid-configuration"
+    assert (
+        oidc["openIdConnectUrl"]
+        == "https://example.com/.well-known/openid-configuration"
+    )
 
 
 def _assert_operation_level_security(bundled):

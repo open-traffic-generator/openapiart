@@ -536,10 +536,16 @@ class Bundler(object):
                     self._content[key][sub_key] = value[sub_key]
             elif key == "components":
                 if key not in self._content.keys():
-                    self._content[key] = {"responses": {}, "schemas": {}, "securitySchemes": {}}
+                    self._content[key] = {
+                        "responses": {},
+                        "schemas": {},
+                        "securitySchemes": {},
+                    }
                 self._validate_names("^[+a-zA-Z0-9_]+$", "schemas", value)
                 self._validate_names("^[+a-zA-Z0-9_]+$", "responses", value)
-                self._validate_names("^[+a-zA-Z0-9_]+$", "securitySchemes", value)
+                self._validate_names(
+                    "^[+a-zA-Z0-9_]+$", "securitySchemes", value
+                )
                 self._check_nested_components(value)
         self._resolve_refs(base_dir, yobject)
 
