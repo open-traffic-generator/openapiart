@@ -525,7 +525,7 @@ class Bundler(object):
     def _process_yaml_object(self, base_dir, yobject):
         for key, value in yobject.items():
             if (
-                key in ["openapi", "info", "servers"]
+                key in ["openapi", "info", "servers", "security"]
                 and key not in self._content.keys()
             ):
                 self._content[key] = value
@@ -536,9 +536,10 @@ class Bundler(object):
                     self._content[key][sub_key] = value[sub_key]
             elif key == "components":
                 if key not in self._content.keys():
-                    self._content[key] = {"responses": {}, "schemas": {}}
+                    self._content[key] = {"responses": {}, "schemas": {}, "securitySchemes": {}}
                 self._validate_names("^[+a-zA-Z0-9_]+$", "schemas", value)
                 self._validate_names("^[+a-zA-Z0-9_]+$", "responses", value)
+                self._validate_names("^[+a-zA-Z0-9_]+$", "securitySchemes", value)
                 self._check_nested_components(value)
         self._resolve_refs(base_dir, yobject)
 
@@ -571,6 +572,8 @@ class Bundler(object):
             self._content["components"][components_key][key] = value
 
     def _check_nested_components(self, components):
+        if "schemas" not in components:
+            return
         objects = components["schemas"]
         errors = []
         for component_name, component_value in objects.items():
