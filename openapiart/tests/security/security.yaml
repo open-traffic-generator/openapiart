@@ -1,0 +1,129 @@
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+paths:
+  /config:
+    post:
+      tags: ["Security"]
+      operationId: set_config
+      description: Sets configuration resources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Config"
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "OK"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          x-field-uid: 2
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /status:
+    get:
+      tags: ["Security"]
+      operationId: get_status
+      description: Get status. Overrides root security to require oauth2 with a specific scope.
+      security:
+        - oauth2Auth:
+            - read:config
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "OK"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          x-field-uid: 2
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /public:
+    get:
+      tags: ["Security"]
+      operationId: get_public
+      description: Public endpoint. Explicitly overrides root security with empty list.
+      security: []
+      responses:
+        "200":
+          x-field-uid: 1
+          description: "OK"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          x-field-uid: 2
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    oauth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read:config: Read configuration resources
+            write:config: Write configuration resources
+    openIdAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+  schemas:
+    Config:
+      description: Security test config object
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the config
+          x-field-uid: 1
+    Error:
+      description: Error response generated while serving API request.
+      type: object
+      required:
+        - code
+        - errors
+      properties:
+        code:
+          description: Numeric status code based on underlying transport being used.
+          type: integer
+          x-field-uid: 1
+        errors:
+          description: List of error messages generated while serving API request.
+          type: array
+          items:
+            type: string
+          x-field-uid: 2
