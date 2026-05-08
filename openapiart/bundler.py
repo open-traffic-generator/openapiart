@@ -539,7 +539,6 @@ class Bundler(object):
                     self._content[key] = {
                         "responses": {},
                         "schemas": {},
-                        "securitySchemes": {},
                     }
                 self._validate_names("^[+a-zA-Z0-9_]+$", "schemas", value)
                 self._validate_names("^[+a-zA-Z0-9_]+$", "responses", value)
@@ -560,6 +559,8 @@ class Bundler(object):
         if components_key not in components:
             return
         objects = components[components_key]
+        if components_key not in self._content["components"]:
+            self._content["components"][components_key] = {}
         for key, value in objects.items():
             if "properties" in objects[key]:
                 for name in objects[key]["properties"]:
