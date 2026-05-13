@@ -10,7 +10,7 @@ requests
 typing_extensions
 click==8.1.7
 black==22.3.0
-grpcio-tools~=1.70.0
+grpcio-tools~=1.80.0
 pipreqs==0.4.11
-protobuf~=5.29.5
-grpcio~=1.70.0
+protobuf~=6.33.6
+grpcio~=1.80.0
