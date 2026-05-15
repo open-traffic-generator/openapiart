@@ -163,19 +163,6 @@ class Generator:
             os.path.join(os.path.dirname(__file__), "common.py"), "r"
         ) as fp:
             common_content = fp.read()
-            cnf_text = "import sanity_pb2_grpc as pb2_grpc"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
-
-            cnf_text = "import sanity_pb2 as pb2"
-            modify_text = "try:\n    from {pkg_name} {text}\nexcept ImportError:\n    {text}".format(
-                pkg_name=self._package_name,
-                text=cnf_text.replace("sanity", self._protobuf_package_name),
-            )
-            common_content = common_content.replace(cnf_text, modify_text)
 
             cnf_text = 'log = logging.getLogger("common")'
             modify_text = 'log = logging.getLogger("{pkg_name}")'.format(
@@ -385,6 +372,22 @@ class Generator:
         return methods, factories, rpc_methods
 
     def _write_rpc_api_class(self, rpc_methods):
+
+        pb_imports = """
+        try:
+            self._pb2_grpc = importlib.import_module('{pkg_name}.{protobuf_name}_pb2_grpc')
+        except ImportError:
+            self._pb2_grpc = importlib.import_module('{protobuf_name}_pb2_grpc')
+
+        try:
+            self._pb2 = importlib.import_module('{pkg_name}.{protobuf_name}_pb2')
+        except ImportError:
+            self._pb2 = importlib.import_module('{protobuf_name}_pb2')
+                """.format(
+            pkg_name=self._package_name,
+            protobuf_name=self._protobuf_package_name,
+        )
+
         class_code = """class GrpcApi(Api):
     # OpenAPI gRPC Api
     def __init__(self, **kwargs):
@@ -404,8 +407,13 @@ class Generator:
             else "localhost:50051"
         )
         self._transport = kwargs["transport"] if "transport" in kwargs else None
-        log.debug("gRPCTransport args: {}".format(", ".join(["{}={!r}".format(k, v) for k, v in kwargs.items()])))
+        log.debug("gRPCTransport args: {{}}".format(", ".join(["{{}}={{!r}}".format(k, v) for k, v in kwargs.items()])))
         self._telemetry.initiate_grpc_instrumentation()
+
+        #lazy load grpc packages and protobuf stubs
+        self._grpc = importlib.import_module('grpc')
+        self._json_format = importlib.import_module('google.protobuf.json_format')
+        {pb_imports}
 
     def _use_secure_connection(self, cert_path, cert_domain=None):
         \"\"\"Accepts certificate and host_name for SSL Connection.\"\"\"
@@ -420,16 +428,16 @@ class Generator:
                                ('grpc.keepalive_timeout_ms', self._keep_alive_timeout),
                                ('grpc.max_receive_message_length', self._maximum_receive_buffer_size)]
             if self._cert is None:
-                self._channel = grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
+                self._channel = self._grpc.insecure_channel(self._location, options=CHANNEL_OPTIONS)
             else:
                 crt = open(self._cert, "rb").read()
-                creds = grpc.ssl_channel_credentials(crt)
+                creds = self._grpc.ssl_channel_credentials(crt)
                 if self._cert_domain is not None:
                     CHANNEL_OPTIONS.append(('grpc.ssl_target_name_override', self._cert_domain))
-                self._channel = grpc.secure_channel(
+                self._channel = self._grpc.secure_channel(
                     self._location, credentials=creds, options=CHANNEL_OPTIONS
                 )
-            self._stub = pb2_grpc.OpenapiStub(self._channel)
+            self._stub = self._pb2_grpc.OpenapiStub(self._channel)
         return self._stub
 
     def _serialize_payload(self, payload):
@@ -459,7 +467,7 @@ class Generator:
                 chunk = data[i:len(data)]
             else:
                 chunk = data[i:i+self._chunk_size]
-            data_chunks.append(pb2.Data(datum=chunk, chunk_size=self._chunk_size))
+            data_chunks.append(self._pb2.Data(datum=chunk, chunk_size=self._chunk_size))
         # print(chunk_list, len(chunk_list))
         reqs = iter(data_chunks)
         return reqs
@@ -513,7 +521,7 @@ class Generator:
         with open(self._api_filename, "a") as self._fid:
             self._write()
             self._write()
-            self._write(0, class_code)
+            self._write(0, class_code.format(pb_imports=pb_imports))
             for rpc_method in rpc_methods:
                 self._write()
                 status_msg = ""
@@ -540,7 +548,7 @@ class Generator:
                     self._write(2, "stub = self._get_stub()")
                     self._write(
                         2,
-                        "empty = pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
+                        "empty = self._pb2_grpc.google_dot_protobuf_dot_empty__pb2.Empty()",
                     )
                     (
                         line_indent,
@@ -577,9 +585,11 @@ class Generator:
                         self._write(2, "self.add_warnings('%s')" % status_msg)
 
                     if not only_bytes:
-                        self._write(2, "pb_obj = json_format.Parse(")
+                        self._write(2, "pb_obj = self._json_format.Parse(")
                         self._write(3, "self._serialize_payload(payload),")
-                        self._write(3, "pb2.%s()" % rpc_method.request_class)
+                        self._write(
+                            3, "self._pb2.%s()" % rpc_method.request_class
+                        )
                         self._write(2, ")")
                     if (
                         self._generate_version_api
@@ -589,7 +599,7 @@ class Generator:
 
                     self._write(
                         2,
-                        "req_obj = pb2.{operation_name}Request({request_property}={obj})".format(
+                        "req_obj = self._pb2.{operation_name}Request({request_property}={obj})".format(
                             operation_name=rpc_method.operation_name,
                             request_property=rpc_method.request_property,
                             obj="payload" if only_bytes else "pb_obj",
@@ -617,9 +627,9 @@ class Generator:
                         "res_obj = stub.%s(req_obj, timeout=self._request_timeout)"
                         % rpc_method.operation_name,
                     )
-                    self._write(2, "except grpc.RpcError as grpc_error:")
+                    self._write(2, "except self._grpc.RpcError as grpc_error:")
                     self._write(3, "self._raise_exception(grpc_error)")
-                self._write(2, "response = json_format.MessageToDict(")
+                self._write(2, "response = self._json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
                 self._write(2, 'log.debug("Response - " + str(response))')
@@ -652,7 +662,9 @@ class Generator:
 
                     if including_default:
                         self._write(3, "if len(result) == 0:")
-                        self._write(4, "result = json_format.MessageToDict(")
+                        self._write(
+                            4, "result = self._json_format.MessageToDict("
+                        )
                         self._write(
                             5, "res_obj.%s," % rpc_method.proto_field_name
                         )
@@ -849,6 +861,10 @@ class Generator:
             self._write(
                 2, 'transport = kwargs.get("otel_collector_transport")'
             )
+            self._write(
+                2,
+                "self._is_grpc_transport = True if kwargs.get('transport') == 'grpc' else False",
+            )
             self._write(2, "self._telemetry = Telemetry(endpoint, transport)")
 
             self._write()
@@ -875,15 +891,17 @@ class Generator:
             self._write(2, "# type: (Exception) -> Union[Error, None]")
             self._write(2, "if isinstance(error, Error):")
             self._write(3, "return error")
-            self._write(2, "elif isinstance(error, grpc.RpcError):")
-            self._write(3, "err = self._deserialize_error(error.details())")
-            self._write(3, "if err is not None:")
-            self._write(4, "return err")
-            self._write(3, "err = self.error()")
-            self._write(3, "err.code = error.code().value[0]")
-            self._write(3, "err.errors = [error.details()]")
-            self._write(3, "return err")
             self._write(2, "elif isinstance(error, Exception):")
+            self._write(3, "if self._is_grpc_transport:")
+            self._write(4, "import grpc")
+            self._write(4, "if isinstance(error, grpc.RpcError):")
+            self._write(5, "err = self._deserialize_error(error.details())")
+            self._write(5, "if err is not None:")
+            self._write(6, "return err")
+            self._write(5, "err = self.error()")
+            self._write(5, "err.code = error.code().value[0]")
+            self._write(5, "err.errors = [error.details()]")
+            self._write(5, "return err")
             self._write(3, "if len(error.args) != 1:")
             self._write(4, "return None")
             self._write(3, "if isinstance(error.args[0], Error):")
@@ -2242,7 +2260,7 @@ class Generator:
                 elif rpc_method.good_response_type:
                     self._write(
                         line_indent,
-                        "res_obj = pb2.%s()" % rpc_method.response_class,
+                        "res_obj = self._pb2.%s()" % rpc_method.response_class,
                     )
                     self._write(line_indent, "res_obj.ParseFromString(data)")
                 else:
