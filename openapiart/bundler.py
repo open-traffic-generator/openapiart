@@ -1393,7 +1393,7 @@ class Bundler(object):
                     "Invalid value for x-status.status={} provided; Valid values are {}".format(
                         status, valid_statuses
                     )
-            )
+                )
 
             print("resolving {} ...".format(xstatus.full_path))
 
