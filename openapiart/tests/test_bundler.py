@@ -40,10 +40,15 @@ def test_resolve_x_status_fills_missing_information(capsys):
 
     assert schema["description"] == "Source description"
     assert schema["x-status"]["information"] == "Information TBD"
-    assert (
-        "[WARNING]: components.schemas.A.x-status.information missing"
-        in capsys.readouterr().out
-    )
+    # jsonpath_ng's Fields.__str__/full_path formatting differs across
+    # versions (e.g. "a.b.c" vs "((a.b).c)"), so match on the stable
+    # pieces rather than the exact rendered path.
+    warning = capsys.readouterr().out
+    assert "[WARNING]:" in warning
+    assert "information missing" in warning
+    assert "components" in warning
+    assert "schemas" in warning
+    assert "x-status" in warning
 
 
 def test_resolve_x_status_rejects_invalid_status():
