@@ -1,6 +1,18 @@
 import os
+import shutil
+
+import pytest
 
 from openapiart.openapiart import OpenApiArt as openapiart_class
+
+# Generating a Go SDK shells out to protoc/protoc-gen-go/protoc-gen-go-grpc,
+# which are only installed in Go-toolchain CI jobs, not in python-only ones.
+pytestmark = pytest.mark.skipif(
+    shutil.which("protoc") is None
+    or shutil.which("protoc-gen-go") is None
+    or shutil.which("protoc-gen-go-grpc") is None,
+    reason="requires protoc, protoc-gen-go and protoc-gen-go-grpc on PATH",
+)
 
 
 # Test that the enum getters are outputted in the same order
