@@ -2618,9 +2618,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.enums.remove("unspecified")
                 if property_name == "choice":
                     prop_names.remove("choice")
-                    diff = set(field.enums).difference(set(prop_names))
-                    if len(diff) > 0:
-                        field.choice_with_no_prop = list(diff)
+                    prop_names_set = set(prop_names)
+                    field.choice_with_no_prop = [
+                        enum
+                        for enum in field.enums
+                        if enum not in prop_names_set
+                    ]
 
             if field.hasminmax:
                 field.min = (
