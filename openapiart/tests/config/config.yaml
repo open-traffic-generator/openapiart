@@ -349,6 +349,10 @@ components:
           type: string
           pattern: ^(.+):(.+)$
           x-field-uid: 64
+        no_property_choice:
+          description: An object with only choice(s) that have no backing properties
+          $ref: "#/components/schemas/NoPropertyChoiceObject"
+          x-field-uid: 65
 
     WObject:
       required: [w_name]
@@ -478,6 +482,26 @@ components:
           format: double
           default: 3.0
           x-field-uid: 3
+    NoPropertyChoiceObject:
+      description: |-
+        Object with choice enum values that have no backing properties at
+        all. Used to verify that generated choice getters are emitted in
+        the same order as the enum is declared.
+      type: object
+      properties:
+        choice:
+          type: string
+          default: "alpha"
+          x-field-uid: 1
+          x-enum:
+            alpha:
+              x-field-uid: 1
+            beta:
+              x-field-uid: 2
+            gamma:
+              x-field-uid: 3
+            delta:
+              x-field-uid: 4
     JObject:
       type: object
       properties:

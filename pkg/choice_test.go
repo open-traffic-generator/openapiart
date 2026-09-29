@@ -451,3 +451,31 @@ func TestDefaultChoiceOverwrite(t *testing.T) {
 	assert.True(t, crd.HasIpv4())
 	assert.Equal(t, crd.Ipv4(), "1.2.3.4")
 }
+
+// NoPropertyChoiceObject's choice enum values (alpha, beta, gamma, delta)
+// have no backing properties at all, unlike FObject which mixes choices
+// with and without properties. This exercises every no-property getter,
+// guarding against a past bug where the generator computed the
+// no-property getter list via a set difference, which could silently
+// drop or reorder entries.
+func TestChoiceWithOnlyNoPropertyChoices(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	choiceObj := config.NoPropertyChoice()
+
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.ALPHA)
+
+	choiceObj.Beta()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.BETA)
+
+	choiceObj.Gamma()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.GAMMA)
+
+	choiceObj.Delta()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.DELTA)
+
+	choiceObj.Alpha()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.ALPHA)
+
+	_, err := choiceObj.Marshal().ToYaml()
+	assert.Nil(t, err)
+}
