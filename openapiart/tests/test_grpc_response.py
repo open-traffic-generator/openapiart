@@ -1,7 +1,14 @@
 from traceback import format_exception
 import grpc
+import importlib
 import pytest
 import json
+import yaml
+
+
+def _reset_rpc_logger(module):
+    impl = importlib.import_module("%s.%s" % (module.__name__, module.__name__))
+    impl.RpcLogger.close()
 
 
 def test_grpc_set_config(utils, grpc_api):
@@ -192,6 +199,51 @@ def test_upload_config_streaming(grpc_api):
     bts = b"Hello\n123\nHello\n456!!@###"
     result = grpc_api.upload_config(bts)
     assert result.warnings == ["w11", "w22"]
+
+
+def test_grpc_rpc_logging(monkeypatch, tmp_path, utils, grpc_api):
+    log_path = tmp_path / "grpc-rpc.yaml"
+    monkeypatch.setenv("SANITY_RPC_LOG", str(log_path))
+    monkeypatch.delenv("OPENAPIART_RPC_LOG", raising=False)
+    _reset_rpc_logger(pytest.module)
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    try:
+        result = grpc_api.set_config(payload)
+        assert result.read() == b"success"
+    finally:
+        _reset_rpc_logger(pytest.module)
+
+    docs = list(yaml.safe_load_all(log_path.read_text()))
+    entry = docs[-1]
+    assert entry["transport"] == "grpc"
+    assert entry["method"] == "SetConfig"
+    assert entry["request"]["a"] == payload["a"]
+    assert entry["response"]["<bytes>"] == len(b"success")
+
+
+def test_grpc_streaming_rpc_logging(monkeypatch, tmp_path, utils, grpc_api):
+    log_path = tmp_path / "grpc-stream-rpc.yaml"
+    monkeypatch.setenv("SANITY_RPC_LOG", str(log_path))
+    monkeypatch.delenv("OPENAPIART_RPC_LOG", raising=False)
+    _reset_rpc_logger(pytest.module)
+    with open(utils.get_test_config_path("config.json")) as f:
+        payload = json.load(f)
+    try:
+        grpc_api.enable_grpc_streaming = True
+        grpc_api._chunk_size = 1
+        result = grpc_api.set_config(payload)
+        assert result.read() == b"success"
+    finally:
+        grpc_api.enable_grpc_streaming = False
+        _reset_rpc_logger(pytest.module)
+
+    docs = list(yaml.safe_load_all(log_path.read_text()))
+    entry = docs[-1]
+    assert entry["transport"] == "grpc"
+    assert entry["method"] == "SetConfig"
+    assert entry["request"]["a"] == payload["a"]
+    assert entry["response"]["<bytes>"] == len(b"success")
 
 
 if __name__ == "__main__":

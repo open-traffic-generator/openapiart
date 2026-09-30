@@ -6,6 +6,7 @@ import yaml
 import requests
 import urllib3
 import io
+import os
 import sys
 import time
 import grpc
@@ -40,6 +41,103 @@ formatter.converter = time.gmtime
 stderr_handler.setFormatter(formatter)
 log = logging.getLogger("common")
 log.addHandler(stderr_handler)
+
+
+RPC_LOG_ENV_VAR = "__OPENAPIART_RPC_LOG_ENV__"
+RPC_LOG_FALLBACK_ENV_VAR = "OPENAPIART_RPC_LOG"
+
+
+class RpcLogger(object):
+    """Logs RPC request/response pairs as YAML when RPC logging is enabled.
+
+    Set __OPENAPIART_RPC_LOG_ENV__ to enable logging for this generated SDK,
+    or set OPENAPIART_RPC_LOG as a generic fallback:
+      - "stdout" or "-": log to stdout
+      - "stderr":        log to stderr
+      - <path>:          append to the file at <path>
+
+    Each call is logged as a YAML document (separated by "---") with keys:
+      transport: "http" or "grpc"
+      method:    HTTP "POST /config" style, or gRPC "SetConfig" style
+      request:   request body (omitted when there is no request body)
+      response:  response body (HTTP includes a "status" field)
+                  failures are represented under an "error" field
+    """
+
+    _instance = None
+
+    def __init__(self):
+        self._file = None
+        env_name, dest = self._get_destination()
+        if dest:
+            if dest in ("-", "stdout"):
+                self._file = sys.stdout
+            elif dest == "stderr":
+                self._file = sys.stderr
+            else:
+                try:
+                    self._file = open(dest, "a")
+                except Exception as e:
+                    log.warning(
+                        "%s: failed to open %r: %s" % (env_name, dest, e)
+                    )
+
+    @classmethod
+    def get(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    @classmethod
+    def close(cls):
+        if cls._instance is not None:
+            cls._instance._close()
+            cls._instance = None
+
+    def _close(self):
+        if self._file not in (None, sys.stdout, sys.stderr):
+            self._file.close()
+        self._file = None
+
+    def enabled(self):
+        return self._file is not None
+
+    @staticmethod
+    def _get_destination():
+        for env_name in (RPC_LOG_ENV_VAR, RPC_LOG_FALLBACK_ENV_VAR):
+            dest = os.environ.get(env_name, "")
+            if dest:
+                return env_name, dest
+        return RPC_LOG_ENV_VAR, ""
+
+    def log(self, transport, method, request=None, response=None):
+        if not self.enabled():
+            return
+        entry = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "transport": transport,
+            "method": method,
+        }
+        if request is not None:
+            entry["request"] = self._to_dict(request)
+        if response is not None:
+            entry["response"] = self._to_dict(response)
+        self._file.write("---\n")
+        self._file.write(yaml.dump(entry, default_flow_style=False))
+        self._file.flush()
+
+    @staticmethod
+    def _to_dict(value):
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, (str, unicode)):
+            try:
+                return yaml.safe_load(value)
+            except Exception:
+                return value
+        if isinstance(value, (bytes, bytearray)):
+            return {"<bytes>": len(value)}
+        return value
 
 
 class Transport:
@@ -210,6 +308,25 @@ class HttpTransport(object):
         log.debug("Response header - " + str(response.headers))
         log.debug("Response content - " + str(response.content))
         log.debug("Response text - " + str(response.text))
+        rpc_log = RpcLogger.get()
+        if rpc_log.enabled():
+            resp_log = {"status": response.status_code}
+            content_type = response.headers.get("content-type", "")
+            if "application/json" in content_type:
+                try:
+                    resp_log["body"] = yaml.safe_load(response.text)
+                except Exception:
+                    resp_log["body"] = response.text
+            elif "application/octet-stream" in content_type:
+                resp_log["body"] = {"<bytes>": len(response.content)}
+            else:
+                resp_log["body"] = response.text
+            rpc_log.log(
+                "http",
+                "%s %s" % (method.upper(), relative_url),
+                request=data,
+                response=resp_log,
+            )
         if response.ok:
             if "application/json" in response.headers["content-type"]:
                 # TODO: we might want to check for utf-8 charset and decode
