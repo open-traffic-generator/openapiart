@@ -19,6 +19,7 @@ import pkgutil
 import importlib
 from jsonpath_ng import parse
 from .openapiartplugin import OpenApiArtPlugin, type_limits
+from .description import render_description
 
 # TODO: get rid of this
 MODELS_RELEASE = "v0.3.3"
@@ -1789,10 +1790,9 @@ class Generator:
                 )
 
     def _get_description(self, yobject):
-        if "description" not in yobject:
-            yobject["description"] = "TBD"
+        description = render_description(yobject, default="TBD")
         # remove tabs, multiple spaces
-        description = re.sub(r"\n", ". ", yobject["description"])
+        description = re.sub(r"\n", ". ", description)
         description = re.sub(r"\s+", " ", description)
         description = re.sub(r" . ", " ", description)
         return description

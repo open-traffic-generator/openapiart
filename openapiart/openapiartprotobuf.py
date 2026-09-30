@@ -1,5 +1,6 @@
 import subprocess
 import os
+from .description import render_description
 from .openapiartplugin import OpenApiArtPlugin, type_limits
 
 
@@ -349,10 +350,9 @@ class OpenApiArtProtobuf(OpenApiArtPlugin):
         return self._camelcase_to_snakecase(value, lower=True)
 
     def _get_description(self, openapi_object):
-        if "description" in openapi_object:
-            return openapi_object["description"].replace('"', "")
-        else:
-            return "Description missing in models"
+        return render_description(
+            openapi_object, default="Description missing in models"
+        ).replace('"', "")
 
     def _write_x_enum_msg(
         self, enum_msg_name, enums, property_name, property_object

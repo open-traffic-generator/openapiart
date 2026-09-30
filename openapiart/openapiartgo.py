@@ -1,4 +1,5 @@
 from .openapiartplugin import OpenApiArtPlugin, type_limits
+from .description import render_description
 import os
 import re
 import subprocess
@@ -2617,9 +2618,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     field.enums.remove("unspecified")
                 if property_name == "choice":
                     prop_names.remove("choice")
-                    diff = set(field.enums).difference(set(prop_names))
-                    if len(diff) > 0:
-                        field.choice_with_no_prop = list(diff)
+                    prop_names_set = set(prop_names)
+                    field.choice_with_no_prop = [
+                        enum
+                        for enum in field.enums
+                        if enum not in prop_names_set
+                    ]
 
             if field.hasminmax:
                 field.min = (
@@ -3629,15 +3633,14 @@ class OpenApiArtGo(OpenApiArtPlugin):
         return go_type
 
     def _get_description(self, openapi_object, noCap=False):
-        description = "// description is TBD"
-        if "description" in openapi_object:
-            description = ""
-            for ind, line in enumerate(
-                openapi_object["description"].split("\n")
-            ):
-                if noCap and ind == 0 and line != "":
-                    line = line[0].lower() + line[1:]
-                description += "// {line}\n".format(line=line.strip())
+        description_text = render_description(
+            openapi_object, default="description is TBD"
+        )
+        description = ""
+        for ind, line in enumerate(description_text.split("\n")):
+            if noCap and ind == 0 and line != "":
+                line = line[0].lower() + line[1:]
+            description += "// {line}\n".format(line=line.strip())
         return description.strip("\n")
 
     def _populate_status(self, new_fluent):

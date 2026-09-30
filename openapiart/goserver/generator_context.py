@@ -1,5 +1,6 @@
 import re
 import openapiart.goserver.string_util as util
+from openapiart.description import render_description
 from jsonpath_ng import parse
 
 
@@ -85,9 +86,7 @@ class Responses(object):
 class ControllerRoute(object):
     @property
     def description(self) -> str:
-        if "description" in self._obj:
-            return self._obj["description"]
-        return ""
+        return render_description(self._obj, default="")
 
     @property
     def responses(self):

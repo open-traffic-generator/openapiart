@@ -2,6 +2,9 @@ package openapiart_test
 
 import (
 	"fmt"
+	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -450,4 +453,44 @@ func TestDefaultChoiceOverwrite(t *testing.T) {
 	assert.Equal(t, crd.Choice(), openapiart.ChoiceRequiredAndDefaultChoice.IPV4)
 	assert.True(t, crd.HasIpv4())
 	assert.Equal(t, crd.Ipv4(), "1.2.3.4")
+}
+
+func TestNoPropertyChoiceGettersOrderAndBehavior(t *testing.T) {
+	config := openapiart.NewPrefixConfig()
+	choiceObj := config.NoPropertyChoice()
+
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.ALPHA)
+
+	choiceObj.Beta()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.BETA)
+
+	choiceObj.Gamma()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.GAMMA)
+
+	choiceObj.Delta()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.DELTA)
+
+	choiceObj.Alpha()
+	assert.Equal(t, choiceObj.Choice(), openapiart.NoPropertyChoiceObjectChoice.ALPHA)
+
+	_, err := choiceObj.Marshal().ToYaml()
+	assert.Nil(t, err)
+
+	generatedSource, err := os.ReadFile("no_property_choice_object.go")
+	require.Nil(t, err)
+	generated := string(generatedSource)
+
+	getterOrder := []int{
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Alpha()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Beta()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Gamma()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Delta()"),
+	}
+	for _, offset := range getterOrder {
+		require.NotEqual(t, -1, offset, "expected getter not found in generated source")
+	}
+
+	sortedOrder := append([]int(nil), getterOrder...)
+	sort.Ints(sortedOrder)
+	assert.Equal(t, getterOrder, sortedOrder)
 }

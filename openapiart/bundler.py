@@ -101,7 +101,6 @@ class Bundler(object):
 
         self._resolve_x_include()
         self._resolve_x_field_pattern()
-        self._resolve_x_constraint()
         self._resolve_x_status()
         self._remove_x_include()
         # TODO: restore behavior
@@ -1379,16 +1378,15 @@ class Bundler(object):
 
     def _resolve_x_status(self):
         """Find all instances of x-status in the openapi content
-        and merge the x-status content into the parent object description
+        and validate/normalize x-status content.
         """
-        import jsonpath_ng
-
         valid_statuses = ["deprecated", "under_review"]
         for xstatus in self._get_parser("$..x-status").find(self._content):
             status = xstatus.value.get("status")
 
             if status is not None:
                 status = status.replace("-", "_")
+                xstatus.value["status"] = status
 
             if status not in valid_statuses:
                 raise Exception(
@@ -1398,28 +1396,14 @@ class Bundler(object):
                 )
 
             print("resolving {} ...".format(xstatus.full_path))
-            parent = jsonpath_ng.Parent().find(xstatus)[0]
-            parent_schema = parent.value
 
-            info = xstatus.value.get("information")
-            if info is None or len(info) == 0:
-                info = xstatus.value["information"] = "Information TBD"
+            if not xstatus.value.get("information"):
+                xstatus.value["information"] = "Information TBD"
                 print(
-                    "[WARNING]: {}.x-status.information missing".format(
-                        parent.full_path
+                    "[WARNING]: {}.information missing".format(
+                        xstatus.full_path
                     )
                 )
-
-            if status == "deprecated":
-                status_msg = "Deprecated: {}".format(info)
-            elif status == "under_review":
-                status_msg = "Under Review: {}".format(info)
-
-            desc = parent_schema.get("description")
-            if desc is None or len(desc) == 0:
-                desc = "Description TBD"
-
-            parent_schema["description"] = "{}\n\n{}".format(status_msg, desc)
 
     def _resolve_x_unique(self):
         """validate the x-unique field and make sure it is [global]"""
@@ -1427,27 +1411,6 @@ class Bundler(object):
             if xunique.value in ["global"]:
                 continue
             raise Exception("x-unique can have only 'global'")
-
-    def _resolve_x_constraint(self):
-        """Find all instances of x-constraint in the openapi content
-        and merge the x-constraint content into the parent object description
-        """
-        import jsonpath_ng
-
-        for xconstraint in self._get_parser("$..x-constraint").find(
-            self._content
-        ):
-            print("resolving %s..." % (str(xconstraint.full_path)))
-            parent_schema_object = (
-                jsonpath_ng.Parent().find(xconstraint)[0].value
-            )
-            if "description" not in parent_schema_object:
-                parent_schema_object["description"] = "TBD"
-            parent_schema_object["description"] += "\n\nx-constraint:\n"
-            for constraint in xconstraint.value:
-                parent_schema_object["description"] += "- {}\n".format(
-                    constraint
-                )
 
     def _merge(self, src, dst):
         """
