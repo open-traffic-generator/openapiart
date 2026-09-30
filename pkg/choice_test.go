@@ -2,6 +2,9 @@ package openapiart_test
 
 import (
 	"fmt"
+	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	openapiart "github.com/open-traffic-generator/openapiart/pkg"
@@ -452,13 +455,7 @@ func TestDefaultChoiceOverwrite(t *testing.T) {
 	assert.Equal(t, crd.Ipv4(), "1.2.3.4")
 }
 
-// NoPropertyChoiceObject's choice enum values (alpha, beta, gamma, delta)
-// have no backing properties at all, unlike FObject which mixes choices
-// with and without properties. This exercises every no-property getter,
-// guarding against a past bug where the generator computed the
-// no-property getter list via a set difference, which could silently
-// drop or reorder entries.
-func TestChoiceWithOnlyNoPropertyChoices(t *testing.T) {
+func TestNoPropertyChoiceGettersOrderAndBehavior(t *testing.T) {
 	config := openapiart.NewPrefixConfig()
 	choiceObj := config.NoPropertyChoice()
 
@@ -478,4 +475,22 @@ func TestChoiceWithOnlyNoPropertyChoices(t *testing.T) {
 
 	_, err := choiceObj.Marshal().ToYaml()
 	assert.Nil(t, err)
+
+	generatedSource, err := os.ReadFile("no_property_choice_object.go")
+	require.Nil(t, err)
+	generated := string(generatedSource)
+
+	getterOrder := []int{
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Alpha()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Beta()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Gamma()"),
+		strings.Index(generated, "func (obj *noPropertyChoiceObject) Delta()"),
+	}
+	for _, offset := range getterOrder {
+		require.NotEqual(t, -1, offset, "expected getter not found in generated source")
+	}
+
+	sortedOrder := append([]int(nil), getterOrder...)
+	sort.Ints(sortedOrder)
+	assert.Equal(t, getterOrder, sortedOrder)
 }
