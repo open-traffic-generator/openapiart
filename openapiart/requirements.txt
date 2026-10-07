@@ -1,5 +1,6 @@
 build
-jsonpath-ng
+jsonpath-ng<1.7 ; python_version < "3.10"
+jsonpath-ng ; python_version >= "3.10"
 typing
 setuptools
 wheel
