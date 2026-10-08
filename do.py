@@ -8,7 +8,7 @@ import platform
 
 
 BLACK_VERSION = "22.3.0"
-GO_VERSION = "1.22.1"
+GO_VERSION = "1.24.1"
 PROTOC_VERSION = "23.3"
 
 # this is where go and protoc shall be installed (and expected to be present)
@@ -485,7 +485,7 @@ def getstatusoutput(command):
 
 
 def build(sdk="all", env_setup=None):
-    os.environ["GOTOOLCHAIN"] = "go1.25.0"
+    os.environ["GOTOOLCHAIN"] = "go1.26.0"
     print("\nSTEP 1: Set up virtual environment")
 
     if env_setup is not None and env_setup.lower() == "clean":
