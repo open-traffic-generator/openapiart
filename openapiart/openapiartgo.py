@@ -5,6 +5,10 @@ import re
 import subprocess
 
 
+def _join_go_statements(statements, indentation):
+    return ("\n" + " " * indentation).join(statements)
+
+
 class FluentStructure(object):
     def __init__(self):
         self.internal_struct_name = None
@@ -58,6 +62,9 @@ class FluentHttp(object):
         self.operation_name = None
         self.method = None
         self.request = None
+        self.http_method = None
+        self.url_path = None
+        self.request_body = None
         self.request_return_type = None
         self.responses = []
         self.description = None
@@ -228,6 +235,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
             except KeyError:
                 pass
 
+    def _get_rpc_log_env_name(self):
+        env_prefix = re.sub(r"[^0-9A-Za-z]+", "_", self._go_sdk_package_name)
+        env_prefix = env_prefix.strip("_").upper()
+        if env_prefix == "":
+            env_prefix = "OPENAPIART"
+        return "{}_RPC_LOG".format(env_prefix)
+
     def _write_mod_file(self):
         self._filename = os.path.normpath(
             os.path.join(self._ux_path, "go.mod")
@@ -327,6 +341,23 @@ class OpenApiArtGo(OpenApiArtPlugin):
             os.path.join(os.path.dirname(__file__), "telemetry.go")
         ) as fp:
             self._write(fp.read().strip().strip("\n"))
+        self._write()
+
+        self._filename = os.path.normpath(
+            os.path.join(self._ux_path, "rpclog.go")
+        )
+        self._init_fp(self._filename)
+        self._write_package()
+        with open(os.path.join(os.path.dirname(__file__), "rpclog.go")) as fp:
+            self._write(
+                fp.read()
+                .replace(
+                    "__OPENAPIART_RPC_LOG_ENV__",
+                    self._get_rpc_log_env_name(),
+                )
+                .strip()
+                .strip("\n")
+            )
         self._write()
 
         self._filename = os.path.normpath(
@@ -451,6 +482,10 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 http.operation_name = self._get_external_struct_name(
                     operation_id.value
                 )
+                http.http_method = str(
+                    operation_id.context.path.fields[0]
+                ).upper()
+                http.url_path = http_url
                 if path_item_object.get("x-status", {}).get("status") in [
                     "deprecated",
                     "under_review",
@@ -636,6 +671,7 @@ class OpenApiArtGo(OpenApiArtPlugin):
                             operation_id.context.path.fields[0]
                         ).upper(),
                     )
+                    http.request_body = new.struct + "Json"
                     http.method = """http{rpc_method}""".format(
                         rpc_method=rpc.method
                     )
@@ -681,6 +717,11 @@ class OpenApiArtGo(OpenApiArtPlugin):
                         ).upper(),
                         val="string(data)" if rpc.octet_bytes else '""',
                         stream="true" if rpc.octet_bytes else "false",
+                    )
+                    http.request_body = (
+                        'fmt.Sprintf(`{"<bytes>":%d}`, len(data))'
+                        if rpc.octet_bytes
+                        else '""'
                     )
                     http.method = """http{rpc_method}""".format(
                         rpc_method=rpc.method
@@ -1047,6 +1088,73 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     rpc.operation_name, status_type, info, "api"
                 )
 
+            if rpc.struct is not None:
+                grpc_request_json = [
+                    "reqJSON, _ := {struct}.Marshal().ToJson()".format(
+                        struct=rpc.struct
+                    )
+                ]
+            elif rpc.octet_bytes:
+                grpc_request_json = [
+                    'reqJSON := fmt.Sprintf(`{"<bytes>":%d}`, len(data))'
+                ]
+            else:
+                grpc_request_json = ['reqJSON := ""']
+            if rpc.request_return_type == "[]byte":
+                grpc_response_json = [
+                    'respJSON := fmt.Sprintf(`{"<bytes>":%d}`, len(resp.ResponseBytes))'
+                ]
+            else:
+                grpc_response_json = [
+                    "respJSONBytes, _ := protojson.MarshalOptions{UseProtoNames: true}.Marshal(resp)",
+                    "respJSON := string(respJSONBytes)",
+                ]
+            grpc_log = """if rpcLog := getRpcLog(); rpcLog.enabled() {{
+                        {request_json}
+                        {response_json}
+                        rpcLog.logGRPC("{operation_name}", reqJSON, respJSON)
+                    }}""".format(
+                request_json=_join_go_statements(
+                    grpc_request_json, indentation=24
+                ),
+                response_json=_join_go_statements(
+                    grpc_response_json, indentation=24
+                ),
+                operation_name=rpc.operation_name,
+            )
+            grpc_error_log = """if rpcLog := getRpcLog(); rpcLog.enabled() {{
+                        {request_json}
+                        rpcLog.logGRPCError("{operation_name}", reqJSON, err)
+                    }}""".format(
+                request_json=_join_go_statements(
+                    grpc_request_json, indentation=24
+                ),
+                operation_name=rpc.operation_name,
+            )
+            server_stream_log = ""
+            if rpc.streaming_type == "server":
+                if rpc.request_return_type == "[]byte":
+                    stream_response_json = [
+                        'respJSON := fmt.Sprintf(`{"<bytes>":%d}`, len(streamResult))'
+                    ]
+                else:
+                    stream_response_json = [
+                        "respJSON, _ := streamResult.Marshal().ToJson()"
+                    ]
+                server_stream_log = """if rpcLog := getRpcLog(); rpcLog.enabled() {{
+                            {request_json}
+                            {response_json}
+                            rpcLog.logGRPC("{operation_name}", reqJSON, respJSON)
+                    }}""".format(
+                    request_json=_join_go_statements(
+                        grpc_request_json, indentation=28
+                    ),
+                    response_json=_join_go_statements(
+                        stream_response_json, indentation=28
+                    ),
+                    operation_name=rpc.operation_name,
+                )
+
             # add streamConfig function
 
             if rpc.streaming_type and rpc.streaming_type == "client":
@@ -1094,12 +1202,20 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 stream_config = """var resp *{package}.{response}
                 var err error
                 if api.grpc.enableGrpcStreaming {{
-                    return api.{operation}(ctx, &request)
+                    streamResult, err := api.{operation}(ctx, &request)
+                    if err != nil {{
+                        {grpc_error_log}
+                        return nil, err
+                    }}
+                    {server_stream_log}
+                    return streamResult, nil
                 }} else {{
                 """.format(
                     operation=rpc.stream_operation_name,
                     package=self._protobuf_package_name,
                     response=rpc.streaming_response,
+                    grpc_error_log=grpc_error_log,
+                    server_stream_log=server_stream_log,
                 )
             else:
                 stream_config = ""
@@ -1134,11 +1250,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     {stream_config_end}
                     if err != nil {{
                         api.Telemetry().SetSpanStatus(span, codes.Error, err.Error())
+                        {grpc_error_log}
                         if er, ok := fromGrpcError(err); ok {{
                             return nil, er
                         }}
                         return nil, err
                     }}
+                    {grpc_log}
                     {return_value}
                 }}
                 """.format(
@@ -1156,6 +1274,8 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     log_request=rpc.log_request
                     if rpc.log_request is not None
                     else "",
+                    grpc_log=grpc_log,
+                    grpc_error_log=grpc_error_log,
                     stream_config_start=stream_config,
                     stream_config_end="}" if stream_config != "" else "",
                     declare=":" if stream_config == "" else "",
@@ -1196,10 +1316,13 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     if err != nil {{
                         return nil, err
                     }}
-                    bodyBytes, err := io.ReadAll(resp.Body)
                     defer resp.Body.Close()
-                    if err != nil {{
-                        return nil, err
+                    bodyBytes, readErr := io.ReadAll(resp.Body)
+                    if rpcLog := getRpcLog(); rpcLog.enabled() {{
+                        rpcLog.logHTTP("{http_method}", "{url_path}", {request_body}, resp.StatusCode, bodyBytes, readErr)
+                    }}
+                    if readErr != nil {{
+                        return nil, readErr
                     }}
                     if resp.StatusCode == 200 {{
                         {success_handling}
@@ -1211,6 +1334,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                     internal_struct_name=self._api.internal_struct_name,
                     method=http.method,
                     request=http.request,
+                    http_method=http.http_method,
+                    url_path=http.url_path,
+                    request_body=http.request_body,
                     success_handling=success_handling,
                     error_handling=error_handling,
                 )
