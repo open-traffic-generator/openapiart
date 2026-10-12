@@ -2034,6 +2034,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
             else:
                 self._write(
                     """func (obj *{struct}) {fieldname}() {interface}{fieldname}Enum {{
+                    if obj.obj.{fieldname} == nil {{
+                        return {interface}{fieldname}Enum("unspecified")
+                    }}
                     return {interface}{fieldname}Enum(obj.obj.{fieldname}.Enum().String())
                 }}
                 """.format(
@@ -2190,12 +2193,9 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 if enum_set.get(enum_field.name) is None:
                     continue
                 if enum_field.isEnum:
-                    enum_body.append(
-                        "obj.obj.{name} = {pb_pkg_name}.{interface}_{name}_unspecified.Enum()".format(
-                            name=enum_field.name,
-                            pb_pkg_name=self._protobuf_package_name,
-                            interface=new.interface,
-                        )
+                    enum_body.insert(
+                        0,
+                        "obj.obj.{name} = nil".format(name=enum_field.name),
                     )
                     continue
                 if (
@@ -3369,7 +3369,12 @@ class OpenApiArtGo(OpenApiArtPlugin):
                 )
                 if field.name in hasChoiceConfig:
                     if choice_body is not None:
-                        body1 = body1.replace(" == nil", ".Number() == 0")
+                        body1 = body1.replace(
+                            " == nil",
+                            " == nil || obj.obj.{name}.Number() == 0".format(
+                                name=field.name
+                            ),
+                        )
                     choice_body = (
                         body1
                         if choice_body is None

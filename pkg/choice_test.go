@@ -494,3 +494,35 @@ func TestNoPropertyChoiceGettersOrderAndBehavior(t *testing.T) {
 	sort.Ints(sortedOrder)
 	assert.Equal(t, getterOrder, sortedOrder)
 }
+
+func TestUnselectedEnumChoiceBranchNotSerialized(t *testing.T) {
+	// setChoice must clear sibling enum branches to nil, not to the zero-value
+	// enum: a non-nil pointer counts as presence and would be serialized.
+	custom := openapiart.NewPatternPrefixConfigHeaderChecksum()
+	custom.SetCustom(1227)
+
+	customJson, err := custom.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.NotContains(t, customJson, "generated")
+	assert.NotContains(t, customJson, "unspecified")
+
+	customYaml, err := custom.Marshal().ToYaml()
+	assert.Nil(t, err)
+	assert.NotContains(t, customYaml, "unspecified")
+
+	assert.False(t, custom.HasGenerated())
+	assert.Equal(t, openapiart.PatternPrefixConfigHeaderChecksumGeneratedEnum("unspecified"), custom.Generated())
+
+	defaulted := openapiart.NewPatternPrefixConfigHeaderChecksum()
+	defaultJson, err := defaulted.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.Contains(t, defaultJson, "generated")
+	assert.Contains(t, defaultJson, "good")
+
+	generated := openapiart.NewPatternPrefixConfigHeaderChecksum()
+	generated.SetGenerated(openapiart.PatternPrefixConfigHeaderChecksumGenerated.BAD)
+	generatedJson, err := generated.Marshal().ToJson()
+	assert.Nil(t, err)
+	assert.Contains(t, generatedJson, "bad")
+	assert.NotContains(t, generatedJson, "custom")
+}
