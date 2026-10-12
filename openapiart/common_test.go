@@ -1,5 +1,23 @@
 
-import "testing"
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+func resetRpcLogForTest() {
+	if rpcLogInst != nil && rpcLogInst.file != nil && rpcLogInst.file != os.Stdout && rpcLogInst.file != os.Stderr {
+		rpcLogInst.file.Close()
+	}
+	rpcLogInst = nil
+	rpcLogOnce = sync.Once{}
+}
 
 func TestCheckClientServerVersionCompatibility(t *testing.T) {
 	type args struct {
@@ -28,5 +46,87 @@ func TestCheckClientServerVersionCompatibility(t *testing.T) {
 				t.Errorf("checkClientServerVersionCompatibility() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestRpcLoggerHTTP(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc.yaml")
+	t.Setenv(rpcLogEnvVar, path)
+	resetRpcLogForTest()
+	defer resetRpcLogForTest()
+
+	logger := getRpcLog()
+	if !logger.enabled() {
+		t.Fatal("expected rpc logger to be enabled")
+	}
+	logger.logHTTP("POST", "api/config", `{"a":"asdf"}`, 200, []byte(`{"ok":true}`), nil)
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	for _, want := range []string{
+		"transport: http",
+		"method: POST /api/config",
+		"a: asdf",
+		"status: 200",
+		"ok: true",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected rpc log to contain %q, got:\n%s", want, got)
+		}
+	}
+}
+
+func TestRpcLoggerHTTPReadError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc.yaml")
+	t.Setenv(rpcLogEnvVar, path)
+	resetRpcLogForTest()
+	defer resetRpcLogForTest()
+
+	getRpcLog().logHTTP("GET", "api/config", "", 200, []byte("partial"), errors.New("unexpected EOF"))
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	for _, want := range []string{
+		"method: GET /api/config",
+		"status: 200",
+		"<bytes>",
+		"7",
+		"error: unexpected EOF",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected rpc log to contain %q, got:\n%s", want, got)
+		}
+	}
+}
+
+func TestRpcLoggerGRPCError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rpc.yaml")
+	t.Setenv(rpcLogEnvVar, path)
+	resetRpcLogForTest()
+	defer resetRpcLogForTest()
+
+	getRpcLog().logGRPCError("GetConfig", `{"a":"asdf"}`, status.Error(codes.Unavailable, "server unavailable"))
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	for _, want := range []string{
+		"transport: grpc",
+		"method: GetConfig",
+		"a: asdf",
+		"code: 14",
+		"error: server unavailable",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected rpc log to contain %q, got:\n%s", want, got)
+		}
 	}
 }

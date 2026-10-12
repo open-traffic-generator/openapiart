@@ -115,6 +115,13 @@ class Generator:
                     plugins.append(dir_obj)
         return plugins
 
+    def _get_rpc_log_env_name(self):
+        env_prefix = re.sub(r"[^0-9A-Za-z]+", "_", self._package_name)
+        env_prefix = env_prefix.strip("_").upper()
+        if env_prefix == "":
+            env_prefix = "OPENAPIART"
+        return "{}_RPC_LOG".format(env_prefix)
+
     def _get_openapi_file(self):
         if self._openapi_filename is None:
             OPENAPI_URL = (
@@ -183,6 +190,9 @@ class Generator:
                 pkg_name=self._package_name
             )
             common_content = common_content.replace(cnf_text, modify_text)
+            common_content = common_content.replace(
+                "__OPENAPIART_RPC_LOG_ENV__", self._get_rpc_log_env_name()
+            )
 
             if re.search(r"def[\s+]api\(", common_content) is not None:
                 self._generated_top_level_factories.append("api")
@@ -453,6 +463,31 @@ class Generator:
             err.errors = [grpc_error.details()]
         raise Exception(err)
 
+    def _log_grpc(self, method_name, request_payload=None, response=None):
+        rpc_log = RpcLogger.get()
+        if not rpc_log.enabled():
+            return
+        request = None
+        if request_payload is not None:
+            try:
+                request = yaml.safe_load(self._serialize_payload(request_payload))
+            except Exception:
+                request = str(request_payload)
+        rpc_log.log("grpc", method_name, request=request, response=response)
+
+    def _log_grpc_error(self, method_name, request_payload, grpc_error):
+        rpc_log = RpcLogger.get()
+        if not rpc_log.enabled():
+            return
+        try:
+            err_resp = yaml.safe_load(grpc_error.details())
+        except Exception:
+            err_resp = {
+                "code": grpc_error.code().value[0],
+                "error": grpc_error.details(),
+            }
+        self._log_grpc(method_name, request_payload, {"error": err_resp})
+
     def _client_stream(self, stub, data):
         data_chunks = []
         for i in range(0, len(data), self._chunk_size):
@@ -619,10 +654,34 @@ class Generator:
                         % rpc_method.operation_name,
                     )
                     self._write(2, "except grpc.RpcError as grpc_error:")
+                    log_error = (
+                        'self._log_grpc_error("%s", payload, grpc_error)'
+                        % rpc_method.operation_name
+                    )
+                    self._write(3, log_error)
                     self._write(3, "self._raise_exception(grpc_error)")
                 self._write(2, "response = json_format.MessageToDict(")
                 self._write(3, "res_obj, preserving_proto_field_name=True")
                 self._write(2, ")")
+                if return_byte:
+                    log_method = (
+                        'self._log_grpc("%s", %s, {"<bytes>": len(res_obj.response_bytes)})'
+                        % (
+                            rpc_method.operation_name,
+                            "payload"
+                            if rpc_method.request_class is not None
+                            else "None",
+                        )
+                    )
+                    self._write(2, log_method)
+                else:
+                    log_method = 'self._log_grpc("%s", %s, response)' % (
+                        rpc_method.operation_name,
+                        "payload"
+                        if rpc_method.request_class is not None
+                        else "None",
+                    )
+                    self._write(2, log_method)
                 self._write(2, 'log.debug("Response - " + str(response))')
                 self._write(
                     2,
@@ -2237,6 +2296,16 @@ class Generator:
                     line_indent, "data = self._server_stream(stub, res)"
                 )
                 if return_byte:
+                    self._write(
+                        line_indent,
+                        'self._log_grpc("%s", %s, {"<bytes>": len(data)})'
+                        % (
+                            rpc_method.operation_name,
+                            "payload"
+                            if rpc_method.request_class is not None
+                            else "None",
+                        ),
+                    )
                     self._write(line_indent, "return io.BytesIO(data)")
                     skip_rpc_conversion = True
                 elif rpc_method.good_response_type:

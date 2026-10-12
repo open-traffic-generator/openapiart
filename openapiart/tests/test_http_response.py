@@ -1,5 +1,12 @@
 import json
+import importlib
 import pytest
+import yaml
+
+
+def _reset_rpc_logger(module):
+    impl = importlib.import_module("%s.%s" % (module.__name__, module.__name__))
+    impl.RpcLogger.close()
 
 
 def test_valid_version_check(api):
@@ -132,3 +139,37 @@ def test_upload_config(api):
     bts = b"Hello\n123\nHello\n456!!@###"
     res = api.upload_config(bts)
     assert res.warnings == ["w1", "w2"]
+
+
+def test_http_rpc_logging(monkeypatch, tmp_path, api, default_config):
+    log_path = tmp_path / "http-rpc.yaml"
+    monkeypatch.setenv("SANITY_RPC_LOG", str(log_path))
+    monkeypatch.delenv("OPENAPIART_RPC_LOG", raising=False)
+    _reset_rpc_logger(pytest.module)
+    try:
+        api.set_config(default_config)
+    finally:
+        _reset_rpc_logger(pytest.module)
+
+    docs = list(yaml.safe_load_all(log_path.read_text()))
+    entry = docs[-1]
+    assert entry["transport"] == "http"
+    assert entry["method"] == "POST /api/config"
+    assert entry["request"]["a"] == "asdf"
+    assert entry["response"]["status"] == 200
+
+
+def test_http_rpc_logging_fallback(monkeypatch, tmp_path, api, default_config):
+    log_path = tmp_path / "http-rpc-fallback.yaml"
+    monkeypatch.delenv("SANITY_RPC_LOG", raising=False)
+    monkeypatch.setenv("OPENAPIART_RPC_LOG", str(log_path))
+    _reset_rpc_logger(pytest.module)
+    try:
+        api.set_config(default_config)
+    finally:
+        _reset_rpc_logger(pytest.module)
+
+    docs = list(yaml.safe_load_all(log_path.read_text()))
+    entry = docs[-1]
+    assert entry["transport"] == "http"
+    assert entry["method"] == "POST /api/config"

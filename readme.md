@@ -67,11 +67,26 @@ art.GenerateGoSdk(
 )
 ```
 
+## Generated SDK RPC logging
+
+Generated Python and Go SDKs can log unary HTTP and gRPC request/response
+exchanges by setting a package-specific environment variable named
+`<PACKAGE>_RPC_LOG`, where `<PACKAGE>` is the generated SDK package name
+uppercased with non-alphanumeric characters converted to `_`. For example, a
+generated `snappi` SDK uses `SNAPPI_RPC_LOG`. `OPENAPIART_RPC_LOG` is also
+honored as a generic fallback.
+
+- `stdout` or `-`: write RPC logs to stdout
+- `stderr`: write RPC logs to stderr
+- `<path>`: append RPC logs to the file at `<path>`
+
+Each exchange is written as a YAML document separated by `---`.
+Failures are represented under `response.error`; HTTP entries retain the
+response status and any body bytes read before a body-read failure.
+
 ## Specifications
 > This repository is based on the [OpenAPI specification](
 https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md) 
 which is a standard, language-agnostic interface to RESTful APIs. 
 
 > [Modeling guide specific to this package](../main/MODELGUIDE.md)
-
-
