@@ -14,6 +14,7 @@ import types
 import platform
 import base64
 import re
+from functools import wraps
 from google.protobuf import json_format
 import sanity_pb2_grpc as pb2_grpc
 import sanity_pb2 as pb2
@@ -1317,6 +1318,7 @@ class Telemetry(object):
 
     @staticmethod
     def create_child_span(func):
+        @wraps(func)
         def tracing(self, *args, **kwargs):
             telemetry = self._telemetry
             if telemetry.is_telemetry_enabled:
